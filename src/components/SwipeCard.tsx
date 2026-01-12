@@ -3,7 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Shirt, Check } from 'lucide-react';
+import { Info, Image, Sparkles, Check } from 'lucide-react';
+import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
 import { SwipeActionBar } from '@/components/SwipeActionBar';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
@@ -102,8 +103,8 @@ const AddToClosetButton = memo(({ product }: { product: SwipeProduct }) => {
         </>
       ) : (
         <>
-          <Shirt className="h-3.5 w-3.5" strokeWidth={2.5} />
-          <span className="text-xs font-medium">+ Closet</span>
+          <HangerIcon className="h-3.5 w-3.5" size={14} />
+          <span className="text-[10px] font-medium">+ Closet</span>
         </>
       )}
     </Button>

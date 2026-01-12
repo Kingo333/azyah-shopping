@@ -5,7 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Shirt, Check } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Check } from 'lucide-react';
+import { HangerIcon } from '@/components/icons/HangerIcon';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -236,9 +237,9 @@ const ProductCard: React.FC<{
                   Added
                 </>
               ) : (
-                <>
-                  <Shirt className="h-3.5 w-3.5 mr-1" />
-                  + Closet
+              <>
+                  <HangerIcon className="h-3.5 w-3.5 mr-1" size={14} />
+                  <span className="text-[10px]">+ Closet</span>
                 </>
               )}
             </Button>

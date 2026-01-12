@@ -7,6 +7,7 @@ import { StyleLinkModal } from '@/components/StyleLinkModal';
 import { DealsAndCodesCenter } from '@/components/affiliate/DealsAndCodesCenter';
 import { PublicPromoSection } from '@/components/affiliate/PublicPromoSection';
 import { StyleLinkTutorial } from '@/components/StyleLinkTutorial';
+import MiniDiscover from '@/components/MiniDiscover';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -560,65 +561,14 @@ export default function StyleLinkPage() {
           </div>
         )}
 
-        {/* Bottom Discover Strip */}
+        {/* Bottom Discover Strip - Enhanced with MiniDiscover */}
         <div className="px-4 py-6 border-t">
           <div className="max-w-lg mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">Discover More</h3>
-              <Button variant="ghost" size="sm" asChild className="text-[hsl(var(--azyah-maroon))] gap-1">
-                <Link to="/swipe">
-                  Browse All
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </div>
-            
-            {/* Horizontal product scroll */}
-            {trendingProducts && trendingProducts.length > 0 ? (
-              <>
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                  {trendingProducts.map((product) => (
-                    <Link 
-                      key={product.id}
-                      to={`/swipe?product=${product.id}`}
-                      className="flex-shrink-0 w-28"
-                    >
-                      <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="aspect-[3/4] bg-muted">
-                          <img 
-                            src={product.image_url || '/placeholder.svg'} 
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="p-1.5">
-                          <p className="text-[9px] font-medium truncate">{product.title}</p>
-                          {product.price_cents && (
-                            <p className="text-[8px] text-muted-foreground">
-                              {formatPrice(product.price_cents, product.currency)}
-                            </p>
-                          )}
-                        </div>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-
-              </>
-            ) : (
-              <Card className="p-4 text-center bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-transparent">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Discover products that match your style
-                </p>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/swipe">
-                    Browse All
-                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                  </Link>
-                </Button>
-              </Card>
-            )}
+            <MiniDiscover
+              title="Discover More"
+              subtitle="Swipe to explore styles"
+              limit={15}
+            />
           </div>
         </div>
       </div>
