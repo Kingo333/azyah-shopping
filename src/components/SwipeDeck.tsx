@@ -414,7 +414,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 style={{ zIndex: -i }}
               >
                 <div className="w-full max-w-md mx-auto h-full flex items-center justify-center">
-                  <div className="w-full min-h-[300px] max-h-[60vh] rounded-3xl bg-card shadow-xl border-0" />
+                  <div className="w-full aspect-[9/16] rounded-3xl bg-card shadow-xl border-0" />
                 </div>
               </motion.div>
             );
