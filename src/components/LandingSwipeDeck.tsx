@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { Money } from '@/components/ui/Money';
 
 interface LandingSwipeDeckProps {
   filter: string;
@@ -433,13 +434,12 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                     </Button>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-base sm:text-lg font-bold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: currentProduct.currency || 'USD'
-                      }).format(currentProduct.price_cents / 100)}
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <Money 
+                        cents={currentProduct.price_cents} 
+                        currency={currentProduct.currency || 'USD'} 
+                        size="lg"
+                      />
                     
                     <div className="flex items-center gap-1">
                       {(currentProduct as any).ar_mesh_url && (

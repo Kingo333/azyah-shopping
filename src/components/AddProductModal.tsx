@@ -241,7 +241,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           title: `Product ${index + 1}`,
           description: 'Event product - details to be added',
           price_cents: 0,
-          currency: 'USD',
+          currency: brandCurrency || 'AED', // Use brand's currency, not hardcoded USD
           category_slug: 'clothing' as any,
           subcategory_slug: 'tops' as any,
           brand_id: isEventContext && userType === 'retailer' ? selectedBrandForProducts : (userType === 'brand' ? brandId : null),

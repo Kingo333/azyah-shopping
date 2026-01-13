@@ -27,6 +27,7 @@ import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddPro
 import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { Money } from '@/components/ui/Money';
 
 interface ProductListViewProps {
   products: Product[];
@@ -43,11 +44,10 @@ const ProductCard: React.FC<{
   product: Product;
   handleLike: (product: Product) => void;
   handleProductClick: (product: Product) => void;
-  formatPrice: (cents: number, currency?: string) => string;
   user: any;
   toast: any;
   requireAuth: (action: string, callback: () => void) => void;
-}> = ({ product, handleLike, handleProductClick, formatPrice, user, toast, requireAuth }) => {
+}> = ({ product, handleLike, handleProductClick, user, toast, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
@@ -189,7 +189,7 @@ const ProductCard: React.FC<{
             {getBrandDisplayName(product)}
           </div>
           <div className="text-xs font-semibold text-primary mb-3">
-            {formatPrice(product.price_cents, product.currency)}
+            <Money cents={product.price_cents} currency={product.currency || 'USD'} size="sm" />
           </div>
           
           {/* Action buttons */}
@@ -323,12 +323,6 @@ const ProductListView: React.FC<ProductListViewProps> = ({
     navigate(`/p/${product.id}?from=list`);
   };
 
-  const formatPrice = (cents: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(cents / 100);
-  };
 
   if (isLoading) {
     return (
@@ -373,7 +367,6 @@ const ProductListView: React.FC<ProductListViewProps> = ({
             product={product} 
             handleLike={handleLike}
             handleProductClick={handleProductClick}
-            formatPrice={formatPrice}
             user={user}
             toast={toast}
             requireAuth={requireAuth}
