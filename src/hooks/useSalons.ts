@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getCountryCodeFromName } from '@/lib/countryCurrency';
 
 // Types based on database schema
 export interface Salon {
@@ -89,15 +90,17 @@ export function useSalons(shopperCountry?: string) {
 
       const salons = (data || []) as (Salon & { brand?: { country_code: string | null; shipping_regions: string[] | null } })[];
 
-      // If no country filter, return all salons
+      // If no country filter, return all salons (allow all for now, can be restricted later)
       if (!shopperCountry) {
+        console.log('[useSalons] No shopperCountry provided, returning all salons');
         return salons;
       }
 
-      // Normalize shopper country (could be code or name)
+      // Normalize shopper country to ISO-2 code
+      // Could be 'AE' or 'United Arab Emirates'
       const normalizedCountry = shopperCountry.length === 2 
         ? shopperCountry.toUpperCase() 
-        : shopperCountry;
+        : getCountryCodeFromName(shopperCountry)?.toUpperCase() || shopperCountry.toUpperCase();
 
       // Filter salons by brand country or shipping regions
       return salons.filter(salon => {

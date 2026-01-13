@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { Money } from '@/components/ui/Money';
 interface ProductDetailPageProps {
   product: Product;
   onBack: () => void;
@@ -136,25 +137,23 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl lg:text-3xl font-bold text-primary">
-                    {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: priceCurrency
-                  }).format(priceCents / 100)}
-                  </span>
-                  {compareAtCents && <span className="text-lg text-muted-foreground line-through">
-                      {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: priceCurrency
-                  }).format(compareAtCents / 100)}
-                    </span>}
+                  <Money 
+                    cents={priceCents} 
+                    currency={priceCurrency} 
+                    showOriginal={true}
+                    className="text-2xl lg:text-3xl font-bold text-primary" 
+                  />
+                  {compareAtCents && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      <Money cents={compareAtCents} currency={priceCurrency} />
+                    </span>
+                  )}
                 </div>
-                {compareAtCents && <p className="text-sm text-green-600 font-medium">
-                    Save {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: priceCurrency
-                }).format((compareAtCents - priceCents) / 100)}
-                  </p>}
+                {compareAtCents && (
+                  <p className="text-sm text-green-600 font-medium">
+                    Save <Money cents={compareAtCents - priceCents} currency={priceCurrency} />
+                  </p>
+                )}
               </div>
 
               {/* Size and Color Selection */}

@@ -15,6 +15,7 @@ import { openExternalUrl } from '@/lib/openExternalUrl';
 import { swipeHaptics } from '@/utils/haptics';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { Money } from '@/components/ui/Money';
 
 interface MiniDiscoverProps {
   limit?: number;
@@ -180,13 +181,6 @@ const MiniSwipeCard = memo(({
   }, [product.external_url]);
 
   const brandName = product.brand?.name || product.brands?.name;
-  const formatPrice = (cents: number, currency: string) => {
-    const amount = cents / 100;
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currency || 'USD' 
-    }).format(amount);
-  };
 
   return (
     <div className="relative w-full max-w-[300px] mx-auto">
@@ -250,9 +244,7 @@ const MiniSwipeCard = memo(({
                   <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
                 )}
                 <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
-                <p className="text-sm font-bold mt-0.5">
-                  {formatPrice(product.price_cents, product.currency)}
-                </p>
+                <Money cents={product.price_cents} currency={product.currency} className="text-sm font-bold mt-0.5" />
               </div>
               
               {/* Action bar - now part of overlay */}

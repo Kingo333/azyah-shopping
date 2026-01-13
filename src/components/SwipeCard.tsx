@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Info, Image, Sparkles, Check, X, Star, Heart, ShoppingBag } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
+import { Money } from '@/components/ui/Money';
 
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
@@ -234,14 +235,11 @@ const SwipeCard = memo(({
                   <Badge 
                     className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
                   >
-                    <span className="font-bold text-base">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: product.currency || 'USD',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      }).format(product.price_cents / 100)}
-                    </span>
+                    <Money 
+                      cents={product.price_cents} 
+                      currency={product.currency || 'USD'} 
+                      className="font-bold text-base"
+                    />
                   </Badge>
                 </div>
               </div>
