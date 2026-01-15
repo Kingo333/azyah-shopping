@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useCreatorProducts, CreatorProduct } from '@/hooks/useCreatorProducts';
-import { ShoppingBag, Star, Trash2, ExternalLink, MoreVertical } from 'lucide-react';
+import { ShoppingBag, Star, Trash2, ExternalLink, MoreVertical, Pencil, Check, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate } from 'react-router-dom';
 import { SmartImage } from '@/components/SmartImage';
 import { MoneyStatic } from '@/components/ui/Money';
@@ -22,8 +23,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import EditCreatorProductModal from './EditCreatorProductModal';
 
 const openExternalUrl = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -42,13 +43,21 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
     recentProducts,
     isLoading,
     removeProduct,
+    removeMultipleProducts,
     removeAllProducts,
+    updateProduct,
     toggleFeatured,
   } = useCreatorProducts(userId);
   const navigate = useNavigate();
 
+  // Selection mode state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Modal states
   const [removeTarget, setRemoveTarget] = useState<CreatorProduct | null>(null);
-  const [removeAllOpen, setRemoveAllOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<CreatorProduct | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Filter products by search query
   const filterProducts = (products: CreatorProduct[]) => {
@@ -63,8 +72,13 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
   const filteredFeatured = filterProducts(featuredProducts);
   const filteredRecent = filterProducts(recentProducts);
+  const allFilteredProducts = [...filteredFeatured, ...filteredRecent];
 
   const handleProductClick = (product: CreatorProduct) => {
+    if (isSelectMode) {
+      toggleSelection(product.id);
+      return;
+    }
     if (product.product_id) {
       navigate(`/product/${product.product_id}`);
     } else if (product.external_url) {
@@ -72,16 +86,57 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
     }
   };
 
+  const toggleSelection = (productId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(allFilteredProducts.map(p => p.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const confirmBulkDelete = () => {
+    removeMultipleProducts.mutate(Array.from(selectedIds), {
+      onSettled: () => {
+        setShowBulkDeleteConfirm(false);
+        exitSelectMode();
+      },
+    });
+  };
+
+  const handleSaveProduct = async (productId: string, updates: Partial<CreatorProduct>) => {
+    await updateProduct.mutateAsync({ productId, updates });
+  };
+
   const getProductTitle = (product: CreatorProduct): string => {
     return product.product?.title || product.external_title || 'Untitled';
   };
 
   const getProductImage = (product: CreatorProduct): string => {
-    // Use getPrimaryImageUrl for internal products (handles media_urls properly)
     if (product.product) {
       return getPrimaryImageUrl(product.product);
     }
-    // Fallback to external image or placeholder
     return product.external_image_url || '/placeholder.svg';
   };
 
@@ -100,11 +155,14 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
     const image = getProductImage(product);
     const brand = getProductBrand(product);
     const isExternal = !product.product_id && !!product.external_url;
+    const isSelected = selectedIds.has(product.id);
 
     return (
       <div className="relative group">
         <div 
-          className="rounded-xl overflow-hidden border bg-card cursor-pointer hover:shadow-md transition-shadow"
+          className={`rounded-xl overflow-hidden border bg-card cursor-pointer hover:shadow-md transition-all ${
+            isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
+          }`}
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest('[data-product-actions]')) return;
@@ -119,23 +177,41 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
               className="w-full h-full object-cover"
             />
 
-            {/* External link badge */}
-            {isExternal && (
+            {/* Selection checkbox */}
+            {isSelectMode && (
+              <div className="absolute top-1.5 left-1.5 z-20">
+                <div 
+                  className="h-6 w-6 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center shadow-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSelection(product.id);
+                  }}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    className="h-4 w-4"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* External link badge - only show when not in select mode and not owner actions */}
+            {isExternal && !isSelectMode && !isOwner && (
               <div className="absolute top-1.5 right-1.5 bg-background/90 backdrop-blur-sm rounded-full p-1 shadow-sm">
                 <ExternalLink className="h-3 w-3 text-muted-foreground" />
               </div>
             )}
 
             {/* Featured badge */}
-            {product.is_featured && (
+            {product.is_featured && !isSelectMode && (
               <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-medium flex items-center gap-0.5 shadow-sm">
                 <Star className="h-2.5 w-2.5 fill-current" />
                 Featured
               </div>
             )}
 
-            {/* Owner Actions - Always visible dropdown */}
-            {isOwner && (
+            {/* Owner Actions dropdown - hide in select mode */}
+            {isOwner && !isSelectMode && (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -149,6 +225,10 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="z-50">
+                  <DropdownMenuItem onSelect={() => setEditTarget(product)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
                       toggleFeatured.mutate({
@@ -174,7 +254,6 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
           {/* Product Info */}
           <div className="p-2.5">
-            {/* Brand */}
             {brand && (
               <div className="flex items-center gap-1 mb-0.5">
                 {brand.logo && (
@@ -190,12 +269,10 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
               </div>
             )}
 
-            {/* Title */}
             <h4 className="text-xs font-medium line-clamp-2 min-h-[2rem] leading-tight">
               {title}
             </h4>
 
-            {/* Price */}
             {(product.product?.price_cents || product.external_price_cents) && (
               <div className="mt-1">
                 <MoneyStatic
@@ -246,41 +323,67 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
   return (
     <div className="space-y-4">
+      {/* Owner controls */}
       {isOwner && products.length > 0 && (
-        <div className="flex justify-end">
-          <AlertDialog open={removeAllOpen} onOpenChange={setRemoveAllOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="h-8 text-xs">
-                Remove all products
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remove all products?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will remove every product from your Style Link products list. You can add them again later.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      removeAllProducts.mutate(undefined, {
-                        onSettled: () => setRemoveAllOpen(false),
-                      });
-                    }}
-                  >
-                    Remove all
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {isSelectMode ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={exitSelectMode}>
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Cancel
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {selectedIds.size} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedIds.size < allFilteredProducts.length ? (
+                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={selectAll}>
+                    Select all
                   </Button>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                ) : (
+                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={deselectAll}>
+                    Deselect all
+                  </Button>
+                )}
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="h-8 text-xs" 
+                  onClick={handleBulkDelete}
+                  disabled={selectedIds.size === 0}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  Delete ({selectedIds.size})
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2 ml-auto">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs" 
+                onClick={() => setIsSelectMode(true)}
+              >
+                <Check className="h-3.5 w-3.5 mr-1" />
+                Select
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={() => removeAllProducts.mutate()}
+              >
+                Remove all
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Single product remove confirmation */}
       <AlertDialog
         open={!!removeTarget}
         onOpenChange={(open) => {
@@ -291,7 +394,7 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
           <AlertDialogHeader>
             <AlertDialogTitle>Remove product?</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove “{removeTarget ? getProductTitle(removeTarget) : ''}” from your Style Link products list.
+              Remove "{removeTarget ? getProductTitle(removeTarget) : ''}" from your Style Link products list.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -312,6 +415,36 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} products?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the selected products from your Style Link. You can add them again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={confirmBulkDelete}>
+                Delete {selectedIds.size} products
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Product Modal */}
+      <EditCreatorProductModal
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+        product={editTarget}
+        onSave={handleSaveProduct}
+      />
 
       {/* Featured Products */}
       {filteredFeatured.length > 0 && (

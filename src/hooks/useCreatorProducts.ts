@@ -151,6 +151,41 @@ export const useCreatorProducts = (userId: string | undefined) => {
     },
   });
 
+  const removeMultipleProducts = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      if (!user) throw new Error('Must be logged in');
+      if (productIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('creator_products')
+        .delete()
+        .in('id', productIds)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['creator-products', userId] });
+    },
+  });
+
+  const updateProduct = useMutation({
+    mutationFn: async ({ productId, updates }: { productId: string; updates: Record<string, unknown> }) => {
+      if (!user) throw new Error('Must be logged in');
+
+      const { error } = await supabase
+        .from('creator_products')
+        .update(updates)
+        .eq('id', productId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['creator-products', userId] });
+    },
+  });
+
   const removeAllProducts = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Must be logged in');
@@ -214,7 +249,9 @@ export const useCreatorProducts = (userId: string | undefined) => {
     refetch: productsQuery.refetch,
     addProduct,
     removeProduct,
+    removeMultipleProducts,
     removeAllProducts,
+    updateProduct,
     toggleFeatured,
     updateSortOrder,
     isOwner,
