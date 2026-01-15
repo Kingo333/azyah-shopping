@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.refresh-fx-rates]
 verify_jwt = false
+
+[functions.extract-link-metadata]
+verify_jwt = false
