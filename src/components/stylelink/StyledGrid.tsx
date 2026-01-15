@@ -1,6 +1,8 @@
 import React from 'react';
-import { Sparkles, Heart, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, Heart, MessageCircle, Plus } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
+import { Button } from '@/components/ui/button';
 import { StyleLinkOutfit } from '@/hooks/useStyleLinkData';
 
 interface StyledGridProps {
@@ -16,6 +18,8 @@ const StyledGrid: React.FC<StyledGridProps> = ({
   onOutfitClick,
   searchQuery 
 }) => {
+  const navigate = useNavigate();
+
   // Filter outfits by search query
   const filteredOutfits = outfits.filter(outfit => {
     if (!searchQuery) return true;
@@ -36,11 +40,17 @@ const StyledGrid: React.FC<StyledGridProps> = ({
         <h3 className="text-lg font-medium mb-2">
           {searchQuery ? 'No outfits found' : 'No styled looks yet'}
         </h3>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-sm mb-4">
           {isOwner 
             ? "Create your first outfit in the styling canvas!"
             : "Check back soon for styled looks."}
         </p>
+        {isOwner && (
+          <Button onClick={() => navigate('/dress-me')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Outfit
+          </Button>
+        )}
       </div>
     );
   }
