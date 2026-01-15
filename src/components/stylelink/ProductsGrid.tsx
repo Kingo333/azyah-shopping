@@ -116,42 +116,43 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
             {/* Owner Actions - Always visible dropdown */}
             {isOwner && (
-              <div 
-                className="absolute top-1.5 right-1.5"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background shadow-sm"
-                    >
-                      <MoreVertical className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        toggleFeatured.mutate({ productId: product.id, isFeatured: !product.is_featured });
-                      }}
-                    >
-                      <Star className={`h-4 w-4 mr-2 ${product.is_featured ? 'fill-current' : ''}`} />
-                      {product.is_featured ? 'Unfeature' : 'Feature'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onSelect={() => {
-                        removeProduct.mutate(product.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute top-1.5 right-1.5 h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background shadow-sm z-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  className="z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFeatured.mutate({ productId: product.id, isFeatured: !product.is_featured });
+                    }}
+                  >
+                    <Star className={`h-4 w-4 mr-2 ${product.is_featured ? 'fill-current' : ''}`} />
+                    {product.is_featured ? 'Unfeature' : 'Feature'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeProduct.mutate(product.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
