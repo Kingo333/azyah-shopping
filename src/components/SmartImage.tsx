@@ -88,7 +88,7 @@ export const SmartImage = ({
         sizes={sizes}
         alt={alt}
         className={cn(
-          "transition-opacity duration-300",
+          "w-full h-full object-cover object-center transition-opacity duration-300",
           isLoaded ? "opacity-100" : "opacity-0"
         )}
         loading={loading}
