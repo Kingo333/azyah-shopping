@@ -151,6 +151,22 @@ export const useCreatorProducts = (userId: string | undefined) => {
     },
   });
 
+  const removeAllProducts = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Must be logged in');
+
+      const { error } = await supabase
+        .from('creator_products')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['creator-products', userId] });
+    },
+  });
+
   const toggleFeatured = useMutation({
     mutationFn: async ({ productId, isFeatured }: { productId: string; isFeatured: boolean }) => {
       if (!user) throw new Error('Must be logged in');
@@ -198,6 +214,7 @@ export const useCreatorProducts = (userId: string | undefined) => {
     refetch: productsQuery.refetch,
     addProduct,
     removeProduct,
+    removeAllProducts,
     toggleFeatured,
     updateSortOrder,
     isOwner,

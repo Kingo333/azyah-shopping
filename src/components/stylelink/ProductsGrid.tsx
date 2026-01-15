@@ -13,6 +13,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const openExternalUrl = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -25,14 +36,19 @@ interface ProductsGridProps {
 }
 
 const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuery }) => {
-  const { 
-    featuredProducts, 
-    recentProducts, 
-    isLoading, 
-    removeProduct, 
-    toggleFeatured 
+  const {
+    products,
+    featuredProducts,
+    recentProducts,
+    isLoading,
+    removeProduct,
+    removeAllProducts,
+    toggleFeatured,
   } = useCreatorProducts(userId);
   const navigate = useNavigate();
+
+  const [removeTarget, setRemoveTarget] = useState<CreatorProduct | null>(null);
+  const [removeAllOpen, setRemoveAllOpen] = useState(false);
 
   // Filter products by search query
   const filterProducts = (products: CreatorProduct[]) => {
@@ -89,7 +105,11 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
       <div className="relative group">
         <div 
           className="rounded-xl overflow-hidden border bg-card cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleProductClick(product)}
+          onClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-product-actions]')) return;
+            handleProductClick(product);
+          }}
         >
           {/* Product Image */}
           <div className="aspect-square relative bg-muted">
@@ -119,23 +139,22 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
+                    data-product-actions
                     size="icon"
                     variant="secondary"
-                    className="absolute top-1.5 right-1.5 h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background shadow-sm z-10"
-                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Product options"
+                    className="absolute top-1.5 right-1.5 h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background shadow-sm z-20"
                   >
                     <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
-                  className="z-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <DropdownMenuContent align="end" className="z-50">
                   <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFeatured.mutate({ productId: product.id, isFeatured: !product.is_featured });
+                    onSelect={() => {
+                      toggleFeatured.mutate({
+                        productId: product.id,
+                        isFeatured: !product.is_featured,
+                      });
                     }}
                   >
                     <Star className={`h-4 w-4 mr-2 ${product.is_featured ? 'fill-current' : ''}`} />
@@ -143,10 +162,7 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeProduct.mutate(product.id);
-                    }}
+                    onSelect={() => setRemoveTarget(product)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Remove
@@ -230,6 +246,73 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
   return (
     <div className="space-y-4">
+      {isOwner && products.length > 0 && (
+        <div className="flex justify-end">
+          <AlertDialog open={removeAllOpen} onOpenChange={setRemoveAllOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="h-8 text-xs">
+                Remove all products
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove all products?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove every product from your Style Link products list. You can add them again later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      removeAllProducts.mutate(undefined, {
+                        onSettled: () => setRemoveAllOpen(false),
+                      });
+                    }}
+                  >
+                    Remove all
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
+      <AlertDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => {
+          if (!open) setRemoveTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove “{removeTarget ? getProductTitle(removeTarget) : ''}” from your Style Link products list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (!removeTarget) return;
+                  removeProduct.mutate(removeTarget.id, {
+                    onSettled: () => setRemoveTarget(null),
+                  });
+                }}
+              >
+                Remove
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Featured Products */}
       {filteredFeatured.length > 0 && (
         <div>
