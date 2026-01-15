@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, Clock } from 'lucide-react';
+import { Copy, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PublicDeal } from '@/hooks/useAffiliatePromos';
 
@@ -90,10 +90,9 @@ export function CompactPromoCard({ deal }: CompactPromoCardProps) {
       {deal.affiliate_url && (
         <Button 
           size="sm" 
-          className="w-full mt-2 h-7 text-[10px] bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 gap-1"
+          className="w-full mt-2 h-7 text-[10px] bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
           onClick={() => window.open(deal.affiliate_url!, '_blank')}
         >
-          <ExternalLink className="h-3 w-3" />
           Shop Now
         </Button>
       )}

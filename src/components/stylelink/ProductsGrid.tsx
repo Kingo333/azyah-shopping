@@ -116,9 +116,13 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
 
             {/* Owner Actions - Always visible dropdown */}
             {isOwner && (
-              <div className="absolute top-1.5 right-1.5">
+              <div 
+                className="absolute top-1.5 right-1.5"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       size="icon"
                       variant="secondary"
@@ -127,10 +131,9 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
                       <MoreVertical className="h-3.5 w-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onSelect={() => {
                         toggleFeatured.mutate({ productId: product.id, isFeatured: !product.is_featured });
                       }}
                     >
@@ -139,8 +142,7 @@ const ProductsGrid: React.FC<ProductsGridProps> = ({ userId, isOwner, searchQuer
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onSelect={() => {
                         removeProduct.mutate(product.id);
                       }}
                     >
