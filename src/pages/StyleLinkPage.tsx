@@ -417,60 +417,55 @@ export default function StyleLinkPage() {
           </div>
         </div>
 
-        {/* Owner Stats Panel */}
+        {/* Owner Stats Panel - Compact */}
         {effectiveIsOwner && stats && (
-          <div className="px-4 py-4">
-            <div className="max-w-lg mx-auto space-y-3">
-              <h3 className="text-sm font-semibold">Your Stats</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <Eye className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-lg font-bold text-center">{stats.page_views}</p>
-                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Views</p>
-                </Card>
-                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <MousePointer className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-lg font-bold text-center">{stats.outfit_clicks}</p>
-                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Outfit Clicks</p>
-                </Card>
-                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <ShoppingBag className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-lg font-bold text-center">{stats.shop_clicks}</p>
-                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Shop Clicks</p>
-                </Card>
-              </div>
-              {stats.installs_attributed > 0 && (
-                <div className="p-3 rounded-lg bg-[hsl(var(--azyah-maroon))]/5 text-center">
-                  <p className="text-sm font-medium text-[hsl(var(--azyah-maroon))]">
-                    🎉 {stats.installs_attributed} people joined via your link!
-                  </p>
-                </div>
-              )}
-              
-              {/* Preview as Guest Bar */}
-              <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">See how others view your page</p>
-                  <p className="text-xs text-muted-foreground">Preview without owner controls</p>
+          <div className="px-4 py-2">
+            <div className="max-w-lg mx-auto">
+              {/* Inline Stats Row */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
+                    <span className="text-xs font-semibold">{stats.page_views}</span>
+                    <span className="text-[10px] text-muted-foreground">views</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MousePointer className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
+                    <span className="text-xs font-semibold">{stats.outfit_clicks}</span>
+                    <span className="text-[10px] text-muted-foreground">clicks</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ShoppingBag className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
+                    <span className="text-xs font-semibold">{stats.shop_clicks}</span>
+                    <span className="text-[10px] text-muted-foreground">shops</span>
+                  </div>
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm"
+                  className="h-7 text-[10px] text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     window.open(`${window.location.pathname}?preview=guest`, '_blank');
                   }}
                 >
-                  <Eye className="h-4 w-4 mr-1.5" />
+                  <Eye className="h-3 w-3 mr-1" />
                   Preview
                 </Button>
               </div>
+              {stats.installs_attributed > 0 && (
+                <div className="mt-2 p-2 rounded-lg bg-[hsl(var(--azyah-maroon))]/5 text-center">
+                  <p className="text-xs font-medium text-[hsl(var(--azyah-maroon))]">
+                    🎉 {stats.installs_attributed} people joined via your link!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Owner Deals & Codes Center */}
+        {/* Owner Deals & Codes - Collapsible */}
         {effectiveIsOwner && (
-          <div className="px-4 py-4 border-b">
+          <div className="px-4 pb-2">
             <div className="max-w-lg mx-auto">
               <DealsAndCodesCenter />
             </div>
