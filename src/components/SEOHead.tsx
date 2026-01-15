@@ -15,9 +15,9 @@ interface SEOHeadProps {
 }
 
 export const SEOHead: React.FC<SEOHeadProps> = ({
-  title = 'Azyah - Discover Fashion Like Never Before',
-  description = 'Swipe, discover, and try on fashion items with AR. Join the future of fashion discovery with personalized recommendations and virtual try-ons.',
-  keywords = 'fashion, AR try-on, virtual fitting, fashion discovery, online shopping, swipe fashion, personalized style',
+  title = 'Azyah - Discover Fashion, Beauty, Fitness, and More',
+  description = 'Discover fashion, beauty, fitness, and lifestyle items. Swipe, try on with AR, and curate your perfect style with personalized recommendations.',
+  keywords = 'fashion, beauty, fitness, lifestyle, AR try-on, virtual fitting, fashion discovery, online shopping, home decor, personalized style',
   image = '/og-image.jpg',
   url,
   type = 'website',
@@ -83,14 +83,14 @@ export const HomeSEO = () => {
   const baseUrl = getPublicBaseUrl();
   return (
     <SEOHead
-      title="Azyah - Discover Fashion Like Never Before"
-      description="Swipe through fashion items, try them on with AR, and discover your perfect style. Join thousands of fashion lovers on Azyah."
+      title="Azyah - Discover Fashion, Beauty, Fitness, and More"
+      description="Discover fashion, beauty, fitness, and lifestyle items. Swipe, try on with AR, and curate your perfect style with personalized recommendations."
       structuredData={{
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Azyah",
         "url": baseUrl,
-        "description": "Fashion discovery platform with AR try-on",
+        "description": "Discover fashion, beauty, fitness, and lifestyle with AR try-on",
         "potentialAction": {
           "@type": "SearchAction",
           "target": `${baseUrl}/search?q={search_term_string}`,

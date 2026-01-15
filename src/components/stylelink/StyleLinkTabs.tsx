@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Camera, ShoppingBag, Sparkles, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -74,23 +74,20 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
           <TabsList className="grid w-full grid-cols-3 h-9 p-0.5 bg-muted/60 rounded-lg">
             <TabsTrigger 
               value="posts" 
-              className="flex items-center gap-1 text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              <Camera className="h-3.5 w-3.5" />
               Posts
             </TabsTrigger>
             <TabsTrigger 
               value="products" 
-              className="flex items-center gap-1 text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              <ShoppingBag className="h-3.5 w-3.5" />
               Products
             </TabsTrigger>
             <TabsTrigger 
               value="styled" 
-              className="flex items-center gap-1 text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              <Sparkles className="h-3.5 w-3.5" />
               Styled
             </TabsTrigger>
           </TabsList>

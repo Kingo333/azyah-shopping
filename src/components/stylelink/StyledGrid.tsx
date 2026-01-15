@@ -71,7 +71,7 @@ const StyledGrid: React.FC<StyledGridProps> = ({
               <SmartImage
                 src={image}
                 alt={outfit.title || 'Outfit'}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
