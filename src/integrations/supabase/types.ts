@@ -1158,6 +1158,72 @@ export type Database = {
           },
         ]
       }
+      creator_products: {
+        Row: {
+          created_at: string | null
+          external_brand_logo_url: string | null
+          external_brand_name: string | null
+          external_currency: string | null
+          external_image_url: string | null
+          external_price_cents: number | null
+          external_title: string | null
+          external_url: string | null
+          id: string
+          is_featured: boolean | null
+          product_id: string | null
+          sort_order: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          external_brand_logo_url?: string | null
+          external_brand_name?: string | null
+          external_currency?: string | null
+          external_image_url?: string | null
+          external_price_cents?: number | null
+          external_title?: string | null
+          external_url?: string | null
+          id?: string
+          is_featured?: boolean | null
+          product_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          external_brand_logo_url?: string | null
+          external_brand_name?: string | null
+          external_currency?: string | null
+          external_image_url?: string | null
+          external_price_cents?: number | null
+          external_title?: string | null
+          external_url?: string | null
+          id?: string
+          is_featured?: boolean | null
+          product_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       default_wardrobe_items: {
         Row: {
           brand: string | null
@@ -2433,17 +2499,47 @@ export type Database = {
       }
       post_products: {
         Row: {
+          external_brand_logo_url: string | null
+          external_brand_name: string | null
+          external_currency: string | null
+          external_image_url: string | null
+          external_price_cents: number | null
+          external_title: string | null
+          external_url: string | null
           id: string
+          label: string | null
+          position_x: number | null
+          position_y: number | null
           post_id: string | null
           product_id: string | null
         }
         Insert: {
+          external_brand_logo_url?: string | null
+          external_brand_name?: string | null
+          external_currency?: string | null
+          external_image_url?: string | null
+          external_price_cents?: number | null
+          external_title?: string | null
+          external_url?: string | null
           id?: string
+          label?: string | null
+          position_x?: number | null
+          position_y?: number | null
           post_id?: string | null
           product_id?: string | null
         }
         Update: {
+          external_brand_logo_url?: string | null
+          external_brand_name?: string | null
+          external_currency?: string | null
+          external_image_url?: string | null
+          external_price_cents?: number | null
+          external_title?: string | null
+          external_url?: string | null
           id?: string
+          label?: string | null
+          position_x?: number | null
+          position_y?: number | null
           post_id?: string | null
           product_id?: string | null
         }
@@ -2478,6 +2574,7 @@ export type Database = {
           id: string
           updated_at: string | null
           user_id: string | null
+          visibility: string | null
         }
         Insert: {
           content?: string | null
@@ -2485,6 +2582,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string | null
+          visibility?: string | null
         }
         Update: {
           content?: string | null
@@ -2492,6 +2590,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string | null
+          visibility?: string | null
         }
         Relationships: [
           {
