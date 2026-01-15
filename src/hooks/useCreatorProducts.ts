@@ -19,7 +19,7 @@ export interface CreatorProduct {
   product?: {
     id: string;
     title: string;
-    image_url: string | null;
+    media_urls: string[] | null;
     price_cents: number;
     currency: string;
     brand?: {
@@ -70,7 +70,7 @@ export const useCreatorProducts = (userId: string | undefined) => {
           product:products(
             id,
             title,
-            image_url,
+            media_urls,
             price_cents,
             currency,
             brand:brands(name, logo_url)

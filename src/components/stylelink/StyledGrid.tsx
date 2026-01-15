@@ -33,21 +33,21 @@ const StyledGrid: React.FC<StyledGridProps> = ({
 
   if (filteredOutfits.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-          <Sparkles className="h-8 w-8 text-muted-foreground" />
+      <div className="text-center py-8">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
+          <Sparkles className="h-5 w-5 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-medium mb-2">
+        <h3 className="text-sm font-medium mb-1">
           {searchQuery ? 'No outfits found' : 'No styled looks yet'}
         </h3>
-        <p className="text-muted-foreground text-sm mb-4">
+        <p className="text-muted-foreground text-xs mb-3">
           {isOwner 
-            ? "Create your first outfit in the styling canvas!"
-            : "Check back soon for styled looks."}
+            ? "Create your first outfit in the canvas"
+            : "Check back soon for styled looks"}
         </p>
         {isOwner && (
-          <Button onClick={() => navigate('/dress-me')}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => navigate('/dress-me')} size="sm" className="h-8 text-xs">
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
             Create Outfit
           </Button>
         )}
@@ -56,14 +56,14 @@ const StyledGrid: React.FC<StyledGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {filteredOutfits.map((outfit) => {
         const image = getOutfitImage(outfit);
         
         return (
           <div
             key={outfit.id}
-            className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-muted"
+            className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group bg-muted"
             onClick={() => onOutfitClick(outfit)}
           >
             {/* Outfit Image */}
@@ -75,26 +75,26 @@ const StyledGrid: React.FC<StyledGridProps> = ({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-muted-foreground" />
+                <Sparkles className="h-6 w-6 text-muted-foreground" />
               </div>
             )}
 
             {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <div className="flex items-center gap-1 text-white">
-                <Heart className="h-5 w-5" />
-                <span className="text-sm font-medium">{outfit.like_count || 0}</span>
+                <Heart className="h-4 w-4" />
+                <span className="text-xs font-medium">{outfit.like_count || 0}</span>
               </div>
               <div className="flex items-center gap-1 text-white">
-                <MessageCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">{outfit.comment_count || 0}</span>
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs font-medium">{outfit.comment_count || 0}</span>
               </div>
             </div>
 
             {/* Title overlay */}
             {outfit.title && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                <span className="text-white text-xs font-medium line-clamp-1">
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                <span className="text-white text-[10px] font-medium line-clamp-1">
                   {outfit.title}
                 </span>
               </div>

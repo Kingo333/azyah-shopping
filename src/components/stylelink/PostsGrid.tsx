@@ -24,9 +24,9 @@ const PostsGrid: React.FC<PostsGridProps> = ({ userId, isOwner, searchQuery }) =
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="aspect-square rounded-lg" />
+          <Skeleton key={i} className="aspect-square rounded-xl" />
         ))}
       </div>
     );
@@ -34,17 +34,17 @@ const PostsGrid: React.FC<PostsGridProps> = ({ userId, isOwner, searchQuery }) =
 
   if (filteredPosts.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-          <Heart className="h-8 w-8 text-muted-foreground" />
+      <div className="text-center py-8">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
+          <Heart className="h-5 w-5 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-medium mb-2">
+        <h3 className="text-sm font-medium mb-1">
           {searchQuery ? 'No posts found' : 'No posts yet'}
         </h3>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-xs">
           {isOwner 
-            ? "Share your first look and tag products for your followers to shop!"
-            : "Check back soon for new style inspiration."}
+            ? "Share your first look and tag products!"
+            : "Check back soon for new styles"}
         </p>
       </div>
     );
@@ -52,11 +52,11 @@ const PostsGrid: React.FC<PostsGridProps> = ({ userId, isOwner, searchQuery }) =
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {filteredPosts.map((post) => (
           <div
             key={post.id}
-            className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+            className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group"
             onClick={() => setSelectedPost(post)}
           >
             {/* Post Image */}
@@ -73,22 +73,22 @@ const PostsGrid: React.FC<PostsGridProps> = ({ userId, isOwner, searchQuery }) =
             )}
 
             {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <div className="flex items-center gap-1 text-white">
-                <Heart className={`h-5 w-5 ${post.is_liked ? 'fill-current' : ''}`} />
-                <span className="text-sm font-medium">{post.like_count}</span>
+                <Heart className={`h-4 w-4 ${post.is_liked ? 'fill-current' : ''}`} />
+                <span className="text-xs font-medium">{post.like_count}</span>
               </div>
               {post.products.length > 0 && (
                 <div className="flex items-center gap-1 text-white">
-                  <MessageCircle className="h-5 w-5" />
-                  <span className="text-sm font-medium">{post.products.length}</span>
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-xs font-medium">{post.products.length}</span>
                 </div>
               )}
             </div>
 
             {/* Products badge */}
             {post.products.length > 0 && (
-              <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-medium">
+              <div className="absolute top-1.5 right-1.5 bg-background/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 text-[10px] font-medium shadow-sm">
                 {post.products.length} items
               </div>
             )}
