@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStyleLinkData } from '@/hooks/useStyleLinkData';
+import { useStyleLinkData, StyleLinkOutfit } from '@/hooks/useStyleLinkData';
 import { useStyleLinkStats, useLogStyleLinkEvent } from '@/hooks/useStyleLinkAnalytics';
 import { StyleLinkModal } from '@/components/StyleLinkModal';
 import { DealsAndCodesCenter } from '@/components/affiliate/DealsAndCodesCenter';
 import { PublicPromoSection } from '@/components/affiliate/PublicPromoSection';
 import { StyleLinkTutorial } from '@/components/StyleLinkTutorial';
 import MiniDiscover from '@/components/MiniDiscover';
+import StyleLinkTabs from '@/components/stylelink/StyleLinkTabs';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -169,16 +170,16 @@ export default function StyleLinkPage() {
     }
   };
 
-  const handleOutfitClick = (slug: string | null) => {
-    if (!slug) return;
+  const handleOutfitClick = (outfit: StyleLinkOutfit) => {
+    if (!outfit.share_slug) return;
     
     logEvent.mutate({
       username: displayUsername!,
       eventType: 'outfit_click',
-      targetSlug: slug,
+      targetSlug: outfit.share_slug,
     });
 
-    navigate(`/share/outfit/${slug}`);
+    navigate(`/share/outfit/${outfit.share_slug}`);
   };
 
   const getInitials = (name: string | null | undefined) => {
@@ -481,61 +482,15 @@ export default function StyleLinkPage() {
           <PublicPromoSection username={displayUsername} />
         )}
 
-        {/* Outfits Grid */}
+        {/* StyleLink Tabs: Posts, Products, Styled */}
         <div className="px-4 py-6">
           <div className="max-w-lg mx-auto">
-            <h2 className="text-sm font-semibold mb-4">
-              {effectiveIsOwner ? 'Your Public Outfits' : 'Outfits'}
-            </h2>
-
-            {outfits.length === 0 ? (
-              <Card className="p-8 text-center bg-gradient-to-br from-muted/30 to-transparent border-dashed">
-                <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="text-muted-foreground mb-3">No public outfits yet</p>
-                {effectiveIsOwner && (
-                  <Button onClick={() => navigate('/dress-me')} className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90">
-                    Create your first outfit
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {outfits.map((outfit) => (
-                  <Card
-                    key={outfit.id}
-                    className="group overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-sm"
-                    onClick={() => handleOutfitClick(outfit.share_slug)}
-                  >
-                    <div className="aspect-square bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
-                      <img
-                        src={getOutfitImage(outfit)}
-                        alt={outfit.title || 'Outfit'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
-                    <div className="p-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium truncate flex-1 min-w-0">{outfit.title || 'Untitled Outfit'}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0 ml-2">
-                          <span className="flex items-center gap-0.5">
-                            <Heart className="h-3 w-3" />
-                            {outfit.like_count}
-                          </span>
-                          <span className="flex items-center gap-0.5">
-                            <MessageCircle className="h-3 w-3" />
-                            {outfit.comment_count}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <StyleLinkTabs
+              userId={userData.user_id}
+              isOwner={effectiveIsOwner}
+              outfits={outfits}
+              onOutfitClick={handleOutfitClick}
+            />
           </div>
         </div>
 
