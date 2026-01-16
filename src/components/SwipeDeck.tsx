@@ -367,7 +367,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex flex-col">
+      {/* Swipe hint bar - centered */}
+      <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground/80 shrink-0">
+        <span className="flex items-center gap-1">← Pass</span>
+        <span>•</span>
+        <span className="flex items-center gap-1">↑ Save</span>
+        <span>•</span>
+        <span className="flex items-center gap-1">Like →</span>
+      </div>
+      
+      {/* Card area - takes remaining space */}
+      <div className="relative flex-1 flex items-center justify-center min-h-0">
       {/* Swipe instructions overlay */}
       <SwipeInstructions show={showInstructions && index === 0} />
       
@@ -439,6 +450,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         onOpenChange={setShowPrompt} 
         action={promptAction} 
       />
+      </div>
     </div>
   );
 };
