@@ -4,16 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface TaggedProduct {
-  // For internal Azyah products
-  product_id?: string;
-  // For external products
-  external_url?: string;
-  external_title?: string;
-  external_image_url?: string;
-  external_price_cents?: number;
-  external_currency?: string;
-  external_brand_name?: string;
-  external_brand_logo_url?: string;
+  // For internal Azyah products only
+  product_id: string;
   // Tap-to-tag position (0-1 normalized)
   position_x?: number;
   position_y?: number;
@@ -107,14 +99,7 @@ export const useCreateStyleLinkPost = () => {
       if (input.taggedProducts && input.taggedProducts.length > 0) {
         const productRecords = input.taggedProducts.map(product => ({
           post_id: post.id,
-          product_id: product.product_id || null,
-          external_url: product.external_url || null,
-          external_title: product.external_title || null,
-          external_image_url: product.external_image_url || null,
-          external_price_cents: product.external_price_cents || null,
-          external_currency: product.external_currency || 'USD',
-          external_brand_name: product.external_brand_name || null,
-          external_brand_logo_url: product.external_brand_logo_url || null,
+          product_id: product.product_id,
           position_x: product.position_x ?? null,
           position_y: product.position_y ?? null,
           label: product.label || null,

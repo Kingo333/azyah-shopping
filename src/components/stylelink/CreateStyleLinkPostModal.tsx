@@ -5,10 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Camera, X, Plus, Loader2, Search, ExternalLink, Check } from 'lucide-react';
+import { Camera, X, Plus, Loader2, Search, Check } from 'lucide-react';
 import { useCreateStyleLinkPost, TaggedProduct } from '@/hooks/useCreateStyleLinkPost';
-import { useExtractLinkMetadata, ExtractedMetadata } from '@/hooks/useExtractLinkMetadata';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useToast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
@@ -34,13 +32,11 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
   const [showInExplore, setShowInExplore] = useState(true);
   const [taggedProducts, setTaggedProducts] = useState<TaggedProduct[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [externalUrl, setExternalUrl] = useState('');
   
   // Hooks
   const { createPostAsync, isLoading, uploadProgress } = useCreateStyleLinkPost();
-  const { extract, isLoading: isExtracting, data: extractedData, reset: resetExtraction } = useExtractLinkMetadata();
   
-  // Product search
+  // Product search - only Azyah products
   const { products: searchResults, isLoading: isSearching } = useUnifiedProducts({
     searchQuery: productSearchQuery,
     limit: 10,
@@ -73,7 +69,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
     }
   };
 
-  const handleAddInternalProduct = (product: any) => {
+  const handleAddProduct = (product: any) => {
     // Check if already added
     if (taggedProducts.some(p => p.product_id === product.id)) {
       toast({ description: 'Product already added' });
@@ -85,27 +81,6 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
     }]);
     setProductSearchQuery('');
     toast({ description: 'Product added!' });
-  };
-
-  const handleExtractUrl = async () => {
-    if (!externalUrl.trim()) return;
-
-    const metadata = await extract(externalUrl.trim());
-    if (metadata) {
-      // Add to tagged products
-      setTaggedProducts(prev => [...prev, {
-        external_url: metadata.url,
-        external_title: metadata.title || undefined,
-        external_image_url: metadata.image_url || undefined,
-        external_price_cents: metadata.price_cents || undefined,
-        external_currency: metadata.currency || 'USD',
-        external_brand_name: metadata.brand_name || undefined,
-        external_brand_logo_url: metadata.brand_logo_url || undefined,
-      }]);
-      setExternalUrl('');
-      resetExtraction();
-      toast({ description: 'Product link added!' });
-    }
   };
 
   const handleRemoveTaggedProduct = (index: number) => {
@@ -153,11 +128,11 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
       }
     }
     return {
-      title: product.external_title || 'External Product',
-      image: product.external_image_url,
-      brand: product.external_brand_name,
-      price: product.external_price_cents,
-      currency: product.external_currency,
+      title: 'Product',
+      image: undefined,
+      brand: undefined,
+      price: undefined,
+      currency: 'USD',
     };
   };
 
@@ -218,86 +193,57 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
             />
           </div>
 
-          {/* Tag Products */}
+          {/* Tag Azyah Products */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Tag Products</Label>
+            <Label className="text-sm font-medium mb-2 block">Tag Azyah Products</Label>
+            <p className="text-xs text-muted-foreground mb-3">
+              Link items from Azyah to your outfit post
+            </p>
             
-            <Tabs defaultValue="search" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-3">
-                <TabsTrigger value="search">Search Azyah</TabsTrigger>
-                <TabsTrigger value="url">Paste Link</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="search" className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search products..."
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                {productSearchQuery && (
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {isSearching ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      </div>
-                    ) : searchResults.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-4 text-sm">
-                        No products found
-                      </p>
-                    ) : (
-                      searchResults.slice(0, 5).map((product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent cursor-pointer"
-                          onClick={() => handleAddInternalProduct(product)}
-                        >
-                          <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
-                            {product.image_url && (
-                              <SmartImage src={product.image_url} alt="" className="w-full h-full object-cover" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{product.title}</p>
-                            {product.brand?.name && (
-                              <p className="text-xs text-muted-foreground">{product.brand.name}</p>
-                            )}
-                          </div>
-                          <Plus className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      ))
-                    )}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search Azyah products..."
+                value={productSearchQuery}
+                onChange={(e) => setProductSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {productSearchQuery && (
+              <div className="mt-3 max-h-48 overflow-y-auto space-y-2">
+                {isSearching ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
+                ) : searchResults.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4 text-sm">
+                    No products found
+                  </p>
+                ) : (
+                  searchResults.slice(0, 5).map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent cursor-pointer"
+                      onClick={() => handleAddProduct(product)}
+                    >
+                      <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                        {product.image_url && (
+                          <SmartImage src={product.image_url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{product.title}</p>
+                        {product.brand?.name && (
+                          <p className="text-xs text-muted-foreground">{product.brand.name}</p>
+                        )}
+                      </div>
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  ))
                 )}
-              </TabsContent>
-
-              <TabsContent value="url" className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Paste product URL..."
-                    value={externalUrl}
-                    onChange={(e) => setExternalUrl(e.target.value)}
-                  />
-                  <Button 
-                    onClick={handleExtractUrl}
-                    disabled={!externalUrl.trim() || isExtracting}
-                  >
-                    {isExtracting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Paste a link from any store to extract product details
-                </p>
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
 
             {/* Tagged Products List */}
             {taggedProducts.length > 0 && (
