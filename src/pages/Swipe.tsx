@@ -41,7 +41,7 @@ const Swipe = () => {
       searchQuery: searchParams.get('search') || ''
     };
   });
-  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
@@ -168,7 +168,7 @@ const Swipe = () => {
     }
     return displays.join(' · ') || 'All Categories';
   };
-  return <div className="min-h-screen dashboard-bg flex flex-col">
+  return <div className="h-[100dvh] dashboard-bg flex flex-col overflow-hidden">
       {/* Header */}
       <header 
         className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
@@ -261,11 +261,11 @@ const Swipe = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-1 py-0">
+      <main className={`flex-1 flex flex-col ${viewMode === 'swipe' ? 'overflow-hidden' : 'overflow-auto'}`}>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[400px] px-1">
-            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)] max-h-[750px] lg:max-h-[850px]">
+        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center w-full h-full">
+            <div className="relative w-full h-full max-w-lg mx-auto">
               <SwipeDeck 
                 filter={filters.categories[0] || 'all'} 
                 subcategory={filters.subcategories[0] || ''} 
@@ -276,7 +276,7 @@ const Swipe = () => {
                 onProductDetailChange={setIsProductDetailOpen}
               />
             </div>
-          </div> : <div className="flex-1">
+          </div> : <div className="flex-1 container max-w-screen-lg mx-auto px-1">
             <ProductListView 
               products={products} 
               isLoading={productsLoading}

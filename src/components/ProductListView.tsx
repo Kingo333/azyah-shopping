@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Check } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, Check } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,10 +14,8 @@ import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import PhotoCloseup from '@/components/PhotoCloseup';
-import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
-import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryGrid from '@/components/CategoryGrid';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
@@ -49,13 +47,8 @@ const ProductCard: React.FC<{
   requireAuth: (action: string, callback: () => void) => void;
 }> = ({ product, handleLike, handleProductClick, user, toast, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
-  const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
-  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-
-  // Show head icon when outfit exists
-  const shouldShowHeadIcon = hasOutfit === true;
 
   const handleAddToWishlist = async () => {
     requireAuth('add to wishlist', async () => {
@@ -121,19 +114,6 @@ const ProductCard: React.FC<{
             {getImageCount(product)}
           </div>
         )}
-
-        {/* Try On label when AI Try On is available - positioned below multiple images indicator */}
-        {shouldShowHeadIcon && (
-          <div 
-            className="absolute top-10 left-2 bg-accent text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1 opacity-90 z-10 cursor-pointer hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              setTryOnModalOpen(true);
-            }}
-          >
-            Try On
-          </div>
-        )}
         
         {/* Hover gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -163,21 +143,6 @@ const ProductCard: React.FC<{
           >
             <ShoppingBag className="h-6 w-6" />
           </Button>
-          {/* Try-on button - only show if product has outfit */}
-          {shouldShowHeadIcon && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setTryOnModalOpen(true);
-              }}
-              title="Try it on"
-            >
-              <User className="h-6 w-6 text-white" />
-            </Button>
-          )}
         </div>
         
         {/* Product Info Overlay (appears on hover) */}
@@ -246,13 +211,6 @@ const ProductCard: React.FC<{
           </div>
         </div>
       </div>
-      
-      {/* Try-On Modal */}
-      <ProductTryOnModal
-        isOpen={tryOnModalOpen}
-        onClose={() => setTryOnModalOpen(false)}
-        product={product}
-      />
     </div>
   );
 };
