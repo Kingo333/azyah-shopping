@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp, Brain } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -15,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -46,6 +48,10 @@ const Swipe = () => {
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<'initial' | 'demo' | 'done'>('initial');
+
+  // Get taste profile for model training percentage
+  const { tasteProfile } = useUserTasteProfile();
+  const modelProgress = Math.round((tasteProfile?.preference_confidence || 0) * 100);
 
   // Check user's swipe count to determine when to show list view option
   const {
@@ -187,9 +193,15 @@ const Swipe = () => {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="hidden sm:block">
-                <h1 className="text-base sm:text-lg font-serif font-medium tracking-tight">Discover</h1>
-                <p className="text-[10px] sm:text-xs text-muted-foreground/80 font-medium truncate max-w-[80px] sm:max-w-none">
-                  {getCurrentCategoryDisplay()}
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-serif font-medium tracking-tight">Feed</h1>
+                  <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0.5">
+                    <Brain className="h-3 w-3" />
+                    {modelProgress > 0 ? `Model: ${modelProgress}%` : 'Model: calibrating…'}
+                  </Badge>
+                </div>
+                <p className="text-[10px] text-muted-foreground/80 font-medium truncate max-w-none mt-0.5">
+                  Learns your fabric, fit & style with every swipe
                 </p>
               </div>
             </div>

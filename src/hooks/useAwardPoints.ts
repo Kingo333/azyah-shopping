@@ -65,9 +65,9 @@ export function useAwardPoints() {
         // Show toast if requested (default: true for manual actions)
         if (variables.showToast !== false) {
           const actionLabels: Record<PointsActionType, string> = {
-            daily_checkin: 'Daily check-in',
-            wardrobe_add: 'Wardrobe item added',
-            outfit_create: 'Outfit created'
+            daily_checkin: 'Training streak',
+            wardrobe_add: 'Wardrobe signal added',
+            outfit_create: 'Create & Earn signal'
           };
           
           toast.success(`+${data.points_awarded} points!`, {

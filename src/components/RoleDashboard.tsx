@@ -23,6 +23,7 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 import { DashboardTopCarousel } from '@/components/dashboard/DashboardTopCarousel';
+import { ModelStatusCard } from '@/components/dashboard/ModelStatusCard';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
@@ -323,20 +324,25 @@ const RoleDashboard: React.FC = () => {
   };
 
   const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* Dashboard Top Carousel - Profile, Search, Points, AI Try-On */}
+      {/* Model Status Card - Your Style Model at top */}
+      <div className="px-4 pt-4">
+        <ModelStatusCard />
+      </div>
+
+      {/* Dashboard Top Carousel - reduced: Search only */}
       <DashboardTopCarousel
-        showProfileCard={true}
+        showProfileCard={false}
         showSearchCard={true}
-        showPointsCard={true}
-        showAiTryOnCard={true}
+        showPointsCard={false}
+        showAiTryOnCard={false}
         onOpenGlobalSearch={handleOpenSearchFromCard}
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* Category Tabs - Quick access to Discover categories */}
+      {/* Category Tabs - Quick access to Feed categories */}
       <CategoryTabs />
 
-      {/* Closet & Outfits Section */}
+      {/* Wardrobe Data Section */}
       <ClosetOutfitsSection />
 
       {/* Trending Looks Section */}

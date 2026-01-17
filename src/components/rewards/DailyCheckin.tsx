@@ -81,9 +81,9 @@ export function DailyCheckin({ variant = 'card', className = '' }: DailyCheckinP
               )}
             </div>
             <div>
-              <h3 className="font-medium text-sm">Daily Check-in</h3>
+              <h3 className="font-medium text-sm">Training Streak</h3>
               <p className="text-xs text-muted-foreground">
-                {checkedInToday ? 'Come back tomorrow!' : '+10 points once per day'}
+                {checkedInToday ? 'Come back tomorrow!' : '+10 points • helps calibrate your model'}
               </p>
             </div>
           </div>
