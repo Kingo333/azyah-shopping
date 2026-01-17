@@ -69,6 +69,7 @@ import SignUp from './pages/onboarding/SignUp';
 import ResetPasswordRequest from './pages/ResetPasswordRequest';
 import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
+import OnboardingCalibration from './pages/OnboardingCalibration';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +125,11 @@ function AppContent() {
                     </AuthAwareRoute>
                   } />
                   <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/onboarding-calibration" element={
+                    <ProtectedRoute>
+                      <OnboardingCalibration />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/reset-password-request" element={<ResetPasswordRequest />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   

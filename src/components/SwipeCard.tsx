@@ -39,6 +39,7 @@ interface SwipeProduct {
 
 interface SwipeCardProps {
   product: SwipeProduct;
+  matchReason?: string; // "Why this" reason for the recommendation
   onLike: (product: SwipeProduct) => void;
   onDislike: () => void;
   onWishlist: (product: SwipeProduct) => void;
@@ -115,6 +116,7 @@ AddToClosetButton.displayName = 'AddToClosetButton';
 
 const SwipeCard = memo(({
   product,
+  matchReason,
   onLike,
   onDislike,
   onWishlist,
@@ -211,6 +213,29 @@ const SwipeCard = memo(({
                 <Info className="h-4 w-4" strokeWidth={2.5} />
               </Button>
             </div>
+          </div>
+
+          {/* Why This + Tags Section - positioned above product info */}
+          <div className="absolute bottom-36 left-4 right-4 z-10 flex flex-wrap gap-1.5">
+            {/* Why This chip - always shown */}
+            <Badge 
+              variant="secondary" 
+              className="bg-background/90 backdrop-blur-sm text-[10px] gap-1 px-2 py-0.5 shadow-sm"
+            >
+              <Sparkles className="h-3 w-3" />
+              {matchReason || 'Curated for you'}
+            </Badge>
+            
+            {/* Product tags - show up to 2 */}
+            {product.tags?.slice(0, 2).map((tag, i) => (
+              <Badge 
+                key={i} 
+                variant="outline" 
+                className="bg-background/80 backdrop-blur-sm text-[10px] px-2 py-0.5 border-white/30"
+              >
+                {tag}
+              </Badge>
+            ))}
           </div>
 
           {/* Bottom overlay - product info + action bar (always visible) */}

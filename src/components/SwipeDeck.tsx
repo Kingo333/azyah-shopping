@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { useSwipePerformance } from '@/hooks/useSwipePerformance';
@@ -20,6 +20,13 @@ import { SwipeCelebration } from '@/components/SwipeCelebration';
 import { swipeHaptics } from '@/utils/haptics';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+
+interface UserPreferences {
+  coverage?: string;
+  fit?: string;
+  fabric?: string;
+  style?: string[];
+}
 
 interface SwipeProduct {
   id: string;
@@ -113,6 +120,65 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const { trackSwipe } = useEnhancedSwipeTracking();
   const { trackViewStart, getViewDuration, clearAll, performCleanup } = useSwipePerformance();
   const { addSeenProduct, optimizeMemory } = useSwipeMemory();
+
+  // Fetch user preferences for "Why this" matching
+  const { data: userPrefs } = useQuery({
+    queryKey: ['user-preferences', user?.id],
+    queryFn: async (): Promise<UserPreferences | null> => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('users')
+        .select('preferences')
+        .eq('id', user.id)
+        .single();
+      if (error) return null;
+      return (data?.preferences as UserPreferences) || null;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+
+  // Generate match reason based on user preferences and product tags
+  const getMatchReason = useCallback((product: SwipeProduct): string => {
+    if (!userPrefs) return 'Curated for your style';
+    
+    const tags = product.tags || [];
+    const tagsLower = tags.map(t => t.toLowerCase());
+    
+    // Check coverage preference match
+    if (userPrefs.coverage === 'modest' && tagsLower.some(t => t.includes('modest') || t.includes('high coverage'))) {
+      return 'Matches your coverage preference';
+    }
+    
+    // Check fit preference match
+    if (userPrefs.fit === 'relaxed' && tagsLower.some(t => t.includes('relaxed') || t.includes('oversized') || t.includes('flowy'))) {
+      return 'Matches your fit preference';
+    }
+    if (userPrefs.fit === 'tailored' && tagsLower.some(t => t.includes('tailored') || t.includes('structured') || t.includes('slim'))) {
+      return 'Matches your fit preference';
+    }
+    
+    // Check fabric preference match
+    if (userPrefs.fabric === 'breathable' && tagsLower.some(t => 
+      t.includes('breathable') || t.includes('linen') || t.includes('cotton')
+    )) {
+      return 'Matches your fabric preference';
+    }
+    if (userPrefs.fabric === 'stretch' && tagsLower.some(t => t.includes('stretch'))) {
+      return 'Matches your fabric preference';
+    }
+    
+    // Check style preference match
+    if (userPrefs.style?.length) {
+      for (const style of userPrefs.style) {
+        if (tagsLower.some(t => t.includes(style.toLowerCase()))) {
+          return `Matches your ${style} style`;
+        }
+      }
+    }
+    
+    return 'Curated for your style';
+  }, [userPrefs]);
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
 
@@ -386,11 +452,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       <AnimatePresence mode="wait">
         {products.slice(index, index + 3).map((product, i) => {
           if (i === 0) {
-            // Current active card
+            // Current active card - pass match reason
+            const matchReason = getMatchReason(product);
             return (
               <SwipeCard
                 key={product.id}
                 product={product}
+                matchReason={matchReason}
                 onLike={handleLike}
                 onDislike={handleDislike}
                 onWishlist={handleAddToWishlist}

@@ -71,7 +71,8 @@ async function fetchUserRoleWithRetry(userId: string, maxRetries = 5, delayMs = 
 }
 
 /**
- * Navigate to the correct dashboard based on user role
+ * Navigate to the correct destination based on user role
+ * Shoppers go to Feed (/swipe) as the default landing
  */
 function getDashboardPath(role: UserRole): string {
   switch (role) {
@@ -80,9 +81,28 @@ function getDashboardPath(role: UserRole): string {
     case 'retailer':
       return '/retailer-portal';
     case 'admin':
+      return '/dashboard';
     case 'shopper':
     default:
-      return '/dashboard';
+      return '/swipe'; // Feed-first for shoppers
+  }
+}
+
+/**
+ * Check if user needs calibration (new user without preferences)
+ */
+async function needsCalibration(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('preferences_completed')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (error || !data) return true; // Default to showing calibration
+    return !data.preferences_completed;
+  } catch {
+    return false; // Don't block on errors
   }
 }
 
@@ -144,8 +164,18 @@ export default function AuthCallback() {
 
         // Fetch role with retry logic (handles DB trigger delay)
         const userRole = await fetchUserRoleWithRetry(user.id);
-        const dashboardPath = getDashboardPath(userRole);
         
+        // For shoppers, check if they need calibration first
+        if (userRole === 'shopper') {
+          const needsCal = await needsCalibration(user.id);
+          if (needsCal) {
+            console.log('AuthCallback: New shopper needs calibration');
+            navigate('/onboarding-calibration', { replace: true });
+            return;
+          }
+        }
+        
+        const dashboardPath = getDashboardPath(userRole);
         console.log('AuthCallback: Routing to', dashboardPath, 'for role', userRole);
         navigate(dashboardPath, { replace: true });
         return;
@@ -161,8 +191,18 @@ export default function AuthCallback() {
       if (session?.user) {
         // Fetch role with retry logic
         const userRole = await fetchUserRoleWithRetry(session.user.id);
-        const dashboardPath = getDashboardPath(userRole);
         
+        // For shoppers, check if they need calibration first
+        if (userRole === 'shopper') {
+          const needsCal = await needsCalibration(session.user.id);
+          if (needsCal) {
+            console.log('AuthCallback: Existing shopper needs calibration');
+            navigate('/onboarding-calibration', { replace: true });
+            return;
+          }
+        }
+        
+        const dashboardPath = getDashboardPath(userRole);
         console.log('AuthCallback: Existing session, routing to', dashboardPath);
         navigate(dashboardPath, { replace: true });
         return;
