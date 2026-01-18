@@ -256,21 +256,36 @@ const SwipeCard = memo(({
                     </p>
                   </div>
                   
-                  {/* Price badge */}
-                  <Badge 
-                    className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
-                  >
-                    <Money 
-                      cents={product.price_cents} 
-                      currency={product.currency || 'USD'} 
-                      className="font-bold text-base"
-                    />
-                  </Badge>
+                  {/* Price + Shop area */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Shop button - next to price */}
+                    {product.external_url && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleShopNow}
+                        className="h-8 px-3 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[11px] font-semibold shadow-lg"
+                      >
+                        <ShoppingBag className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
+                        Shop
+                      </Button>
+                    )}
+                    {/* Price badge */}
+                    <Badge 
+                      className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0"
+                    >
+                      <Money 
+                        cents={product.price_cents} 
+                        currency={product.currency || 'USD'} 
+                        className="font-bold text-base"
+                      />
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Action bar - part of overlay, always visible */}
+            {/* Action bar - part of overlay, always visible - Pass/Save/Like only */}
             <div className="flex items-center divide-x divide-white/20 bg-background/95 backdrop-blur-sm rounded-b-3xl">
               {/* Pass */}
               <button
@@ -278,10 +293,10 @@ const SwipeCard = memo(({
                   e.stopPropagation();
                   onDislike();
                 }}
-                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
               >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-                <span className="text-[10px] font-medium">Pass</span>
+                <X className="h-4 w-4" strokeWidth={2} />
+                <span className="text-xs font-medium">Pass</span>
               </button>
               
               {/* Save */}
@@ -291,10 +306,10 @@ const SwipeCard = memo(({
                   onWishlist(product);
                 }}
                 disabled={wishlistLoading}
-                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
               >
-                <Star className="h-3.5 w-3.5" strokeWidth={2} />
-                <span className="text-[10px] font-medium">Save</span>
+                <Star className="h-4 w-4" strokeWidth={2} />
+                <span className="text-xs font-medium">Save</span>
               </button>
               
               {/* Like */}
@@ -303,22 +318,11 @@ const SwipeCard = memo(({
                   e.stopPropagation();
                   onLike(product);
                 }}
-                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
               >
-                <Heart className="h-3.5 w-3.5" strokeWidth={2} />
-                <span className="text-[10px] font-medium">Like</span>
+                <Heart className="h-4 w-4" strokeWidth={2} />
+                <span className="text-xs font-medium">Like</span>
               </button>
-              
-              {/* Shop */}
-              {product.external_url && (
-                <button
-                  onClick={handleShopNow}
-                  className="flex items-center justify-center gap-1 px-3 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium rounded-br-3xl"
-                >
-                  <ShoppingBag className="h-4 w-4" strokeWidth={2} />
-                  <span className="text-[11px] font-semibold">Shop</span>
-                </button>
-              )}
             </div>
           </div>
         </div>

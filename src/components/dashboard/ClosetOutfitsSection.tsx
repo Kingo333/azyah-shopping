@@ -119,7 +119,7 @@ export const ClosetOutfitsSection: React.FC = () => {
       <section className="px-4 pt-3 md:max-w-lg lg:max-w-xl">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-0.5">
-          <h2 className="text-base font-serif font-medium text-foreground">Closet</h2>
+          <h2 className="text-base font-serif font-medium text-foreground">Wardrobe Data</h2>
           <Button 
             variant="link" 
             size="sm" 
@@ -130,9 +130,9 @@ export const ClosetOutfitsSection: React.FC = () => {
           </Button>
         </div>
         
-        {/* Rewards hint text */}
+        {/* Helper text */}
         <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
-          Style outfits with brand items to earn salon rewards
+          Add items to improve recommendations and unlock Create & Earn
         </p>
         
         {/* Two-Card Grid */}
