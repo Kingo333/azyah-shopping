@@ -67,6 +67,8 @@ const RoleDashboard: React.FC = () => {
     isEnabled
   } = useFeatureFlags();
   const { isPremium } = useSubscription();
+  // Get taste profile data for compact model card (must be before early returns)
+  const { tasteProfile } = useUserTasteProfile();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
@@ -324,8 +326,7 @@ const RoleDashboard: React.FC = () => {
     setSearchOpen(true);
   };
 
-  // Get taste profile data for compact model card
-  const { tasteProfile } = useUserTasteProfile();
+  // Compute model progress from taste profile (hook called at top of component)
   const modelProgress = Math.round((tasteProfile?.preference_confidence || 0) * 100);
   const totalSignals = tasteProfile?.total_swipes || 0;
 
