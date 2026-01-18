@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 
-import { Heart, ShoppingBag, Search, Shirt, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, SlidersHorizontal, CalendarIcon, Crown, Check, MoreHorizontal } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Shirt, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, SlidersHorizontal, CalendarIcon, Crown, Check, MoreHorizontal, Sparkles } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Trophy } from 'lucide-react';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -34,6 +34,7 @@ import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorialOverlay';
 import { CategoryTabs } from '@/components/dashboard/CategoryTabs';
+import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 
 
 interface UserProfile {
@@ -323,10 +324,71 @@ const RoleDashboard: React.FC = () => {
     setSearchOpen(true);
   };
 
+  // Get taste profile data for compact model card
+  const { tasteProfile } = useUserTasteProfile();
+  const modelProgress = Math.round((tasteProfile?.preference_confidence || 0) * 100);
+  const totalSignals = tasteProfile?.total_swipes || 0;
+
+  // Compact progress ring component
+  const CompactProgressRing = ({ progress, size = 56 }: { progress: number; size?: number }) => {
+    const strokeWidth = 4;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (progress / 100) * circumference;
+    
+    return (
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg className="w-full h-full -rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} fill="none" className="stroke-primary/20" />
+          <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} fill="none" className="stroke-primary transition-all duration-500" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
+          {progress}%
+        </span>
+      </div>
+    );
+  };
+
   const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* Model Status Card - Your Style Model at top */}
+      {/* 2-up Premium Block: Style Model + AI Try-On */}
       <div className="px-4 pt-4">
-        <ModelStatusCard />
+        <div className="grid grid-cols-2 gap-3">
+          {/* Left: Compact Style Model */}
+          <Card 
+            className="p-3 bg-gradient-to-br from-primary/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/swipe')}
+          >
+            <div className="flex flex-col items-center text-center gap-2">
+              <CompactProgressRing progress={modelProgress} size={56} />
+              <div>
+                <p className="text-xs font-medium">Your Style Model</p>
+                <p className="text-[10px] text-muted-foreground">{totalSignals} signals</p>
+              </div>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full gap-0.5">
+                Refine <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </Card>
+
+          {/* Right: AI Try-On */}
+          <Card 
+            className="p-3 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setAiStudioModalOpen(true)}
+          >
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="w-14 h-14 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
+                <Shirt className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+              </div>
+              <div>
+                <p className="text-xs font-medium">AI Try-On</p>
+                <p className="text-[10px] text-muted-foreground">Virtual fitting</p>
+              </div>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full text-[hsl(var(--azyah-maroon))] gap-0.5">
+                Try Now <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Dashboard Top Carousel - reduced: Search only */}
@@ -338,9 +400,6 @@ const RoleDashboard: React.FC = () => {
         onOpenGlobalSearch={handleOpenSearchFromCard}
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
-
-      {/* Category Tabs - Quick access to Feed categories */}
-      <CategoryTabs />
 
       {/* Wardrobe Data Section */}
       <ClosetOutfitsSection />
@@ -460,7 +519,7 @@ const RoleDashboard: React.FC = () => {
         )}
       </section>
 
-      {/* Rewards & Offers Section */}
+      {/* Benefits & Offers Section - reframed from Rewards */}
       <section className="px-4 pt-3">
         <Card 
           className="bg-card border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
@@ -468,11 +527,11 @@ const RoleDashboard: React.FC = () => {
         >
           <CardContent className="p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-              <Gift className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+              <Sparkles className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-sm text-foreground">Rewards & Offers</h3>
-              <p className="text-xs text-muted-foreground">Earn points & redeem at salons</p>
+              <h3 className="font-semibold text-sm text-foreground">Benefits & Offers</h3>
+              <p className="text-xs text-muted-foreground">Unlock perks from your activity</p>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </CardContent>

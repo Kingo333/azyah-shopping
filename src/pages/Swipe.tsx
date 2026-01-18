@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp, Brain } from "lucide-react";
+import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -195,9 +195,11 @@ const Swipe = () => {
               <div className="hidden sm:block">
                 <div className="flex items-center gap-2">
                   <h1 className="text-base sm:text-lg font-serif font-medium tracking-tight">Feed</h1>
-                  <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0.5">
-                    <Brain className="h-3 w-3" />
-                    {modelProgress > 0 ? `Model: ${modelProgress}%` : 'Model: calibrating…'}
+                  <Badge 
+                    variant="outline" 
+                    className="text-[10px] px-2.5 py-0.5 border-primary/30 bg-primary/5"
+                  >
+                    {modelProgress >= 100 ? 'Style Model: Calibrated' : `Style Model: ${modelProgress}%`}
                   </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground/80 font-medium truncate max-w-none mt-0.5">

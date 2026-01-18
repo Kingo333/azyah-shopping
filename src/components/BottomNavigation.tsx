@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Users, ShoppingBag, User, ChevronUp } from 'lucide-react';
+import { Home, Users, ShoppingBag, User, ChevronUp } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ interface NavItem {
 
 // Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Profile
 const navItems: NavItem[] = [
-  { id: 'insights', label: 'Insights', icon: BarChart3, path: '/dashboard' },
+  { id: 'insights', label: 'Insights', icon: Home, path: '/dashboard' },
   { id: 'community', label: 'Community', icon: Users, path: '/explore' },
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
   { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me' },

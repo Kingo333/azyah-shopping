@@ -2,9 +2,45 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Brain, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Sparkles } from 'lucide-react';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
+
+// Circular progress ring component
+const ProgressRing = ({ progress, size = 48 }: { progress: number; size?: number }) => {
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="w-full h-full -rotate-90">
+        <circle 
+          cx={size / 2} 
+          cy={size / 2} 
+          r={radius} 
+          strokeWidth={strokeWidth} 
+          fill="none" 
+          className="stroke-primary/20" 
+        />
+        <circle 
+          cx={size / 2} 
+          cy={size / 2} 
+          r={radius} 
+          strokeWidth={strokeWidth} 
+          fill="none" 
+          className="stroke-primary transition-all duration-500"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
+        {progress}%
+      </span>
+    </div>
+  );
+};
 
 export function ModelStatusCard() {
   const navigate = useNavigate();
@@ -35,10 +71,8 @@ export function ModelStatusCard() {
       
       <div className="relative">
         <div className="flex items-center gap-4">
-          {/* Icon */}
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <Brain className="w-6 h-6 text-primary" />
-          </div>
+          {/* Progress Ring instead of Brain icon */}
+          <ProgressRing progress={progress} size={48} />
           
           {/* Content */}
           <div className="flex-1 min-w-0">
@@ -49,26 +83,26 @@ export function ModelStatusCard() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalSwipes} signal{totalSwipes !== 1 ? 's' : ''} captured
+              {totalSwipes} preference signal{totalSwipes !== 1 ? 's' : ''}
             </p>
-            <Progress value={progress} className="h-1.5 mt-2" />
           </div>
           
-          {/* Progress percentage */}
+          {/* Status badge */}
           <div className="text-right shrink-0">
-            <span className="text-2xl font-bold text-primary">{progress}%</span>
-            <p className="text-[10px] text-muted-foreground">trained</p>
+            <span className="text-lg font-semibold text-primary">
+              {progress >= 100 ? 'Calibrated' : `${progress}%`}
+            </span>
           </div>
         </div>
         
-        {/* CTA Button */}
+        {/* CTA Button - premium copy */}
         <Button 
           variant="ghost" 
           size="sm" 
           className="w-full mt-3 gap-1 text-xs h-8 hover:bg-primary/10"
           onClick={() => navigate('/swipe')}
         >
-          {progress < 20 ? 'Start training' : 'Continue training'}
+          {progress < 20 ? 'Start refining' : 'Refine your model'}
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </div>
