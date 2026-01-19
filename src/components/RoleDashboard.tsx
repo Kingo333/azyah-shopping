@@ -366,7 +366,7 @@ const RoleDashboard: React.FC = () => {
                   {modelProgress >= 100 ? 'Calibrated' : `${totalSignals} preference signals`}
                 </p>
               </div>
-              <p className="text-[9px] text-primary/70">Discover people with similar style</p>
+              <p className="text-[9px] text-primary/70">Discover people with similar measurements</p>
               <div className="flex gap-1 w-full">
                 <Button 
                   variant="ghost" 
