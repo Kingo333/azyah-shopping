@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
-import { Home, Store, Users, UserCheck, Camera } from 'lucide-react';
+import { Home, Store, Users, UserCheck, Camera, Ruler } from 'lucide-react';
+import YourFitContent from '@/pages/YourFitContent';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import BrandsTab from '@/components/explore/BrandsTab';
@@ -37,6 +38,14 @@ const Explore: React.FC = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Sync tab with URL params
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['following', 'shoppers', 'brands', 'your-fit'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -89,7 +98,7 @@ const Explore: React.FC = () => {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="following" className="flex items-center gap-1.5">
               <UserCheck className="h-4 w-4" />
               <span className="text-xs sm:text-sm">Following</span>
@@ -101,6 +110,10 @@ const Explore: React.FC = () => {
             <TabsTrigger value="brands" className="flex items-center gap-1.5">
               <Store className="h-4 w-4" />
               <span className="text-xs sm:text-sm">Brands</span>
+            </TabsTrigger>
+            <TabsTrigger value="your-fit" className="flex items-center gap-1.5">
+              <Ruler className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Your Fit</span>
             </TabsTrigger>
           </TabsList>
 
@@ -119,6 +132,12 @@ const Explore: React.FC = () => {
           <TabsContent value="following">
             <GlassPanel variant="premium" className="p-4 sm:p-6">
               <FollowingTab />
+            </GlassPanel>
+          </TabsContent>
+
+          <TabsContent value="your-fit">
+            <GlassPanel variant="premium" className="p-4 sm:p-6">
+              <YourFitContent />
             </GlassPanel>
           </TabsContent>
         </Tabs>
