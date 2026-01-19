@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
-import { ArrowRight, Heart, X, Star, ShoppingBag, Check } from 'lucide-react';
+import { ArrowRight, Heart, X, ShoppingBag, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -237,87 +237,78 @@ const MiniSwipeCard = memo(({
               </Button>
             </div>
             
-            {/* Bottom overlay - product info + action bar */}
-            <div className="absolute bottom-0 left-0 right-0 z-10">
+            {/* Bottom content area - product info only */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 pb-3">
               {/* Product info */}
               <div className="px-3 pt-3 pb-2 text-white">
                 {brandName && (
                   <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
                 )}
                 <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
-                <Money cents={product.price_cents} currency={product.currency} className="text-sm font-bold mt-0.5" />
+                <div className="flex items-center justify-between mt-1">
+                  <Money cents={product.price_cents} currency={product.currency} className="text-sm font-bold" />
+                  {product.external_url && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShop();
+                      }}
+                      className="h-6 px-2 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[9px] font-semibold"
+                    >
+                      <ShoppingBag className="h-3 w-3 mr-0.5" strokeWidth={2} />
+                      Shop
+                    </Button>
+                  )}
+                </div>
               </div>
-              
-              {/* Action bar - compact, Pass/Save/Like only (Shop is overlay) */}
-              <div className="flex items-center divide-x divide-white/15 bg-background/90 backdrop-blur-sm rounded-b-2xl">
-                {/* Pass */}
+            </div>
+            
+            {/* Centered Pass/Like overlay - semi-transparent */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+              <div className="flex items-center gap-8 px-8 py-4 rounded-full bg-black/30 backdrop-blur-md">
+                {/* Pass button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handlePass();
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                  className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors"
                 >
-                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                  <div className="w-12 h-12 rounded-full bg-white/20 hover:bg-red-500/40 flex items-center justify-center transition-colors">
+                    <X className="h-5 w-5" strokeWidth={2.5} />
+                  </div>
                   <span className="text-[10px] font-medium">Pass</span>
                 </button>
                 
-                {/* Save */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSave();
-                  }}
-                  disabled={wishlistLoading}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
-                >
-                  <Star className="h-3.5 w-3.5" strokeWidth={2} />
-                  <span className="text-[10px] font-medium">Save</span>
-                </button>
-                
-                {/* Like */}
+                {/* Like button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleLike();
                   }}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1 py-2 transition-colors",
-                    isLiked 
-                      ? "text-pink-500 bg-pink-50" 
-                      : "text-muted-foreground hover:text-pink-500 hover:bg-pink-50"
+                    "flex flex-col items-center gap-1 transition-colors",
+                    isLiked ? "text-pink-300" : "text-white/90 hover:text-pink-300"
                   )}
                 >
-                  <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} strokeWidth={2} />
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
+                    isLiked ? "bg-pink-500/50" : "bg-white/20 hover:bg-pink-500/40"
+                  )}>
+                    <Heart className={cn("h-5 w-5", isLiked && "fill-current")} strokeWidth={2.5} />
+                  </div>
                   <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
                 </button>
               </div>
             </div>
-            
-            {/* Shop button - overlay near price area */}
-            {product.external_url && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleShop();
-                }}
-                className="absolute bottom-16 right-3 h-7 px-2.5 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[10px] font-semibold shadow-lg"
-              >
-                <ShoppingBag className="h-3 w-3 mr-1" strokeWidth={2} />
-                Shop
-              </Button>
-            )}
           </div>
         </Card>
       </motion.div>
       
-      {/* Arrow instructions + AI hint */}
-      <div className="mt-3 text-center space-y-1">
-        <p className="text-[10px] text-muted-foreground font-medium">
-          ← Pass • → Like
-        </p>
+      {/* AI learns hint only */}
+      <div className="mt-3 text-center">
         <p className="text-[10px] text-muted-foreground/70 italic">
           ✨ AI learns your style
         </p>
