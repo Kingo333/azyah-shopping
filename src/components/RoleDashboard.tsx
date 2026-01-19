@@ -357,17 +357,34 @@ const RoleDashboard: React.FC = () => {
           {/* Left: Compact Style Model */}
           <Card 
             className="p-3 bg-gradient-to-br from-primary/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/swipe')}
           >
             <div className="flex flex-col items-center text-center gap-2">
               <CompactProgressRing progress={modelProgress} size={56} />
               <div>
-                <p className="text-xs font-medium">Your Style Model</p>
-                <p className="text-[10px] text-muted-foreground">{totalSignals} signals</p>
+                <p className="text-xs font-medium">Your Style Profile</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {modelProgress >= 100 ? 'Calibrated' : `${totalSignals} preference signals`}
+                </p>
               </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full gap-0.5">
-                Refine <ChevronRight className="h-3 w-3" />
-              </Button>
+              <p className="text-[9px] text-primary/70">Discover people with similar style</p>
+              <div className="flex gap-1 w-full">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex-1 h-6 text-[10px] gap-0.5 px-1"
+                  onClick={() => navigate('/swipe')}
+                >
+                  Refine <ChevronRight className="h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex-1 h-6 text-[10px] gap-0.5 px-1"
+                  onClick={() => navigate('/explore?tab=your-fit')}
+                >
+                  Your fit <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </Card>
 

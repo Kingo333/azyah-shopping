@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type PointsActionType = 'daily_checkin' | 'wardrobe_add' | 'outfit_create';
+export type PointsActionType = 'daily_checkin' | 'wardrobe_add' | 'outfit_create' | 'swipe_milestone';
 
 interface AwardPointsParams {
   actionType: PointsActionType;
@@ -64,10 +64,11 @@ export function useAwardPoints() {
         
         // Show toast if requested (default: true for manual actions)
         if (variables.showToast !== false) {
-          const actionLabels: Record<PointsActionType, string> = {
-            daily_checkin: 'Training streak',
-            wardrobe_add: 'Wardrobe signal added',
-            outfit_create: 'Create & Earn signal'
+        const actionLabels: Record<PointsActionType, string> = {
+            daily_checkin: 'Daily check-in',
+            wardrobe_add: 'Wardrobe signal',
+            outfit_create: 'Create & Earn',
+            swipe_milestone: 'Swipe milestone'
           };
           
           toast.success(`+${data.points_awarded} points!`, {
