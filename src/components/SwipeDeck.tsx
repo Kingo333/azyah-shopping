@@ -435,10 +435,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
     const { offset, velocity } = info;
     const effectiveX = offset.x + velocity.x * 0.1;
-    const effectiveY = offset.y + velocity.y * 0.1;
 
-    // Determine action - only horizontal swipes trigger actions
-    // Swipe-up no longer adds to wishlist (removed per Goal I)
+    // Only horizontal swipes trigger actions
     let action: 'like' | 'dislike' | null = null;
     
     if (effectiveX > DISTANCE_THRESHOLD) {
@@ -447,9 +445,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       action = 'dislike';
     }
 
-    // Smooth return to center (like SwipeableImages)
+    // Smooth return to center
     animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
-    animate(y, 0, { type: "spring", stiffness: 300, damping: 25 });
 
     // Execute action AFTER animation starts (non-blocking)
     if (action) {
@@ -460,7 +457,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else {
       swipeHaptics.return();
     }
-  }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
+  }, [x, index, products, handleLike, handleDislike]);
 
   const handleProductClick = useCallback((product: SwipeProduct) => {
     setSelectedProduct(product);
@@ -556,10 +553,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   onImageLoad={handleImageLoad}
                   wishlistLoading={wishlistLoading}
                   motionProps={{
-                    style: { x, y, rotate, opacity },
-                    drag: true,
+                    style: { x, rotate, opacity },
+                    drag: "x",
                     dragElastic: 0.2,
-                    dragConstraints: { left: 0, right: 0, top: 0, bottom: 0 },
+                    dragConstraints: { left: 0, right: 0 },
                     whileDrag: { 
                       scale: 1.05,
                       cursor: "grabbing"
