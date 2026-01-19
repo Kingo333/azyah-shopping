@@ -141,27 +141,17 @@ export function DashboardTopCarousel({
     }
   }, [emblaApi, slides.length]);
 
-  // If no slides to show, just show StyleLinkCard
+  // If no slides to show, return null (StyleLinkCard moved to RoleDashboard)
   if (slides.length === 0) {
-    return (
-      <div className="px-4 pt-4">
-        <div className="max-w-md">
-          <StyleLinkCard />
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  // If only one slide, show it alongside StyleLinkCard
-  // Stack on mobile, side-by-side on desktop
+  // If only one slide, show it full width
   if (slides.length === 1) {
     return (
-      <div className="px-4 pt-4 flex flex-col lg:flex-row gap-3">
-        <div className="w-full lg:flex-1">
+      <div className="px-4 pt-4">
+        <div className="w-full">
           {slides[0].component}
-        </div>
-        <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px]">
-          <StyleLinkCard />
         </div>
       </div>
     );
@@ -169,47 +159,38 @@ export function DashboardTopCarousel({
 
   return (
     <div className="px-4 pt-4">
-      {/* Stack on mobile/tablet, side-by-side on desktop */}
-      <div className="flex flex-col lg:flex-row gap-3">
-        {/* Carousel section - full width on mobile/tablet, flexible on desktop */}
-        <div className="w-full lg:flex-1">
-          <div className="overflow-hidden" ref={emblaRef}>
-            <div className="flex gap-3">
-              {slides.map((slide) => (
-                <div 
-                  key={slide.key}
-                  className="flex-[0_0_100%] min-w-0"
-                >
-                  {slide.component}
-                </div>
-              ))}
-            </div>
+      <div className="w-full">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-3">
+            {slides.map((slide) => (
+              <div 
+                key={slide.key}
+                className="flex-[0_0_100%] min-w-0"
+              >
+                {slide.component}
+              </div>
+            ))}
           </div>
-          
-          {/* Dot indicators */}
-          {slides.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-3">
-              {slides.map((slide, index) => (
-                <button
-                  key={slide.key}
-                  onClick={() => emblaApi?.scrollTo(index)}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                    index === selectedIndex 
-                      ? "bg-[hsl(var(--azyah-maroon))] w-3" 
-                      : "bg-muted-foreground/30"
-                  )}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
         </div>
-
-        {/* Fixed Style Link card - full width on mobile/tablet, fixed width on desktop */}
-        <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex items-center">
-          <StyleLinkCard />
-        </div>
+        
+        {/* Dot indicators */}
+        {slides.length > 1 && (
+          <div className="flex justify-center gap-1.5 mt-3">
+            {slides.map((slide, index) => (
+              <button
+                key={slide.key}
+                onClick={() => emblaApi?.scrollTo(index)}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-all duration-200",
+                  index === selectedIndex 
+                    ? "bg-[hsl(var(--azyah-maroon))] w-3" 
+                    : "bg-muted-foreground/30"
+                )}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
