@@ -276,7 +276,7 @@ const MiniSwipeCard = memo(({
                 </div>
               </div>
               
-              {/* Bottom action bar - Pass/Save/Like */}
+              {/* Bottom action bar - Pass/Save/Like (no Shop) */}
               <div className="px-2 pb-3">
                 <SwipeActionBar
                   variant="card"
@@ -289,8 +289,6 @@ const MiniSwipeCard = memo(({
                     // TODO: Wishlist action for mini discover
                   }}
                   onLike={handleLike}
-                  onShopNow={product.external_url ? handleShop : undefined}
-                  hasExternalUrl={!!product.external_url}
                   className="mx-auto"
                 />
               </div>
