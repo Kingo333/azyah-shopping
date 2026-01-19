@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -133,7 +134,17 @@ const SwipeCard = memo(({
   motionProps,
   showHint = false
 }: SwipeCardProps) => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  const handleBrandClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to brand page - use brand slug or brand_id
+    const brandSlug = product.brand?.name?.toLowerCase().replace(/\s+/g, '-') || product.brand_id;
+    if (brandSlug) {
+      navigate(`/brand/${brandSlug}`);
+    }
+  }, [navigate, product.brand, product.brand_id]);
 
   const handleShopNow = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -261,8 +272,11 @@ const SwipeCard = memo(({
             <div className="px-5 pt-6 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  {/* Brand name with logo - above product title */}
-                  <div className="flex items-center gap-1.5 mb-1">
+                  {/* Brand name with logo - above product title - clickable */}
+                  <div 
+                    className="flex items-center gap-1.5 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={handleBrandClick}
+                  >
                     {getBrandLogoUrl(product) && (
                       <img 
                         src={getBrandLogoUrl(product)} 
@@ -270,7 +284,7 @@ const SwipeCard = memo(({
                         className="w-4 h-4 rounded-full object-cover bg-white/20"
                       />
                     )}
-                    <p className="text-xs font-semibold text-white/90 uppercase tracking-wide line-clamp-1">
+                    <p className="text-xs font-semibold text-white/90 uppercase tracking-wide line-clamp-1 underline-offset-2 hover:underline">
                       {getBrandDisplayName(product)}
                     </p>
                   </div>
