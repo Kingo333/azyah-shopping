@@ -278,8 +278,8 @@ const Swipe = () => {
       <main className={`flex-1 flex flex-col ${viewMode === 'swipe' ? 'overflow-hidden' : 'overflow-auto'}`}>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center w-full h-full">
-            <div className="relative w-full h-full max-w-lg mx-auto">
+        {viewMode === 'swipe' ? <div className="flex-1 w-full h-full overflow-hidden">
+            <div className="relative w-full h-full max-w-lg mx-auto px-1">
               <SwipeDeck 
                 filter={filters.categories[0] || 'all'} 
                 subcategory={filters.subcategories[0] || ''} 

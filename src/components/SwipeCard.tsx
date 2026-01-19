@@ -140,7 +140,7 @@ const SwipeCard = memo(({
 
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center p-2"
+      className="absolute inset-x-1 top-1 bottom-3 flex items-center justify-center"
       {...motionProps}
     >
       <Card className="w-full h-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
@@ -285,18 +285,18 @@ const SwipeCard = memo(({
               </div>
             </div>
 
-            {/* Action bar - part of overlay, always visible - Pass/Save/Like only */}
-            <div className="flex items-center divide-x divide-white/20 bg-background/95 backdrop-blur-sm rounded-b-3xl">
+            {/* Action bar - subtle, compact - Pass/Save/Like only */}
+            <div className="flex items-center divide-x divide-white/15 bg-background/90 backdrop-blur-sm rounded-b-3xl">
               {/* Pass */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDislike();
                 }}
-                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
               >
-                <X className="h-4 w-4" strokeWidth={2} />
-                <span className="text-xs font-medium">Pass</span>
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Pass</span>
               </button>
               
               {/* Save */}
@@ -306,10 +306,10 @@ const SwipeCard = memo(({
                   onWishlist(product);
                 }}
                 disabled={wishlistLoading}
-                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
               >
-                <Star className="h-4 w-4" strokeWidth={2} />
-                <span className="text-xs font-medium">Save</span>
+                <Star className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Save</span>
               </button>
               
               {/* Like */}
@@ -318,10 +318,10 @@ const SwipeCard = memo(({
                   e.stopPropagation();
                   onLike(product);
                 }}
-                className="flex-1 flex items-center justify-center gap-1 py-3 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
               >
-                <Heart className="h-4 w-4" strokeWidth={2} />
-                <span className="text-xs font-medium">Like</span>
+                <Heart className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Like</span>
               </button>
             </div>
           </div>
