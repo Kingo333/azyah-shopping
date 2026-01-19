@@ -219,7 +219,8 @@ const Swipe = () => {
                   ...prev,
                   searchQuery: e.target.value
                 }))} 
-                className="pl-8 sm:pl-9 h-8 sm:h-9 text-xs sm:text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all" 
+                className="pl-8 sm:pl-9 h-8 sm:h-9 text-xs sm:text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all"
+                style={{ fontSize: '16px' }}
               />
             </div>
 
