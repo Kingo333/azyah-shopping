@@ -226,8 +226,8 @@ const SwipeCard = memo(({
           {/* Small instruction hint - same line as Closet button, centered */}
           {showHint && (
             <div className="absolute top-5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-              <div className="px-1.5 py-0.5 rounded-full bg-black/30 backdrop-blur-sm">
-                <span className="text-[7px] text-white/70 font-medium">← Pass • Like →</span>
+              <div className="px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm">
+                <span className="text-[9px] text-white/80 font-medium">← Pass • Like →</span>
               </div>
             </div>
           )}
