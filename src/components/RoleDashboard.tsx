@@ -35,6 +35,7 @@ import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSectio
 import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorialOverlay';
 import { CategoryTabs } from '@/components/dashboard/CategoryTabs';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
+import { StyleLinkCardCompact } from '@/components/dashboard/StyleLinkCardCompact';
 
 
 interface UserProfile {
@@ -330,20 +331,20 @@ const RoleDashboard: React.FC = () => {
   const modelProgress = Math.round((tasteProfile?.preference_confidence || 0) * 100);
   const totalSignals = tasteProfile?.total_swipes || 0;
 
-  // Compact progress ring component
-  const CompactProgressRing = ({ progress, size = 56 }: { progress: number; size?: number }) => {
-    const strokeWidth = 4;
+  // Compact progress ring component for style model
+  const CompactProgressRing = ({ progress, size = 48 }: { progress: number; size?: number }) => {
+    const strokeWidth = 3;
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const strokeDashoffset = circumference - (progress / 100) * circumference;
     
     return (
-      <div className="relative" style={{ width: size, height: size }}>
+      <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
         <svg className="w-full h-full -rotate-90">
           <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} fill="none" className="stroke-primary/20" />
           <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} fill="none" className="stroke-primary transition-all duration-500" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
+        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary">
           {progress}%
         </span>
       </div>
@@ -361,59 +362,64 @@ const RoleDashboard: React.FC = () => {
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* 2-up Compact Block: Style Profile + AI Try-On - Below Search */}
+      {/* Row 1: Sarah Fashion (compact) + AI Try-On (compact) */}
       <div className="px-4 pb-2">
         <div className="grid grid-cols-2 gap-3">
-          {/* Left: Style Profile with buttons */}
-          <Card className="p-3 bg-gradient-to-br from-primary/5 to-background border hover:shadow-md transition-shadow">
-            <div className="flex flex-col h-full justify-between gap-2">
-              <div className="flex items-start gap-2.5">
-                <CompactProgressRing progress={modelProgress} size={40} />
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <p className="text-xs font-semibold text-foreground">Style Profile</p>
-                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                    Discover people with similar measurements
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-1.5">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 h-7 text-[10px] px-2"
-                  onClick={() => navigate('/swipe')}
-                >
-                  Refine <ChevronRight className="h-3 w-3 ml-0.5" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 h-7 text-[10px] px-2"
-                  onClick={() => navigate('/explore?tab=your-fit')}
-                >
-                  Your fit <ChevronRight className="h-3 w-3 ml-0.5" />
-                </Button>
-              </div>
-            </div>
-          </Card>
+          {/* Left: Compact StyleLinkCard inline */}
+          <div className="rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background p-2 flex items-center gap-2">
+            <StyleLinkCardCompact />
+          </div>
 
-          {/* Right: AI Try-On */}
+          {/* Right: Compact AI Try-On */}
           <Card 
-            className="p-3 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            className="p-2 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setAiStudioModalOpen(true)}
           >
-            <div className="flex items-center gap-2.5 h-full">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
-                <Shirt className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />
+            <div className="flex items-center gap-2 h-full">
+              <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
+                <Shirt className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground">AI Try-On</p>
-                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">Virtual fitting room</p>
+                <p className="text-[11px] font-medium text-foreground">AI Try-On</p>
+                <p className="text-[9px] text-muted-foreground">Virtual fitting</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
             </div>
           </Card>
         </div>
+      </div>
+
+      {/* Row 2: Style Profile (full width) */}
+      <div className="px-4 pb-2">
+        <Card className="p-3 bg-gradient-to-br from-primary/5 to-background border hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <CompactProgressRing progress={modelProgress} size={48} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground">Style Profile</p>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                Discover people with similar measurements
+              </p>
+            </div>
+            <div className="flex gap-1.5 flex-shrink-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10px] px-2"
+                onClick={() => navigate('/swipe')}
+              >
+                Refine
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10px] px-2"
+                onClick={() => navigate('/explore?tab=your-fit')}
+              >
+                Your fit
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Wardrobe Data Section */}
@@ -542,7 +548,7 @@ const RoleDashboard: React.FC = () => {
         >
           <CardContent className="p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+              <Gift className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-sm text-foreground">Benefits & Offers</h3>
