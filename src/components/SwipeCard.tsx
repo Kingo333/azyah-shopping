@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Check } from 'lucide-react';
+import { Info, Image, Sparkles, Check, ShoppingBag } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
 import { Money } from '@/components/ui/Money';
@@ -223,9 +223,9 @@ const SwipeCard = memo(({
             </div>
           </div>
 
-          {/* Small instruction hint - top of image, only first card */}
+          {/* Small instruction hint - same line as Closet button, centered */}
           {showHint && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
               <div className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
                 <span className="text-[10px] text-white/90 font-medium">← Pass • Like →</span>
               </div>
@@ -263,13 +263,13 @@ const SwipeCard = memo(({
                 <div className="flex-1 min-w-0">
                   {/* Brand name with logo - above product title */}
                   <div className="flex items-center gap-1.5 mb-1">
-                    {getBrandLogoUrl(product) ? (
+                    {getBrandLogoUrl(product) && (
                       <img 
                         src={getBrandLogoUrl(product)} 
                         alt={getBrandDisplayName(product)}
                         className="w-4 h-4 rounded-full object-cover bg-white/20"
                       />
-                    ) : null}
+                    )}
                     <p className="text-xs font-semibold text-white/90 uppercase tracking-wide line-clamp-1">
                       {getBrandDisplayName(product)}
                     </p>
@@ -280,28 +280,41 @@ const SwipeCard = memo(({
                   </h3>
                 </div>
                 
-                {/* Price badge */}
-                <Badge 
-                  className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
-                >
-                  <Money 
-                    cents={product.price_cents} 
-                    currency={product.currency || 'USD'} 
-                    className="font-bold text-base"
-                  />
-                </Badge>
+                {/* Price + Shop area */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Shop button - next to price */}
+                  {product.external_url && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleShopNow}
+                      className="h-8 px-3 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[11px] font-semibold shadow-lg"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
+                      Shop
+                    </Button>
+                  )}
+                  {/* Price badge */}
+                  <Badge 
+                    className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0"
+                  >
+                    <Money 
+                      cents={product.price_cents} 
+                      currency={product.currency || 'USD'} 
+                      className="font-bold text-base"
+                    />
+                  </Badge>
+                </div>
               </div>
             </div>
             
-            {/* Bottom action bar - Pass/Save/Like/Shop */}
+            {/* Bottom action bar - Pass/Save/Like (no Shop) */}
             <div className="px-4 pb-4">
               <SwipeActionBar
                 variant="card"
                 onDislike={onDislike}
                 onWishlist={() => onWishlist(product)}
                 onLike={() => onLike(product)}
-                onShopNow={product.external_url ? handleShopNow : undefined}
-                hasExternalUrl={!!product.external_url}
                 wishlistLoading={wishlistLoading}
                 className="mx-auto max-w-sm"
               />
