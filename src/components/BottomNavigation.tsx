@@ -17,7 +17,7 @@ interface NavItem {
 // Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Profile
 const navItems: NavItem[] = [
   { id: 'insights', label: 'Insights', icon: Home, path: '/dashboard' },
-  { id: 'community', label: 'Community', icon: Users, path: '/explore' },
+  { id: 'community', label: 'Explore', icon: Users, path: '/explore' },
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
   { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me' },
   { id: 'profile', label: 'Profile', icon: User, path: '/profile-settings' },

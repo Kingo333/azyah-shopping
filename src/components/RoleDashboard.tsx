@@ -365,48 +365,50 @@ const RoleDashboard: React.FC = () => {
       <div className="px-4 pb-2">
         <div className="grid grid-cols-2 gap-3">
           {/* Left: Style Profile with buttons */}
-          <Card className="p-2.5 bg-gradient-to-br from-primary/5 to-background border hover:shadow-md transition-shadow">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <CompactProgressRing progress={modelProgress} size={36} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-medium">Style Profile</p>
-                  <p className="text-[9px] text-primary/70 leading-tight">Find similar measurements</p>
+          <Card className="p-3 bg-gradient-to-br from-primary/5 to-background border hover:shadow-md transition-shadow">
+            <div className="flex flex-col h-full justify-between gap-2">
+              <div className="flex items-start gap-2.5">
+                <CompactProgressRing progress={modelProgress} size={40} />
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-xs font-semibold text-foreground">Style Profile</p>
+                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                    Discover people with similar measurements
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="flex-1 h-6 text-[10px] px-1 hover:bg-primary/10"
+                  className="flex-1 h-7 text-[10px] px-2"
                   onClick={() => navigate('/swipe')}
                 >
-                  Refine <ChevronRight className="h-3 w-3" />
+                  Refine <ChevronRight className="h-3 w-3 ml-0.5" />
                 </Button>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="flex-1 h-6 text-[10px] px-1 hover:bg-primary/10"
+                  className="flex-1 h-7 text-[10px] px-2"
                   onClick={() => navigate('/explore?tab=your-fit')}
                 >
-                  Your fit <ChevronRight className="h-3 w-3" />
+                  Your fit <ChevronRight className="h-3 w-3 ml-0.5" />
                 </Button>
               </div>
             </div>
           </Card>
 
-          {/* Right: Compact AI Try-On */}
+          {/* Right: AI Try-On */}
           <Card 
-            className="p-2.5 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            className="p-3 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setAiStudioModalOpen(true)}
           >
-            <div className="flex items-center gap-2 h-full">
-              <div className="w-10 h-10 rounded-lg bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
+            <div className="flex items-center gap-2.5 h-full">
+              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
                 <Shirt className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium">AI Try-On</p>
-                <p className="text-[9px] text-[hsl(var(--azyah-maroon))]/70">Virtual fitting</p>
+                <p className="text-xs font-semibold text-foreground">AI Try-On</p>
+                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">Virtual fitting room</p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </div>
