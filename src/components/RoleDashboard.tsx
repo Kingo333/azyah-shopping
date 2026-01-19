@@ -351,65 +351,7 @@ const RoleDashboard: React.FC = () => {
   };
 
   const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* 2-up Premium Block: Style Model + AI Try-On */}
-      <div className="px-4 pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          {/* Left: Compact Style Model */}
-          <Card 
-            className="p-3 bg-gradient-to-br from-primary/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center gap-2">
-              <CompactProgressRing progress={modelProgress} size={56} />
-              <div>
-                <p className="text-xs font-medium">Your Style Profile</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {modelProgress >= 100 ? 'Calibrated' : `${totalSignals} preference signals`}
-                </p>
-              </div>
-              <p className="text-[9px] text-primary/70">Discover people with similar measurements</p>
-              <div className="flex gap-1 w-full">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex-1 h-6 text-[10px] gap-0.5 px-1"
-                  onClick={() => navigate('/swipe')}
-                >
-                  Refine <ChevronRight className="h-3 w-3" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex-1 h-6 text-[10px] gap-0.5 px-1"
-                  onClick={() => navigate('/explore?tab=your-fit')}
-                >
-                  Your fit <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Right: AI Try-On */}
-          <Card 
-            className="p-3 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAiStudioModalOpen(true)}
-          >
-            <div className="flex flex-col items-center text-center gap-2">
-              <div className="w-14 h-14 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-                <Shirt className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
-              </div>
-              <div>
-                <p className="text-xs font-medium">AI Try-On</p>
-                <p className="text-[10px] text-muted-foreground">Virtual fitting</p>
-              </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full text-[hsl(var(--azyah-maroon))] gap-0.5">
-                Try Now <ChevronRight className="h-3 w-3" />
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Dashboard Top Carousel - reduced: Search only */}
+      {/* Search Card First */}
       <DashboardTopCarousel
         showProfileCard={false}
         showSearchCard={true}
@@ -418,6 +360,43 @@ const RoleDashboard: React.FC = () => {
         onOpenGlobalSearch={handleOpenSearchFromCard}
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
+
+      {/* 2-up Compact Block: Style Profile + AI Try-On - Below Search */}
+      <div className="px-4 pb-2">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Left: Simplified Style Profile */}
+          <Card 
+            className="p-3 bg-gradient-to-br from-primary/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/explore?tab=your-fit')}
+          >
+            <div className="flex items-center gap-3">
+              <CompactProgressRing progress={modelProgress} size={44} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">Style Profile</p>
+                <p className="text-[10px] text-primary/70 truncate">Find similar fits</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </div>
+          </Card>
+
+          {/* Right: Simplified AI Try-On */}
+          <Card 
+            className="p-3 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setAiStudioModalOpen(true)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
+                <Shirt className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">AI Try-On</p>
+                <p className="text-[10px] text-[hsl(var(--azyah-maroon))]/70 truncate">Virtual fitting</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* Wardrobe Data Section */}
       <ClosetOutfitsSection />
