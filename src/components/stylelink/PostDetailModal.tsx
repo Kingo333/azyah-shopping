@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Heart, Share2, Trash2, X, ChevronLeft } from 'lucide-react';
+import { Heart, Share2, Trash2, ChevronLeft } from 'lucide-react';
 import { StyleLinkPost, PostProduct } from '@/hooks/useStyleLinkPosts';
 import { SmartImage } from '@/components/SmartImage';
 import ShopTheLookSection from './ShopTheLookSection';
+import { TaggedItemDrawer } from '@/components/community/TaggedItemDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,6 +29,8 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [selectedProduct, setSelectedProduct] = useState<PostProduct | null>(null);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   if (!post) return null;
 
@@ -64,6 +67,11 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     onLike?.(post.id, post.is_liked);
   };
 
+  const handleHotspotClick = (product: PostProduct) => {
+    setSelectedProduct(product);
+    setShowDrawer(true);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 max-h-[90vh] overflow-hidden">
@@ -91,14 +99,18 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                 className="w-full h-full object-cover"
               />
 
-              {/* Product Tags on Image */}
+              {/* Product Tags on Image - Clickable hotspots */}
               {post.products.filter(p => p.position_x != null && p.position_y != null).map((product, idx) => (
                 <div
                   key={product.id}
-                  className="absolute w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center text-xs font-bold transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform"
+                  className="absolute w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center text-xs font-bold transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform animate-pulse"
                   style={{
                     left: `${(product.position_x || 0) * 100}%`,
                     top: `${(product.position_y || 0) * 100}%`,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleHotspotClick(product);
                   }}
                   title={product.label || product.external_title || 'Product'}
                 >
@@ -159,6 +171,17 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           )}
         </div>
       </DialogContent>
+
+      {/* Tagged Item Drawer */}
+      <TaggedItemDrawer
+        product={selectedProduct}
+        open={showDrawer}
+        onOpenChange={setShowDrawer}
+        onTryOn={() => {
+          // Could integrate ARSmartFit here
+          setShowDrawer(false);
+        }}
+      />
     </Dialog>
   );
 };

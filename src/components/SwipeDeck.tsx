@@ -94,6 +94,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [showInstructions, setShowInstructions] = useState(true);
   const [exitDirection, setExitDirection] = useState({ x: 0, y: 0 });
   
+  // Swipe milestone tracking state
+  const [todaySwipeCount, setTodaySwipeCount] = useState(0);
+  const [awardedMilestones, setAwardedMilestones] = useState<number[]>([]);
+  const [swipedProductIds, setSwipedProductIds] = useState<Set<string>>(new Set());
+  
+  const MILESTONES: Record<number, number> = { 25: 2, 50: 3, 100: 5 };
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -186,6 +193,97 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Image loaded - no aspect ratio calculation needed anymore
   }, []);
 
+  // Load swipe milestone state from localStorage on mount
+  useEffect(() => {
+    if (!user?.id) return;
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `swipe_milestones_${user.id}_${today}`;
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const { count, awarded, products: prods } = JSON.parse(stored);
+        setTodaySwipeCount(count || 0);
+        setAwardedMilestones(awarded || []);
+        setSwipedProductIds(new Set(prods || []));
+      } catch (e) {
+        // Invalid data, reset
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [user?.id]);
+
+  // Check and award milestones
+  const checkAndAwardMilestone = useCallback(async (newCount: number, newSwipedIds: Set<string>) => {
+    if (!user?.id) return;
+    const today = new Date().toISOString().split('T')[0];
+    
+    for (const [milestoneStr, points] of Object.entries(MILESTONES)) {
+      const milestone = parseInt(milestoneStr);
+      if (newCount >= milestone && !awardedMilestones.includes(milestone)) {
+        try {
+          await supabase.rpc('award_points', {
+            p_action_type: 'swipe_milestone',
+            p_source_id: null,
+            p_idempotency_key: `swipe_milestone:${user.id}:${today}:${milestone}`,
+            p_metadata: { milestone, total_swipes_today: newCount }
+          });
+          
+          setAwardedMilestones(prev => {
+            const updated = [...prev, milestone];
+            // Persist to localStorage
+            localStorage.setItem(`swipe_milestones_${user.id}_${today}`, JSON.stringify({
+              count: newCount,
+              awarded: updated,
+              products: Array.from(newSwipedIds)
+            }));
+            return updated;
+          });
+          
+          // Subtle toast for milestone
+          toast({
+            description: `🎉 Swipe milestone: +${points} points!`,
+            duration: 2000
+          });
+          
+          // Invalidate points query
+          queryClient.invalidateQueries({ queryKey: ['user-points'] });
+        } catch (e) {
+          // Silent fail - RPC may not support yet or at cap
+          console.log('[SwipeDeck] Milestone award failed:', e);
+        }
+      }
+    }
+  }, [user?.id, awardedMilestones, toast, queryClient, MILESTONES]);
+
+  // Increment swipe count (call after each successful swipe)
+  const incrementSwipeCount = useCallback((productId: string) => {
+    if (!user?.id) return;
+    
+    // Only count unique products
+    if (swipedProductIds.has(productId)) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const newSwipedIds = new Set(swipedProductIds);
+    newSwipedIds.add(productId);
+    setSwipedProductIds(newSwipedIds);
+    
+    setTodaySwipeCount(prev => {
+      const newCount = prev + 1;
+      
+      // Persist to localStorage
+      localStorage.setItem(`swipe_milestones_${user.id}_${today}`, JSON.stringify({
+        count: newCount,
+        awarded: awardedMilestones,
+        products: Array.from(newSwipedIds)
+      }));
+      
+      // Check milestones in next tick
+      queueMicrotask(() => checkAndAwardMilestone(newCount, newSwipedIds));
+      
+      return newCount;
+    });
+  }, [user?.id, swipedProductIds, awardedMilestones, checkAndAwardMilestone]);
+
   // Navigation with cleanup and memory optimization - simplified
   const nextCard = useCallback(() => {
     if (currentProduct) {
@@ -220,6 +318,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       // ALL heavy operations happen after animation
       queueMicrotask(async () => {
+        // Track swipe milestone
+        incrementSwipeCount(product.id);
+        
         try {
           const viewDuration = getViewDuration(product.id);
           
@@ -273,6 +374,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     
     if (currentProduct && user) {
       queueMicrotask(() => {
+        incrementSwipeCount(currentProduct.id);
         const viewDuration = getViewDuration(currentProduct.id);
         trackSwipe({
           productId: currentProduct.id,
@@ -294,6 +396,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       nextCard(); // Immediate
 
       queueMicrotask(async () => {
+        incrementSwipeCount(product.id);
+        
         try {
           const viewDuration = getViewDuration(product.id);
           

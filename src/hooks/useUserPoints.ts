@@ -97,9 +97,10 @@ export function useDailyCheckinStatus() {
  */
 export function formatActionType(actionType: string): string {
   const labels: Record<string, string> = {
-    daily_checkin: 'Training Streak',
+    daily_checkin: 'Daily Check-in',
     wardrobe_add: 'Wardrobe Signal',
     outfit_create: 'Create & Earn',
+    swipe_milestone: 'Swipe Milestone',
     redemption: 'Benefit Redeemed'
   };
   return labels[actionType] || actionType;
