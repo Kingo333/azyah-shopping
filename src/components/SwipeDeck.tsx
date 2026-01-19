@@ -552,6 +552,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   onProductClick={handleProductClick}
                   onImageLoad={handleImageLoad}
                   wishlistLoading={wishlistLoading}
+                  showHint={i === 0 && index === 0}
                   motionProps={{
                     style: { x, rotate, opacity },
                     drag: "x",
