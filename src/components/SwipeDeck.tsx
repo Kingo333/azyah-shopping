@@ -13,7 +13,7 @@ import { useSwipeMemory } from '@/hooks/useSwipeMemory';
 import { supabase } from '@/integrations/supabase/client';
 import SwipeCard from '@/components/SwipeCard';
 import ProductDetailPage from '@/components/ProductDetailPage';
-import { SwipeInstructions } from '@/components/SwipeInstructions';
+// SwipeInstructions removed - using single action bar in SwipeCard
 import { SwipeLoadingCard } from '@/components/SwipeLoadingCard';
 import { SwipeEmptyState } from '@/components/SwipeEmptyState';
 import { SwipeCelebration } from '@/components/SwipeCelebration';
@@ -437,12 +437,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const effectiveX = offset.x + velocity.x * 0.1;
     const effectiveY = offset.y + velocity.y * 0.1;
 
-    // Determine action
-    let action: 'like' | 'dislike' | 'wishlist' | null = null;
+    // Determine action - only horizontal swipes trigger actions
+    // Swipe-up no longer adds to wishlist (removed per Goal I)
+    let action: 'like' | 'dislike' | null = null;
     
-    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
-      action = 'wishlist';
-    } else if (effectiveX > DISTANCE_THRESHOLD) {
+    if (effectiveX > DISTANCE_THRESHOLD) {
       action = 'like';
     } else if (effectiveX < -DISTANCE_THRESHOLD) {
       action = 'dislike';
@@ -457,7 +456,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       queueMicrotask(() => {
         if (action === 'like') handleLike(currentProduct);
         else if (action === 'dislike') handleDislike();
-        else if (action === 'wishlist') handleAddToWishlist(currentProduct);
       });
     } else {
       swipeHaptics.return();
@@ -537,91 +535,79 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      {/* Swipe hint bar - centered */}
-      <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground/80 shrink-0">
-        <span className="flex items-center gap-1">← Pass</span>
-        <span>•</span>
-        <span className="flex items-center gap-1">↑ Save</span>
-        <span>•</span>
-        <span className="flex items-center gap-1">Like →</span>
-      </div>
-      
-      {/* Card area - takes remaining space */}
-      <div className="relative flex-1 flex items-center justify-center min-h-0">
-      {/* Swipe instructions overlay */}
-      <SwipeInstructions show={showInstructions && index === 0} />
-      
-      {/* Card stack preview effect - show next 2 cards underneath */}
-      <AnimatePresence mode="wait">
-        {products.slice(index, index + 3).map((product, i) => {
-          if (i === 0) {
-            // Current active card - pass match reason
-            const matchReason = getMatchReason(product);
-            return (
-              <SwipeCard
-                key={product.id}
-                product={product}
-                matchReason={matchReason}
-                onLike={handleLike}
-                onDislike={handleDislike}
-                onWishlist={handleAddToWishlist}
-                onProductClick={handleProductClick}
-                onImageLoad={handleImageLoad}
-                wishlistLoading={wishlistLoading}
-                motionProps={{
-                  style: { x, y, rotate, opacity },
-                  drag: true,
-                  dragElastic: 0.2,
-                  dragConstraints: { left: 0, right: 0, top: 0, bottom: 0 },
-                  whileDrag: { 
-                    scale: 1.05,
-                    cursor: "grabbing"
-                  },
-                  onDragEnd: handleSwipeEnd,
-                  variants: cardVariants,
-                  initial: "hidden",
-                  animate: "visible",
-                  exit: "exit"
-                }}
-              />
-            );
-          } else {
-            // Stack preview cards (underneath)
-            return (
-              <motion.div
-                key={product.id}
-                className="absolute inset-0"
-                initial={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
-                animate={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
-                style={{ zIndex: -i }}
-              >
-                <div className="w-full max-w-md mx-auto h-full flex items-center justify-center">
-                  <div className="w-full aspect-[9/13] rounded-3xl bg-card shadow-xl border-0" />
-                </div>
-              </motion.div>
-            );
-          }
-        })}
-      </AnimatePresence>
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Card area - fills entire space */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {/* Card stack preview effect - show next 2 cards underneath */}
+        <AnimatePresence mode="wait">
+          {products.slice(index, index + 3).map((product, i) => {
+            if (i === 0) {
+              // Current active card - pass match reason
+              const matchReason = getMatchReason(product);
+              return (
+                <SwipeCard
+                  key={product.id}
+                  product={product}
+                  matchReason={matchReason}
+                  onLike={handleLike}
+                  onDislike={handleDislike}
+                  onWishlist={handleAddToWishlist}
+                  onProductClick={handleProductClick}
+                  onImageLoad={handleImageLoad}
+                  wishlistLoading={wishlistLoading}
+                  motionProps={{
+                    style: { x, y, rotate, opacity },
+                    drag: true,
+                    dragElastic: 0.2,
+                    dragConstraints: { left: 0, right: 0, top: 0, bottom: 0 },
+                    whileDrag: { 
+                      scale: 1.05,
+                      cursor: "grabbing"
+                    },
+                    onDragEnd: handleSwipeEnd,
+                    variants: cardVariants,
+                    initial: "hidden",
+                    animate: "visible",
+                    exit: "exit"
+                  }}
+                />
+              );
+            } else {
+              // Stack preview cards (underneath)
+              return (
+                <motion.div
+                  key={product.id}
+                  className="absolute inset-0"
+                  initial={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
+                  animate={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
+                  style={{ zIndex: -i }}
+                >
+                  <div className="w-full max-w-md mx-auto h-full flex items-center justify-center">
+                    <div className="w-full aspect-[9/13] rounded-3xl bg-card shadow-xl border-0" />
+                  </div>
+                </motion.div>
+              );
+            }
+          })}
+        </AnimatePresence>
 
-      {/* End of deck celebration */}
-      {index >= products.length && products.length > 0 && (
-        <SwipeCelebration
-          onViewLikes={() => navigate("/favorites")}
-          onStartOver={() => {
-            setIndex(0);
-            window.location.reload();
-          }}
+        {/* End of deck celebration */}
+        {index >= products.length && products.length > 0 && (
+          <SwipeCelebration
+            onViewLikes={() => navigate("/favorites")}
+            onStartOver={() => {
+              setIndex(0);
+              window.location.reload();
+            }}
+          />
+        )}
+        
+        {/* Guest Action Prompt */}
+        <GuestActionPrompt 
+          open={showPrompt} 
+          onOpenChange={setShowPrompt} 
+          action={promptAction} 
         />
-      )}
-      
-      {/* Guest Action Prompt */}
-      <GuestActionPrompt 
-        open={showPrompt} 
-        onOpenChange={setShowPrompt} 
-        action={promptAction} 
-      />
       </div>
     </div>
   );

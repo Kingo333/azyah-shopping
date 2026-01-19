@@ -158,6 +158,7 @@ const MiniSwipeCard = memo(({
     const { offset, velocity } = info;
     const effectiveX = offset.x + velocity.x * 0.1;
     
+    // Only horizontal swipes trigger actions - swipe-up does nothing
     // Swipe RIGHT = Like
     if (effectiveX > THRESHOLD) {
       swipeHaptics.like();
@@ -247,8 +248,8 @@ const MiniSwipeCard = memo(({
                 <Money cents={product.price_cents} currency={product.currency} className="text-sm font-bold mt-0.5" />
               </div>
               
-              {/* Action bar - now part of overlay */}
-              <div className="flex items-center divide-x divide-white/20 bg-background/95 backdrop-blur-sm rounded-b-2xl">
+              {/* Action bar - compact, Pass/Save/Like only (Shop is overlay) */}
+              <div className="flex items-center divide-x divide-white/15 bg-background/90 backdrop-blur-sm rounded-b-2xl">
                 {/* Pass */}
                 <button
                   onClick={(e) => {
@@ -290,22 +291,24 @@ const MiniSwipeCard = memo(({
                   <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} strokeWidth={2} />
                   <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
                 </button>
-                
-                {/* Shop */}
-                {product.external_url && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShop();
-                    }}
-                    className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium rounded-br-2xl"
-                  >
-                    <ShoppingBag className="h-4 w-4" strokeWidth={2} />
-                    <span className="text-[11px] font-semibold">Shop</span>
-                  </button>
-                )}
               </div>
             </div>
+            
+            {/* Shop button - overlay near price area */}
+            {product.external_url && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShop();
+                }}
+                className="absolute bottom-16 right-3 h-7 px-2.5 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[10px] font-semibold shadow-lg"
+              >
+                <ShoppingBag className="h-3 w-3 mr-1" strokeWidth={2} />
+                Shop
+              </Button>
+            )}
           </div>
         </Card>
       </motion.div>
@@ -316,7 +319,7 @@ const MiniSwipeCard = memo(({
           ← Pass • → Like
         </p>
         <p className="text-[10px] text-muted-foreground/70 italic">
-          ✨ AI learns your style • Add to closet & earn real rewards
+          ✨ AI learns your style
         </p>
       </div>
     </div>

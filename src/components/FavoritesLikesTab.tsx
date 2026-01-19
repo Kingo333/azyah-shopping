@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Trash2, ExternalLink, ShoppingBag, User } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, ShoppingBag, User, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
@@ -93,20 +93,33 @@ const LikeCard: React.FC<{
 
           {/* Content */}
           <div className="p-3 space-y-2">
+            {/* Brand name - more prominent */}
             {like.products.brands && (
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
                 {like.products.brands.name}
               </p>
             )}
-            <h3 className="text-sm font-medium line-clamp-2 min-h-[2.5rem]">
+            {/* Product title - secondary */}
+            <h3 className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">
               {like.products.title}
             </h3>
             <p className="text-sm font-bold text-primary">
               {formatPrice(like.products.price_cents, like.products.currency)}
             </p>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
+            {/* Action Buttons - with Wish button */}
+            <div className="flex gap-1.5 pt-2">
+              {/* Wish button - adds to wishlist */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-8"
+                onClick={() => onAddToWishlist(like.products!.id)}
+                disabled={isAddingToWishlist}
+              >
+                <Star className="h-3 w-3 mr-1" />
+                Wish
+              </Button>
               <Button
                 variant="destructive"
                 size="sm"

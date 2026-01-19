@@ -555,6 +555,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
           <div className="space-y-4">
             <Label>Product Images (up to 4 images)</Label>
+            <p className="text-xs text-muted-foreground -mt-1 mb-2">
+              For the best swipe experience, upload images in a 9:16 ratio.
+            </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {images.map((image, index) => (
                 <div key={index} className="relative aspect-square">
