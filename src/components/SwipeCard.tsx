@@ -3,10 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Check, X, Heart, ShoppingBag } from 'lucide-react';
+import { Info, Image, Sparkles, Check } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
 import { Money } from '@/components/ui/Money';
+import { SwipeActionBar } from '@/components/SwipeActionBar';
 
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
@@ -26,8 +27,8 @@ interface SwipeProduct {
   image_url?: string;
   media_urls?: any;
   brand_id?: string;
-  brand?: { name: string };
-  brands?: { name: string };
+  brand?: { name: string; logo_url?: string };
+  brands?: { name: string; logo_url?: string };
   retailer?: { name: string };
   tags?: string[];
   attributes?: any;
@@ -47,6 +48,7 @@ interface SwipeCardProps {
   onImageLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   wishlistLoading: boolean;
   motionProps: any;
+  showHint?: boolean; // Show instruction hint on first card
 }
 
 // Separate component for Add to Closet button to use hooks
@@ -114,6 +116,11 @@ const AddToClosetButton = memo(({ product }: { product: SwipeProduct }) => {
 });
 AddToClosetButton.displayName = 'AddToClosetButton';
 
+// Helper to get brand logo URL
+const getBrandLogoUrl = (product: SwipeProduct): string | undefined => {
+  return product.brand?.logo_url || product.brands?.logo_url;
+};
+
 const SwipeCard = memo(({
   product,
   matchReason,
@@ -123,7 +130,8 @@ const SwipeCard = memo(({
   onProductClick,
   onImageLoad,
   wishlistLoading,
-  motionProps
+  motionProps,
+  showHint = false
 }: SwipeCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -215,6 +223,15 @@ const SwipeCard = memo(({
             </div>
           </div>
 
+          {/* Small instruction hint - top of image, only first card */}
+          {showHint && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+              <div className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
+                <span className="text-[10px] text-white/90 font-medium">← Pass • Like →</span>
+              </div>
+            </div>
+          )}
+
           {/* Why This + Tags Section - positioned above product info */}
           <div className="absolute bottom-36 left-4 right-4 z-10 flex flex-wrap gap-1.5">
             {/* Why This chip - always shown */}
@@ -238,85 +255,59 @@ const SwipeCard = memo(({
             ))}
           </div>
 
-          {/* Bottom overlay - product info only */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 z-10 pb-4"
-          >
+          {/* Bottom overlay - product info + action bar */}
+          <div className="absolute bottom-0 left-0 right-0 z-10">
             {/* Product info */}
-            <div className="px-5 pt-6 pb-2">
-              <div className="space-y-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white line-clamp-2 leading-tight">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-white/80 line-clamp-1 mt-0.5">
+            <div className="px-5 pt-6 pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  {/* Brand name with logo - above product title */}
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {getBrandLogoUrl(product) ? (
+                      <img 
+                        src={getBrandLogoUrl(product)} 
+                        alt={getBrandDisplayName(product)}
+                        className="w-4 h-4 rounded-full object-cover bg-white/20"
+                      />
+                    ) : null}
+                    <p className="text-xs font-semibold text-white/90 uppercase tracking-wide line-clamp-1">
                       {getBrandDisplayName(product)}
                     </p>
                   </div>
-                  
-                  {/* Price + Shop area */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Shop button - next to price */}
-                    {product.external_url && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleShopNow}
-                        className="h-8 px-3 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground text-[11px] font-semibold shadow-lg"
-                      >
-                        <ShoppingBag className="h-3.5 w-3.5 mr-1" strokeWidth={2} />
-                        Shop
-                      </Button>
-                    )}
-                    {/* Price badge */}
-                    <Badge 
-                      className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0"
-                    >
-                      <Money 
-                        cents={product.price_cents} 
-                        currency={product.currency || 'USD'} 
-                        className="font-bold text-base"
-                      />
-                    </Badge>
-                  </div>
+                  {/* Product title */}
+                  <h3 className="text-base font-medium text-white line-clamp-2 leading-tight">
+                    {product.title}
+                  </h3>
                 </div>
+                
+                {/* Price badge */}
+                <Badge 
+                  className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
+                >
+                  <Money 
+                    cents={product.price_cents} 
+                    currency={product.currency || 'USD'} 
+                    className="font-bold text-base"
+                  />
+                </Badge>
               </div>
+            </div>
+            
+            {/* Bottom action bar - Pass/Save/Like/Shop */}
+            <div className="px-4 pb-4">
+              <SwipeActionBar
+                variant="card"
+                onDislike={onDislike}
+                onWishlist={() => onWishlist(product)}
+                onLike={() => onLike(product)}
+                onShopNow={product.external_url ? handleShopNow : undefined}
+                hasExternalUrl={!!product.external_url}
+                wishlistLoading={wishlistLoading}
+                className="mx-auto max-w-sm"
+              />
             </div>
           </div>
 
-          {/* Centered Pass/Like overlay - semi-transparent */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="flex items-center gap-10 px-10 py-5 rounded-full bg-black/30 backdrop-blur-md">
-              {/* Pass button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDislike();
-                }}
-                className="flex flex-col items-center gap-1.5 text-white/90 hover:text-white transition-colors"
-              >
-                <div className="w-14 h-14 rounded-full bg-white/20 hover:bg-red-500/40 flex items-center justify-center transition-colors">
-                  <X className="h-6 w-6" strokeWidth={2.5} />
-                </div>
-                <span className="text-xs font-medium">Pass</span>
-              </button>
-              
-              {/* Like button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onLike(product);
-                }}
-                className="flex flex-col items-center gap-1.5 text-white/90 hover:text-pink-300 transition-colors"
-              >
-                <div className="w-14 h-14 rounded-full bg-white/20 hover:bg-pink-500/40 flex items-center justify-center transition-colors">
-                  <Heart className="h-6 w-6" strokeWidth={2.5} />
-                </div>
-                <span className="text-xs font-medium">Like</span>
-              </button>
-            </div>
-          </div>
         </div>
       </Card>
     </motion.div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
-import { ArrowRight, Heart, X, ShoppingBag, Check } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { swipeHaptics } from '@/utils/haptics';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Money } from '@/components/ui/Money';
+import { SwipeActionBar } from '@/components/SwipeActionBar';
 
 interface MiniDiscoverProps {
   limit?: number;
@@ -33,8 +34,8 @@ interface MiniProduct {
   currency: string;
   image_url?: string;
   external_url?: string;
-  brand?: { name: string };
-  brands?: { name: string };
+  brand?: { name: string; logo_url?: string };
+  brands?: { name: string; logo_url?: string };
 }
 
 // Non-blocking guest notification helper
@@ -237,14 +238,25 @@ const MiniSwipeCard = memo(({
               </Button>
             </div>
             
-            {/* Bottom content area - product info only */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 pb-3">
+            {/* Bottom content area - product info + action bar */}
+            <div className="absolute bottom-0 left-0 right-0 z-10">
               {/* Product info */}
               <div className="px-3 pt-3 pb-2 text-white">
-                {brandName && (
-                  <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
-                )}
-                <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
+                {/* Brand name with logo - above product title */}
+                <div className="flex items-center gap-1 mb-0.5">
+                  {(product.brand?.logo_url || product.brands?.logo_url) && (
+                    <img 
+                      src={product.brand?.logo_url || product.brands?.logo_url} 
+                      alt={brandName || ''}
+                      className="w-3.5 h-3.5 rounded-full object-cover bg-white/20"
+                    />
+                  )}
+                  {brandName && (
+                    <p className="text-[10px] font-semibold opacity-90 uppercase tracking-wide">{brandName}</p>
+                  )}
+                </div>
+                {/* Product title */}
+                <p className="text-xs font-medium line-clamp-1">{product.title}</p>
                 <div className="flex items-center justify-between mt-1">
                   <Money cents={product.price_cents} currency={product.currency} className="text-sm font-bold" />
                   {product.external_url && (
@@ -263,44 +275,24 @@ const MiniSwipeCard = memo(({
                   )}
                 </div>
               </div>
-            </div>
-            
-            {/* Centered Pass/Like overlay - semi-transparent */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-              <div className="flex items-center gap-8 px-8 py-4 rounded-full bg-black/30 backdrop-blur-md">
-                {/* Pass button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePass();
+              
+              {/* Bottom action bar - Pass/Save/Like */}
+              <div className="px-2 pb-3">
+                <SwipeActionBar
+                  variant="card"
+                  onDislike={handlePass}
+                  onWishlist={() => {
+                    if (!user) {
+                      showGuestToast('save', navigate);
+                      return;
+                    }
+                    // TODO: Wishlist action for mini discover
                   }}
-                  className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-full bg-white/20 hover:bg-red-500/40 flex items-center justify-center transition-colors">
-                    <X className="h-5 w-5" strokeWidth={2.5} />
-                  </div>
-                  <span className="text-[10px] font-medium">Pass</span>
-                </button>
-                
-                {/* Like button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLike();
-                  }}
-                  className={cn(
-                    "flex flex-col items-center gap-1 transition-colors",
-                    isLiked ? "text-pink-300" : "text-white/90 hover:text-pink-300"
-                  )}
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
-                    isLiked ? "bg-pink-500/50" : "bg-white/20 hover:bg-pink-500/40"
-                  )}>
-                    <Heart className={cn("h-5 w-5", isLiked && "fill-current")} strokeWidth={2.5} />
-                  </div>
-                  <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
-                </button>
+                  onLike={handleLike}
+                  onShopNow={product.external_url ? handleShop : undefined}
+                  hasExternalUrl={!!product.external_url}
+                  className="mx-auto"
+                />
               </div>
             </div>
           </div>
