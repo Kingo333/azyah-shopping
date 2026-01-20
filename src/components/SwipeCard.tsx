@@ -164,19 +164,20 @@ const SwipeCard = memo(({
       className="absolute inset-x-2 top-2 bottom-4 flex items-center justify-center"
       {...motionProps}
     >
-      <Card className="w-full h-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
+      <Card className="w-full max-h-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
         {/* Main image container with overlay action bar */}
-        <div className="relative flex-1 min-h-0 bg-gradient-to-br from-muted/30 to-background">
+        <div className="relative flex-1 min-h-[300px] max-h-[70vh] bg-muted/20 overflow-hidden flex items-start justify-center">
           {/* Image with blur-up effect */}
           <div className={cn(
-            "absolute inset-0 transition-opacity duration-300",
+            "absolute inset-0 transition-opacity duration-300 flex items-start justify-center",
             imageLoaded ? "opacity-100" : "opacity-0"
           )}>
             <SmartImage
               src={getPrimaryImageUrl(product)}
               alt={product.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full"
               sizes="(max-width: 768px) 100vw, 448px"
+              objectFit="contain"
               onLoad={handleImageLoadInternal}
             />
           </div>

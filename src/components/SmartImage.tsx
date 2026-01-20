@@ -10,6 +10,7 @@ interface SmartImageProps {
   className?: string;
   sizes?: string;
   loading?: 'lazy' | 'eager';
+  objectFit?: 'cover' | 'contain' | 'none';
   onLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   onError?: () => void;
 }
@@ -20,6 +21,7 @@ export const SmartImage = ({
   className,
   sizes = "(max-width: 768px) 100vw, 50vw",
   loading = 'lazy',
+  objectFit = 'cover',
   onLoad,
   onError
 }: SmartImageProps) => {
@@ -88,7 +90,9 @@ export const SmartImage = ({
         sizes={sizes}
         alt={alt}
         className={cn(
-          "w-full h-full object-cover object-center transition-opacity duration-300",
+          "w-full h-full transition-opacity duration-300",
+          objectFit === 'contain' ? "object-contain object-top" : 
+          objectFit === 'none' ? "" : "object-cover object-center",
           isLoaded ? "opacity-100" : "opacity-0"
         )}
         loading={loading}
