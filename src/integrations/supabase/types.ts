@@ -3901,6 +3901,7 @@ export type Database = {
           last_reset_date: string
           updated_at: string
           user_id: string
+          video_credits: number
           wardrobe_credits: number
           wardrobe_items_count: number | null
         }
@@ -3916,6 +3917,7 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id: string
+          video_credits?: number
           wardrobe_credits?: number
           wardrobe_items_count?: number | null
         }
@@ -3931,6 +3933,7 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id?: string
+          video_credits?: number
           wardrobe_credits?: number
           wardrobe_items_count?: number | null
         }
@@ -5048,6 +5051,10 @@ export type Database = {
         Returns: boolean
       }
       deduct_user_credit: { Args: { target_user_id: string }; Returns: boolean }
+      deduct_video_credit: {
+        Args: { amount?: number; target_user_id: string }
+        Returns: boolean
+      }
       deduct_wardrobe_credit: {
         Args: { amount?: number; target_user_id: string }
         Returns: boolean
@@ -5747,6 +5754,7 @@ export type Database = {
           ai_studio_credits: number
           beauty_credits: number
           is_premium: boolean
+          video_credits: number
           wardrobe_credits: number
         }[]
       }

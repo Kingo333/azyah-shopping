@@ -6,6 +6,7 @@ interface UserCredits {
   ai_studio_credits: number;
   beauty_credits: number;
   wardrobe_credits: number;
+  video_credits: number;
   is_premium: boolean;
 }
 
@@ -35,6 +36,7 @@ export function useUserCredits() {
           ai_studio_credits: data[0].ai_studio_credits,
           beauty_credits: data[0].beauty_credits,
           wardrobe_credits: data[0].wardrobe_credits,
+          video_credits: data[0].video_credits,
           is_premium: data[0].is_premium
         });
       }
