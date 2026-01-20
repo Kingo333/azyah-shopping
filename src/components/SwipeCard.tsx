@@ -216,8 +216,11 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* RIGHT: Try-On + Closet + Info buttons - stacked vertically */}
+            {/* RIGHT: Closet + Try-On + Info buttons - stacked vertically */}
             <div className="flex flex-col items-end gap-2">
+              {/* Add to Closet button */}
+              <AddToClosetButton product={product} />
+              
               {/* Virtual Try-On button */}
               {onTryOn && (
                 <Button
@@ -234,9 +237,6 @@ const SwipeCard = memo(({
                   <span className="text-[10px] font-medium">Try On</span>
                 </Button>
               )}
-              
-              {/* Add to Closet button */}
-              <AddToClosetButton product={product} />
               
               {/* Info button */}
               <Button
