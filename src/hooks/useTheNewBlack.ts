@@ -71,10 +71,21 @@ export function useTheNewBlack() {
       return publicUrl.publicUrl;
     } catch (err) {
       console.error('[useTheNewBlack] Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMessage);
+      
+      // Show toast on upload failure
+      toast({
+        title: 'Upload failed',
+        description: errorMessage.includes('Bucket not found') 
+          ? 'Storage not configured. Please contact support.'
+          : 'Could not upload image. Please try again.',
+        variant: 'destructive'
+      });
+      
       return null;
     }
-  }, []);
+  }, [toast]);
 
   // Generate picture try-on
   const generatePicture = useCallback(async (

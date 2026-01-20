@@ -196,6 +196,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       if (url) {
         setVideoPersonUrl(url);
         toast({ title: 'Person image uploaded' });
+      } else {
+        // Clear file state on failure so user can retry
+        setVideoPersonFile(null);
+        if (!videoOutfitFile) setVideoUploadMode(null);
       }
     });
   };
@@ -218,6 +222,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       if (url) {
         setVideoOutfitUrl(url);
         toast({ title: 'Outfit image uploaded' });
+      } else {
+        // Clear file state on failure so user can retry
+        setVideoOutfitFile(null);
+        if (!videoPersonFile) setVideoUploadMode(null);
       }
     });
   };
@@ -262,6 +270,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       if (url) {
         setVideoInputUrl(url);
         toast({ title: 'Image ready for video!' });
+      } else {
+        // Clear file state on failure so user can retry
+        setDirectImageFile(null);
+        setVideoUploadMode(null);
       }
     });
   };
@@ -894,6 +906,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       videoPolling || 
                       generatingVideoInput || 
                       uploadingDirectImage ||
+                      uploadingVideoPerson ||
+                      uploadingVideoOutfit ||
                       (videoInputUrl ? videoCredits <= 0 : !(videoPersonUrl && videoOutfitUrl) && !directImageFile)
                     }
                     whileTap={{ scale: 0.99 }}
@@ -904,17 +918,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     {videoPolling ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Creating Video (~59 sec)...
+                        Creating Video (~2-5 min)...
                       </>
                     ) : generatingVideoInput ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Generating Try-On (~30 sec)...
                       </>
-                    ) : uploadingDirectImage ? (
+                    ) : uploadingDirectImage || uploadingVideoPerson || uploadingVideoOutfit ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading Image...
+                        Uploading...
                       </>
                     ) : videoInputUrl ? (
                       videoCredits <= 0 ? (
@@ -922,7 +936,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       ) : (
                         <>
                           <Video className="h-4 w-4" />
-                          Generate Video (~59 sec)
+                          Generate Video (~2-5 min)
                         </>
                       )
                     ) : videoUploadMode === 'person-outfit' ? (

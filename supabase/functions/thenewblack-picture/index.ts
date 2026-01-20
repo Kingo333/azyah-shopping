@@ -105,7 +105,7 @@ serve(async (req) => {
     formData.append('model_photo', model_photo_url);
     formData.append('clothing_photo', clothing_photo_url);
     formData.append('ratio', 'auto');
-    formData.append('prompt', 'virtual try on');
+    formData.append('prompt', 'Preserve the model identity. Apply the clothing naturally with realistic fabric drape and lighting. Keep background unchanged.');
 
     console.log('[TheNewBlack Picture] Calling API...');
     
