@@ -239,12 +239,22 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     });
   };
 
-  // Generate picture for video (FREE - no credit deduction)
+  // Generate picture for video (uses 1 picture credit)
   const handleGeneratePictureForVideo = async () => {
     if (!videoPersonUrl || !videoOutfitUrl) {
       toast({
         title: 'Missing images',
         description: 'Please upload both person and outfit images',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check picture credits first
+    if (pictureCredits <= 0) {
+      toast({
+        title: 'No picture credits',
+        description: 'You need picture credits to generate a try-on for video',
         variant: 'destructive'
       });
       return;
@@ -256,6 +266,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     
     if (result.ok && result.result_url) {
       setVideoInputUrl(result.result_url);
+      // Refresh credits after generation
+      await refetchCredits?.();
       toast({ title: 'Try-on ready for video!' });
     }
   };
@@ -632,8 +644,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 <TabsContent value="video" className="mt-0 space-y-4">
                   {/* Upload Section for Video Tab */}
                   <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-sm text-muted-foreground text-center mb-3">
+                    <p className="text-sm text-muted-foreground text-center mb-2">
                       Upload your photo and outfit to create a 5-second fashion video
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 text-center mb-3">
+                      Note: Video from photos uses 1 picture credit + 1 video credit
                     </p>
                     
                     {!videoInputUrl ? (
@@ -664,7 +679,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           {/* Generate Try-On Button */}
                           <motion.button
                             onClick={handleGeneratePictureForVideo}
-                            disabled={generatingVideoInput || !videoPersonUrl || !videoOutfitUrl || videoUploadMode === 'direct'}
+                            disabled={generatingVideoInput || !videoPersonUrl || !videoOutfitUrl || videoUploadMode === 'direct' || pictureCredits <= 0}
                             whileTap={{ scale: 0.99 }}
                             className="w-full py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2
                               disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
@@ -675,13 +690,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Generating (~30 sec)...
                               </>
+                            ) : pictureCredits <= 0 ? (
+                              "No Picture Credits"
                             ) : !videoPersonUrl || !videoOutfitUrl ? (
                               "Upload Both Images"
                             ) : (
-                              <>
-                                <Sparkles className="h-4 w-4" />
-                                Generate Try-On (~30 sec)
-                              </>
+                              "Generate Try-On (~30 sec)"
                             )}
                           </motion.button>
                           
