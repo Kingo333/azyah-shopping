@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Check, ShoppingBag } from 'lucide-react';
+import { Info, Image, Sparkles, Check, ShoppingBag, Shirt } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
 import { Money } from '@/components/ui/Money';
@@ -46,6 +46,7 @@ interface SwipeCardProps {
   onDislike: () => void;
   onWishlist: (product: SwipeProduct) => void;
   onProductClick: (product: SwipeProduct) => void;
+  onTryOn?: (product: SwipeProduct) => void;
   onImageLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   wishlistLoading: boolean;
   motionProps: any;
@@ -129,6 +130,7 @@ const SwipeCard = memo(({
   onDislike,
   onWishlist,
   onProductClick,
+  onTryOn,
   onImageLoad,
   wishlistLoading,
   motionProps,
@@ -214,12 +216,29 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* RIGHT: Closet + Info buttons - stacked vertically */}
+            {/* RIGHT: Try-On + Closet + Info buttons - stacked vertically */}
             <div className="flex flex-col items-end gap-2">
-              {/* Add to Closet button on top */}
+              {/* Virtual Try-On button */}
+              {onTryOn && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTryOn(product);
+                  }}
+                  className="h-auto px-2.5 py-1.5 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100 flex items-center gap-1.5 transition-all"
+                  title="Virtual Try-On"
+                >
+                  <Shirt className="h-3.5 w-3.5" strokeWidth={2} />
+                  <span className="text-[10px] font-medium">Try On</span>
+                </Button>
+              )}
+              
+              {/* Add to Closet button */}
               <AddToClosetButton product={product} />
               
-              {/* Info button below */}
+              {/* Info button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -243,28 +262,6 @@ const SwipeCard = memo(({
             </div>
           )}
 
-          {/* Why This + Tags Section - positioned above product info */}
-          <div className="absolute bottom-36 left-4 right-4 z-10 flex flex-wrap gap-1.5">
-            {/* Why This chip - always shown */}
-            <Badge 
-              variant="secondary" 
-              className="bg-background/90 backdrop-blur-sm text-[10px] gap-1 px-2 py-0.5 shadow-sm"
-            >
-              <Sparkles className="h-3 w-3" />
-              {matchReason || 'Curated for you'}
-            </Badge>
-            
-            {/* Product tags - show up to 2 */}
-            {product.tags?.slice(0, 2).map((tag, i) => (
-              <Badge 
-                key={i} 
-                variant="outline" 
-                className="bg-background/80 backdrop-blur-sm text-[10px] px-2 py-0.5 border-white/30"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
 
           {/* Bottom overlay - product info + action bar */}
           <div className="absolute bottom-0 left-0 right-0 z-10">
@@ -308,14 +305,14 @@ const SwipeCard = memo(({
                       Shop
                     </Button>
                   )}
-                  {/* Price badge */}
+                  {/* Price badge - same height as Shop button */}
                   <Badge 
-                    className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0"
+                    className="h-8 px-3 flex items-center rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0"
                   >
                     <Money 
                       cents={product.price_cents} 
                       currency={product.currency || 'USD'} 
-                      className="font-bold text-base"
+                      className="font-semibold text-[11px]"
                     />
                   </Badge>
                 </div>
