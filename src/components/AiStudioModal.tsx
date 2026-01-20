@@ -266,8 +266,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     
     if (result.ok && result.result_url) {
       setVideoInputUrl(result.result_url);
-      // Refresh credits after generation
+      // Refresh credits and assets after generation
       await refetchCredits?.();
+      await fetchAssets(); // Refresh gallery to show new result
       toast({ title: 'Try-on ready for video!' });
     }
   };
@@ -648,7 +649,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       Upload your photo and outfit to create a 5-second fashion video
                     </p>
                     <p className="text-xs text-muted-foreground/70 text-center mb-3">
-                      Note: Video from photos uses 1 picture credit + 1 video credit
+                      Note: Video from photos uses 1 picture credit + 1 video credit. Your photo's background will be preserved.
                     </p>
                     
                     {!videoInputUrl ? (
@@ -880,6 +881,34 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Previous Try-On Results - clickable to use for video */}
+                  {pictureAssets.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2">Previous Try-On Results</h3>
+                      <div className="grid grid-cols-4 gap-2">
+                        {pictureAssets.slice(0, 8).map(asset => (
+                          <button 
+                            key={asset.id} 
+                            onClick={() => {
+                              setVideoInputUrl(asset.asset_url);
+                              toast({ title: 'Image ready for video!' });
+                            }}
+                            className="aspect-square rounded-lg overflow-hidden bg-muted border border-border hover:border-primary transition"
+                          >
+                            <img 
+                              src={asset.asset_url} 
+                              alt="Previous result" 
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Tap a result to use it for video
+                      </p>
                     </div>
                   )}
 

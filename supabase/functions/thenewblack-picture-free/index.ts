@@ -107,7 +107,7 @@ serve(async (req) => {
     formData.append("model_photo", model_photo_url);
     formData.append("clothing_photo", clothing_photo_url);
     formData.append("ratio", "auto");
-    formData.append("prompt", "Preserve the model identity and keep the SAME background from the model photo. Apply the clothing naturally with realistic fabric drape and lighting. Do not change or remove the background.");
+    formData.append("prompt", "Preserve the model identity and keep the SAME background from the model photo. Apply the clothing and its details naturally with realistic fabric drape and lighting. Do not change or remove the background.");
 
     const apiResponse = await fetch(`https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${API_KEY}`, {
       method: "POST",
@@ -179,8 +179,19 @@ serve(async (req) => {
       .from("ai-tryon-results")
       .getPublicUrl(fileName);
 
-    // Don't save to ai_assets table - this is just for video input
-    // The final video will be saved
+    // Save to ai_assets table so it appears in Previous Results gallery
+    await supabaseAdmin.from('ai_assets').insert({
+      user_id: user.id,
+      asset_url: publicUrlData.publicUrl,
+      asset_type: 'tryon_result',
+      metadata: {
+        model_photo: model_photo_url,
+        clothing_photo: clothing_photo_url,
+        provider: 'thenewblack',
+        source: 'video_flow',
+        original_url: resultUrl.trim()
+      }
+    });
 
     return new Response(
       JSON.stringify({ 
