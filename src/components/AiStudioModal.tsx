@@ -463,14 +463,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             exit={{ y: 24, opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
-                       rounded-t-2xl sm:rounded-2xl bg-background shadow-2xl border border-border
+                       rounded-t-3xl sm:rounded-3xl bg-background shadow-2xl border border-border
                        flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-10">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-10 rounded-t-3xl">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="text-lg">👕</span>
                   <h2 className="text-lg font-semibold text-foreground">AI Studio</h2>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video</p>

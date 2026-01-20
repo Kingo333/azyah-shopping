@@ -20,6 +20,7 @@ import { SwipeCelebration } from '@/components/SwipeCelebration';
 import { swipeHaptics } from '@/utils/haptics';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import AiStudioModal from '@/components/AiStudioModal';
 
 interface UserPreferences {
   coverage?: string;
@@ -93,6 +94,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<SwipeProduct | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
   const [exitDirection, setExitDirection] = useState({ x: 0, y: 0 });
+  
+  // AI Studio modal state
+  const [showAiStudio, setShowAiStudio] = useState(false);
   
   // Swipe milestone tracking state
   const [todaySwipeCount, setTodaySwipeCount] = useState(0);
@@ -465,6 +469,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     onProductDetailChange?.(true);
   }, [onProductDetailChange]);
 
+  const handleTryOn = useCallback(() => {
+    setShowAiStudio(true);
+  }, []);
+
   // Reset and cleanup when products change
   useEffect(() => {
     setIndex(0);
@@ -550,6 +558,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   onDislike={handleDislike}
                   onWishlist={handleAddToWishlist}
                   onProductClick={handleProductClick}
+                  onTryOn={handleTryOn}
                   onImageLoad={handleImageLoad}
                   wishlistLoading={wishlistLoading}
                   showHint={i === 0 && index === 0}
@@ -605,6 +614,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           open={showPrompt} 
           onOpenChange={setShowPrompt} 
           action={promptAction} 
+        />
+        
+        {/* AI Studio Modal */}
+        <AiStudioModal 
+          open={showAiStudio} 
+          onClose={() => setShowAiStudio(false)} 
         />
       </div>
     </div>
