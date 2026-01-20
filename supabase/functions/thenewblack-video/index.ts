@@ -51,8 +51,8 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { image_url, action } = await req.json();
+    // Parse request body once - extract all needed fields
+    const { image_url, action, job_id } = await req.json();
     
     // Create service client for database operations
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -137,14 +137,41 @@ serve(async (req) => {
         );
       }
 
-      // The API returns the job ID directly as text
-      const jobId = await apiResponse.text();
-      console.log('[TheNewBlack Video] Job ID:', jobId);
+      // Get the API response - may be JSON or plain text
+      const responseText = await apiResponse.text();
+      console.log('[TheNewBlack Video] API Response:', responseText);
+
+      // Try to parse as JSON first (in case API returns JSON)
+      let jobId: string;
+      try {
+        const jsonResponse = JSON.parse(responseText);
+        // Check if it's an error response
+        if (jsonResponse.status === 'error' || jsonResponse.error) {
+          console.error('[TheNewBlack Video] API returned error:', jsonResponse);
+          
+          // Refund credit
+          await serviceClient.from('user_credits')
+            .update({ video_credits: credits[0].video_credits })
+            .eq('user_id', user.id);
+
+          return new Response(
+            JSON.stringify({ ok: false, error: jsonResponse.message || jsonResponse.error || 'API error' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        // If JSON has an ID field, use it
+        jobId = jsonResponse.id || jsonResponse.job_id || responseText;
+      } catch {
+        // Not JSON, treat as plain text job ID
+        jobId = responseText;
+      }
+
+      console.log('[TheNewBlack Video] Extracted Job ID:', jobId);
 
       if (!jobId || jobId.trim().length === 0) {
-        console.error('[TheNewBlack Video] Invalid job ID:', jobId);
+        console.error('[TheNewBlack Video] Invalid job ID');
         
-        // Refund credit on invalid result
+        // Refund credit
         await serviceClient.from('user_credits')
           .update({ video_credits: credits[0].video_credits })
           .eq('user_id', user.id);
@@ -169,8 +196,6 @@ serve(async (req) => {
 
     // Action: check - Check video status and retrieve result
     if (action === 'check') {
-      const { job_id } = await req.json();
-      
       if (!job_id) {
         return new Response(
           JSON.stringify({ ok: false, error: 'job_id is required' }),
