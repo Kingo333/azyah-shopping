@@ -699,24 +699,28 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                             </div>
                           ) : (
                             <motion.label 
-                              whileHover={{ scale: videoUploadMode === 'person-outfit' ? 1 : 1.01 }}
-                              whileTap={{ scale: videoUploadMode === 'person-outfit' ? 1 : 0.99 }}
-                              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all cursor-pointer
-                                border-dashed border-border hover:border-primary hover:bg-muted
-                                ${videoUploadMode === 'person-outfit' ? 'cursor-not-allowed' : ''}`}
+                              whileHover={{ scale: videoUploadMode === 'person-outfit' ? 1 : 1.02 }}
+                              whileTap={{ scale: videoUploadMode === 'person-outfit' ? 1 : 0.98 }}
+                              className={`group relative flex flex-col items-center justify-center gap-2
+                                h-32 rounded-xl border transition-all cursor-pointer overflow-hidden
+                                border-dashed border-border bg-muted hover:border-primary hover:bg-card
+                                ${videoUploadMode === 'person-outfit' ? 'cursor-not-allowed opacity-40' : ''}`}
                             >
                               <input
                                 type="file"
                                 accept="image/*"
-                                className="hidden"
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
                                 disabled={videoUploadMode === 'person-outfit'}
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
                                   if (f) handleDirectImageUpload(f);
                                 }}
                               />
-                              <Image className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">Upload Image for Video</span>
+                              <div className="text-muted-foreground">
+                                <Image className="h-5 w-5" />
+                              </div>
+                              <div className="text-sm font-medium text-foreground">Image</div>
+                              <div className="text-[10px] text-muted-foreground">Try-on or photo</div>
                             </motion.label>
                           )}
                         </div>
