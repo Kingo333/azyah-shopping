@@ -105,7 +105,7 @@ serve(async (req) => {
     formData.append('model_photo', model_photo_url);
     formData.append('clothing_photo', clothing_photo_url);
     formData.append('ratio', 'auto');
-    formData.append('prompt', 'Preserve the model identity. Apply the clothing naturally with realistic fabric drape and lighting. Keep background unchanged.');
+    formData.append('prompt', 'Preserve the model identity and keep the SAME background from the model photo. Apply the clothing naturally with realistic fabric drape and lighting. Do not change or remove the background.');
 
     console.log('[TheNewBlack Picture] Calling API...');
     
