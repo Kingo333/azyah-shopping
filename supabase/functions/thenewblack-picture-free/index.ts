@@ -107,7 +107,7 @@ serve(async (req) => {
     formData.append("model_photo", model_photo_url);
     formData.append("clothing_photo", clothing_photo_url);
     formData.append("ratio", "auto");
-    formData.append("prompt", "Preserve the model identity and keep the SAME background from the model photo. Apply the clothing and its details naturally with realistic fabric drape and lighting. Do not change or remove the background.");
+    formData.append("prompt", "Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the outfit with the provided clothing item, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Do NOT change face, hairstyle, makeup, accessories, scarf/hijab, hands, feet, or any other part of the image. Output should look photo-realistic and unchanged except for the clothing.");
 
     const apiResponse = await fetch(`https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${API_KEY}`, {
       method: "POST",
