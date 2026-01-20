@@ -180,18 +180,17 @@ serve(async (req) => {
       .getPublicUrl(fileName);
 
     // Save to ai_assets table so it appears in Previous Results gallery
-    await supabaseAdmin.from('ai_assets').insert({
+    const { error: insertError } = await supabaseAdmin.from('ai_assets').insert({
       user_id: user.id,
       asset_url: publicUrlData.publicUrl,
       asset_type: 'tryon_result',
-      metadata: {
-        model_photo: model_photo_url,
-        clothing_photo: clothing_photo_url,
-        provider: 'thenewblack',
-        source: 'video_flow',
-        original_url: resultUrl.trim()
-      }
+      title: `AI Try-On ${new Date().toLocaleDateString()}`
     });
+
+    if (insertError) {
+      console.error('[TheNewBlack Picture-Free] Failed to save to ai_assets:', insertError);
+      // Continue - don't fail the request just because asset tracking failed
+    }
 
     return new Response(
       JSON.stringify({ 
