@@ -147,6 +147,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     });
   };
 
+  // Clear picture tab uploads
+  const handleClearPicture = () => {
+    setPersonFile(null);
+    setOutfitFile(null);
+    setPersonUrl(null);
+    setOutfitUrl(null);
+    setPictureResult(null);
+  };
+
   // Generate picture try-on
   const handleGeneratePicture = async () => {
     if (!personUrl || !outfitUrl) {
@@ -493,9 +502,19 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 <TabsContent value="picture" className="mt-0 space-y-4">
                   {/* Upload Section */}
                   <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-sm text-muted-foreground text-center mb-3">
-                      Upload a photo of yourself and an outfit to try on
-                    </p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm text-muted-foreground">
+                        Upload a photo of yourself and an outfit to try on
+                      </p>
+                      {(personFile || outfitFile || personUrl || outfitUrl) && (
+                        <button
+                          onClick={handleClearPicture}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <UploadCard
@@ -893,10 +912,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     ) : pictureCredits <= 0 ? (
                       "No Credits Left"
                     ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" />
-                        Generate Try-On (~30 sec)
-                      </>
+                      "Generate Try-On (~30 sec)"
                     )}
                   </motion.button>
                 ) : (
@@ -918,7 +934,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     {videoPolling ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Creating Video (~2-5 min)...
+                        Creating Video (~1-2 min)...
                       </>
                     ) : generatingVideoInput ? (
                       <>
@@ -934,17 +950,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       videoCredits <= 0 ? (
                         "No Video Credits"
                       ) : (
-                        <>
-                          <Video className="h-4 w-4" />
-                          Generate Video (~2-5 min)
-                        </>
+                        "Generate Video (~1-2 min)"
                       )
                     ) : videoUploadMode === 'person-outfit' ? (
                       videoPersonUrl && videoOutfitUrl ? (
-                        <>
-                          <Sparkles className="h-4 w-4" />
-                          Generate Try-On (~30 sec)
-                        </>
+                        "Generate Try-On (~30 sec)"
                       ) : (
                         "Upload Both Images"
                       )
