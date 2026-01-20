@@ -62,6 +62,7 @@ serve(async (req) => {
     formData.append("model_photo", model_photo_url);
     formData.append("clothing_photo", clothing_photo_url);
     formData.append("ratio", "auto");
+    formData.append("prompt", "virtual try on, put the model in the outfit");
 
     const apiResponse = await fetch(`https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${API_KEY}`, {
       method: "POST",
