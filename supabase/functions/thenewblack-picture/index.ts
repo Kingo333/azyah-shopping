@@ -105,7 +105,7 @@ serve(async (req) => {
     formData.append('model_photo', model_photo_url);
     formData.append('clothing_photo', clothing_photo_url);
     formData.append('ratio', 'auto');
-    formData.append('prompt', 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the outfit with the provided clothing item, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Do NOT change face, hairstyle, makeup, accessories, scarf/hijab, hands, feet, or any other part of the image. Output should look photo-realistic and unchanged except for the clothing.');
+    formData.append('prompt', 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.');
 
     console.log('[TheNewBlack Picture] Calling API...');
     
