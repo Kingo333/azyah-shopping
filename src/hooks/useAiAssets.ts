@@ -58,7 +58,7 @@ export const useAiAssets = () => {
         .from('ai_assets')
         .select('*')
         .eq('user_id', debouncedUser.id)
-        .eq('asset_type', 'tryon_result')
+        .in('asset_type', ['tryon_result', 'tryon_video'])
         .order('created_at', { ascending: false })
         .limit(50);
 
