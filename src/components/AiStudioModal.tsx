@@ -649,7 +649,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       Upload your photo and outfit to create a 5-second fashion video
                     </p>
                     <p className="text-xs text-muted-foreground/70 text-center mb-3">
-                      Note: Video from photos uses 1 picture credit + 1 video credit. Your photo's background will be preserved.
+                      Note: Video from photos uses 1 picture credit + 1 video credit
                     </p>
                     
                     {!videoInputUrl ? (
