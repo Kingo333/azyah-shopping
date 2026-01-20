@@ -47,6 +47,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [videoResult, setVideoResult] = useState<string | null>(null);
   const [videoStatus, setVideoStatus] = useState<string>('');
   const [generatingVideoInput, setGeneratingVideoInput] = useState(false);
+  const [directImageFile, setDirectImageFile] = useState<File | null>(null);
+  const [uploadingDirectImage, setUploadingDirectImage] = useState(false);
   // Asset selection for deletion
   const [selectMode, setSelectMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
@@ -208,6 +210,23 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       toast({ title: 'Try-on ready for video!' });
     }
   };
+
+  // Handle direct image upload for video
+  const handleDirectImageUpload = async (file: File) => {
+    if (!validateFile(file)) return;
+    
+    requireAuth('upload images for video', async () => {
+      setDirectImageFile(file);
+      setUploadingDirectImage(true);
+      const url = await uploadImage(file, 'person');
+      setUploadingDirectImage(false);
+      if (url) {
+        setVideoInputUrl(url);
+        toast({ title: 'Image ready for video!' });
+      }
+    });
+  };
+
   // Start video generation
   const handleGenerateVideo = async () => {
     const imageUrl = videoInputUrl || pictureResult;
@@ -560,24 +579,61 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           )}
                         </motion.button>
 
-                        {/* Divider with "or" */}
-                        {pictureResult && (
-                          <div className="flex items-center gap-2 my-3">
-                            <div className="flex-1 border-t border-border" />
-                            <span className="text-xs text-muted-foreground">or use existing</span>
-                            <div className="flex-1 border-t border-border" />
-                          </div>
-                        )}
+                        {/* Divider */}
+                        <div className="flex items-center gap-2 my-3">
+                          <div className="flex-1 border-t border-border" />
+                          <span className="text-xs text-muted-foreground">or upload existing image</span>
+                          <div className="flex-1 border-t border-border" />
+                        </div>
+
+                        {/* Direct Image Upload */}
+                        <motion.label 
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all cursor-pointer
+                            ${directImageFile 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-dashed border-border hover:border-primary hover:bg-muted'
+                            }`}
+                        >
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleDirectImageUpload(f);
+                            }}
+                          />
+                          {uploadingDirectImage ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="text-sm">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Image className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">Upload Image for Video</span>
+                            </>
+                          )}
+                        </motion.label>
 
                         {/* Use from Picture Tab */}
                         {pictureResult && (
-                          <button
-                            onClick={() => setVideoInputUrl(pictureResult)}
-                            className="w-full py-2 text-sm font-medium text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition flex items-center justify-center gap-2"
-                          >
-                            <Image className="h-4 w-4" />
-                            Use Picture Tab Result
-                          </button>
+                          <>
+                            <div className="flex items-center gap-2 my-3">
+                              <div className="flex-1 border-t border-border" />
+                              <span className="text-xs text-muted-foreground">or</span>
+                              <div className="flex-1 border-t border-border" />
+                            </div>
+                            <button
+                              onClick={() => setVideoInputUrl(pictureResult)}
+                              className="w-full py-2 text-sm font-medium text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition flex items-center justify-center gap-2"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              Use Picture Tab Result
+                            </button>
+                          </>
                         )}
                       </>
                     ) : (
@@ -604,6 +660,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                             setVideoOutfitFile(null);
                             setVideoPersonUrl(null);
                             setVideoOutfitUrl(null);
+                            setDirectImageFile(null);
                           }}
                           className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition"
                         >
