@@ -189,17 +189,17 @@ serve(async (req) => {
     console.log('[TheNewBlack Picture] Stored at:', publicUrl.publicUrl);
 
     // Save to ai_assets table
-    await serviceClient.from('ai_assets').insert({
+    const { error: insertError } = await serviceClient.from('ai_assets').insert({
       user_id: user.id,
       asset_url: publicUrl.publicUrl,
       asset_type: 'tryon_result',
-      metadata: {
-        model_photo: model_photo_url,
-        clothing_photo: clothing_photo_url,
-        provider: 'thenewblack',
-        original_url: resultUrl.trim()
-      }
+      title: `AI Try-On ${new Date().toLocaleDateString()}`
     });
+
+    if (insertError) {
+      console.error('[TheNewBlack Picture] Failed to save to ai_assets:', insertError);
+      // Continue - don't fail the request just because asset tracking failed
+    }
 
     return new Response(
       JSON.stringify({ 
