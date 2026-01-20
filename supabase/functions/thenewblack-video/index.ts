@@ -112,7 +112,15 @@ serve(async (req) => {
       formData.append('prompt', VIDEO_PROMPT);
       formData.append('time', '5'); // 5 second video
 
-      console.log('[TheNewBlack Video] Calling API to start generation...');
+      // Enhanced logging for debugging
+      console.log('[TheNewBlack Video] Request details:', {
+        endpoint: 'https://thenewblack.ai/api/1.1/wf/ai-video',
+        hasApiKey: !!apiKey,
+        imageUrlLength: image_url?.length,
+        imageUrlPreview: image_url?.substring(0, 80) + '...',
+        promptLength: VIDEO_PROMPT.length,
+        time: '5'
+      });
       
       const apiResponse = await fetch(
         `https://thenewblack.ai/api/1.1/wf/ai-video?api_key=${apiKey}`,
@@ -139,12 +147,38 @@ serve(async (req) => {
 
       // Get the API response - may be JSON or plain text
       const responseText = await apiResponse.text();
-      console.log('[TheNewBlack Video] API Response:', responseText);
+      console.log('[TheNewBlack Video] API Response:', {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        bodyPreview: responseText.substring(0, 200)
+      });
 
       // Try to parse as JSON first (in case API returns JSON)
       let jobId: string;
       try {
         const jsonResponse = JSON.parse(responseText);
+        
+        // Check for empty success response - this is the main issue!
+        // API returns {"status":"success","response":{}} when request fails silently
+        if (jsonResponse.status === 'success' && 
+            (!jsonResponse.response || Object.keys(jsonResponse.response).length === 0) &&
+            !jsonResponse.id && !jsonResponse.job_id) {
+          console.error('[TheNewBlack Video] API returned empty success - no job ID provided');
+          
+          // Refund credit
+          await serviceClient.from('user_credits')
+            .update({ video_credits: credits[0].video_credits })
+            .eq('user_id', user.id);
+
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              error: 'Video API returned empty response. This may indicate an issue with the API key or request format.' 
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         // Check if it's an error response
         if (jsonResponse.status === 'error' || jsonResponse.error) {
           console.error('[TheNewBlack Video] API returned error:', jsonResponse);
@@ -166,10 +200,14 @@ serve(async (req) => {
         jobId = responseText;
       }
 
-      console.log('[TheNewBlack Video] Extracted Job ID:', jobId);
+      const cleanJobId = jobId.trim();
+      console.log('[TheNewBlack Video] Extracted Job ID:', cleanJobId);
 
-      if (!jobId || jobId.trim().length === 0) {
-        console.error('[TheNewBlack Video] Invalid job ID');
+      // Validate job ID format - should be numeric like "1761033139928x378400228801150800"
+      // Accept formats: "123456x789012" or just long numbers
+      const validJobIdPattern = /^(\d+x\d+|\d{10,})$/;
+      if (!cleanJobId || cleanJobId.length === 0 || !validJobIdPattern.test(cleanJobId)) {
+        console.error('[TheNewBlack Video] Invalid job ID format:', cleanJobId.substring(0, 100));
         
         // Refund credit
         await serviceClient.from('user_credits')
@@ -177,7 +215,7 @@ serve(async (req) => {
           .eq('user_id', user.id);
 
         return new Response(
-          JSON.stringify({ ok: false, error: 'Invalid response from API' }),
+          JSON.stringify({ ok: false, error: 'Invalid job ID format received from API. Please try again.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -185,7 +223,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           ok: true, 
-          job_id: jobId.trim(),
+          job_id: cleanJobId,
           status: 'processing',
           message: 'Video generation started. Check back in 2-5 minutes.',
           credits_remaining: credits[0].video_credits - 1
