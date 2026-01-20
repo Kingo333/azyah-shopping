@@ -29,6 +29,14 @@ interface VideoCheckResult {
   error?: string;
 }
 
+// Free picture generation for video flow (no credit deduction)
+interface FreePictureResult {
+  ok: boolean;
+  result_url?: string;
+  stored?: boolean;
+  error?: string;
+}
+
 export function useTheNewBlack() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -257,12 +265,57 @@ export function useTheNewBlack() {
     setError(null);
   }, []);
 
+  // Generate picture for video flow - FREE (no credit deduction)
+  const generatePictureFree = useCallback(async (
+    modelPhotoUrl: string,
+    clothingPhotoUrl: string
+  ): Promise<FreePictureResult> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('[useTheNewBlack] Generating picture for video (free)...');
+
+      const { data, error: invokeError } = await supabase.functions.invoke('thenewblack-picture-free', {
+        body: {
+          model_photo_url: modelPhotoUrl,
+          clothing_photo_url: clothingPhotoUrl
+        }
+      });
+
+      if (invokeError) {
+        throw invokeError;
+      }
+
+      if (!data.ok) {
+        throw new Error(data.error || 'Generation failed');
+      }
+
+      console.log('[useTheNewBlack] Free picture generated:', data.result_url);
+
+      return data as FreePictureResult;
+    } catch (err) {
+      console.error('[useTheNewBlack] Free picture generation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Generation failed';
+      setError(errorMessage);
+      toast({
+        title: 'Generation failed',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      return { ok: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   return {
     loading,
     videoPolling,
     error,
     uploadImage,
     generatePicture,
+    generatePictureFree,
     startVideoGeneration,
     checkVideoStatus,
     pollVideoUntilComplete,
