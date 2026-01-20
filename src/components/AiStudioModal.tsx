@@ -38,11 +38,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [pictureResult, setPictureResult] = useState<string | null>(null);
   
   // Video tab state
+  const [videoPersonFile, setVideoPersonFile] = useState<File | null>(null);
+  const [videoOutfitFile, setVideoOutfitFile] = useState<File | null>(null);
+  const [videoPersonUrl, setVideoPersonUrl] = useState<string | null>(null);
+  const [videoOutfitUrl, setVideoOutfitUrl] = useState<string | null>(null);
   const [videoInputUrl, setVideoInputUrl] = useState<string | null>(null);
   const [videoJobId, setVideoJobId] = useState<string | null>(null);
   const [videoResult, setVideoResult] = useState<string | null>(null);
   const [videoStatus, setVideoStatus] = useState<string>('');
-  
+  const [generatingVideoInput, setGeneratingVideoInput] = useState(false);
   // Asset selection for deletion
   const [selectMode, setSelectMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
@@ -52,7 +56,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     loading, 
     videoPolling, 
     uploadImage, 
-    generatePicture, 
+    generatePicture,
+    generatePictureFree,
     startVideoGeneration,
     pollVideoUntilComplete 
   } = useTheNewBlack();
@@ -155,6 +160,54 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     }
   };
 
+  // Handle video tab person upload
+  const handleVideoPersonUpload = async (file: File) => {
+    if (!validateFile(file)) return;
+    
+    requireAuth('upload images for AI Try-On', async () => {
+      setVideoPersonFile(file);
+      const url = await uploadImage(file, 'person');
+      if (url) {
+        setVideoPersonUrl(url);
+        toast({ title: 'Person image uploaded' });
+      }
+    });
+  };
+
+  // Handle video tab outfit upload
+  const handleVideoOutfitUpload = async (file: File) => {
+    if (!validateFile(file)) return;
+    
+    requireAuth('upload images for AI Try-On', async () => {
+      setVideoOutfitFile(file);
+      const url = await uploadImage(file, 'outfit');
+      if (url) {
+        setVideoOutfitUrl(url);
+        toast({ title: 'Outfit image uploaded' });
+      }
+    });
+  };
+
+  // Generate picture for video (FREE - no credit deduction)
+  const handleGeneratePictureForVideo = async () => {
+    if (!videoPersonUrl || !videoOutfitUrl) {
+      toast({
+        title: 'Missing images',
+        description: 'Please upload both person and outfit images',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setGeneratingVideoInput(true);
+    const result = await generatePictureFree(videoPersonUrl, videoOutfitUrl);
+    setGeneratingVideoInput(false);
+    
+    if (result.ok && result.result_url) {
+      setVideoInputUrl(result.result_url);
+      toast({ title: 'Try-on ready for video!' });
+    }
+  };
   // Start video generation
   const handleGenerateVideo = async () => {
     const imageUrl = videoInputUrl || pictureResult;
@@ -454,33 +507,109 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                 {/* Video Tab */}
                 <TabsContent value="video" className="mt-0 space-y-4">
-                  {/* Info */}
+                  {/* Upload Section for Video Tab */}
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-sm text-muted-foreground text-center mb-3">
-                      Create a 5-second fashion video from your try-on result
+                      Upload your photo and outfit to create a 5-second fashion video
                     </p>
                     
-                    {/* Input image preview */}
-                    {(videoInputUrl || pictureResult) ? (
-                      <div className="aspect-[3/4] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden bg-muted mb-3 relative">
-                        <img 
-                          src={videoInputUrl || pictureResult || ''} 
-                          alt="Video input" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-2 left-2 right-2 text-center">
-                          <span className="text-xs bg-black/50 text-white px-2 py-1 rounded">
-                            Input image
-                          </span>
+                    {!videoInputUrl ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <UploadCard
+                            icon={<User className="h-5 w-5" />}
+                            label="Person"
+                            file={videoPersonFile}
+                            hasUrl={!!videoPersonUrl}
+                            onFile={handleVideoPersonUpload}
+                            hint="Full-body photo"
+                            loading={loading && videoPersonFile && !videoPersonUrl}
+                          />
+                          <UploadCard
+                            icon={<Shirt className="h-5 w-5" />}
+                            label="Outfit"
+                            file={videoOutfitFile}
+                            hasUrl={!!videoOutfitUrl}
+                            onFile={handleVideoOutfitUpload}
+                            hint="Clear front view"
+                            loading={loading && videoOutfitFile && !videoOutfitUrl}
+                          />
                         </div>
-                      </div>
+                        
+                        {/* Generate Try-On Button */}
+                        <motion.button
+                          onClick={handleGeneratePictureForVideo}
+                          disabled={generatingVideoInput || !videoPersonUrl || !videoOutfitUrl}
+                          whileTap={{ scale: 0.99 }}
+                          className="w-full py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2
+                            disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
+                            bg-secondary text-secondary-foreground hover:opacity-90"
+                        >
+                          {generatingVideoInput ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Generating (~30 sec)...
+                            </>
+                          ) : !videoPersonUrl || !videoOutfitUrl ? (
+                            "Upload Both Images"
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              Generate Try-On (~30 sec)
+                            </>
+                          )}
+                        </motion.button>
+
+                        {/* Divider with "or" */}
+                        {pictureResult && (
+                          <div className="flex items-center gap-2 my-3">
+                            <div className="flex-1 border-t border-border" />
+                            <span className="text-xs text-muted-foreground">or use existing</span>
+                            <div className="flex-1 border-t border-border" />
+                          </div>
+                        )}
+
+                        {/* Use from Picture Tab */}
+                        {pictureResult && (
+                          <button
+                            onClick={() => setVideoInputUrl(pictureResult)}
+                            className="w-full py-2 text-sm font-medium text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition flex items-center justify-center gap-2"
+                          >
+                            <Image className="h-4 w-4" />
+                            Use Picture Tab Result
+                          </button>
+                        )}
+                      </>
                     ) : (
-                      <div className="aspect-[3/4] w-full max-w-[200px] mx-auto rounded-xl bg-muted flex items-center justify-center mb-3">
-                        <div className="text-center text-muted-foreground">
-                          <Image className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-xs">Generate a picture first</p>
+                      <>
+                        {/* Input image preview */}
+                        <div className="aspect-[3/4] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden bg-muted mb-3 relative">
+                          <img 
+                            src={videoInputUrl} 
+                            alt="Video input" 
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-2 left-2 right-2 text-center">
+                            <span className="text-xs bg-black/50 text-white px-2 py-1 rounded">
+                              Ready for video
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                        
+                        {/* Change image button */}
+                        <button
+                          onClick={() => {
+                            setVideoInputUrl(null);
+                            setVideoPersonFile(null);
+                            setVideoOutfitFile(null);
+                            setVideoPersonUrl(null);
+                            setVideoOutfitUrl(null);
+                          }}
+                          className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition"
+                        >
+                          ← Change image
+                        </button>
+                      </>
                     )}
 
                     {/* Processing status */}
@@ -488,7 +617,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       <div className="text-center py-4">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
                         <p className="text-sm text-muted-foreground">{videoStatus || 'Generating video...'}</p>
-                        <p className="text-xs text-muted-foreground mt-1">This takes 2-5 minutes</p>
+                        <p className="text-xs text-muted-foreground mt-1">Estimated time: ~59 seconds</p>
                       </div>
                     )}
                   </div>
@@ -567,7 +696,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating...
+                        Generating (~30 sec)...
                       </>
                     ) : !personUrl || !outfitUrl ? (
                       "Upload Both Images"
@@ -576,14 +705,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4" />
-                        Generate Try-On
+                        Generate Try-On (~30 sec)
                       </>
                     )}
                   </motion.button>
                 ) : (
                   <motion.button
                     onClick={handleGenerateVideo}
-                    disabled={videoPolling || !videoInputUrl && !pictureResult || videoCredits <= 0}
+                    disabled={videoPolling || generatingVideoInput || !videoInputUrl || videoCredits <= 0}
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
                       disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
@@ -592,16 +721,21 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     {videoPolling ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Creating Video...
+                        Creating Video (~59 sec)...
                       </>
-                    ) : !videoInputUrl && !pictureResult ? (
-                      "Generate Picture First"
+                    ) : generatingVideoInput ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Preparing...
+                      </>
+                    ) : !videoInputUrl ? (
+                      "Generate Try-On First"
                     ) : videoCredits <= 0 ? (
                       "No Video Credits"
                     ) : (
                       <>
                         <Video className="h-4 w-4" />
-                        Generate Video
+                        Generate Video (~59 sec)
                       </>
                     )}
                   </motion.button>
