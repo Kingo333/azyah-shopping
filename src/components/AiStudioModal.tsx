@@ -37,6 +37,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [outfitUrl, setOutfitUrl] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<string | null>(null);
   
+  // Dedicated upload states for picture tab
+  const [uploadingPerson, setUploadingPerson] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
+  
   // Video tab state
   const [videoPersonFile, setVideoPersonFile] = useState<File | null>(null);
   const [videoOutfitFile, setVideoOutfitFile] = useState<File | null>(null);
@@ -117,7 +121,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     
     requireAuth('upload images for AI Try-On', async () => {
       setPersonFile(file);
+      setUploadingPerson(true);
       const url = await uploadImage(file, 'person');
+      setUploadingPerson(false);
       if (url) {
         setPersonUrl(url);
         toast({ title: 'Person image uploaded' });
@@ -131,7 +137,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     
     requireAuth('upload images for AI Try-On', async () => {
       setOutfitFile(file);
+      setUploadingOutfit(true);
       const url = await uploadImage(file, 'outfit');
+      setUploadingOutfit(false);
       if (url) {
         setOutfitUrl(url);
         toast({ title: 'Outfit image uploaded' });
@@ -485,7 +493,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         hasUrl={!!personUrl}
                         onFile={handlePersonUpload}
                         hint="Full-body photo"
-                        loading={loading && personFile && !personUrl}
+                        loading={uploadingPerson}
                       />
                       <UploadCard
                         icon={<Shirt className="h-5 w-5" />}
@@ -494,7 +502,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         hasUrl={!!outfitUrl}
                         onFile={handleOutfitUpload}
                         hint="Clear front view"
-                        loading={loading && outfitFile && !outfitUrl}
+                        loading={uploadingOutfit}
                       />
                     </div>
                   </div>
@@ -717,10 +725,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                                 }}
                               />
                               <div className="text-muted-foreground">
-                                <Image className="h-5 w-5" />
+                                <Video className="h-5 w-5" />
                               </div>
-                              <div className="text-sm font-medium text-foreground">Image</div>
-                              <div className="text-[10px] text-muted-foreground">Try-on or photo</div>
+                              <div className="text-sm font-medium text-foreground">Upload for Video</div>
+                              <div className="text-[10px] text-muted-foreground">Any image to animate</div>
                             </motion.label>
                           )}
                         </div>
@@ -852,7 +860,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
-                    disabled={loading || !personUrl || !outfitUrl || pictureCredits <= 0}
+                    disabled={loading || uploadingPerson || uploadingOutfit || !personUrl || !outfitUrl || pictureCredits <= 0}
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
                       disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
@@ -862,6 +870,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Generating (~30 sec)...
+                      </>
+                    ) : uploadingPerson || uploadingOutfit ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading...
                       </>
                     ) : !personUrl || !outfitUrl ? (
                       "Upload Both Images"
