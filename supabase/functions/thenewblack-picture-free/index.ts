@@ -46,27 +46,26 @@ serve(async (req) => {
       );
     }
 
-    const API_KEY = Deno.env.get("THENEWBLACK_API_KEY");
+    const API_KEY = Deno.env.get("THE_NEW_BLACK_API_KEY");
     if (!API_KEY) {
-      console.error("THENEWBLACK_API_KEY not configured");
+      console.error("THE_NEW_BLACK_API_KEY not configured");
       return new Response(
         JSON.stringify({ ok: false, error: "API not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Call The New Black VTO stream API
+    // Call The New Black VTO stream API using FormData
     console.log("Calling The New Black VTO stream API (free - no credit deduction)...");
-    const apiResponse = await fetch("https://api.thenewblack.ai/api/1.1/wf/vto_stream", {
+    
+    const formData = new FormData();
+    formData.append("model_photo", model_photo_url);
+    formData.append("clothing_photo", clothing_photo_url);
+    formData.append("ratio", "auto");
+
+    const apiResponse = await fetch(`https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${API_KEY}`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model_photo_url,
-        clothing_photo_url,
-      }),
+      body: formData,
     });
 
     if (!apiResponse.ok) {
@@ -78,15 +77,14 @@ serve(async (req) => {
       );
     }
 
-    const apiData = await apiResponse.json();
-    console.log("API response:", JSON.stringify(apiData));
+    // Response is a text URL, not JSON
+    const resultUrl = await apiResponse.text();
+    console.log("API response URL:", resultUrl);
 
-    const resultUrl = apiData.response?.result_url || apiData.result_url;
-
-    if (!resultUrl) {
-      console.error("No result URL in response:", apiData);
+    if (!resultUrl || !resultUrl.startsWith("http")) {
+      console.error("Invalid result URL:", resultUrl);
       return new Response(
-        JSON.stringify({ ok: false, error: "No result URL returned" }),
+        JSON.stringify({ ok: false, error: "No valid result URL returned" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -97,7 +95,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const imageResponse = await fetch(resultUrl);
+    const imageResponse = await fetch(resultUrl.trim());
     const imageBlob = await imageResponse.blob();
     const imageBuffer = await imageBlob.arrayBuffer();
     
@@ -114,7 +112,7 @@ serve(async (req) => {
       console.error("Upload error:", uploadError);
       // Still return the original URL if upload fails
       return new Response(
-        JSON.stringify({ ok: true, result_url: resultUrl, stored: false }),
+        JSON.stringify({ ok: true, result_url: resultUrl.trim(), stored: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
