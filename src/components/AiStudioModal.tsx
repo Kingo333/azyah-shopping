@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles } from 'lucide-react';
+import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -160,7 +160,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     const result = await generatePicture(personUrl, outfitUrl);
     if (result.ok && result.result_url) {
       setPictureResult(result.result_url);
-      setVideoInputUrl(result.result_url); // Auto-set for video tab
+      // NOTE: Do NOT auto-set videoInputUrl - user must explicitly use "Make Video" button
       await refetchCredits();
       await fetchAssets();
     }
@@ -256,28 +256,34 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     setVideoOutfitFile(null);
     setVideoPersonUrl(null);
     setVideoOutfitUrl(null);
+    setVideoInputUrl(null);
+    setVideoResult(null);
+    setVideoJobId(null);
     setVideoUploadMode(null);
   };
 
   // Clear direct upload selection
   const handleClearDirectUpload = () => {
     setDirectImageFile(null);
+    setUploadingDirectImage(false);
     setVideoInputUrl(null);
+    setVideoResult(null);
+    setVideoJobId(null);
     setVideoUploadMode(null);
   };
 
-  // Start video generation
+  // Start video generation - only use videoInputUrl (no pictureResult fallback)
   const handleGenerateVideo = async () => {
-    const imageUrl = videoInputUrl || pictureResult;
-    
-    if (!imageUrl) {
+    if (!videoInputUrl) {
       toast({
         title: 'No image selected',
-        description: 'Generate a picture try-on first or upload an image',
+        description: 'Generate a try-on first or upload an image',
         variant: 'destructive'
       });
       return;
     }
+    
+    const imageUrl = videoInputUrl;
 
     if (videoCredits <= 0) {
       toast({
@@ -310,9 +316,20 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     }
   };
 
-  // Use picture result for video
+  // Use picture result for video - clear other video state first
   const handleUseForVideo = () => {
     if (pictureResult) {
+      // Clear any existing video upload state
+      setVideoPersonFile(null);
+      setVideoOutfitFile(null);
+      setVideoPersonUrl(null);
+      setVideoOutfitUrl(null);
+      setDirectImageFile(null);
+      setUploadingDirectImage(false);
+      setVideoResult(null);
+      setVideoJobId(null);
+      setVideoUploadMode(null);
+      // Now set the picture result
       setVideoInputUrl(pictureResult);
       setActiveTab('video');
       toast({ title: 'Image ready for video generation' });
@@ -640,47 +657,59 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                         {/* Option 2: Direct Image Upload */}
                         <div className={`transition-all ${videoUploadMode === 'person-outfit' ? 'opacity-40 pointer-events-none' : ''}`}>
-                          <motion.label 
-                            whileHover={{ scale: videoUploadMode === 'person-outfit' ? 1 : 1.01 }}
-                            whileTap={{ scale: videoUploadMode === 'person-outfit' ? 1 : 0.99 }}
-                            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all cursor-pointer
-                              ${directImageFile 
-                                ? 'border-primary bg-primary/5' 
-                                : 'border-dashed border-border hover:border-primary hover:bg-muted'
-                              }
-                              ${videoUploadMode === 'person-outfit' ? 'cursor-not-allowed' : ''}`}
-                          >
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={videoUploadMode === 'person-outfit'}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) handleDirectImageUpload(f);
-                              }}
-                            />
-                            {uploadingDirectImage ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-sm">Uploading...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Image className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Upload Image for Video</span>
-                              </>
-                            )}
-                          </motion.label>
-                          
-                          {/* Clear button for direct upload */}
-                          {videoUploadMode === 'direct' && directImageFile && (
-                            <button
-                              onClick={handleClearDirectUpload}
-                              className="w-full mt-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
+                          {/* Show image preview if file selected */}
+                          {directImageFile ? (
+                            <div className="relative">
+                              <div className="aspect-[3/4] w-full max-w-[150px] mx-auto rounded-xl overflow-hidden bg-muted border border-primary">
+                                <img 
+                                  src={URL.createObjectURL(directImageFile)} 
+                                  alt="Upload preview"
+                                  className="w-full h-full object-cover"
+                                />
+                                {uploadingDirectImage && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                  </div>
+                                )}
+                                {!uploadingDirectImage && videoInputUrl && (
+                                  <div className="absolute bottom-2 left-2 right-2 text-center">
+                                    <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                                      ✓ Ready for video
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Clear button */}
+                              <button
+                                onClick={handleClearDirectUpload}
+                                className="w-full mt-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition flex items-center justify-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Clear selection
+                              </button>
+                            </div>
+                          ) : (
+                            <motion.label 
+                              whileHover={{ scale: videoUploadMode === 'person-outfit' ? 1 : 1.01 }}
+                              whileTap={{ scale: videoUploadMode === 'person-outfit' ? 1 : 0.99 }}
+                              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all cursor-pointer
+                                border-dashed border-border hover:border-primary hover:bg-muted
+                                ${videoUploadMode === 'person-outfit' ? 'cursor-not-allowed' : ''}`}
                             >
-                              Clear selection
-                            </button>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={videoUploadMode === 'person-outfit'}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleDirectImageUpload(f);
+                                }}
+                              />
+                              <Image className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">Upload Image for Video</span>
+                            </motion.label>
                           )}
                         </div>
 
@@ -835,8 +864,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   </motion.button>
                 ) : (
                   <motion.button
-                    onClick={handleGenerateVideo}
-                    disabled={videoPolling || generatingVideoInput || !videoInputUrl || videoCredits <= 0}
+                    onClick={videoInputUrl ? handleGenerateVideo : handleGeneratePictureForVideo}
+                    disabled={
+                      videoPolling || 
+                      generatingVideoInput || 
+                      uploadingDirectImage ||
+                      (videoInputUrl ? videoCredits <= 0 : !(videoPersonUrl && videoOutfitUrl) && !directImageFile)
+                    }
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
                       disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
@@ -850,17 +884,35 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     ) : generatingVideoInput ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Preparing...
+                        Generating Try-On (~30 sec)...
                       </>
-                    ) : !videoInputUrl ? (
-                      "Generate Try-On First"
-                    ) : videoCredits <= 0 ? (
-                      "No Video Credits"
-                    ) : (
+                    ) : uploadingDirectImage ? (
                       <>
-                        <Video className="h-4 w-4" />
-                        Generate Video (~59 sec)
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading Image...
                       </>
+                    ) : videoInputUrl ? (
+                      videoCredits <= 0 ? (
+                        "No Video Credits"
+                      ) : (
+                        <>
+                          <Video className="h-4 w-4" />
+                          Generate Video (~59 sec)
+                        </>
+                      )
+                    ) : videoUploadMode === 'person-outfit' ? (
+                      videoPersonUrl && videoOutfitUrl ? (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate Try-On (~30 sec)
+                        </>
+                      ) : (
+                        "Upload Both Images"
+                      )
+                    ) : videoUploadMode === 'direct' ? (
+                      "Uploading..."
+                    ) : (
+                      "Choose an Option Above"
                     )}
                   </motion.button>
                 )}
