@@ -470,7 +470,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-10 rounded-t-3xl">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">👕</span>
+                  <Shirt className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold text-foreground">AI Studio</h2>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video</p>
