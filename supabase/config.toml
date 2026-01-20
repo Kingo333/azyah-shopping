@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.extract-link-metadata]
 verify_jwt = false
+
+[functions.thenewblack-picture]
+verify_jwt = false
+
+[functions.thenewblack-video]
+verify_jwt = false

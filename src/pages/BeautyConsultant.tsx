@@ -321,6 +321,7 @@ export default function BeautyConsultantPage() {
           ai_studio_credits: credits?.ai_studio_credits ?? 0,
           beauty_credits: result.consultation.beauty_credits,
           wardrobe_credits: credits?.wardrobe_credits ?? 0,
+          video_credits: credits?.video_credits ?? 1,
           is_premium: result.consultation.is_premium || false
         });
       }
