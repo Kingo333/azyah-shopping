@@ -50,6 +50,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [directImageFile, setDirectImageFile] = useState<File | null>(null);
   const [uploadingDirectImage, setUploadingDirectImage] = useState(false);
   
+  // Dedicated upload states for video tab
+  const [uploadingVideoPerson, setUploadingVideoPerson] = useState(false);
+  const [uploadingVideoOutfit, setUploadingVideoOutfit] = useState(false);
+  
   // Mutual exclusivity: which upload mode is active in video tab
   const [videoUploadMode, setVideoUploadMode] = useState<'person-outfit' | 'direct' | null>(null);
   
@@ -178,7 +182,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       setVideoUploadMode('person-outfit');
       
       setVideoPersonFile(file);
+      setUploadingVideoPerson(true);
       const url = await uploadImage(file, 'person');
+      setUploadingVideoPerson(false);
       if (url) {
         setVideoPersonUrl(url);
         toast({ title: 'Person image uploaded' });
@@ -198,7 +204,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       setVideoUploadMode('person-outfit');
       
       setVideoOutfitFile(file);
+      setUploadingVideoOutfit(true);
       const url = await uploadImage(file, 'outfit');
+      setUploadingVideoOutfit(false);
       if (url) {
         setVideoOutfitUrl(url);
         toast({ title: 'Outfit image uploaded' });
@@ -412,8 +420,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             animate={{ y: 0, opacity: 1 }} 
             exit={{ y: 24, opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh] overflow-hidden
-                       rounded-t-2xl sm:rounded-2xl bg-background shadow-2xl border border-border"
+            className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
+                       rounded-t-2xl sm:rounded-2xl bg-background shadow-2xl border border-border
+                       flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-10">
@@ -437,8 +446,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video')} className="flex-1">
-              <div className="px-4 pt-3 bg-card">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video')} className="flex-1 flex flex-col min-h-0">
+              <div className="flex-shrink-0 px-4 pt-3 bg-card">
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="picture" className="flex items-center gap-2">
                     <Image className="h-4 w-4" />
@@ -457,8 +466,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(92vh-180px)]">
+              {/* Body - scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 
                 {/* Picture Tab */}
                 <TabsContent value="picture" className="mt-0 space-y-4">
@@ -600,7 +609,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               hasUrl={!!videoPersonUrl}
                               onFile={handleVideoPersonUpload}
                               hint="Full-body photo"
-                              loading={loading && videoPersonFile && !videoPersonUrl}
+                              loading={uploadingVideoPerson}
                             />
                             <UploadCard
                               icon={<Shirt className="h-5 w-5" />}
@@ -609,7 +618,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               hasUrl={!!videoOutfitUrl}
                               onFile={handleVideoOutfitUpload}
                               hint="Clear front view"
-                              loading={loading && videoOutfitFile && !videoOutfitUrl}
+                              loading={uploadingVideoOutfit}
                             />
                           </div>
                           
@@ -659,8 +668,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         <div className={`transition-all ${videoUploadMode === 'person-outfit' ? 'opacity-40 pointer-events-none' : ''}`}>
                           {/* Show image preview if file selected */}
                           {directImageFile ? (
-                            <div className="relative">
-                              <div className="aspect-[3/4] w-full max-w-[150px] mx-auto rounded-xl overflow-hidden bg-muted border border-primary">
+                            <div className="space-y-2">
+                              {/* Match UploadCard style: h-32 rounded-xl */}
+                              <div className="relative h-32 rounded-xl overflow-hidden bg-muted border border-primary">
                                 <img 
                                   src={URL.createObjectURL(directImageFile)} 
                                   alt="Upload preview"
@@ -672,10 +682,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                                   </div>
                                 )}
                                 {!uploadingDirectImage && videoInputUrl && (
-                                  <div className="absolute bottom-2 left-2 right-2 text-center">
-                                    <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                                      ✓ Ready for video
-                                    </span>
+                                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                                    <span className="text-xs">✓ Ready</span>
                                   </div>
                                 )}
                               </div>
@@ -683,7 +691,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               {/* Clear button */}
                               <button
                                 onClick={handleClearDirectUpload}
-                                className="w-full mt-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition flex items-center justify-center gap-1"
+                                className="w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition flex items-center justify-center gap-1"
                               >
                                 <X className="h-3 w-3" />
                                 Clear selection
@@ -836,7 +844,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </div>
 
               {/* Sticky Action Bar */}
-              <div className="p-3 border-t border-border bg-card">
+              <div className="flex-shrink-0 p-3 border-t border-border bg-card">
                 {activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
