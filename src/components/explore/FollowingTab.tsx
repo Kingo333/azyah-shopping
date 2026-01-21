@@ -12,7 +12,7 @@ import { Users, Palette } from 'lucide-react';
 import HorizontalCarousel from './HorizontalCarousel';
 import { useFollows } from '@/hooks/useFollows';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
+import { getDisplayName } from '@/utils/userDisplayName';
 
 export const FollowingTab: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export const FollowingTab: React.FC = () => {
     queryFn: async () => {
       if (!following?.length) return { users: [], brands: [] };
 
-      // Get user details for followed users (using public_profiles table)
+      // Get user details for followed users
       const { data: usersData } = await supabase
         .from('public_profiles')
         .select('id, name, username, avatar_url')
@@ -40,7 +40,7 @@ export const FollowingTab: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // Get brands that might be followed (check if any following IDs match brand IDs)
+      // Get brands that might be followed
       const { data: brandsData } = await supabase
         .from('brands')
         .select('id, name, slug, logo_url')
@@ -97,16 +97,16 @@ export const FollowingTab: React.FC = () => {
 
   if (followingLoading || isLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {[1, 2].map((i) => (
-          <div key={i} className="space-y-4">
+          <div key={i} className="space-y-3">
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
               <Skeleton className="h-5 w-32" />
             </div>
-            <div className="flex gap-4 overflow-hidden">
+            <div className="flex gap-3 overflow-hidden">
               {[1, 2, 3, 4].map((j) => (
-                <Skeleton key={j} className="h-48 w-36 flex-shrink-0 rounded-xl" />
+                <Skeleton key={j} className="h-44 w-32 flex-shrink-0 rounded-xl" />
               ))}
             </div>
           </div>
@@ -117,29 +117,35 @@ export const FollowingTab: React.FC = () => {
 
   if (!following?.length || (!followedContent?.users?.length && !followedContent?.brands?.length)) {
     return (
-      <div className="text-center py-16">
-        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-          <Users className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">No followed content yet</h3>
-        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-          Follow brands and shoppers to see their latest updates here.
-        </p>
-        <Button onClick={() => navigate('/explore?tab=brands')}>
-          Discover Brands & Shoppers
-        </Button>
-      </div>
+      <Card className="border border-border/60 shadow-sm">
+        <CardContent className="py-12">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Users className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-semibold mb-2">No followed content yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+              Follow brands and shoppers to see their latest updates here
+            </p>
+            <Button onClick={() => navigate('/explore?tab=brands')} className="rounded-lg">
+              Discover Brands & Shoppers
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Friend Styling Tip */}
-      <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+      <Card className="border border-primary/20 bg-primary/5">
         <CardContent className="py-3 px-4 flex items-center gap-3">
-          <Palette className="h-5 w-5 text-primary flex-shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Tip:</span> You can style friends using their own clothes.{' '}
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Palette className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground flex-1">
+            <span className="font-medium text-foreground">Tip:</span> Style friends using their own clothes.{' '}
             <button 
               onClick={() => navigate('/dress-me/canvas?mode=friends')}
               className="text-primary hover:underline font-medium"
@@ -160,17 +166,17 @@ export const FollowingTab: React.FC = () => {
         >
           {/* Brand Logo Card */}
           <Card
-            className="flex-shrink-0 w-24 h-48 cursor-pointer hover:shadow-lg transition-shadow snap-start"
+            className="flex-shrink-0 w-24 h-44 cursor-pointer hover:shadow-md transition-all duration-200 snap-start border border-border/60"
             onClick={() => navigate(`/brand/${brand.slug}`)}
           >
             <CardContent className="flex flex-col items-center justify-center h-full p-4">
-              <Avatar className="h-16 w-16 mb-3">
+              <Avatar className="h-14 w-14 mb-3">
                 <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback className="text-base font-semibold">
                   {brand.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-xs text-center text-muted-foreground line-clamp-2">
+              <p className="text-xs text-center text-muted-foreground">
                 View All
               </p>
             </CardContent>
@@ -180,20 +186,20 @@ export const FollowingTab: React.FC = () => {
           {brand.products.map((product: any) => (
             <Card
               key={product.id}
-              className="flex-shrink-0 w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 flex flex-col overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 snap-start border border-border/60"
               onClick={() => navigate(`/p/${product.id}`)}
             >
-              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0">
+              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0 bg-muted">
                 <SmartImage
                   src={getPrimaryImageUrl(product)}
                   alt={product.title}
                   className="w-full h-full object-cover"
-                  sizes="144px"
+                  sizes="128px"
                 />
               </div>
-              <CardContent className="p-2 bg-card">
+              <CardContent className="p-2.5 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">{product.title}</p>
-                <p className="text-xs text-primary font-semibold">
+                <p className="text-xs text-primary font-semibold mt-0.5">
                   {new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: product.currency || 'USD',
@@ -215,17 +221,17 @@ export const FollowingTab: React.FC = () => {
         >
           {/* User Avatar Card */}
           <Card
-            className="flex-shrink-0 w-24 h-48 cursor-pointer hover:shadow-lg transition-shadow snap-start"
+            className="flex-shrink-0 w-24 h-44 cursor-pointer hover:shadow-md transition-all duration-200 snap-start border border-border/60"
             onClick={() => navigate(`/profile/${shopper.id}`)}
           >
             <CardContent className="flex flex-col items-center justify-center h-full p-4">
-              <Avatar className="h-16 w-16 mb-3">
+              <Avatar className="h-14 w-14 mb-3">
                 <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.display_name || 'User'} />
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback className="text-base font-semibold">
                   {(shopper.display_name || 'U').slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-xs text-center text-muted-foreground line-clamp-2">
+              <p className="text-xs text-center text-muted-foreground">
                 View Profile
               </p>
             </CardContent>
@@ -235,7 +241,7 @@ export const FollowingTab: React.FC = () => {
           {shopper.outfits.map((outfit: any) => (
             <Card
               key={outfit.id}
-              className="flex-shrink-0 w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 flex flex-col overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 snap-start border border-border/60"
               onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
             >
               <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0 bg-muted">
@@ -243,10 +249,10 @@ export const FollowingTab: React.FC = () => {
                   src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
                   alt={outfit.title || 'Outfit'}
                   className="w-full h-full object-cover"
-                  sizes="144px"
+                  sizes="128px"
                 />
               </div>
-              <CardContent className="p-2 bg-card">
+              <CardContent className="p-2.5 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">
                   {outfit.title || 'Untitled Outfit'}
                 </p>

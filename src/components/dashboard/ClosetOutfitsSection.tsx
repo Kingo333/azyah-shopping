@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus, ChevronRight } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
@@ -57,7 +57,7 @@ export const ClosetOutfitsSection: React.FC = () => {
     return '/placeholder.svg';
   };
 
-  // Get creator display name - show "You" if current user
+  // Get creator display name
   const getCreatorDisplayName = (fit: any): string => {
     if (user && fit?.user_id === user.id) {
       return 'You';
@@ -74,7 +74,7 @@ export const ClosetOutfitsSection: React.FC = () => {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Handle navigation - show dialog for guests instead of direct redirect
+  // Handle navigation with guest gate
   const handleNavigate = (path: string, actionDescription?: string) => {
     if (isGuest) {
       requireAuth(actionDescription || 'access your closet', () => {
@@ -85,13 +85,12 @@ export const ClosetOutfitsSection: React.FC = () => {
     }
   };
 
-  // Custom display order: keep shirts, show light blue jeans instead of dress/shoes
+  // Custom display order
   const getDisplayItems = () => {
     const shirts = closetItems.filter(item => 
       item.category === 'top' && (item.color === 'black' || item.color === 'white')
     ).slice(0, 2);
     
-    // Look for light blue jeans - check multiple color variations
     const blueJeans = closetItems.find(item => 
       item.category === 'bottom' && 
       (item.color === 'light blue' || item.color === 'lightblue' || item.color === 'blue')
@@ -101,14 +100,12 @@ export const ClosetOutfitsSection: React.FC = () => {
       return [...shirts, blueJeans];
     }
     
-    // Fallback: prioritize tops and bottoms only
     const preferredItems = closetItems.filter(item => 
       item.category === 'top' || item.category === 'bottom'
     ).slice(0, 3);
     
     if (preferredItems.length >= 3) return preferredItems;
     
-    // Final fallback: exclude shoes
     return closetItems.filter(item => item.category !== 'shoes').slice(0, 3);
   };
 
@@ -116,52 +113,51 @@ export const ClosetOutfitsSection: React.FC = () => {
 
   return (
     <>
-      <section className="px-4 pt-3 md:max-w-lg lg:max-w-xl">
+      <section className="px-4">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-0.5">
-          <h2 className="text-base font-serif font-medium text-foreground">Wardrobe</h2>
-          <Button 
-            variant="link" 
-            size="sm" 
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-base font-serif font-medium text-foreground tracking-tight">Wardrobe</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Add items to create looks & earn
+            </p>
+          </div>
+          <button
             onClick={() => handleNavigate('/dress-me/wardrobe', 'view your wardrobe')}
-            className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+            className="flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             View All
-          </Button>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
         
-        {/* Helper text */}
-        <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
-          Add your own or brand items to create looks, inspo, mood boards & earn
-        </p>
-        
         {/* Two-Card Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* Left Card - Closet Items (Grid Layout) */}
-          <div 
+        <div className="grid grid-cols-2 gap-3">
+          {/* Left Card - Closet Items */}
+          <Card 
             onClick={() => handleNavigate('/dress-me/wardrobe', 'access your closet')}
-            className="bg-card rounded-xl p-1.5 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+            className="p-3 border border-border/60 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200"
           >
-            {/* Grid of items with Create button */}
-            <div className="grid grid-cols-2 gap-0.5 flex-1">
-              {/* Create Button - circular */}
+            {/* Grid of items */}
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              {/* Create Button */}
               <div className="aspect-square flex items-center justify-center">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleNavigate('/dress-me/wardrobe', 'add items to your closet');
-                    }}
-                    className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors border border-[hsl(var(--azyah-maroon))]/30"
-                  >
-                    <Plus className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
-                  </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNavigate('/dress-me/wardrobe', 'add items to your closet');
+                  }}
+                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors border border-primary/20"
+                >
+                  <Plus className="h-4 w-4 text-primary" />
+                </button>
               </div>
               
               {/* Item thumbnails */}
               {displayClosetItems.map((item) => (
                 <div 
                   key={item.id} 
-                  className="aspect-square rounded-md overflow-hidden bg-secondary/30"
+                  className="aspect-square rounded-lg overflow-hidden bg-muted/50"
                 >
                   <img 
                     src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -171,42 +167,40 @@ export const ClosetOutfitsSection: React.FC = () => {
                 </div>
               ))}
               
-              {/* Fill empty slots if less than 3 items */}
+              {/* Fill empty slots */}
               {displayClosetItems.length < 3 && 
                 Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20" />
+                  <div key={`empty-${i}`} className="aspect-square rounded-lg bg-muted/30" />
                 ))
               }
             </div>
             
             {/* Bottom Label */}
-            <div className="mt-1">
-              <p className="text-[10px] font-medium text-foreground">
-                All clothes <span className="text-muted-foreground font-normal">• {closetItems.length}</span>
-              </p>
-            </div>
-          </div>
+            <p className="text-xs font-medium text-foreground">
+              All clothes <span className="text-muted-foreground font-normal">• {closetItems.length}</span>
+            </p>
+          </Card>
           
-          {/* Right Card - Outfits (Full image with creator info) */}
-          <div 
+          {/* Right Card - Outfits */}
+          <Card 
             onClick={() => handleNavigate('/dress-me/wardrobe?tab=community', 'view community outfits')}
-            className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+            className="p-3 border border-border/60 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200"
           >
-            {/* Image container with overlay plus button */}
-            <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 flex-1">
-              {/* Create & Earn CTA - top left corner */}
+            {/* Image container */}
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-muted/50 mb-2">
+              {/* Create & Earn CTA */}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNavigate('/dress-me', 'create outfits and earn rewards');
                 }}
-                className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/80 backdrop-blur-sm hover:bg-secondary transition-colors border border-[hsl(var(--azyah-maroon))]/25"
+                className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background transition-colors shadow-sm"
               >
-                <Plus className="h-2.5 w-2.5 text-[hsl(var(--azyah-maroon))]" />
-                <span className="text-[8px] font-medium text-[hsl(var(--azyah-maroon))]">Create & Earn</span>
+                <Plus className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-medium text-primary">Create & Earn</span>
               </button>
               
-              {/* Full Outfit Image */}
+              {/* Outfit Image */}
               <AnimatePresence mode="wait">
                 {currentOutfit ? (
                   <motion.img
@@ -221,31 +215,31 @@ export const ClosetOutfitsSection: React.FC = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground">No outfits</span>
+                    <span className="text-xs text-muted-foreground">No outfits</span>
                   </div>
                 )}
               </AnimatePresence>
             </div>
             
-            {/* Bottom Label with Creator Info */}
-            <div className="mt-1.5 flex items-center">
+            {/* Creator Info */}
+            <div className="flex items-center gap-2">
               {currentOutfit ? (
-                <div className="flex items-center gap-1.5">
-                  <Avatar className="h-4 w-4">
+                <>
+                  <Avatar className="h-5 w-5">
                     <AvatarImage src={currentOutfit.creator_avatar} />
-                    <AvatarFallback className="text-[6px] bg-secondary">
+                    <AvatarFallback className="text-[8px] bg-muted">
                       {getCreatorInitials(currentOutfit)}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-[10px] font-medium text-foreground truncate max-w-[80px]">
+                  <p className="text-xs font-medium text-foreground truncate">
                     {getCreatorDisplayName(currentOutfit)}
                   </p>
-                </div>
+                </>
               ) : (
-                <p className="text-[10px] font-medium text-foreground">Outfits</p>
+                <p className="text-xs font-medium text-foreground">Outfits</p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </section>
       
