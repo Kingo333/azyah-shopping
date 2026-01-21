@@ -188,16 +188,19 @@ export function useTheNewBlack() {
       const errorMessage = err instanceof Error ? err.message : 'Video generation failed';
       setError(errorMessage);
       
-      // Provide actionable messages based on step
+      // Provide actionable messages based on error type
       let userDescription = errorMessage;
-      if (errorMessage.includes('image_url_check')) {
-        userDescription = 'The image could not be accessed. Please try re-uploading it.';
-      } else if (errorMessage.includes('step') && errorMessage.includes('start')) {
-        userDescription = 'Video provider returned an invalid response. Please try a different image.';
-      } else if (errorMessage.includes('502') || errorMessage.includes('empty response')) {
-        userDescription = 'Video service is temporarily unavailable. Please try again later.';
-      } else if (errorMessage.includes('non-2xx') || errorMessage.includes('Unauthorized')) {
-        userDescription = 'Authentication error. Please try signing out and back in.';
+      
+      if (errorMessage.includes('empty response') || errorMessage.includes('provider returned')) {
+        userDescription = 'Video provider issue. Please try a different image or try again later.';
+      } else if (errorMessage.includes('image_url_check') || errorMessage.includes('content-type')) {
+        userDescription = 'Image could not be verified. Please re-upload the image.';
+      } else if (errorMessage.includes('not an image') || errorMessage.includes('content-type')) {
+        userDescription = 'The uploaded file is not a valid image. Please use JPG or PNG.';
+      } else if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        userDescription = 'Please sign out and back in, then try again.';
+      } else if (errorMessage.includes('credits')) {
+        userDescription = 'No video credits remaining. Please upgrade your plan.';
       }
       
       toast({

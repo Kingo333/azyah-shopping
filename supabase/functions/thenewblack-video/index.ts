@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VIDEO_PROMPT = "clear background of empty room and person has subtle, natural motions like gentle swaying then turning around to show back of outfit then turns back to front view";
+const VIDEO_PROMPT = "Front-facing model looks into camera from the image, does a slow 360° turn to show front/side/back, then returns to face camera and holds a final pose to display the full outfit.";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -54,8 +54,15 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body once - extract all needed fields
-    const { image_url, action, job_id } = await req.json();
+    // Parse request body once - extract all needed fields including optional overrides
+    const { image_url, action, job_id, prompt, time } = await req.json();
+    
+    // Allow optional prompt/time overrides from frontend
+    const finalPrompt = (typeof prompt === 'string' && prompt.trim().length >= 3) 
+      ? prompt.trim() 
+      : VIDEO_PROMPT;
+    
+    const finalTime = (time === '5' || time === '10') ? time : '5';
     
     // Create service client for database operations
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -72,11 +79,17 @@ serve(async (req) => {
       console.log('[TheNewBlack Video] Starting video generation for user:', user.id);
       console.log('[TheNewBlack Video] Image URL:', image_url);
 
-      // Verify image URL is publicly accessible before calling provider
+      // Verify image URL is publicly accessible AND is actually an image
       console.log('[TheNewBlack Video] Verifying image URL accessibility...');
       try {
-        const imageCheck = await fetch(image_url, { method: 'HEAD' });
-        console.log('[TheNewBlack Video] Image URL check status:', imageCheck.status);
+        const imageCheck = await fetch(image_url, { method: 'GET' });
+        const contentType = imageCheck.headers.get('content-type') || '';
+        console.log('[TheNewBlack Video] Image check:', {
+          status: imageCheck.status,
+          contentType: contentType,
+          isImage: contentType.startsWith('image/')
+        });
+        
         if (!imageCheck.ok) {
           console.error('[TheNewBlack Video] Image URL not accessible:', imageCheck.status);
           return new Response(
@@ -84,12 +97,28 @@ serve(async (req) => {
               ok: false, 
               step: 'image_url_check', 
               status: imageCheck.status,
+              contentType: contentType,
               error: 'Image URL is not publicly accessible. Please re-upload the image.' 
             }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        console.log('[TheNewBlack Video] Image URL verified accessible');
+        
+        if (!contentType.startsWith('image/')) {
+          console.error('[TheNewBlack Video] URL is not an image:', contentType);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              step: 'image_url_check', 
+              status: imageCheck.status,
+              contentType: contentType,
+              error: `Image URL must return a valid image. Got content-type: ${contentType}` 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        console.log('[TheNewBlack Video] Image URL verified as valid image');
       } catch (err) {
         console.error('[TheNewBlack Video] Image URL check error:', err);
         return new Response(
@@ -101,6 +130,21 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      // Validate prompt is reasonable
+      if (typeof finalPrompt !== 'string' || finalPrompt.trim().length < 3) {
+        console.error('[TheNewBlack Video] Prompt is invalid:', finalPrompt);
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            step: 'start', 
+            error: 'Server configuration error: VIDEO_PROMPT is missing or empty.' 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('[TheNewBlack Video] Using prompt:', finalPrompt.substring(0, 80) + '...');
 
       // Check and deduct video credits
       const { data: credits, error: creditsError } = await serviceClient.rpc('get_user_credits', {
@@ -143,8 +187,8 @@ serve(async (req) => {
       // Call The New Black API to start video generation
       const formData = new FormData();
       formData.append('image', image_url);
-      formData.append('prompt', VIDEO_PROMPT);
-      formData.append('time', '5'); // 5 second video
+      formData.append('prompt', finalPrompt);
+      formData.append('time', finalTime);
 
       // Enhanced logging for debugging
       console.log('[TheNewBlack Video] Request details:', {
@@ -237,7 +281,7 @@ serve(async (req) => {
               ok: false, 
               step: 'start',
               bodySnippet: responseText.substring(0, 200),
-              error: 'Video provider returned invalid response. This may indicate an API key or credits issue on their end.' 
+              error: 'Video provider returned empty response. This may indicate: 1) API key issue, 2) Image format not supported, or 3) Provider service issue. Please try a different image or contact support.' 
             }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
