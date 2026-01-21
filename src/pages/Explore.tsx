@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
-import { Home, Store, Users, UserCheck, Camera, Ruler, ChevronLeft } from 'lucide-react';
+import { Home, Store, Users, UserCheck, Camera, Ruler } from 'lucide-react';
 import YourFitContent from '@/pages/YourFitContent';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -56,91 +56,94 @@ const Explore: React.FC = () => {
   const displayInitial = displayName?.charAt(0)?.toUpperCase() || '?';
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="container mx-auto max-w-6xl px-4 py-4">
+    <div className="min-h-screen dashboard-bg pb-24">
+      <div className="container mx-auto max-w-6xl p-4">
         {/* Header */}
-        <header className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => navigate('/dashboard')}
-            className="h-9 w-9 rounded-lg"
+            className="flex items-center gap-2"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <Home className="h-4 w-4" />
+            Home
           </Button>
-          <h1 className="text-xl font-serif font-semibold text-foreground">Explore</h1>
-        </header>
+          <h1 className="text-2xl font-bold font-playfair">Explore</h1>
+        </div>
 
         {/* User Posting Section */}
         {user && (
-          <Card className="mb-6 border border-border/60 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-11 w-11 ring-2 ring-primary/10">
-                  <AvatarImage src={userProfile?.avatar_url || undefined} alt={displayName} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {displayInitial}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Share your outfit and tag items
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => setShowPostModal(true)} 
-                  size="sm"
-                  className="flex-shrink-0 h-9 px-4 rounded-lg"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Post
-                </Button>
+          <GlassPanel variant="default" className="p-4 mb-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12 border-2 border-primary/20">
+                <AvatarImage src={userProfile?.avatar_url || undefined} alt={displayName} />
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  {displayInitial}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{displayName}</p>
+                <p className="text-sm text-muted-foreground">
+                  Share your outfit and tag items from Azyah
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <Button onClick={() => setShowPostModal(true)} className="flex-shrink-0">
+                <Camera className="h-4 w-4 mr-2" />
+                Post
+              </Button>
+            </div>
+          </GlassPanel>
         )}
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 h-12">
-            <TabsTrigger value="following" className="flex items-center gap-1.5 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="following" className="flex items-center gap-1.5">
               <UserCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Following</span>
+              <span className="text-xs sm:text-sm">Following</span>
             </TabsTrigger>
-            <TabsTrigger value="shoppers" className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <TabsTrigger value="shoppers" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Shoppers</span>
+              <span className="text-xs sm:text-sm">Shoppers</span>
             </TabsTrigger>
-            <TabsTrigger value="brands" className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <TabsTrigger value="brands" className="flex items-center gap-1.5">
               <Store className="h-4 w-4" />
-              <span className="hidden sm:inline">Brands</span>
+              <span className="text-xs sm:text-sm">Brands</span>
             </TabsTrigger>
-            <TabsTrigger value="your-fit" className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <TabsTrigger value="your-fit" className="flex items-center gap-1.5">
               <Ruler className="h-4 w-4" />
-              <span className="hidden sm:inline">Your Fit</span>
+              <span className="text-xs sm:text-sm">Your Fit</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="following">
-            <FollowingTab />
+          <TabsContent value="brands">
+            <GlassPanel variant="premium" className="p-4 sm:p-6">
+              <BrandsTab />
+            </GlassPanel>
           </TabsContent>
 
           <TabsContent value="shoppers">
-            <ShoppersTab />
+            <GlassPanel variant="premium" className="p-4 sm:p-6">
+              <ShoppersTab />
+            </GlassPanel>
           </TabsContent>
 
-          <TabsContent value="brands">
-            <BrandsTab />
+          <TabsContent value="following">
+            <GlassPanel variant="premium" className="p-4 sm:p-6">
+              <FollowingTab />
+            </GlassPanel>
           </TabsContent>
 
           <TabsContent value="your-fit">
-            <YourFitContent />
+            <GlassPanel variant="premium" className="p-4 sm:p-6">
+              <YourFitContent />
+            </GlassPanel>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Create Post Modal */}
+      {/* Create Post Modal - Same as StyleLink */}
       <CreateStyleLinkPostModal
         open={showPostModal}
         onOpenChange={setShowPostModal}
