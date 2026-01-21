@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Plus, Trash2, ExternalLink, Grid, List } from 'lucide-react';
+import { Heart, Plus, Trash2, Grid, List } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
@@ -288,9 +288,15 @@ const FavoritesWishlistTab: React.FC = () => {
 
                   <div className={viewMode === 'grid' ? 'p-3' : 'flex-1 py-2'}>
                     {item.product.brands && (
-                      <p className="text-xs font-medium text-muted-foreground uppercase">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/brand/${item.product.brands!.name.toLowerCase().replace(/\s+/g, '-')}`);
+                        }}
+                        className="text-xs font-medium text-muted-foreground uppercase hover:text-primary hover:underline text-left"
+                      >
                         {item.product.brands.name}
-                      </p>
+                      </button>
                     )}
                     <h3 className="font-medium text-sm line-clamp-2">{item.product.title}</h3>
                     <p className="font-bold text-primary mt-1">
@@ -302,8 +308,7 @@ const FavoritesWishlistTab: React.FC = () => {
                         className="w-full mt-2"
                         size="sm"
                       >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Shop Now
+                        Shop
                       </Button>
                     )}
                   </div>

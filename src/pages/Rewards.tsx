@@ -132,7 +132,7 @@ export default function Rewards() {
                   variant="outline" 
                   size="sm" 
                   className="mt-2"
-                  onClick={() => navigate('/profile-settings')}
+                  onClick={() => navigate('/settings')}
                 >
                   Update Profile
                 </Button>

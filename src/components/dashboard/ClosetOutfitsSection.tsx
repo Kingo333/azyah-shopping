@@ -119,7 +119,7 @@ export const ClosetOutfitsSection: React.FC = () => {
       <section className="px-4 pt-3 md:max-w-lg lg:max-w-xl">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-0.5">
-          <h2 className="text-base font-serif font-medium text-foreground">Wardrobe Data</h2>
+          <h2 className="text-base font-serif font-medium text-foreground">Wardrobe</h2>
           <Button 
             variant="link" 
             size="sm" 
@@ -132,7 +132,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         
         {/* Helper text */}
         <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
-          Add items to improve recommendations and unlock Create & Earn
+          Add your own or brand items to create looks, inspo, mood boards & earn
         </p>
         
         {/* Two-Card Grid */}

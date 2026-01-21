@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import HorizontalCarousel from './HorizontalCarousel';
@@ -130,7 +131,7 @@ export const BrandsTab: React.FC = () => {
                   sizes="(max-width: 640px) 128px, 144px"
                 />
               </div>
-              <CardContent className="p-2 bg-card">
+              <CardContent className="p-2 bg-card space-y-1">
                 <p className="text-xs line-clamp-1 font-medium">{product.title}</p>
                 <p className="text-xs text-primary font-semibold">
                   {new Intl.NumberFormat('en-US', {
@@ -138,6 +139,17 @@ export const BrandsTab: React.FC = () => {
                     currency: product.currency || 'USD',
                   }).format(product.price_cents / 100)}
                 </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-6 text-[10px]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/brand/${brand.slug}`);
+                  }}
+                >
+                  Shop
+                </Button>
               </CardContent>
             </Card>
           ))}
