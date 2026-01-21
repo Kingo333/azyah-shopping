@@ -351,8 +351,8 @@ const RoleDashboard: React.FC = () => {
     );
   };
 
-  const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* Search Card First */}
+  const renderShopperDashboard = () => <div className="space-y-4 pb-24">
+      {/* Search Card */}
       <DashboardTopCarousel
         showProfileCard={false}
         showSearchCard={true}
@@ -362,73 +362,72 @@ const RoleDashboard: React.FC = () => {
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* Row 1: Sarah Fashion (compact) + AI Try-On (compact) */}
-      <div className="px-4 pb-2">
+      {/* Quick Actions Row */}
+      <section className="px-4">
         <div className="grid grid-cols-2 gap-3">
-          {/* Left: Compact StyleLinkCard inline */}
-          <div className="rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background p-2 flex items-center gap-2">
+          {/* StyleLink Card */}
+          <Card className="p-3 bg-card border border-border/60 shadow-sm hover:shadow-md transition-all duration-200">
             <StyleLinkCardCompact />
-          </div>
+          </Card>
 
-          {/* Right: Compact AI Try-On */}
+          {/* AI Try-On Card */}
           <Card 
-            className="p-2 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
+            className="p-3 bg-card border border-border/60 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 group"
             onClick={() => setAiStudioModalOpen(true)}
           >
-            <div className="flex items-center gap-2 h-full">
-              <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
-                <Shirt className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
+            <div className="flex items-center gap-3 h-full">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
+                <Shirt className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-foreground">AI Try-On</p>
-                <p className="text-[9px] text-muted-foreground">Virtual fitting</p>
+                <p className="text-sm font-medium text-foreground">AI Try-On</p>
+                <p className="text-xs text-muted-foreground">Virtual fitting</p>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
             </div>
           </Card>
         </div>
-      </div>
+      </section>
 
-      {/* Row 2: Style Profile (full width) */}
-      <div className="px-4 pb-2">
-        <Card className="p-3 bg-gradient-to-br from-primary/5 to-background border hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <CompactProgressRing progress={modelProgress} size={48} />
+      {/* Style Profile Card */}
+      <section className="px-4">
+        <Card className="p-4 bg-card border border-border/60 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-4">
+            <CompactProgressRing progress={modelProgress} size={52} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground">Style Profile</p>
-              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                Discover people with similar measurements
+              <p className="text-sm font-semibold text-foreground">Style Profile</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Discover people with similar style
               </p>
             </div>
-            <div className="flex gap-1.5 flex-shrink-0">
+            <div className="flex gap-2 flex-shrink-0">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-7 text-[10px] px-2"
+                className="h-8 text-xs px-3 rounded-lg"
                 onClick={() => navigate('/swipe')}
               >
                 Refine
               </Button>
               <Button 
-                variant="outline" 
                 size="sm" 
-                className="h-7 text-[10px] px-2"
+                className="h-8 text-xs px-3 rounded-lg"
                 onClick={() => navigate('/explore?tab=your-fit')}
               >
-                Your fit
+                Your Fit
               </Button>
             </div>
           </div>
         </Card>
-      </div>
+      </section>
 
       {/* Wardrobe Data Section */}
       <ClosetOutfitsSection />
 
       {/* Trending Looks Section */}
-      <section className="px-4 pt-3">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-serif font-medium text-foreground">Trending Looks</h2>
+      <section className="px-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-serif font-medium text-foreground tracking-tight">Trending Looks</h2>
           
           {/* Category Filter */}
           <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
@@ -436,21 +435,21 @@ const RoleDashboard: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="gap-1 h-6 px-2 rounded-full text-[10px]"
+                className="gap-1.5 h-7 px-3 rounded-lg text-xs border-border/60"
               >
-                <SlidersHorizontal className="h-2.5 w-2.5" />
-                {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
-                <ChevronDown className="h-2.5 w-2.5" />
+                <SlidersHorizontal className="h-3 w-3" />
+                {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 10) : 'All'}
+                <ChevronDown className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-3" align="end">
-              <div className="space-y-2">
-                <div className="font-medium text-xs">Filter by Category</div>
-                <div className="grid gap-1">
+            <PopoverContent className="w-48 p-2" align="end">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground px-2 py-1">Filter by Category</p>
+                <div className="grid gap-0.5">
                   <Button
-                    variant={selectedTrendingCategory === null ? "default" : "ghost"}
+                    variant={selectedTrendingCategory === null ? "secondary" : "ghost"}
                     size="sm"
-                    className="justify-start h-7 text-xs"
+                    className="justify-start h-8 text-xs rounded-lg"
                     onClick={() => {
                       setSelectedTrendingCategory(null);
                       setIsTrendingFilterOpen(false);
@@ -461,9 +460,9 @@ const RoleDashboard: React.FC = () => {
                   {Object.keys(CATEGORY_TREE).map((category) => (
                     <Button
                       key={category}
-                      variant={selectedTrendingCategory === category ? "default" : "ghost"}
+                      variant={selectedTrendingCategory === category ? "secondary" : "ghost"}
                       size="sm"
-                      className="justify-start h-7 text-xs"
+                      className="justify-start h-8 text-xs rounded-lg"
                       onClick={() => {
                         setSelectedTrendingCategory(category as TopCategory);
                         setIsTrendingFilterOpen(false);
@@ -481,29 +480,33 @@ const RoleDashboard: React.FC = () => {
       </section>
 
       {/* Events Section */}
-      <section className="px-4 pt-3">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-serif font-medium text-foreground">Events</h2>
-          <Button 
-            variant="link" 
-            size="sm" 
+      <section className="px-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-serif font-medium text-foreground tracking-tight">Events</h2>
+          <button
             onClick={() => navigate('/events')}
-            className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+            className="flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             View All
-          </Button>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         {!featuredEvent ? (
-          <div className="flex items-center justify-center py-2 text-sm text-muted-foreground">
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            <span>No upcoming events</span>
-          </div>
+          <Card className="p-6 border border-border/60 shadow-sm">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No upcoming events</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Check back later for new events</p>
+            </div>
+          </Card>
         ) : (
-          <Card className="bg-card border-border shadow-sm overflow-hidden">
-            <CardContent className="p-0 flex gap-3">
+          <Card className="border border-border/60 shadow-sm overflow-hidden">
+            <CardContent className="p-0 flex gap-4">
               {/* Event Image */}
-              <div className="w-32 h-32 flex-shrink-0 bg-muted">
+              <div className="w-28 h-28 flex-shrink-0 bg-muted">
                 <img 
                   src={featuredEvent.image_url || '/placeholder.svg'} 
                   alt={featuredEvent.name}
@@ -512,13 +515,13 @@ const RoleDashboard: React.FC = () => {
               </div>
 
               {/* Event Info */}
-              <div className="flex-1 py-3 pr-3">
+              <div className="flex-1 py-3 pr-4">
                 <h3 className="font-semibold text-sm mb-2 line-clamp-2">
                   {featuredEvent.name}
                 </h3>
                 
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <CalendarIcon className="h-3.5 w-3.5" />
                     <span>
                       {new Date(featuredEvent.event_date).toLocaleDateString('en-US', { 
@@ -529,7 +532,7 @@ const RoleDashboard: React.FC = () => {
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5" />
                     <span>{featuredEvent.location || 'Online'}</span>
                   </div>
@@ -540,26 +543,24 @@ const RoleDashboard: React.FC = () => {
         )}
       </section>
 
-      {/* Benefits & Offers Section - reframed from Rewards */}
-      <section className="px-4 pt-3">
+      {/* Benefits & Offers Section */}
+      <section className="px-4">
         <Card 
-          className="bg-card border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="border border-border/60 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 group"
           onClick={() => navigate('/rewards')}
         >
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-              <Gift className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+              <Gift className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-sm text-foreground">Benefits & Offers</h3>
-              <p className="text-xs text-muted-foreground">Unlock perks from your activity</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Unlock perks from your activity</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
           </CardContent>
         </Card>
       </section>
-
-
     </div>;
   const renderBrandDashboard = () => {
     return <div className="space-y-6">
