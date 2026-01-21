@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Trash2, ExternalLink, ShoppingBag, User, Star } from 'lucide-react';
+import { Heart, Trash2, User, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
@@ -36,7 +36,8 @@ const LikeCard: React.FC<{
   onAddToWishlist: (productId: string) => void;
   isRemoving: boolean;
   isAddingToWishlist: boolean;
-}> = ({ like, onRemove, onAddToWishlist, isRemoving, isAddingToWishlist }) => {
+  onNavigateToBrand: (brandSlug: string) => void;
+}> = ({ like, onRemove, onAddToWishlist, isRemoving, isAddingToWishlist, onNavigateToBrand }) => {
   const { data: hasOutfit } = useProductHasOutfit(like.products!.id);
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
 
@@ -73,7 +74,7 @@ const LikeCard: React.FC<{
                 }}
                 disabled={isAddingToWishlist}
               >
-                <ShoppingBag className="h-4 w-4" />
+                <Star className="h-4 w-4" />
               </Button>
               {hasOutfit && (
                 <Button
@@ -93,11 +94,18 @@ const LikeCard: React.FC<{
 
           {/* Content */}
           <div className="p-3 space-y-2">
-            {/* Brand name - more prominent */}
+            {/* Brand name - clickable */}
             {like.products.brands && (
-              <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const brandSlug = like.products!.brands!.name.toLowerCase().replace(/\s+/g, '-');
+                  onNavigateToBrand(brandSlug);
+                }}
+                className="text-sm font-semibold text-foreground uppercase tracking-wide hover:text-primary hover:underline text-left"
+              >
                 {like.products.brands.name}
-              </p>
+              </button>
             )}
             {/* Product title - secondary */}
             <h3 className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">
@@ -107,29 +115,21 @@ const LikeCard: React.FC<{
               {formatPrice(like.products.price_cents, like.products.currency)}
             </p>
 
-            {/* Action Buttons - with Wish button */}
-            <div className="flex gap-1.5 pt-2">
-              {/* Wish button - adds to wishlist */}
+            {/* Action Buttons - cleaner layout */}
+            <div className="flex gap-1.5 pt-2 items-center">
+              {/* Wish with label */}
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 h-8"
+                className="h-8 gap-1"
                 onClick={() => onAddToWishlist(like.products!.id)}
                 disabled={isAddingToWishlist}
               >
-                <Star className="h-3 w-3 mr-1" />
+                <Star className="h-3 w-3" />
                 Wish
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1 h-8"
-                onClick={() => onRemove(like.products!.id)}
-                disabled={isRemoving}
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Remove
-              </Button>
+              
+              {/* Shop button - text only */}
               {like.products.external_url && (
                 <Button
                   variant="default"
@@ -137,10 +137,20 @@ const LikeCard: React.FC<{
                   className="flex-1 h-8"
                   onClick={() => openExternalUrl(like.products!.external_url)}
                 >
-                  <ExternalLink className="h-3 w-3 mr-1" />
                   Shop
                 </Button>
               )}
+              
+              {/* Trash icon only - right side */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 ml-auto"
+                onClick={() => onRemove(like.products!.id)}
+                disabled={isRemoving}
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -274,6 +284,7 @@ const FavoritesLikesTab: React.FC = () => {
           onAddToWishlist={(productId) => addToWishlistMutation.mutate(productId)}
           isRemoving={removeLikeMutation.isPending}
           isAddingToWishlist={addToWishlistMutation.isPending}
+          onNavigateToBrand={(brandSlug) => navigate(`/brand/${brandSlug}`)}
         />
       ))}
     </div>

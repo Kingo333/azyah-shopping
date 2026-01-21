@@ -6,7 +6,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Check, Loader2 } from 'lucide-react';
+import { CalendarCheck, Check, Loader2 } from 'lucide-react';
 import { useAwardPoints } from '@/hooks/useAwardPoints';
 import { useDailyCheckinStatus } from '@/hooks/useUserPoints';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,7 +57,7 @@ export function DailyCheckin({ variant = 'card', className = '' }: DailyCheckinP
         ) : checkedInToday ? (
           <Check className="h-4 w-4 mr-2" />
         ) : (
-          <Sparkles className="h-4 w-4 mr-2" />
+          <CalendarCheck className="h-4 w-4 mr-2" />
         )}
         {checkedInToday ? 'Checked In' : 'Check In (+10 pts)'}
       </Button>
@@ -77,11 +77,11 @@ export function DailyCheckin({ variant = 'card', className = '' }: DailyCheckinP
               {checkedInToday ? (
                 <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
               ) : (
-                <Sparkles className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />
+                <CalendarCheck className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />
               )}
             </div>
             <div>
-              <h3 className="font-medium text-sm">Training Streak</h3>
+              <h3 className="font-medium text-sm">Daily Check-In</h3>
               <p className="text-xs text-muted-foreground">
                 {checkedInToday ? 'Come back tomorrow!' : '+10 points • helps calibrate your model'}
               </p>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, ShoppingBag, User, ChevronUp } from 'lucide-react';
+import { Home, Users, ShoppingBag, Sparkles, ChevronUp } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,13 +14,13 @@ interface NavItem {
   isCenter?: boolean;
 }
 
-// Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Profile
+// Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Collabs
 const navItems: NavItem[] = [
   { id: 'insights', label: 'Insights', icon: Home, path: '/dashboard' },
   { id: 'community', label: 'Explore', icon: Users, path: '/explore' },
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
   { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me' },
-  { id: 'profile', label: 'Profile', icon: User, path: '/profile-settings' },
+  { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc' },
 ];
 
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
