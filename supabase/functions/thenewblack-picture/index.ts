@@ -39,8 +39,11 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    // Extract token and pass explicitly for Lovable Cloud ES256 compatibility
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
     if (authError || !user) {
+      console.error('[TheNewBlack Picture] Auth error:', authError?.message);
       return new Response(
         JSON.stringify({ ok: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
