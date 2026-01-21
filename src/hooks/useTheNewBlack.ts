@@ -187,9 +187,22 @@ export function useTheNewBlack() {
       console.error('[useTheNewBlack] Video start error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Video generation failed';
       setError(errorMessage);
+      
+      // Provide actionable messages based on step
+      let userDescription = errorMessage;
+      if (errorMessage.includes('image_url_check')) {
+        userDescription = 'The image could not be accessed. Please try re-uploading it.';
+      } else if (errorMessage.includes('step') && errorMessage.includes('start')) {
+        userDescription = 'Video provider returned an invalid response. Please try a different image.';
+      } else if (errorMessage.includes('502') || errorMessage.includes('empty response')) {
+        userDescription = 'Video service is temporarily unavailable. Please try again later.';
+      } else if (errorMessage.includes('non-2xx') || errorMessage.includes('Unauthorized')) {
+        userDescription = 'Authentication error. Please try signing out and back in.';
+      }
+      
       toast({
         title: 'Video generation failed',
-        description: errorMessage,
+        description: userDescription,
         variant: 'destructive'
       });
       return { ok: false, error: errorMessage };

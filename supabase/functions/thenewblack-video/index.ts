@@ -64,13 +64,43 @@ serve(async (req) => {
     if (action === 'start') {
       if (!image_url) {
         return new Response(
-          JSON.stringify({ ok: false, error: 'image_url is required' }),
+          JSON.stringify({ ok: false, step: 'start', error: 'image_url is required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       console.log('[TheNewBlack Video] Starting video generation for user:', user.id);
       console.log('[TheNewBlack Video] Image URL:', image_url);
+
+      // Verify image URL is publicly accessible before calling provider
+      console.log('[TheNewBlack Video] Verifying image URL accessibility...');
+      try {
+        const imageCheck = await fetch(image_url, { method: 'HEAD' });
+        console.log('[TheNewBlack Video] Image URL check status:', imageCheck.status);
+        if (!imageCheck.ok) {
+          console.error('[TheNewBlack Video] Image URL not accessible:', imageCheck.status);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              step: 'image_url_check', 
+              status: imageCheck.status,
+              error: 'Image URL is not publicly accessible. Please re-upload the image.' 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log('[TheNewBlack Video] Image URL verified accessible');
+      } catch (err) {
+        console.error('[TheNewBlack Video] Image URL check error:', err);
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            step: 'image_url_check', 
+            error: 'Failed to verify image URL accessibility. Please try re-uploading.' 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Check and deduct video credits
       const { data: credits, error: creditsError } = await serviceClient.rpc('get_user_credits', {
@@ -79,7 +109,7 @@ serve(async (req) => {
 
       if (creditsError || !credits || credits.length === 0) {
         return new Response(
-          JSON.stringify({ ok: false, error: 'Failed to get credits' }),
+          JSON.stringify({ ok: false, step: 'start', error: 'Failed to get credits' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -88,6 +118,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             ok: false, 
+            step: 'start',
             error: 'No video credits remaining',
             credits_remaining: 0,
             is_premium: credits[0].is_premium
@@ -104,7 +135,7 @@ serve(async (req) => {
       if (deductError || !deductResult) {
         console.error('[TheNewBlack Video] Failed to deduct credit:', deductError);
         return new Response(
-          JSON.stringify({ ok: false, error: 'Failed to deduct credit' }),
+          JSON.stringify({ ok: false, step: 'start', error: 'Failed to deduct credit' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -133,9 +164,18 @@ serve(async (req) => {
         }
       );
 
+      // Get the API response - may be JSON or plain text
+      const responseText = await apiResponse.text();
+      console.log('[TheNewBlack Video] API Response:', {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        contentType: apiResponse.headers.get('content-type'),
+        bodyLength: responseText.length,
+        bodyPreview: responseText.substring(0, 300)
+      });
+
       if (!apiResponse.ok) {
-        const errorText = await apiResponse.text();
-        console.error('[TheNewBlack Video] API error:', apiResponse.status, errorText);
+        console.error('[TheNewBlack Video] API error:', apiResponse.status, responseText);
         
         // Refund credit on API failure
         await serviceClient.from('user_credits')
@@ -143,23 +183,42 @@ serve(async (req) => {
           .eq('user_id', user.id);
 
         return new Response(
-          JSON.stringify({ ok: false, error: `API error: ${apiResponse.status}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            ok: false, 
+            step: 'start',
+            status: apiResponse.status,
+            bodySnippet: responseText.substring(0, 200),
+            error: `Video API error: ${apiResponse.status}` 
+          }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Get the API response - may be JSON or plain text
-      const responseText = await apiResponse.text();
-      console.log('[TheNewBlack Video] API Response:', {
-        status: apiResponse.status,
-        statusText: apiResponse.statusText,
-        bodyPreview: responseText.substring(0, 200)
-      });
+      // Check for empty response
+      if (!responseText || responseText.trim().length === 0) {
+        console.error('[TheNewBlack Video] Empty response from API');
+        
+        // Refund credit
+        await serviceClient.from('user_credits')
+          .update({ video_credits: credits[0].video_credits })
+          .eq('user_id', user.id);
+
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            step: 'start',
+            bodySnippet: '(empty)',
+            error: 'Video provider returned empty response.' 
+          }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Try to parse as JSON first (in case API returns JSON)
       let jobId: string;
       try {
         const jsonResponse = JSON.parse(responseText);
+        console.log('[TheNewBlack Video] Parsed JSON response:', JSON.stringify(jsonResponse));
         
         // Check for empty success response - this is the main issue!
         // API returns {"status":"success","response":{}} when request fails silently
@@ -176,9 +235,11 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               ok: false, 
-              error: 'Video API returned empty response. This may indicate an issue with the API key or request format.' 
+              step: 'start',
+              bodySnippet: responseText.substring(0, 200),
+              error: 'Video provider returned invalid response. This may indicate an API key or credits issue on their end.' 
             }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         
@@ -192,14 +253,19 @@ serve(async (req) => {
             .eq('user_id', user.id);
 
           return new Response(
-            JSON.stringify({ ok: false, error: jsonResponse.message || jsonResponse.error || 'API error' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ 
+              ok: false, 
+              step: 'start',
+              bodySnippet: responseText.substring(0, 200),
+              error: jsonResponse.message || jsonResponse.error || 'API error' 
+            }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         // If JSON has an ID field, use it
         jobId = jsonResponse.id || jsonResponse.job_id || responseText;
       } catch {
-        // Not JSON, treat as plain text job ID
+        // Not JSON, treat as plain text job ID (expected per docs)
         jobId = responseText;
       }
 
@@ -218,8 +284,13 @@ serve(async (req) => {
           .eq('user_id', user.id);
 
         return new Response(
-          JSON.stringify({ ok: false, error: 'Invalid job ID format received from API. Please try again.' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            ok: false, 
+            step: 'start',
+            bodySnippet: cleanJobId.substring(0, 100),
+            error: 'Invalid job ID format received from API. Please try again.' 
+          }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -239,7 +310,7 @@ serve(async (req) => {
     if (action === 'check') {
       if (!job_id) {
         return new Response(
-          JSON.stringify({ ok: false, error: 'job_id is required' }),
+          JSON.stringify({ ok: false, step: 'poll', error: 'job_id is required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -262,10 +333,16 @@ serve(async (req) => {
 
       if (!apiResponse.ok) {
         const errorText = await apiResponse.text();
-        console.error('[TheNewBlack Video] Check API error:', apiResponse.status, errorText);
+        console.error('[TheNewBlack Video] Poll API error:', apiResponse.status, errorText);
         return new Response(
-          JSON.stringify({ ok: false, error: `API error: ${apiResponse.status}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            ok: false, 
+            step: 'poll',
+            status: apiResponse.status,
+            bodySnippet: errorText.substring(0, 200),
+            error: `Video polling failed: ${apiResponse.status}` 
+          }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 

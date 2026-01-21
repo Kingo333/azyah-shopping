@@ -12,6 +12,7 @@ import { useTheNewBlack } from '@/hooks/useTheNewBlack';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { useNavigate } from 'react-router-dom';
+import { AnimatedProgress } from '@/components/ui/animated-progress';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -686,11 +687,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed
                               bg-secondary text-secondary-foreground hover:opacity-90"
                           >
-                            {generatingVideoInput ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Generating (~30 sec)...
-                              </>
+                          {generatingVideoInput ? (
+                              <div className="w-full px-2">
+                                <AnimatedProgress isActive={true} duration={30} label="Generating Try-On" />
+                              </div>
                             ) : pictureCredits <= 0 ? (
                               "No Picture Credits"
                             ) : !videoPersonUrl || !videoOutfitUrl ? (
@@ -833,10 +833,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                     {/* Processing status */}
                     {videoPolling && (
-                      <div className="text-center py-4">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
-                        <p className="text-sm text-muted-foreground">{videoStatus || 'Generating video...'}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Estimated time: ~59 seconds</p>
+                      <div className="text-center py-6 px-4">
+                        <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
+                        <p className="text-sm text-muted-foreground mt-3">{videoStatus || 'Generating video...'}</p>
                       </div>
                     )}
                   </div>
@@ -941,10 +940,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       bg-primary text-primary-foreground hover:opacity-95"
                   >
                     {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating (~30 sec)...
-                      </>
+                      <div className="w-full px-4">
+                        <AnimatedProgress isActive={true} duration={30} label="Generating Try-On" />
+                      </div>
                     ) : uploadingPerson || uploadingOutfit ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -975,10 +973,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       bg-primary text-primary-foreground hover:opacity-95"
                   >
                     {videoPolling ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Creating Video (~1-2 min)...
-                      </>
+                      <div className="w-full px-4">
+                        <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
+                      </div>
                     ) : generatingVideoInput ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
