@@ -26,10 +26,8 @@ const navItems: NavItem[] = [
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
 const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/community', '/trending', '/influencers', '/brands', '/wishlist', '/forum', '/affiliate', '/events'];
 
-// Routes where bottom nav should NOT appear
+// Routes where bottom nav should NOT appear (removed '/' and '/landing' to allow guest preview)
 const EXCLUDED_ROUTES = [
-  '/',
-  '/landing',
   '/onboarding',
   '/reset-password',
   '/terms',
