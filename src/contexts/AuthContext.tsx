@@ -186,13 +186,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
       
+      const updateData: Record<string, string | boolean> = {
+        username: userData.username.toLowerCase(),
+        name: displayName, // Set display name from username
+        onboarding_completed: true
+      };
+      
+      // Add country if provided
+      if (userData.country) {
+        updateData.country = userData.country;
+      }
+      
       const { error: usernameError } = await supabase
         .from('users')
-        .update({
-          username: userData.username.toLowerCase(),
-          name: displayName, // Set display name from username
-          onboarding_completed: true
-        })
+        .update(updateData)
         .eq('id', data.user.id);
 
       if (usernameError?.code === '23505') {

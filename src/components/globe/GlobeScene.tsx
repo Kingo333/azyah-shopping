@@ -14,11 +14,11 @@ extend({
   MeshPhongMaterial: THREE.MeshPhongMaterial
 });
 
-// Earth texture URLs (NASA Blue Marble)
-const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
-const EARTH_BUMP = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
-const EARTH_SPEC = 'https://unpkg.com/three-globe/example/img/earth-water.png';
-const CLOUDS_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-clouds.png';
+// Earth texture URLs - using reliable CDN sources
+const EARTH_TEXTURE = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg';
+const EARTH_BUMP = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-topology.png';
+const EARTH_SPEC = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-water.png';
+const CLOUDS_TEXTURE = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-clouds.png';
 
 interface CountryPinProps {
   country: CountryCoordinates;
@@ -144,7 +144,7 @@ function RealisticEarth() {
   );
 }
 
-// Cloud layer component
+// Cloud layer component - renders clouds over Earth
 function CloudLayer() {
   const meshRef = useRef<THREE.Mesh>(null);
   const cloudsTexture = useTexture(CLOUDS_TEXTURE);
@@ -166,6 +166,45 @@ function CloudLayer() {
       />
     </mesh>
   );
+}
+
+// Wrapper to safely render CloudLayer - catches texture loading errors
+function SafeCloudLayer() {
+  const [hasError, setHasError] = useState(false);
+  
+  if (hasError) return null;
+  
+  return (
+    <ErrorBoundary onError={() => setHasError(true)}>
+      <Suspense fallback={null}>
+        <CloudLayer />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Simple error boundary for 3D components
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError?: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; onError?: () => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError?.();
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
 }
 
 // Atmosphere glow
@@ -225,8 +264,10 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
       {/* Realistic Earth with textures */}
       <Suspense fallback={<SimpleFallbackEarth />}>
         <RealisticEarth />
-        <CloudLayer />
       </Suspense>
+      
+      {/* Cloud layer - optional, fails gracefully */}
+      <SafeCloudLayer />
       
       {/* Atmosphere glow */}
       <AtmosphereGlow />
