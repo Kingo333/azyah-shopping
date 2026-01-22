@@ -486,9 +486,9 @@ export default function IntroCarousel() {
                   {/* Reduced gradient overlay for better globe visibility */}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
 
-                  {/* Search bar at top of globe */}
-                  <div className="absolute top-16 left-4 right-16 z-10">
-                    <div className="relative max-w-md">
+                  {/* Search bar - centered at top */}
+                  <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4">
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                       <Input
                         type="text"
@@ -517,10 +517,12 @@ export default function IntroCarousel() {
 
                   {/* Discovery text pill - positioned in lower center area */}
                   <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-10 text-center">
-                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-xs">
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-sm">
                       <h2 className="text-xl font-serif text-white mb-2 drop-shadow-lg">Discover Your Style</h2>
                       <p className="text-xs text-white/80 leading-relaxed">
-                        The platform for discovering fashion, beauty products, and pop-ups. We empower brands, shoppers and content creators.
+                        The platform for discovering fashion, beauty products, and pop-ups.
+                        <br />
+                        We empower brands, shoppers and content creators.
                       </p>
                     </div>
                   </div>
@@ -541,6 +543,9 @@ export default function IntroCarousel() {
                     
                     {/* Feature pills - flex wrap to show all */}
                     <div className="flex flex-wrap gap-2">
+                      <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
+                        Discover modest & elegant brands
+                      </span>
                       <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
                         AI-powered curation
                       </span>
