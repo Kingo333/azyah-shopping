@@ -484,7 +484,17 @@ export default function IntroCarousel() {
                   />
                   
                   {/* Reduced gradient overlay for better globe visibility */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-white/80 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
+
+                  {/* Discovery text pill - centered on globe */}
+                  <div className="absolute top-1/3 left-1/2 -translate-x-1/2 z-10 text-center">
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-xs">
+                      <h2 className="text-xl font-serif text-white mb-2 drop-shadow-lg">Discover Your Style</h2>
+                      <p className="text-xs text-white/80 leading-relaxed">
+                        The platform for discovering fashion, beauty products, and pop-ups. We empower brands, shoppers and content creators.
+                      </p>
+                    </div>
+                  </div>
 
                   {/* Search bar at top of globe */}
                   <div className="absolute top-16 left-4 right-4 z-10">
@@ -529,17 +539,19 @@ export default function IntroCarousel() {
                       </span>
                     </div>
                     
-                    {/* Feature pills - stacked vertically */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
-                        AI-powered curation
-                      </span>
-                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
-                        Virtual try-on
-                      </span>
-                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
-                        Brand collabs
-                      </span>
+                    {/* Feature pills - horizontally scrollable */}
+                    <div className="overflow-x-auto scrollbar-hide max-w-[200px]">
+                      <div className="flex gap-2 pb-1">
+                        <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                          AI-powered curation
+                        </span>
+                        <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                          Virtual try-on
+                        </span>
+                        <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                          Brand collabs
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -555,13 +567,7 @@ export default function IntroCarousel() {
                   </div>
                 </div>
 
-                {/* Title & Subtitle - Positioned below globe */}
-                <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-20 px-6 text-center bg-white">
-                  <h2 className="text-xl md:text-2xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line max-w-md">
-                    {slide.subtitle}
-                  </p>
-                </div>
+                {/* Globe fills entire slide - no white section below */}
               </div>
             )}
 
@@ -877,10 +883,10 @@ export default function IntroCarousel() {
           ))}
         </div>
 
-        {/* Primary CTA - solid burgundy fill */}
+        {/* Primary CTA - reddish see-through pill */}
         <Button
           onClick={handleJoinCommunity}
-          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-colors"
+          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-primary/20 backdrop-blur-sm border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
         >
           Join the Community
         </Button>

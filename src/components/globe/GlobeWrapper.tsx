@@ -12,6 +12,7 @@ interface GlobeWrapperProps {
   featuredCountry?: string | null;
   className?: string;
   onSkipToFeed?: () => void;
+  activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
 }
 
 // Detect WebGL support
@@ -59,6 +60,7 @@ export function GlobeWrapper({
   featuredCountry,
   className = '',
   onSkipToFeed,
+  activeTab = 'brands',
 }: GlobeWrapperProps) {
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -125,6 +127,7 @@ export function GlobeWrapper({
           autoRotate={autoRotate}
           featuredCountry={featuredCountry}
           className={className}
+          activeTab={activeTab}
         />
       </Suspense>
     </GlobeErrorBoundary>
