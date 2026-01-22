@@ -473,7 +473,13 @@ export default function IntroCarousel() {
             {slide.type === "hero" && (
               <div className="h-full flex flex-col">
                 {/* Full-bleed globe hero - fills entire slide */}
-                <div className="relative h-full overflow-hidden bg-gray-900">
+                <div 
+                  className="relative h-full overflow-hidden bg-gray-900"
+                  onPointerDown={() => setIsUserInteracting(true)}
+                  onPointerUp={() => setTimeout(() => setIsUserInteracting(false), 8000)}
+                  onTouchStart={() => setIsUserInteracting(true)}
+                  onTouchEnd={() => setTimeout(() => setIsUserInteracting(false), 8000)}
+                >
                   {/* Interactive 3D Globe */}
                   <GlobeWrapper
                     countriesWithBrands={countriesWithBrands}
@@ -516,21 +522,39 @@ export default function IntroCarousel() {
                   </div>
 
                   {/* Discovery text pill - positioned in lower center area */}
-                  <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-10 text-center">
-                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-sm">
+                  <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 text-center px-4 w-full pointer-events-none">
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-md mx-auto">
                       <h2 className="text-xl font-serif text-white mb-2 drop-shadow-lg">Discover Your Style</h2>
-                      <p className="text-xs text-white/80 leading-relaxed">
-                        The platform for discovering fashion, beauty products, and pop-ups.
+                      <p className="text-sm text-white/80 leading-relaxed">
+                        The platform for discovering fashion,
+                        <br />
+                        beauty products, and pop-ups.
                         <br />
                         We empower brands, shoppers and content creators.
                       </p>
                     </div>
                   </div>
 
-                  {/* Azyah branding + Feature pills - stacked at bottom left, above fixed CTA */}
-                  <div className="absolute bottom-48 left-4 flex flex-col gap-3 z-10 max-w-[calc(100%-120px)]">
-                    {/* Azyah Logo */}
-                    <div className="flex items-center gap-2">
+                  {/* Feature pills + Azyah branding - stacked vertically at bottom left, above fixed CTA */}
+                  <div className="absolute bottom-48 left-4 flex flex-col gap-2 z-20 max-w-[220px] pointer-events-none">
+                    {/* Feature pills - stacked vertically FIRST */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                        Discover modest & elegant brands
+                      </span>
+                      <span className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                        AI-powered curation
+                      </span>
+                      <span className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                        Virtual try-on
+                      </span>
+                      <span className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full">
+                        Brand collabs
+                      </span>
+                    </div>
+                    
+                    {/* Azyah Logo - BELOW the pills */}
+                    <div className="flex items-center gap-2 mt-1">
                       <img
                         src="/marketing/azyah-logo.png"
                         alt="Azyah"
@@ -540,29 +564,13 @@ export default function IntroCarousel() {
                         Azyah
                       </span>
                     </div>
-                    
-                    {/* Feature pills - flex wrap to show all */}
-                    <div className="flex flex-wrap gap-2">
-                      <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                        Discover modest & elegant brands
-                      </span>
-                      <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                        AI-powered curation
-                      </span>
-                      <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                        Virtual try-on
-                      </span>
-                      <span className="shrink-0 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                        Brand collabs
-                      </span>
-                    </div>
                   </div>
 
                   {/* Add your pin CTA - above fixed CTA */}
-                  <div className="absolute bottom-48 right-4 z-10">
+                  <div className="absolute bottom-48 right-4 z-20">
                     <button 
                       onClick={() => navigate("/onboarding/signup")}
-                      className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
+                      className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300 pointer-events-auto"
                     >
                       <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
                       <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
