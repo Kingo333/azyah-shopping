@@ -15,6 +15,7 @@ export interface UnifiedProductFilters {
   limit?: number;
   offset?: number;
   categories?: string[];
+  countryCode?: string; // ISO2 country code for filtering by brand country
 }
 
 export interface UnifiedProductsResult {
@@ -43,6 +44,25 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
+
+      // Filter by country if provided
+      if (filters.countryCode) {
+        // Get brand IDs for this country first
+        const { data: countryBrands } = await supabase
+          .from('brands')
+          .select('id')
+          .eq('country_code', filters.countryCode.toUpperCase());
+        
+        if (countryBrands && countryBrands.length > 0) {
+          const brandIds = countryBrands.map((b: { id: string }) => b.id);
+          query = query.in('brand_id', brandIds);
+        } else {
+          // No brands in this country, return empty
+          setProducts([]);
+          setIsLoading(false);
+          return;
+        }
+      }
 
       // Apply filters with sophisticated logic
       if (filters.categories && filters.categories.length > 0) {
@@ -247,6 +267,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
     filters.searchQuery,
     filters.limit,
     filters.offset,
+    filters.countryCode,
     user?.id
   ]);
 

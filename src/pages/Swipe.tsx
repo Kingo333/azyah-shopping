@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp } from "lucide-react";
+import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp, MapPin, X } from "lucide-react";
+import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -31,6 +32,7 @@ const Swipe = () => {
     const genderParam = searchParams.get('gender');
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
+    const countryParam = searchParams.get('country');
     return {
       genders: genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam) ? [genderParam as any] : [],
       categories: categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam) ? [categoryParam as any] : [],
@@ -40,7 +42,8 @@ const Swipe = () => {
         max: parseInt(searchParams.get('maxPrice') || '1000')
       },
       currency: searchParams.get('currency') || 'USD',
-      searchQuery: searchParams.get('search') || ''
+      searchQuery: searchParams.get('search') || '',
+      countryCode: countryParam || undefined
     };
   });
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
@@ -129,7 +132,8 @@ const Swipe = () => {
     priceRange: filters.priceRange,
     searchQuery: filters.searchQuery,
     currency: filters.currency,
-    categories: viewMode === 'list' ? filters.categories : undefined
+    categories: viewMode === 'list' ? filters.categories : undefined,
+    countryCode: (filters as any).countryCode
   });
 
   // Update URL when filters change
@@ -142,6 +146,7 @@ const Swipe = () => {
     if (filters.priceRange.max < 1000) params.set('maxPrice', filters.priceRange.max.toString());
     if (filters.searchQuery) params.set('search', filters.searchQuery);
     if (filters.currency !== 'USD') params.set('currency', filters.currency);
+    if ((filters as any).countryCode) params.set('country', (filters as any).countryCode);
     setSearchParams(params, {
       replace: true
     });
@@ -193,8 +198,23 @@ const Swipe = () => {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="hidden sm:block">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-base sm:text-lg font-serif font-medium tracking-tight">Feed</h1>
+                  {(filters as any).countryCode && (
+                    <Badge 
+                      variant="secondary" 
+                      className="text-[10px] px-2 py-0.5 flex items-center gap-1"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      {getCountryNameFromCode((filters as any).countryCode) || (filters as any).countryCode}
+                      <button 
+                        onClick={() => setFilters(prev => ({ ...prev, countryCode: undefined } as any))}
+                        className="ml-1 hover:bg-background/50 rounded-full p-0.5"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  )}
                   <Badge 
                     variant="outline" 
                     className="text-[10px] px-2.5 py-0.5 border-primary/30 bg-primary/5"

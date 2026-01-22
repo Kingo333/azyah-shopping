@@ -1,152 +1,223 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GlassPanel } from '@/components/ui/glass-panel';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Home, Search, Globe as GlobeIcon, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Home, Store, Users, UserCheck, Camera, Ruler } from 'lucide-react';
-import YourFitContent from '@/pages/YourFitContent';
-import { useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import BrandsTab from '@/components/explore/BrandsTab';
-import ShoppersTab from '@/components/explore/ShoppersTab';
-import FollowingTab from '@/components/explore/FollowingTab';
-import { CreateStyleLinkPostModal } from '@/components/stylelink';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getDisplayName } from '@/utils/userDisplayName';
+import { useAuth } from '@/contexts/AuthContext';
+import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
+import { GlobeWrapper } from '@/components/globe/GlobeWrapper';
+import { CountryDrawer } from '@/components/globe/CountryDrawer';
+import { getCountryNameFromCode } from '@/lib/countryCurrency';
+import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'following';
-  const [activeTab, setActiveTab] = useState(initialTab);
-  const [showPostModal, setShowPostModal] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch current user's profile
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile', user?.id],
+  // Fetch countries with brands
+  const { data: countriesWithBrands = [], isLoading: countriesLoading } = useQuery<{ code: string; count: number }[]>({
+    queryKey: ['countries-with-brands'],
     queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from('users')
-        .select('avatar_url, name, username')
-        .eq('id', user.id)
-        .single();
-      return data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (supabase as any)
+        .from('brands')
+        .select('country_code')
+        .not('country_code', 'is', null)
+        .eq('is_active', true);
+      
+      if (result.error) {
+        console.error('Error fetching countries:', result.error);
+        return [];
+      }
+
+      // Count brands per country
+      const counts = new Map<string, number>();
+      (result.data || []).forEach((b: { country_code: string | null }) => {
+        if (b.country_code) {
+          const code = b.country_code.toUpperCase();
+          counts.set(code, (counts.get(code) || 0) + 1);
+        }
+      });
+      
+      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
     },
-    enabled: !!user?.id,
   });
 
-  // Sync tab with URL params
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && ['following', 'shoppers', 'brands', 'your-fit'].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
+  // Fetch featured country based on engagement (simplified - just pick first with most brands for now)
+  const { data: featuredCountry } = useQuery({
+    queryKey: ['featured-country'],
+    queryFn: async () => {
+      // For now, return the country with the most brands
+      // In production, this would use engagement scoring
+      if (countriesWithBrands.length === 0) return null;
+      const sorted = [...countriesWithBrands].sort((a, b) => b.count - a.count);
+      return sorted[0]?.code || null;
+    },
+    enabled: countriesWithBrands.length > 0,
+  });
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
+  // Handle country selection
+  const handleCountrySelect = (code: string) => {
+    setSelectedCountry(code);
+    setDrawerOpen(true);
   };
 
-  const displayName = getDisplayName(userProfile, user?.email?.split('@')[0] || 'User');
-  const displayInitial = displayName?.charAt(0)?.toUpperCase() || '?';
+  // Handle skip to feed
+  const handleSkipToFeed = () => {
+    // Enable guest mode if not logged in
+    if (!user && !isGuestMode()) {
+      setGuestMode();
+    }
+    navigate('/swipe');
+  };
+
+  // Filter countries by search
+  const filteredCountries = searchQuery
+    ? COUNTRY_COORDINATES.filter(c => 
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  // Handle search result selection
+  const handleSearchSelect = (code: string) => {
+    setSearchQuery('');
+    handleCountrySelect(code);
+  };
+
+  // Total brands count
+  const totalBrands = countriesWithBrands.reduce((sum, c) => sum + c.count, 0);
 
   return (
-    <div className="min-h-screen dashboard-bg pb-24">
-      <div className="container mx-auto max-w-6xl p-4">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Home
-          </Button>
-          <h1 className="text-2xl font-bold font-playfair">Explore</h1>
-        </div>
+    <div className="h-[100dvh] bg-gray-900 flex flex-col overflow-hidden">
+      {/* Header Overlay */}
+      <header 
+        className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 to-transparent"
+        style={{ paddingTop: 'calc(var(--safe-top, 0px) + 8px)' }}
+      >
+        <div className="container max-w-screen-2xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left - Back button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+              className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white"
+            >
+              <Home className="h-4 w-4" />
+            </Button>
 
-        {/* User Posting Section */}
-        {user && (
-          <GlassPanel variant="default" className="p-4 mb-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12 border-2 border-primary/20">
-                <AvatarImage src={userProfile?.avatar_url || undefined} alt={displayName} />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                  {displayInitial}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{displayName}</p>
-                <p className="text-sm text-muted-foreground">
-                  Share your outfit and tag items from Azyah
-                </p>
-              </div>
-              <Button onClick={() => setShowPostModal(true)} className="flex-shrink-0">
-                <Camera className="h-4 w-4 mr-2" />
-                Post
-              </Button>
+            {/* Center - Title & Stats */}
+            <div className="flex-1 text-center">
+              <h1 className="text-lg font-serif font-medium text-white">Explore</h1>
+              <p className="text-xs text-white/60">
+                {totalBrands} brands across {countriesWithBrands.length} countries
+              </p>
             </div>
-          </GlassPanel>
+
+            {/* Right - Skip to Feed */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSkipToFeed}
+              className="h-9 px-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs"
+            >
+              Skip to Feed
+            </Button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mt-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+            <Input
+              type="text"
+              placeholder="Search countries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full focus-visible:ring-primary/50"
+              style={{ fontSize: '16px' }}
+            />
+            
+            {/* Search Results Dropdown */}
+            {searchQuery && filteredCountries.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-md rounded-lg border border-border shadow-xl max-h-60 overflow-y-auto z-30">
+                {filteredCountries.slice(0, 10).map((country) => {
+                  const brandData = countriesWithBrands.find(c => c.code.toUpperCase() === country.code.toUpperCase());
+                  return (
+                    <button
+                      key={country.code}
+                      onClick={() => handleSearchSelect(country.code)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+                    >
+                      <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{country.name}</p>
+                        <p className="text-xs text-muted-foreground">{country.region}</p>
+                      </div>
+                      {brandData && (
+                        <Badge variant="secondary" className="text-xs">
+                          {brandData.count} brands
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Globe - Full Screen */}
+      <div className="flex-1 relative">
+        {countriesLoading ? (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+            <div className="text-center">
+              <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/60">Loading globe...</p>
+            </div>
+          </div>
+        ) : (
+          <GlobeWrapper
+            countriesWithBrands={countriesWithBrands}
+            selectedCountry={selectedCountry}
+            onCountrySelect={handleCountrySelect}
+            autoRotate={!drawerOpen}
+            featuredCountry={featuredCountry}
+            onSkipToFeed={handleSkipToFeed}
+            className="w-full h-full"
+          />
         )}
 
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="following" className="flex items-center gap-1.5">
-              <UserCheck className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Following</span>
-            </TabsTrigger>
-            <TabsTrigger value="shoppers" className="flex items-center gap-1.5">
-              <Users className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Shoppers</span>
-            </TabsTrigger>
-            <TabsTrigger value="brands" className="flex items-center gap-1.5">
-              <Store className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Brands</span>
-            </TabsTrigger>
-            <TabsTrigger value="your-fit" className="flex items-center gap-1.5">
-              <Ruler className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Your Fit</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="brands">
-            <GlassPanel variant="premium" className="p-4 sm:p-6">
-              <BrandsTab />
-            </GlassPanel>
-          </TabsContent>
-
-          <TabsContent value="shoppers">
-            <GlassPanel variant="premium" className="p-4 sm:p-6">
-              <ShoppersTab />
-            </GlassPanel>
-          </TabsContent>
-
-          <TabsContent value="following">
-            <GlassPanel variant="premium" className="p-4 sm:p-6">
-              <FollowingTab />
-            </GlassPanel>
-          </TabsContent>
-
-          <TabsContent value="your-fit">
-            <GlassPanel variant="premium" className="p-4 sm:p-6">
-              <YourFitContent />
-            </GlassPanel>
-          </TabsContent>
-        </Tabs>
+        {/* Hint Text */}
+        <div className="absolute bottom-24 left-0 right-0 text-center pointer-events-none">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+            <GlobeIcon className="h-4 w-4 text-white/70" />
+            <span className="text-sm text-white/70">Tap a country to explore</span>
+          </div>
+        </div>
       </div>
 
-      {/* Create Post Modal - Same as StyleLink */}
-      <CreateStyleLinkPostModal
-        open={showPostModal}
-        onOpenChange={setShowPostModal}
+      {/* Country Drawer */}
+      <CountryDrawer
+        countryCode={selectedCountry}
+        open={drawerOpen}
+        onOpenChange={(open) => {
+          setDrawerOpen(open);
+          if (!open) {
+            // Don't clear selectedCountry immediately to allow re-opening
+            setTimeout(() => {
+              if (!drawerOpen) setSelectedCountry(null);
+            }, 300);
+          }
+        }}
       />
     </div>
   );
