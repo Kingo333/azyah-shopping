@@ -471,83 +471,79 @@ export default function IntroCarousel() {
             className="absolute inset-0 cursor-grab active:cursor-grabbing"
           >
             {slide.type === "hero" && (
-              <div className="h-full flex flex-col">
-                {/* Full-bleed globe hero with overlaid branding */}
-                <div className="relative h-[60%] overflow-hidden bg-gray-900">
-                  {/* Interactive 3D Globe */}
-                  <GlobeWrapper
-                    countriesWithBrands={countriesWithBrands}
-                    selectedCountry={null}
-                    onCountrySelect={() => navigate("/explore")}
-                    autoRotate={true}
-                    className="w-full h-full"
-                  />
-                  
-                  {/* Reduced gradient overlay for better globe visibility */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-white/80 pointer-events-none" />
+              <div className="h-full relative">
+                {/* Full-bleed hero image */}
+                <img
+                  src={isMobile ? slide.mobileImage : slide.image}
+                  alt="Azyah Fashion Discovery"
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+                
+                {/* Gradient overlay - positioned lower */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
 
-                  {/* Search bar at top of globe */}
-                  <div className="absolute top-16 left-4 right-4 z-10">
-                    <div className="relative max-w-md mx-auto">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-                      <Input
-                        type="text"
-                        placeholder="Search brands, countries..."
-                        value={globeSearchQuery}
-                        onChange={(e) => setGlobeSearchQuery(e.target.value)}
-                        onClick={() => navigate("/explore")}
-                        className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-full focus-visible:ring-primary/50 backdrop-blur-sm"
-                        style={{ fontSize: '16px' }}
-                        readOnly
-                      />
-                    </div>
+                {/* Content overlay - positioned at bottom */}
+                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 pb-48 sm:pb-52">
+                  {/* Title section - smaller text */}
+                  <div className="mb-4">
+                    <h2 className="text-lg sm:text-xl font-serif font-medium text-white mb-1 drop-shadow-lg">
+                      {slide.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-white/80 leading-relaxed drop-shadow-md whitespace-pre-line max-w-xs">
+                      {slide.subtitle}
+                    </p>
                   </div>
 
-                  {/* Skip to Feed button */}
-                  <div className="absolute top-16 right-4 z-10">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleSkipToFeed}
-                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full backdrop-blur-sm"
-                    >
-                      <Play className="w-3 h-3 mr-1.5" />
-                      Skip to Feed
-                    </Button>
-                  </div>
-
-                  {/* Azyah branding - repositioned to bottom left, not covering globe */}
-                  <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-                    <img
-                      src="/marketing/azyah-logo.png"
-                      alt="Azyah"
-                      className="h-8 w-8 object-contain drop-shadow-lg"
-                    />
-                    <span className="text-2xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
-                      Azyah
+                  {/* Feature tags below Azyah branding area */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    <span className="inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded-full border border-white/20">
+                      ✨ AI-powered curation
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded-full border border-white/20">
+                      👗 Build your virtual wardrobe
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded-full border border-white/20">
+                      🤝 Collaborate with brands
                     </span>
                   </div>
 
-                  {/* Add your pin CTA */}
-                  <div className="absolute bottom-4 right-4 z-10">
+                  {/* Bottom row with Azyah branding and Add your pin */}
+                  <div className="flex items-center justify-between">
+                    {/* Azyah branding */}
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/marketing/azyah-logo.png"
+                        alt="Azyah"
+                        className="h-6 w-6 sm:h-7 sm:w-7 object-contain drop-shadow-lg"
+                      />
+                      <span className="text-lg sm:text-xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
+                        Azyah
+                      </span>
+                    </div>
+
+                    {/* Add your pin CTA */}
                     <button 
                       onClick={() => navigate("/onboarding/signup")}
-                      className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
+                      className="group flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-2.5 py-1.5 transition-all duration-300"
                     >
-                      <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
-                      <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
+                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
+                      <span className="text-[10px] sm:text-xs text-white/90 group-hover:text-white">Add your pin</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Title & Subtitle - Positioned below globe */}
-                <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-20 px-6 text-center bg-white">
-                  <h2 className="text-xl md:text-2xl font-serif font-medium text-foreground mb-2">Discover Modest Fashion Worldwide</h2>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <p>✨ AI-powered virtual try-on</p>
-                    <p>🌍 Top countries to explore</p>
-                    <p>🎬 UGC collab and earn rewards</p>
-                  </div>
+                {/* Skip to Feed - top right, no arrow */}
+                <div className="absolute top-16 right-4 z-10">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSkipToFeed}
+                    className="h-8 px-3 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full backdrop-blur-sm border border-white/20"
+                  >
+                    Skip to Feed
+                  </Button>
                 </div>
               </div>
             )}
@@ -864,10 +860,11 @@ export default function IntroCarousel() {
           ))}
         </div>
 
-        {/* Primary CTA */}
+        {/* Primary CTA - outline style, see-through */}
         <Button
           onClick={handleJoinCommunity}
-          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full shadow-lg"
+          variant="outline"
+          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary/10 transition-colors"
         >
           Join the Community
         </Button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Home, Search, Globe as GlobeIcon, MapPin, Users, Store, Ruler, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,9 @@ import { GlobeWrapper } from '@/components/globe/GlobeWrapper';
 import { CountryDrawer } from '@/components/globe/CountryDrawer';
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
+import { useFollows } from '@/hooks/useFollows';
 
-type ExploreTab = 'all' | 'following' | 'brands' | 'shoppers' | 'your-fit';
+type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
@@ -23,12 +24,12 @@ const Explore: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<ExploreTab>('all');
+  const [activeTab, setActiveTab] = useState<ExploreTab>('brands');
 
   // Sync tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['all', 'following', 'brands', 'shoppers', 'your-fit'].includes(tab)) {
+    if (tab && ['brands', 'following', 'shoppers', 'your-fit'].includes(tab)) {
       setActiveTab(tab as ExploreTab);
     }
   }, [searchParams]);
@@ -66,6 +67,60 @@ const Explore: React.FC = () => {
     },
   });
 
+  // Fetch following data for following tab filter
+  const { following } = useFollows();
+
+  // Fetch countries with shoppers (users with public profiles)
+  const { data: countriesWithShoppers = [] } = useQuery<{ code: string; count: number }[]>({
+    queryKey: ['countries-with-shoppers'],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (supabase as any)
+        .from('public_profiles')
+        .select('country')
+        .not('country', 'is', null);
+      
+      if (result.error) return [];
+
+      const counts = new Map<string, number>();
+      (result.data || []).forEach((p: { country: string | null }) => {
+        if (p.country) {
+          const code = p.country.toUpperCase();
+          counts.set(code, (counts.get(code) || 0) + 1);
+        }
+      });
+      
+      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+    },
+  });
+
+  // Fetch countries where user follows brands/shoppers
+  const { data: countriesFollowing = [] } = useQuery<{ code: string; count: number }[]>({
+    queryKey: ['countries-following', following],
+    queryFn: async () => {
+      if (!following || following.length === 0) return [];
+      
+      // Get brands the user follows
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const brandResult = await (supabase as any)
+        .from('brands')
+        .select('country_code')
+        .in('id', following)
+        .not('country_code', 'is', null);
+      
+      const counts = new Map<string, number>();
+      (brandResult.data || []).forEach((b: { country_code: string | null }) => {
+        if (b.country_code) {
+          const code = b.country_code.toUpperCase();
+          counts.set(code, (counts.get(code) || 0) + 1);
+        }
+      });
+      
+      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+    },
+    enabled: !!following && following.length > 0,
+  });
+
   // Fetch featured country based on engagement (simplified - just pick first with most brands for now)
   const { data: featuredCountry } = useQuery({
     queryKey: ['featured-country'],
@@ -78,6 +133,23 @@ const Explore: React.FC = () => {
     },
     enabled: countriesWithBrands.length > 0,
   });
+
+  // Compute filtered countries based on active tab
+  const filteredCountriesForGlobe = useMemo(() => {
+    switch (activeTab) {
+      case 'brands':
+        return countriesWithBrands;
+      case 'following':
+        return countriesFollowing;
+      case 'shoppers':
+        return countriesWithShoppers;
+      case 'your-fit':
+        // For now, show shoppers with similar fit - same as shoppers for now
+        return countriesWithShoppers;
+      default:
+        return countriesWithBrands;
+    }
+  }, [activeTab, countriesWithBrands, countriesFollowing, countriesWithShoppers]);
 
   // Handle country selection
   const handleCountrySelect = (code: string) => {
@@ -108,9 +180,9 @@ const Explore: React.FC = () => {
     handleCountrySelect(code);
   };
 
-  // Total brands count - only show actual data
-  const totalBrands = countriesWithBrands.reduce((sum, c) => sum + c.count, 0);
-  const totalCountries = countriesWithBrands.length;
+  // Total counts based on active tab
+  const totalCount = filteredCountriesForGlobe.reduce((sum, c) => sum + c.count, 0);
+  const totalCountries = filteredCountriesForGlobe.length;
 
   return (
     <div className="h-[100dvh] bg-gray-900 flex flex-col overflow-hidden">
@@ -135,9 +207,13 @@ const Explore: React.FC = () => {
             <div className="flex-1 text-center">
               <h1 className="text-lg font-serif font-medium text-white">Explore</h1>
               <p className="text-xs text-white/60">
-                {totalBrands > 0 && totalCountries > 0
-                  ? `${totalBrands} brand${totalBrands !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
-                  : 'Loading brands...'
+                {totalCount > 0 && totalCountries > 0
+                  ? activeTab === 'brands'
+                    ? `${totalCount} brand${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+                    : activeTab === 'shoppers' || activeTab === 'your-fit'
+                      ? `${totalCount} shopper${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+                      : `${totalCount} following across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+                  : 'Loading...'
                 }
               </p>
             </div>
@@ -196,13 +272,13 @@ const Explore: React.FC = () => {
           {/* Filter Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-5 gap-1">
+              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-4 gap-1">
                 <TabsTrigger 
-                  value="all" 
+                  value="brands" 
                   className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
                 >
-                  <GlobeIcon className="h-3.5 w-3.5 mr-1" />
-                  All
+                  <Store className="h-3.5 w-3.5 mr-1" />
+                  Brands
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
@@ -210,13 +286,6 @@ const Explore: React.FC = () => {
                 >
                   <Heart className="h-3.5 w-3.5 mr-1" />
                   Following
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="brands" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
-                >
-                  <Store className="h-3.5 w-3.5 mr-1" />
-                  Brands
                 </TabsTrigger>
                 <TabsTrigger 
                   value="shoppers" 
@@ -241,7 +310,7 @@ const Explore: React.FC = () => {
       {/* Globe - Full Screen - Always visible */}
       <div className="flex-1 relative">
         <GlobeWrapper
-          countriesWithBrands={countriesWithBrands}
+          countriesWithBrands={filteredCountriesForGlobe}
           selectedCountry={selectedCountry}
           onCountrySelect={handleCountrySelect}
           autoRotate={!drawerOpen}
@@ -255,15 +324,13 @@ const Explore: React.FC = () => {
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
             <GlobeIcon className="h-4 w-4 text-white/70" />
             <span className="text-sm text-white/70">
-              {activeTab === 'all' 
-                ? 'Tap a country to explore' 
-                : activeTab === 'brands'
-                  ? 'Tap to see brands in each country'
-                  : activeTab === 'shoppers'
-                    ? 'Tap to see shoppers in each country'
-                    : activeTab === 'following'
-                      ? 'Tap to see who you follow in each country'
-                      : 'Tap to find people with similar fit'
+              {activeTab === 'brands'
+                ? 'Tap to see brands in each country'
+                : activeTab === 'shoppers'
+                  ? 'Tap to see shoppers in each country'
+                  : activeTab === 'following'
+                    ? 'Tap to see who you follow in each country'
+                    : 'Tap to find people with similar fit'
               }
             </span>
           </div>
