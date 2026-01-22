@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, User, Gift } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, User, Gift, MapPin, ChevronsUpDown, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { FloatingFashionIcons } from '@/components/FloatingFashionIcons';
 import { useGuestMode } from '@/hooks/useGuestMode';
 import { useApplyReferralCode, useValidateReferralCode } from '@/hooks/useReferrals';
+import { COUNTRIES } from '@/lib/countries';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -23,6 +27,8 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showUsernameFields, setShowUsernameFields] = useState(false);
@@ -169,7 +175,8 @@ export default function SignUp() {
 
         const { error: signUpError } = await signUp(email, password, { 
           role: userRole,
-          username: username.toLowerCase()
+          username: username.toLowerCase(),
+          country: selectedCountry || undefined
         });
         
         if (signUpError) {
@@ -359,6 +366,62 @@ export default function SignUp() {
                       required
                       minLength={6}
                     />
+                  </div>
+
+                  {/* Country selection (optional) */}
+                  <div>
+                    <Label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
+                      Your Country (optional)
+                    </Label>
+                    <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={countryOpen}
+                          className="w-full h-11 md:h-12 rounded-xl justify-between font-normal"
+                        >
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className={selectedCountry ? 'text-foreground' : 'text-muted-foreground'}>
+                              {selectedCountry || 'Select your country'}
+                            </span>
+                          </div>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search countries..." />
+                          <CommandList>
+                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {COUNTRIES.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={country.name}
+                                  onSelect={(currentValue) => {
+                                    setSelectedCountry(currentValue === selectedCountry ? '' : currentValue);
+                                    setCountryOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      selectedCountry === country.name ? 'opacity-100' : 'opacity-0'
+                                    )}
+                                  />
+                                  {country.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                      Helps us show you relevant brands and prices
+                    </p>
                   </div>
 
                   {/* Referral code input (optional) */}
