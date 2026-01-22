@@ -12,6 +12,9 @@ export interface CountryCoordinates {
 }
 
 export const COUNTRY_COORDINATES: CountryCoordinates[] = [
+  // Global - for users without a country assigned
+  { code: 'GLOBAL', name: 'Global Community', lat: 0, lng: -30, region: 'International' },
+  
   // Middle East & North Africa (Priority Region)
   { code: 'AE', name: 'United Arab Emirates', lat: 23.4241, lng: 53.8478, region: 'Middle East' },
   { code: 'SA', name: 'Saudi Arabia', lat: 23.8859, lng: 45.0792, region: 'Middle East' },
