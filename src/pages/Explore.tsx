@@ -240,12 +240,20 @@ const Explore: React.FC = () => {
             </Button>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar - Contextual to tab */}
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
             <Input
               type="text"
-              placeholder="Search countries..."
+              placeholder={
+                activeTab === 'brands' 
+                  ? 'Search countries with brands...' 
+                  : activeTab === 'following'
+                    ? 'Search countries you follow...'
+                    : activeTab === 'shoppers'
+                      ? 'Search countries with shoppers...'
+                      : 'Search countries with similar fit...'
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full focus-visible:ring-primary/50"
@@ -349,7 +357,7 @@ const Explore: React.FC = () => {
         </div>
       </div>
 
-      {/* Country Drawer */}
+      {/* Country Drawer - pass activeTab for contextual content */}
       <CountryDrawer
         countryCode={selectedCountry}
         open={drawerOpen}
@@ -362,6 +370,7 @@ const Explore: React.FC = () => {
             }, 300);
           }
         }}
+        activeTab={activeTab}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Sparkles, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronRight, Users } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -18,6 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 
+type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
+
 interface CountryBrand {
   id: string;
   name: string;
@@ -34,31 +36,37 @@ interface CountryProduct {
   brand_id: string;
 }
 
+interface CountryShopper {
+  id: string;
+  name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 interface CountryDrawerProps {
   countryCode: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  activeTab?: ExploreTab;
 }
 
-export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawerProps) {
+export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'brands' }: CountryDrawerProps) {
   const navigate = useNavigate();
-  const countryName = countryCode ? getCountryNameFromCode(countryCode) : '';
+  const countryName = countryCode === 'GLOBAL' ? 'Global Community' : (countryCode ? getCountryNameFromCode(countryCode) : '');
 
-  // Fetch brands in this country
+  // Fetch brands in this country (no is_active filter - column doesn't exist)
   const { data: brands, isLoading: brandsLoading } = useQuery({
     queryKey: ['country-brands', countryCode],
     queryFn: async (): Promise<CountryBrand[]> => {
-      if (!countryCode) return [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any)
+      if (!countryCode || countryCode === 'GLOBAL') return [];
+      const result = await supabase
         .from('brands')
         .select('id, name, slug, logo_url')
         .eq('country_code', countryCode)
-        .eq('is_active', true)
         .limit(10);
       return (result.data ?? []) as CountryBrand[];
     },
-    enabled: !!countryCode && open,
+    enabled: !!countryCode && open && (activeTab === 'brands' || activeTab === 'following'),
   });
 
   // Fetch products from brands in this country
@@ -67,8 +75,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
     queryFn: async (): Promise<CountryProduct[]> => {
       if (!brands || brands.length === 0) return [];
       const brandIds = brands.map(b => b.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any)
+      const result = await supabase
         .from('products')
         .select('id, title, media_urls, price_cents, currency, brand_id')
         .in('brand_id', brandIds)
@@ -76,13 +83,45 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
         .limit(12);
       return (result.data ?? []) as CountryProduct[];
     },
-    enabled: !!brands && brands.length > 0 && open,
+    enabled: !!brands && brands.length > 0 && open && (activeTab === 'brands' || activeTab === 'following'),
   });
 
-  const handleStartSwiping = () => {
-    onOpenChange(false);
-    navigate(`/swipe?country=${countryCode}`);
-  };
+  // Fetch shoppers in this country or globally
+  const { data: shoppers, isLoading: shoppersLoading } = useQuery({
+    queryKey: ['country-shoppers', countryCode, activeTab],
+    queryFn: async (): Promise<CountryShopper[]> => {
+      if (!countryCode) return [];
+      
+      let query = supabase
+        .from('users_public')
+        .select('id, name, username, avatar_url')
+        .limit(20);
+      
+      // For GLOBAL, get users without a country set
+      if (countryCode === 'GLOBAL') {
+        // Get all users - we can't filter by null country in public view
+        // Just return all users for now
+      } else {
+        // Get users from this specific country
+        // Join with users table to filter by country
+        const usersResult = await supabase
+          .from('users')
+          .select('id')
+          .eq('country', countryCode);
+        
+        if (usersResult.data && usersResult.data.length > 0) {
+          const userIds = usersResult.data.map(u => u.id);
+          query = query.in('id', userIds);
+        } else {
+          return [];
+        }
+      }
+      
+      const result = await query;
+      return (result.data ?? []) as CountryShopper[];
+    },
+    enabled: !!countryCode && open && (activeTab === 'shoppers' || activeTab === 'your-fit'),
+  });
 
   const handleBrandClick = (slug: string) => {
     onOpenChange(false);
@@ -99,6 +138,11 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
     navigate(`/explore?tab=brands&country=${countryCode}`);
   };
 
+  const handleShopperClick = (shopperId: string) => {
+    onOpenChange(false);
+    navigate(`/profile/${shopperId}`);
+  };
+
   const formatPrice = (cents: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -111,7 +155,11 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
     return brands?.find(b => b.id === brandId)?.name || '';
   };
 
-  const isLoading = brandsLoading || productsLoading;
+  const isLoading = brandsLoading || productsLoading || shoppersLoading;
+
+  // Determine what to show based on activeTab
+  const showBrandsContent = activeTab === 'brands' || activeTab === 'following';
+  const showShoppersContent = activeTab === 'shoppers' || activeTab === 'your-fit';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -122,19 +170,13 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
               <MapPin className="w-5 h-5 text-primary" />
               <DrawerTitle className="text-xl font-serif">{countryName}</DrawerTitle>
             </div>
-            
-            {/* Floating Start Swiping Button */}
-            <Button
-              size="sm"
-              onClick={handleStartSwiping}
-              className="h-9 w-9 rounded-full p-0 bg-primary hover:bg-primary/90 shadow-lg"
-            >
-              <Sparkles className="w-4 h-4" />
-            </Button>
           </div>
           
           <p className="text-xs text-muted-foreground mt-1">
-            {brands?.length || 0} brands • {products?.length || 0} products
+            {showBrandsContent 
+              ? `${brands?.length || 0} brands • ${products?.length || 0} products`
+              : `${shoppers?.length || 0} shoppers`
+            }
           </p>
         </DrawerHeader>
 
@@ -145,92 +187,133 @@ export function CountryDrawer({ countryCode, open, onOpenChange }: CountryDrawer
                 {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
               </div>
             </div>
-          ) : products && products.length > 0 ? (
-            <div className="space-y-4">
-              {/* Products Grid - Card View */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-foreground">Products</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleViewAllProducts}
-                    className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-                  >
-                    View All <ChevronRight className="w-3 h-3 ml-0.5" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {products.slice(0, 6).map((product) => (
-                    <Card
-                      key={product.id}
-                      className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-card/80 backdrop-blur-sm border-border/50"
-                      onClick={() => handleProductClick(product.id)}
-                    >
-                      <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                        <SmartImage
-                          src={getPrimaryImageUrl(product)}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                          sizes="(max-width: 640px) 100px, 120px"
-                        />
-                      </div>
-                      <div className="p-2">
-                        <p className="text-[10px] text-muted-foreground truncate">{getBrandName(product.brand_id)}</p>
-                        <p className="text-xs font-medium truncate">{product.title}</p>
-                        <p className="text-xs text-primary font-semibold">{formatPrice(product.price_cents, product.currency)}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              {/* Brands Section */}
-              {brands && brands.length > 0 && (
+          ) : showBrandsContent ? (
+            // Brands & Products Content
+            products && products.length > 0 ? (
+              <div className="space-y-4">
+                {/* Products Grid - Card View */}
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-3">Brands in {countryName}</h3>
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                    {brands.map((brand) => (
-                      <button 
-                        key={brand.id} 
-                        onClick={() => handleBrandClick(brand.slug)} 
-                        className="flex flex-col items-center gap-1.5 flex-shrink-0"
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-foreground">Products</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleViewAllProducts}
+                      className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+                    >
+                      View All <ChevronRight className="w-3 h-3 ml-0.5" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {products.slice(0, 6).map((product) => (
+                      <Card
+                        key={product.id}
+                        className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-card/80 backdrop-blur-sm border-border/50"
+                        onClick={() => handleProductClick(product.id)}
                       >
-                        <Avatar className="w-14 h-14 border-2 border-border/50 hover:border-primary/50 transition-colors">
-                          <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">{brand.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-[10px] font-medium text-center line-clamp-1 max-w-14">{brand.name}</span>
-                      </button>
+                        <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                          <SmartImage
+                            src={getPrimaryImageUrl(product)}
+                            alt={product.title}
+                            className="w-full h-full object-cover"
+                            sizes="(max-width: 640px) 100px, 120px"
+                          />
+                        </div>
+                        <div className="p-2">
+                          <p className="text-[10px] text-muted-foreground truncate">{getBrandName(product.brand_id)}</p>
+                          <p className="text-xs font-medium truncate">{product.title}</p>
+                          <p className="text-xs text-primary font-semibold">{formatPrice(product.price_cents, product.currency)}</p>
+                        </div>
+                      </Card>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
-          ) : brands && brands.length > 0 ? (
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-3">Brands in {countryName}</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {brands.map((brand) => (
-                  <button 
-                    key={brand.id} 
-                    onClick={() => handleBrandClick(brand.slug)} 
-                    className="flex flex-col items-center p-3 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm hover:bg-accent/50 transition-colors"
-                  >
-                    <Avatar className="w-12 h-12 mb-2">
-                      <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm">{brand.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium text-center line-clamp-2">{brand.name}</span>
-                  </button>
-                ))}
+
+                {/* Brands Section */}
+                {brands && brands.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground mb-3">Brands in {countryName}</h3>
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                      {brands.map((brand) => (
+                        <button 
+                          key={brand.id} 
+                          onClick={() => handleBrandClick(brand.slug)} 
+                          className="flex flex-col items-center gap-1.5 flex-shrink-0"
+                        >
+                          <Avatar className="w-14 h-14 border-2 border-border/50 hover:border-primary/50 transition-colors">
+                            <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm">{brand.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-[10px] font-medium text-center line-clamp-1 max-w-14">{brand.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : brands && brands.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-medium text-foreground mb-3">Brands in {countryName}</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {brands.map((brand) => (
+                    <button 
+                      key={brand.id} 
+                      onClick={() => handleBrandClick(brand.slug)} 
+                      className="flex flex-col items-center p-3 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm hover:bg-accent/50 transition-colors"
+                    >
+                      <Avatar className="w-12 h-12 mb-2">
+                        <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm">{brand.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-center line-clamp-2">{brand.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No brands in this country yet</p>
+              </div>
+            )
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No brands in this country yet</p>
-            </div>
+            // Shoppers Content
+            shoppers && shoppers.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-medium text-foreground mb-3">
+                  {activeTab === 'your-fit' ? 'People with Similar Fit' : 'Shoppers'}
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {shoppers.map((shopper) => (
+                    <button 
+                      key={shopper.id} 
+                      onClick={() => handleShopperClick(shopper.id)} 
+                      className="flex flex-col items-center p-3 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm hover:bg-accent/50 transition-colors"
+                    >
+                      <Avatar className="w-12 h-12 mb-2">
+                        <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                          {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-center line-clamp-2">
+                        {shopper.name || shopper.username || 'Anonymous'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">
+                  {activeTab === 'your-fit' 
+                    ? 'No people with similar fit in this area yet' 
+                    : 'No shoppers in this country yet'
+                  }
+                </p>
+              </div>
+            )
           )}
         </ScrollArea>
       </DrawerContent>
