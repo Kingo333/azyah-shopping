@@ -11,27 +11,6 @@ const VIDEO_PROMPT = "Front-facing model looks into camera from the image, does 
 // Known-good test image for provider diagnostics
 const TEST_IMAGE_URL = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80";
 
-// Helper: Check if URL looks like a signed/expiring URL
-function isSignedUrl(url: string): boolean {
-  const signedPatterns = ['token=', 'X-Amz-', 'expires=', 'signature=', 'sig=', 'Expires='];
-  return signedPatterns.some(p => url.toLowerCase().includes(p.toLowerCase()));
-}
-
-// Helper: Transform Supabase storage URL to render URL for better compatibility
-function transformToRenderUrl(imageUrl: string, supabaseUrl: string): string | null {
-  // Pattern: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
-  const objectPattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/;
-  const match = imageUrl.match(objectPattern);
-  
-  if (match && imageUrl.startsWith(supabaseUrl)) {
-    const bucket = match[1];
-    const path = match[2];
-    // Transform to render URL with resize/format for better provider compatibility
-    return `${supabaseUrl}/storage/v1/render/image/public/${bucket}/${path}?width=1024&quality=80&format=jpg`;
-  }
-  return null;
-}
-
 // Helper: Log job lifecycle to database
 async function logJobLifecycle(
   serviceClient: any,
@@ -63,6 +42,94 @@ async function logJobLifecycle(
     });
   } catch (e) {
     console.error('[TheNewBlack Video] Failed to log job lifecycle:', e);
+  }
+}
+
+// Helper: Create a provider-safe copy of the image
+// Downloads the original image and re-uploads to a dedicated public bucket
+// This ensures the URL is stable (no expiry) and provider-accessible
+async function createProviderSafeCopy(
+  imageUrl: string,
+  userId: string,
+  serviceClient: any
+): Promise<{ ok: boolean; publicUrl?: string; error?: string; debug?: Record<string, unknown> }> {
+  try {
+    console.log('[TheNewBlack Video] Creating provider-safe copy from:', imageUrl.substring(0, 80));
+    
+    // Fetch image with browser-like headers for compatibility
+    const response = await fetch(imageUrl, {
+      headers: {
+        'Accept': 'image/*,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (compatible; VideoBot/1.0)'
+      }
+    });
+    
+    if (!response.ok) {
+      return { 
+        ok: false, 
+        error: `Failed to fetch image: ${response.status} ${response.statusText}`,
+        debug: { fetchStatus: response.status }
+      };
+    }
+    
+    const contentType = response.headers.get('content-type') || '';
+    console.log('[TheNewBlack Video] Fetched image, content-type:', contentType);
+    
+    // Accept image/* and application/octet-stream (common for binary downloads)
+    if (!contentType.startsWith('image/') && contentType !== 'application/octet-stream') {
+      return { 
+        ok: false, 
+        error: `Invalid content-type: ${contentType}. Expected an image.`,
+        debug: { contentType }
+      };
+    }
+    
+    const blob = await response.blob();
+    console.log('[TheNewBlack Video] Image blob size:', blob.size);
+    
+    if (blob.size < 1000) {
+      return { 
+        ok: false, 
+        error: 'Image too small, likely an error response',
+        debug: { blobSize: blob.size }
+      };
+    }
+    
+    // Generate unique filename
+    const fileName = `${userId}/${Date.now()}_video_input.jpg`;
+    
+    // Upload to dedicated public bucket
+    const { error: uploadError } = await serviceClient.storage
+      .from('tnb-video-inputs')
+      .upload(fileName, blob, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('[TheNewBlack Video] Upload to tnb-video-inputs failed:', uploadError);
+      return { 
+        ok: false, 
+        error: `Upload failed: ${uploadError.message}`,
+        debug: { uploadError: uploadError.message }
+      };
+    }
+    
+    // Get public URL
+    const { data } = serviceClient.storage
+      .from('tnb-video-inputs')
+      .getPublicUrl(fileName);
+    
+    console.log('[TheNewBlack Video] Provider-safe URL created:', data.publicUrl);
+    
+    return { ok: true, publicUrl: data.publicUrl };
+  } catch (err) {
+    console.error('[TheNewBlack Video] createProviderSafeCopy error:', err);
+    return { 
+      ok: false, 
+      error: err instanceof Error ? err.message : 'Copy failed',
+      debug: { exception: err instanceof Error ? err.message : 'Unknown' }
+    };
   }
 }
 
@@ -199,120 +266,38 @@ serve(async (req) => {
       console.log('[TheNewBlack Video] Starting video generation for user:', user.id);
       console.log('[TheNewBlack Video] Original image URL:', image_url);
 
-      // Check if URL is signed/expiring
-      const isSigned = isSignedUrl(image_url);
-      console.log('[TheNewBlack Video] Is signed URL:', isSigned);
-
-      // Try to transform Supabase storage URL to render URL
-      let usedImageUrl = image_url;
-      const renderUrl = transformToRenderUrl(image_url, supabaseUrl);
-      if (renderUrl) {
-        console.log('[TheNewBlack Video] Transformed to render URL:', renderUrl);
-        usedImageUrl = renderUrl;
-      }
-
-      // Verify image URL is publicly accessible AND is actually an image
-      console.log('[TheNewBlack Video] Verifying image URL accessibility...');
-      let imageCheckStatus = 0;
-      let imageCheckContentType = '';
+      // Create provider-safe copy of the image
+      // This downloads the original and re-uploads to a dedicated public bucket
+      // Ensures stable, non-expiring URL for async video generation
+      const copyResult = await createProviderSafeCopy(image_url, user.id, serviceClient);
       
-      try {
-        const imageCheck = await fetch(usedImageUrl, { method: 'GET' });
-        imageCheckStatus = imageCheck.status;
-        imageCheckContentType = imageCheck.headers.get('content-type') || '';
-        
-        console.log('[TheNewBlack Video] Image check:', {
-          status: imageCheckStatus,
-          contentType: imageCheckContentType,
-          isImage: imageCheckContentType.startsWith('image/')
-        });
-        
-        if (!imageCheck.ok) {
-          console.error('[TheNewBlack Video] Image URL not accessible:', imageCheckStatus);
-          
-          await logJobLifecycle(serviceClient, user.id, {
-            action: 'start',
-            inputImageUrl: image_url,
-            usedImageUrl,
-            step: 'image_url_check',
-            providerStatusCode: imageCheckStatus,
-            errorMessage: 'Image URL not accessible',
-            isSuccess: false
-          });
-
-          return new Response(
-            JSON.stringify({ 
-              ok: false, 
-              step: 'image_url_check', 
-              provider_status: imageCheckStatus,
-              debug: {
-                originalUrl: image_url,
-                usedUrl: usedImageUrl,
-                isSigned,
-                contentType: imageCheckContentType
-              },
-              error: 'Image URL is not publicly accessible. Please re-upload the image.' 
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        if (!imageCheckContentType.startsWith('image/')) {
-          console.error('[TheNewBlack Video] URL is not an image:', imageCheckContentType);
-          
-          await logJobLifecycle(serviceClient, user.id, {
-            action: 'start',
-            inputImageUrl: image_url,
-            usedImageUrl,
-            step: 'image_url_check',
-            errorMessage: `Not an image: ${imageCheckContentType}`,
-            isSuccess: false
-          });
-
-          return new Response(
-            JSON.stringify({ 
-              ok: false, 
-              step: 'image_url_check', 
-              debug: {
-                originalUrl: image_url,
-                usedUrl: usedImageUrl,
-                isSigned,
-                contentType: imageCheckContentType
-              },
-              error: `URL must return a valid image. Got: ${imageCheckContentType}` 
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        console.log('[TheNewBlack Video] Image URL verified as valid image');
-      } catch (err) {
-        console.error('[TheNewBlack Video] Image URL check error:', err);
+      if (!copyResult.ok) {
+        console.error('[TheNewBlack Video] Provider-safe copy failed:', copyResult.error);
         
         await logJobLifecycle(serviceClient, user.id, {
           action: 'start',
           inputImageUrl: image_url,
-          usedImageUrl,
-          step: 'image_url_check',
-          errorMessage: err instanceof Error ? err.message : 'Fetch failed',
+          step: 'image_copy',
+          errorMessage: copyResult.error,
           isSuccess: false
         });
 
         return new Response(
           JSON.stringify({ 
             ok: false, 
-            step: 'image_url_check',
+            step: 'image_copy', 
+            error: copyResult.error || 'Failed to prepare image for video generation',
             debug: {
               originalUrl: image_url,
-              usedUrl: usedImageUrl,
-              isSigned,
-              error: err instanceof Error ? err.message : 'Unknown'
-            },
-            error: 'Failed to verify image URL accessibility. Please try re-uploading.' 
+              ...copyResult.debug
+            }
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      const providerSafeUrl = copyResult.publicUrl!;
+      console.log('[TheNewBlack Video] Using provider-safe URL:', providerSafeUrl);
       
       // Validate prompt is reasonable
       if (typeof finalPrompt !== 'string' || finalPrompt.trim().length < 3) {
@@ -369,7 +354,7 @@ serve(async (req) => {
 
       // Call The New Black API to start video generation
       const formData = new FormData();
-      formData.append('image', usedImageUrl);  // Use transformed URL
+      formData.append('image', providerSafeUrl);  // Use provider-safe URL
       formData.append('prompt', finalPrompt);
       formData.append('time', finalTime);
 
@@ -378,7 +363,7 @@ serve(async (req) => {
         endpoint: 'https://thenewblack.ai/api/1.1/wf/ai-video',
         hasApiKey: !!apiKey,
         apiKeyPrefix: apiKey?.substring(0, 8) + '...',
-        usedImageUrl: usedImageUrl.substring(0, 80) + '...',
+        providerSafeUrl: providerSafeUrl.substring(0, 80) + '...',
         promptLength: finalPrompt.length,
         time: finalTime
       });
@@ -412,7 +397,7 @@ serve(async (req) => {
         await logJobLifecycle(serviceClient, user.id, {
           action: 'start',
           inputImageUrl: image_url,
-          usedImageUrl,
+          usedImageUrl: providerSafeUrl,
           step: 'provider_start',
           providerStatusCode: apiResponse.status,
           bodySnippet: responseText,
@@ -428,8 +413,7 @@ serve(async (req) => {
             body_snippet: responseText.substring(0, 200),
             debug: {
               originalUrl: image_url,
-              usedUrl: usedImageUrl,
-              isSigned
+              usedUrl: providerSafeUrl
             },
             error: `Video API error: ${apiResponse.status}` 
           }),
@@ -449,7 +433,7 @@ serve(async (req) => {
         await logJobLifecycle(serviceClient, user.id, {
           action: 'start',
           inputImageUrl: image_url,
-          usedImageUrl,
+          usedImageUrl: providerSafeUrl,
           step: 'provider_start',
           providerStatusCode: apiResponse.status,
           bodySnippet: '(empty)',
@@ -465,8 +449,7 @@ serve(async (req) => {
             body_snippet: '(empty)',
             debug: {
               originalUrl: image_url,
-              usedUrl: usedImageUrl,
-              isSigned
+              usedUrl: providerSafeUrl
             },
             error: 'Video provider returned empty response.' 
           }),
@@ -495,7 +478,7 @@ serve(async (req) => {
           await logJobLifecycle(serviceClient, user.id, {
             action: 'start',
             inputImageUrl: image_url,
-            usedImageUrl,
+            usedImageUrl: providerSafeUrl,
             step: 'provider_start',
             providerStatusCode: apiResponse.status,
             bodySnippet: responseText,
@@ -511,8 +494,7 @@ serve(async (req) => {
               body_snippet: responseText.substring(0, 200),
               debug: {
                 originalUrl: image_url,
-                usedUrl: usedImageUrl,
-                isSigned,
+                usedUrl: providerSafeUrl,
                 parsedResponse: jsonResponse
               },
               error: 'Video provider returned empty response. This may indicate: 1) API key issue, 2) Image format not supported, or 3) Provider service issue. Please try a different image or contact support.' 
@@ -533,7 +515,7 @@ serve(async (req) => {
           await logJobLifecycle(serviceClient, user.id, {
             action: 'start',
             inputImageUrl: image_url,
-            usedImageUrl,
+            usedImageUrl: providerSafeUrl,
             step: 'provider_start',
             providerStatusCode: apiResponse.status,
             bodySnippet: responseText,
@@ -549,8 +531,7 @@ serve(async (req) => {
               body_snippet: responseText.substring(0, 200),
               debug: {
                 originalUrl: image_url,
-                usedUrl: usedImageUrl,
-                isSigned
+                usedUrl: providerSafeUrl
               },
               error: jsonResponse.message || jsonResponse.error || 'API error' 
             }),
@@ -581,7 +562,7 @@ serve(async (req) => {
         await logJobLifecycle(serviceClient, user.id, {
           action: 'start',
           inputImageUrl: image_url,
-          usedImageUrl,
+          usedImageUrl: providerSafeUrl,
           step: 'provider_start',
           providerStatusCode: apiResponse.status,
           bodySnippet: cleanJobId,
@@ -597,8 +578,7 @@ serve(async (req) => {
             body_snippet: cleanJobId.substring(0, 100),
             debug: {
               originalUrl: image_url,
-              usedUrl: usedImageUrl,
-              isSigned
+              usedUrl: providerSafeUrl
             },
             error: 'Invalid job ID format received from API. Please try again.' 
           }),
@@ -610,7 +590,7 @@ serve(async (req) => {
       await logJobLifecycle(serviceClient, user.id, {
         action: 'start',
         inputImageUrl: image_url,
-        usedImageUrl,
+        usedImageUrl: providerSafeUrl,
         jobId: cleanJobId,
         step: 'provider_start',
         providerStatusCode: apiResponse.status,
@@ -625,8 +605,7 @@ serve(async (req) => {
           message: 'Video generation started. Check back in 2-5 minutes.',
           credits_remaining: credits[0].video_credits - 1,
           debug: {
-            usedUrl: usedImageUrl,
-            isSigned
+            usedUrl: providerSafeUrl
           }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
