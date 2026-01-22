@@ -515,16 +515,32 @@ export default function IntroCarousel() {
                     </Button>
                   </div>
 
-                  {/* Azyah branding - repositioned to bottom left, not covering globe */}
-                  <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-                    <img
-                      src="/marketing/azyah-logo.png"
-                      alt="Azyah"
-                      className="h-8 w-8 object-contain drop-shadow-lg"
-                    />
-                    <span className="text-2xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
-                      Azyah
-                    </span>
+                  {/* Azyah branding + Feature pills - stacked at bottom left */}
+                  <div className="absolute bottom-4 left-4 flex flex-col gap-3 z-10">
+                    {/* Azyah Logo */}
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/marketing/azyah-logo.png"
+                        alt="Azyah"
+                        className="h-8 w-8 object-contain drop-shadow-lg"
+                      />
+                      <span className="text-2xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
+                        Azyah
+                      </span>
+                    </div>
+                    
+                    {/* Feature pills - stacked vertically */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
+                        AI-powered curation
+                      </span>
+                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
+                        Virtual try-on
+                      </span>
+                      <span className="inline-flex items-center bg-white/90 backdrop-blur-sm text-foreground text-xs px-3 py-1.5 rounded-full shadow-sm w-fit">
+                        Brand collabs
+                      </span>
+                    </div>
                   </div>
 
                   {/* Add your pin CTA */}
@@ -545,19 +561,6 @@ export default function IntroCarousel() {
                   <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line max-w-md">
                     {slide.subtitle}
                   </p>
-                  
-                  {/* Feature tags */}
-                  <div className="flex flex-wrap justify-center gap-2 mt-4">
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      ✨ AI-powered curation
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      👗 Virtual wardrobe
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      🤝 Brand collabs
-                    </span>
-                  </div>
                 </div>
               </div>
             )}
@@ -874,11 +877,10 @@ export default function IntroCarousel() {
           ))}
         </div>
 
-        {/* Primary CTA - outline style, see-through */}
+        {/* Primary CTA - solid burgundy fill */}
         <Button
           onClick={handleJoinCommunity}
-          variant="outline"
-          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary/10 transition-colors"
+          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-colors"
         >
           Join the Community
         </Button>
