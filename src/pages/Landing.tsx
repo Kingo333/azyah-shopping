@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
+import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -18,6 +18,11 @@ import { TrustBadges } from "@/components/TrustBadges";
 import { LiveActivityIndicator } from "@/components/LiveActivityIndicator";
 import { BeautyAssistantFab } from "@/components/BeautyAssistantFab";
 import { openExternalUrl } from "@/lib/openExternalUrl";
+import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
+import { CountryDrawer } from "@/components/globe/CountryDrawer";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { setGuestMode } from "@/hooks/useGuestMode";
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
@@ -42,12 +47,24 @@ export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const {
     user,
     loading
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch countries with brands for globe
+  // Countries with brands - fetched from Explore page data
+  const countriesWithBrands: { code: string; count: number }[] = [];
+
+  // Handle country selection from globe
+  const handleCountrySelect = (code: string) => {
+    setSelectedCountry(code);
+    setDrawerOpen(true);
+  };
 
   // Scroll animations
   const trendingSection = useScrollAnimation({
@@ -247,102 +264,110 @@ export default function Landing() {
           </div>}
       </header>
 
-      {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
-        {/* Floating Fashion Icons */}
-        <FloatingFashionIcons />
+      {/* HERO - Globe First */}
+      <section id="discover" className="relative overflow-hidden min-h-[70vh] sm:min-h-[80vh] lg:min-h-screen">
+        {/* 3D Globe Background */}
+        <div className="absolute inset-0 bg-gray-900">
+          <GlobeWrapper
+            countriesWithBrands={countriesWithBrands}
+            selectedCountry={selectedCountry}
+            onCountrySelect={handleCountrySelect}
+            autoRotate={!selectedCountry}
+            className="w-full h-full"
+          />
+        </div>
+        
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent pointer-events-none" />
         
         {/* Live Activity Indicator */}
         <LiveActivityIndicator />
         
         {/* Beauty Assistant Fab */}
         <BeautyAssistantFab onClick={() => navigate("/onboarding/signup")} />
-        
-        {/* Enhanced Background Pattern */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_70%)]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-gray-900/30" />
-          {/* Animated gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-gradient-shift opacity-60" />
-        </div>
-        
-        {/* Subtle Background Text - Smaller on Mobile */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="font-cormorant text-[15vw] sm:text-[12vw] lg:text-[10vw] font-bold text-primary/5 leading-none tracking-wider">
-            AZYAH
-          </div>
-        </div>
 
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative z-10">
           <div className="flex justify-center items-center transition-all duration-1000" style={{
-          opacity: isVisible ? 1 : 0,
-          transform: `translateY(${isVisible ? 0 : 32}px)`
-        }}>
+            opacity: isVisible ? 1 : 0,
+            transform: `translateY(${isVisible ? 0 : 32}px)`
+          }}>
             
-          {/* Hero Content - Centered */}
+            {/* Hero Content - Centered */}
             <div className="space-y-6 sm:space-y-8 lg:space-y-12 z-10 text-center max-w-4xl">
               <div className="space-y-3 sm:space-y-4 lg:space-y-8">
-                
-                
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                  <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
-                    <span className="block text-white animate-slide-up-fade" style={{
-                    animationDelay: '0.2s',
-                    animationFillMode: 'both'
-                  }}>
-                      Find Your
+                  <h1 className="font-cormorant text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
+                    <span className="block text-white animate-slide-up-fade drop-shadow-lg" style={{
+                      animationDelay: '0.2s',
+                      animationFillMode: 'both'
+                    }}>
+                      Discover Fashion
                     </span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-scale-bounce hover-scale" style={{
-                    animationDelay: '0.5s',
-                    animationFillMode: 'both'
-                  }}>
-                      Perfect
-                    </span>
-                    <span className="block text-white animate-slide-up-fade" style={{
-                    animationDelay: '0.8s',
-                    animationFillMode: 'both'
-                  }}>
-                      Style
+                      animationDelay: '0.5s',
+                      animationFillMode: 'both'
+                    }}>
+                      Worldwide
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus" style={{
-                  animationDelay: '1.1s',
-                  animationFillMode: 'both'
-                }}>Where AI meets fashion - discover pieces as unique as you are.</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus drop-shadow-md" style={{
+                    animationDelay: '1.1s',
+                    animationFillMode: 'both'
+                  }}>
+                    Tap a country to explore brands • AI-powered discovery
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{
-                animationDelay: '1.4s',
-                animationFillMode: 'both'
-              }} onClick={() => navigate("/onboarding/signup")}>
-                  <span>Explore Our AI &amp; More</span>
+              {/* Stats Card */}
+              {countriesWithBrands.length > 0 && (
+                <div className="inline-flex items-center gap-4 bg-white/10 backdrop-blur-lg rounded-2xl px-6 py-3 border border-white/20 shadow-xl animate-slide-up-fade" style={{
+                  animationDelay: '1.3s',
+                  animationFillMode: 'both'
+                }}>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span className="text-white font-medium">{countriesWithBrands.length} Countries</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/30" />
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-primary" />
+                    <span className="text-white font-medium">
+                      {countriesWithBrands.reduce((sum, c) => sum + c.count, 0)} Brands
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                <Button size="lg" className="group px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{
+                  animationDelay: '1.4s',
+                  animationFillMode: 'both'
+                }} onClick={() => navigate("/onboarding/signup")}>
+                  <span>Join the Community</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light animate-scale-bounce" style={{
-                animationDelay: '1.6s',
-                animationFillMode: 'both'
-              }} onClick={() => scrollToSection("#featured-collections")}>
-                  <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
-                  <span>View Lookbook</span>
+                <Button variant="outline" size="lg" className="px-6 py-3 sm:px-8 sm:py-4 bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-white/20 hover:border-white/50 text-sm sm:text-base font-light animate-scale-bounce" style={{
+                  animationDelay: '1.6s',
+                  animationFillMode: 'both'
+                }} onClick={() => {
+                  setGuestMode();
+                  navigate("/explore");
+                }}>
+                  <Globe className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
+                  <span>Explore as Guest</span>
                 </Button>
               </div>
 
-              {/* Trust Badges */}
-              
-
-              {/* Feature Carousel - Enhanced Elegant Design */}
+              {/* Feature Carousel */}
               <div className="mt-8 sm:mt-10 lg:mt-12 animate-slide-up-fade" style={{
-              animationDelay: '1.8s',
-              animationFillMode: 'both'
-            }}>
+                animationDelay: '1.8s',
+                animationFillMode: 'both'
+              }}>
                 <div className="flex justify-center">
                   <div className="relative group">
-                    {/* Subtle outer glow */}
                     <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-md"></div>
-                    
-                    {/* Glass morphism container */}
                     <div className="relative bg-white/20 backdrop-blur-lg rounded-full px-8 py-4 border border-white/20 shadow-lg">
                       <FeatureCarousel />
                     </div>
@@ -352,6 +377,18 @@ export default function Landing() {
             </div>
           </div>
         </div>
+        
+        {/* Country Drawer */}
+        <CountryDrawer 
+          countryCode={selectedCountry}
+          open={drawerOpen}
+          onOpenChange={(open) => {
+            setDrawerOpen(open);
+            if (!open) {
+              setTimeout(() => setSelectedCountry(null), 300);
+            }
+          }}
+        />
       </section>
 
       {/* TRENDING STYLES SECTION - Mobile Optimized */}
