@@ -5,10 +5,10 @@ import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { SwipeableImages } from "@/components/SwipeableImages";
-import { Heart, X, ChevronLeft, ChevronRight, Menu, Search, Play } from "lucide-react";
+import { Heart, X, ChevronLeft, ChevronRight, Menu, Search, ChevronDown } from "lucide-react";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { SEOHead } from "@/components/SEOHead";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { supabase } from "@/integrations/supabase/client";
@@ -473,7 +473,7 @@ export default function IntroCarousel() {
             {slide.type === "hero" && (
               <div className="h-full flex flex-col">
                 {/* Full-bleed globe hero with overlaid branding */}
-                <div className="relative h-[60%] overflow-hidden bg-gray-900">
+                <div className="relative h-[55%] overflow-hidden bg-gray-900">
                   {/* Interactive 3D Globe */}
                   <GlobeWrapper
                     countriesWithBrands={countriesWithBrands}
@@ -483,8 +483,8 @@ export default function IntroCarousel() {
                     className="w-full h-full"
                   />
                   
-                  {/* Reduced gradient overlay for better globe visibility */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-white/80 pointer-events-none" />
+                  {/* Subtle top vignette */}
+                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
 
                   {/* Search bar at top of globe */}
                   <div className="absolute top-16 left-4 right-4 z-10">
@@ -515,8 +515,8 @@ export default function IntroCarousel() {
                     </Button>
                   </div>
 
-                  {/* Azyah branding - repositioned to bottom left, not covering globe */}
-                  <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+                  {/* Azyah branding - bottom left */}
+                  <div className="absolute bottom-8 left-4 flex items-center gap-2 z-10">
                     <img
                       src="/marketing/azyah-logo.png"
                       alt="Azyah"
@@ -527,8 +527,8 @@ export default function IntroCarousel() {
                     </span>
                   </div>
 
-                  {/* Add your pin CTA */}
-                  <div className="absolute bottom-4 right-4 z-10">
+                  {/* Add your pin CTA - bottom right */}
+                  <div className="absolute bottom-8 right-4 z-10">
                     <button 
                       onClick={() => navigate("/onboarding/signup")}
                       className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
@@ -537,28 +537,64 @@ export default function IntroCarousel() {
                       <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
                     </button>
                   </div>
+                  
+                  {/* Bottom seam: dark-to-transparent gradient */}
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/60 to-transparent pointer-events-none" />
                 </div>
 
-                {/* Title & Subtitle - Positioned below globe */}
-                <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-20 px-6 text-center bg-white">
-                  <h2 className="text-xl md:text-2xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line max-w-md">
+                {/* Seam Transition Area with Learn More Arrow */}
+                <div className="relative">
+                  {/* Top seam: transparent-to-white gradient */}
+                  <div className="absolute inset-x-0 -top-4 h-8 bg-gradient-to-b from-[#0f172a]/40 via-background/80 to-background pointer-events-none" />
+                  
+                  {/* Floating "Learn more" arrow button */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-20">
+                    <motion.button
+                      onClick={() => {
+                        const contentSection = document.getElementById('intro-content-section');
+                        contentSection?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                      animate={{ y: [0, 6, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <span className="text-[10px] font-medium tracking-wide uppercase opacity-70">Learn more</span>
+                      <div className="w-8 h-8 rounded-full bg-background shadow-lg border border-border flex items-center justify-center">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Premium Content Section - Below Globe */}
+                <motion.div 
+                  id="intro-content-section"
+                  className="flex-1 flex flex-col items-center justify-start pt-10 pb-24 px-6 text-center bg-background"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                >
+                  {/* Editorial Typography - Luxury Feel */}
+                  <h2 className="text-2xl md:text-3xl font-serif font-normal text-foreground mb-3 tracking-tight" style={{ fontFamily: "'Cormorant Garamond', 'Playfair Display', serif" }}>
+                    {slide.title}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-line max-w-sm font-light">
                     {slide.subtitle}
                   </p>
                   
-                  {/* Feature tags */}
-                  <div className="flex flex-wrap justify-center gap-2 mt-4">
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      ✨ AI-powered curation
+                  {/* Premium Feature Capsules */}
+                  <div className="flex flex-wrap justify-center gap-2.5 mt-6">
+                    <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/8 to-primary/5 text-foreground text-xs font-medium px-4 py-2 rounded-full border border-primary/15 shadow-sm">
+                      <span className="text-sm">✨</span> AI-powered curation
                     </span>
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      👗 Virtual wardrobe
+                    <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/8 to-primary/5 text-foreground text-xs font-medium px-4 py-2 rounded-full border border-primary/15 shadow-sm">
+                      <span className="text-sm">👗</span> Virtual wardrobe
                     </span>
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full">
-                      🤝 Brand collabs
+                    <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/8 to-primary/5 text-foreground text-xs font-medium px-4 py-2 rounded-full border border-primary/15 shadow-sm">
+                      <span className="text-sm">🤝</span> Brand collabs
                     </span>
                   </div>
-                </div>
+                </motion.div>
               </div>
             )}
 
@@ -854,13 +890,13 @@ export default function IntroCarousel() {
         </AnimatePresence>
       </div>
 
-      {/* Fixed Bottom CTA Section */}
+      {/* Fixed Bottom CTA Section - Premium Sticky */}
       <div 
-        className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        className="fixed bottom-0 left-0 right-0 px-4 pt-3 bg-gradient-to-t from-background via-background/98 to-background/0 z-20 backdrop-blur-sm"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
       >
         {/* Navigation Dots */}
-        <div className="flex justify-center gap-2 mb-3 md:mb-4">
+        <div className="flex justify-center gap-2 mb-3">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -868,42 +904,41 @@ export default function IntroCarousel() {
                 setDirection(index > currentSlide ? 1 : -1);
                 setCurrentSlide(index);
               }}
-              className={`h-2 rounded-full transition-all ${index === currentSlide ? "w-8 bg-primary" : "w-2 bg-muted hover:bg-muted-foreground/50"}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${index === currentSlide ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
 
-        {/* Primary CTA - outline style, see-through */}
+        {/* Primary CTA - Premium outline style */}
         <Button
           onClick={handleJoinCommunity}
           variant="outline"
-          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary/10 transition-colors"
+          className="w-full h-12 text-sm font-medium rounded-full border-primary/60 text-primary hover:bg-primary/5 hover:border-primary transition-all duration-300 shadow-sm"
         >
           Join the Community
         </Button>
 
-        {/* Login & Guest Row */}
-        <div className="flex flex-col items-center gap-3 mt-3">
-          <div className="flex items-center justify-center gap-3 w-full">
-            <Button
-              onClick={() => navigate("/onboarding/signup?mode=login")}
-              variant="outline"
-              className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-            >
-              Already have an account? Log In
-            </Button>
-            <Button
-              onClick={() => {
-                setGuestMode();
-                navigate("/dashboard");
-              }}
-              variant="outline"
-              className="h-11 md:h-12 px-6 text-sm md:text-base font-semibold rounded-full border-muted-foreground/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              Guest
-            </Button>
-          </div>
+        {/* Secondary Actions Row */}
+        <div className="flex items-center justify-center gap-3 mt-2.5">
+          <Button
+            onClick={() => navigate("/onboarding/signup?mode=login")}
+            variant="ghost"
+            className="h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors"
+          >
+            Already have an account? <span className="text-primary ml-1">Log In</span>
+          </Button>
+          <span className="text-muted-foreground/30">|</span>
+          <Button
+            onClick={() => {
+              setGuestMode();
+              navigate("/dashboard");
+            }}
+            variant="ghost"
+            className="h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors"
+          >
+            Continue as Guest
+          </Button>
         </div>
       </div>
     </div>
