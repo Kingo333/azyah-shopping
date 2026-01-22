@@ -39,16 +39,14 @@ const Explore: React.FC = () => {
     setSearchParams({ tab: value });
   };
 
-  // Fetch countries with brands
+  // Fetch countries with brands (no is_active filter - column doesn't exist)
   const { data: countriesWithBrands = [], isLoading: countriesLoading } = useQuery<{ code: string; count: number }[]>({
     queryKey: ['countries-with-brands'],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any)
+      const result = await supabase
         .from('brands')
         .select('country_code')
-        .not('country_code', 'is', null)
-        .eq('is_active', true);
+        .not('country_code', 'is', null);
       
       if (result.error) {
         console.error('Error fetching countries:', result.error);
@@ -110,9 +108,9 @@ const Explore: React.FC = () => {
     handleCountrySelect(code);
   };
 
-  // Total brands count
+  // Total brands count - only show actual data
   const totalBrands = countriesWithBrands.reduce((sum, c) => sum + c.count, 0);
-  const totalCountries = countriesWithBrands.length || COUNTRY_COORDINATES.length;
+  const totalCountries = countriesWithBrands.length;
 
   return (
     <div className="h-[100dvh] bg-gray-900 flex flex-col overflow-hidden">
@@ -137,9 +135,9 @@ const Explore: React.FC = () => {
             <div className="flex-1 text-center">
               <h1 className="text-lg font-serif font-medium text-white">Explore</h1>
               <p className="text-xs text-white/60">
-                {totalBrands > 0 
-                  ? `${totalBrands} brands across ${countriesWithBrands.length} countries`
-                  : `Discover brands in ${totalCountries} countries`
+                {totalBrands > 0 && totalCountries > 0
+                  ? `${totalBrands} brand${totalBrands !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+                  : 'Loading brands...'
                 }
               </p>
             </div>

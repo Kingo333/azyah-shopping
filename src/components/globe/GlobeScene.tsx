@@ -44,19 +44,20 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
     }
   });
 
-  // Show all country pins - smaller if no brands
-  const pinSize = hasBrands ? (isFeatured ? 0.035 : 0.028) : 0.015;
+  // Only show pins for countries with brands
+  if (!hasBrands) return null;
+  
+  const pinSize = isFeatured ? 0.04 : isActive ? 0.035 : 0.03;
 
   // Determine pin color based on state
   const getColor = () => {
-    if (!hasBrands) return '#6b7280'; // Gray for no brands
     if (isFeatured) return '#fbbf24'; // Gold for featured
     if (isActive) return '#f97316'; // Orange for selected
     return '#7c1d3e'; // Maroon for normal
   };
 
   const color = getColor();
-  const emissiveIntensity = hasBrands ? (isActive ? 1.0 : isFeatured ? 0.8 : 0.6) : 0.2;
+  const emissiveIntensity = isActive ? 1.2 : isFeatured ? 1.0 : 0.8;
 
   return (
     <group position={position}>
@@ -207,15 +208,15 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Atmosphere glow
+// Atmosphere glow - subtle for cleaner look
 function AtmosphereGlow() {
   return (
-    <mesh scale={[1.12, 1.12, 1.12]}>
+    <mesh scale={[1.08, 1.08, 1.08]}>
       <sphereGeometry args={[1, 64, 64]} />
       <meshBasicMaterial
         color="#4da6ff"
         transparent
-        opacity={0.08}
+        opacity={0.04}
         side={THREE.BackSide}
       />
     </mesh>
@@ -338,9 +339,10 @@ export function GlobeScene({
         }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1.2} />
-          <pointLight position={[-10, -10, -10]} intensity={0.4} color="#7c1d3e" />
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[5, 5, 5]} intensity={1.8} />
+          <directionalLight position={[-5, 3, -5]} intensity={0.6} />
+          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#7c1d3e" />
           
           <Globe 
             countriesWithBrands={countriesWithBrands}

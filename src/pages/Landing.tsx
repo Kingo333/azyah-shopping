@@ -23,6 +23,7 @@ import { CountryDrawer } from "@/components/globe/CountryDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { setGuestMode } from "@/hooks/useGuestMode";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
@@ -57,8 +58,30 @@ export default function Landing() {
   const navigate = useNavigate();
 
   // Fetch countries with brands for globe
-  // Countries with brands - fetched from Explore page data
-  const countriesWithBrands: { code: string; count: number }[] = [];
+  const { data: countriesWithBrands = [] } = useQuery<{ code: string; count: number }[]>({
+    queryKey: ['countries-with-brands-landing'],
+    queryFn: async () => {
+      const result = await supabase
+        .from('brands')
+        .select('country_code')
+        .not('country_code', 'is', null);
+      
+      if (result.error) {
+        console.error('Error fetching countries:', result.error);
+        return [];
+      }
+
+      const counts = new Map<string, number>();
+      (result.data || []).forEach((b: { country_code: string | null }) => {
+        if (b.country_code) {
+          const code = b.country_code.toUpperCase();
+          counts.set(code, (counts.get(code) || 0) + 1);
+        }
+      });
+      
+      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+    },
+  });
 
   // Handle country selection from globe
   const handleCountrySelect = (code: string) => {
@@ -196,13 +219,42 @@ export default function Landing() {
 
           {/* Desktop links */}
           <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12">
-            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href], index) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group animate-slide-right-fade" style={{
+            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"]].map(([label, href], index) => <button key={href} onClick={() => scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group animate-slide-right-fade" style={{
             animationDelay: `${0.2 + index * 0.1}s`,
             animationFillMode: 'both'
           }}>
                 {label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
               </button>)}
+            {/* Hamburger Menu for FAQ and Investors */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group animate-slide-right-fade" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+                  <Menu className="w-5 h-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <SheetHeader>
+                  <SheetTitle className="font-serif text-xl">More Options</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  <button 
+                    onClick={() => scrollToSection('#faq')}
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <span className="font-medium">FAQ</span>
+                    <p className="text-sm text-muted-foreground">Frequently asked questions</p>
+                  </button>
+                  <button 
+                    onClick={() => setInvestorModalOpen(true)}
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <span className="font-medium">For Investors</span>
+                    <p className="text-sm text-muted-foreground">Investment opportunities</p>
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </nav>
 
           {/* CTA + Actions - Hidden on Mobile */}
@@ -277,9 +329,9 @@ export default function Landing() {
           />
         </div>
         
-        {/* Gradient overlay for text readability */}
+        {/* Gradient overlay for text readability - reduced for better globe visibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-transparent pointer-events-none" />
         
         {/* Live Activity Indicator */}
         <LiveActivityIndicator />
@@ -302,7 +354,7 @@ export default function Landing() {
                       animationDelay: '0.2s',
                       animationFillMode: 'both'
                     }}>
-                      Discover Fashion
+                      Discover Modest Fashion
                     </span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-scale-bounce hover-scale" style={{
                       animationDelay: '0.5s',
@@ -311,12 +363,19 @@ export default function Landing() {
                       Worldwide
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus drop-shadow-md" style={{
-                    animationDelay: '1.1s',
-                    animationFillMode: 'both'
-                  }}>
-                    Tap a country to explore brands • AI-powered discovery
-                  </p>
+                  
+                  {/* Feature lines */}
+                  <div className="space-y-1 animate-blur-focus" style={{ animationDelay: '1.0s', animationFillMode: 'both' }}>
+                    <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
+                      ✨ AI-powered virtual try-on
+                    </p>
+                    <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
+                      🌍 Top countries to explore
+                    </p>
+                    <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
+                      🎬 UGC collab and earn rewards
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -341,7 +400,7 @@ export default function Landing() {
               )}
 
               <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                <Button size="lg" className="group px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{
+                <Button variant="outline" size="lg" className="group px-6 py-3 sm:px-8 sm:py-4 bg-white/10 backdrop-blur-sm border border-primary/50 text-white hover:bg-primary/20 hover:border-primary transition-all duration-300 text-sm sm:text-base font-light animate-scale-bounce" style={{
                   animationDelay: '1.4s',
                   animationFillMode: 'both'
                 }} onClick={() => navigate("/onboarding/signup")}>
@@ -353,11 +412,23 @@ export default function Landing() {
                   animationFillMode: 'both'
                 }} onClick={() => {
                   setGuestMode();
-                  navigate("/explore");
+                  navigate("/swipe");
                 }}>
-                  <Globe className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
-                  <span>Explore as Guest</span>
+                  <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
+                  <span>Skip to Feed</span>
                 </Button>
+              </div>
+              
+              {/* Add Your Pin CTA */}
+              <div className="mt-6 animate-slide-up-fade" style={{ animationDelay: '1.8s', animationFillMode: 'both' }}>
+                <button 
+                  onClick={() => navigate("/onboarding/signup")}
+                  className="group inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-5 py-2.5 transition-all duration-300"
+                >
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
+                  <span className="text-sm text-white/90 group-hover:text-white">Add your pin on this globe</span>
+                  <ArrowRight className="w-3 h-3 text-white/70 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                </button>
               </div>
 
               {/* Feature Carousel */}

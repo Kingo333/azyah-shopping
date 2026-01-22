@@ -5,12 +5,15 @@ import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { SwipeableImages } from "@/components/SwipeableImages";
-import { Heart, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, X, ChevronLeft, ChevronRight, Menu, Search, Play } from "lucide-react";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { SEOHead } from "@/components/SEOHead";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
 
 type SlideType =
   | {
@@ -184,8 +187,40 @@ export default function IntroCarousel() {
   const [cardOffset, setCardOffset] = useState(0);
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const [globeSearchQuery, setGlobeSearchQuery] = useState('');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  // Fetch countries with brands for globe
+  const { data: countriesWithBrands = [] } = useQuery<{ code: string; count: number }[]>({
+    queryKey: ['countries-with-brands-intro'],
+    queryFn: async () => {
+      const result = await supabase
+        .from('brands')
+        .select('country_code')
+        .not('country_code', 'is', null);
+      
+      if (result.error) {
+        console.error('Error fetching countries:', result.error);
+        return [];
+      }
+
+      const counts = new Map<string, number>();
+      (result.data || []).forEach((b: { country_code: string | null }) => {
+        if (b.country_code) {
+          const code = b.country_code.toUpperCase();
+          counts.set(code, (counts.get(code) || 0) + 1);
+        }
+      });
+      
+      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+    },
+  });
+
+  const handleSkipToFeed = () => {
+    setGuestMode();
+    navigate("/swipe");
+  };
 
   // Auto-advance slides
   useEffect(() => {
@@ -319,49 +354,50 @@ export default function IntroCarousel() {
             <span className="font-serif text-sm sm:text-base font-light tracking-wider text-foreground">Azyah</span>
           </div>
 
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  size="sm"
-                  className="font-light bg-white/70 backdrop-blur-md text-foreground hover:bg-white/80 shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4"
-                >
-                  FAQ
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
-                  <SheetDescription>Everything you need to know about fashion discovery with Azyah.</SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
+          {/* Right Side - Hamburger Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                size="sm"
+                className="font-light bg-white/70 backdrop-blur-md text-foreground hover:bg-white/80 shadow-lg rounded-full h-8 w-8 sm:h-9 sm:w-9 p-0"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle className="font-serif text-2xl">Menu</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                {/* FAQ Section */}
+                <div className="border-b border-border pb-4">
+                  <h3 className="font-semibold text-lg mb-3">Frequently Asked Questions</h3>
                   {faqData.map((item, index) => (
                     <div
                       key={index}
-                      className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
+                      className="bg-muted/30 rounded-lg p-3 mb-2 border border-primary/10 hover:border-primary/20 transition-colors"
                     >
-                      <div className="flex items-start gap-3">
-                        <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-2">
+                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                         <div>
-                          <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+                          <h4 className="font-medium text-sm text-foreground mb-1">{item.question}</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{item.answer}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </SheetContent>
-            </Sheet>
-
-            <Button
-              size="sm"
-              className="font-light bg-white/70 backdrop-blur-md text-foreground hover:bg-white/80 shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4"
-              onClick={() => setInvestorModalOpen(true)}
-            >
-              For Investors
-            </Button>
-          </div>
+                
+                {/* For Investors */}
+                <Button
+                  className="w-full"
+                  onClick={() => setInvestorModalOpen(true)}
+                >
+                  For Investors
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       )}
 
@@ -437,59 +473,81 @@ export default function IntroCarousel() {
             {slide.type === "hero" && (
               <div className="h-full flex flex-col">
                 {/* Full-bleed globe hero with overlaid branding */}
-                <div className="relative h-[55%] overflow-hidden bg-gray-900">
+                <div className="relative h-[60%] overflow-hidden bg-gray-900">
                   {/* Interactive 3D Globe */}
                   <GlobeWrapper
-                    countriesWithBrands={[]}
+                    countriesWithBrands={countriesWithBrands}
                     selectedCountry={null}
-                    onCountrySelect={() => {}}
+                    onCountrySelect={() => navigate("/explore")}
                     autoRotate={true}
                     className="w-full h-full"
                   />
                   
-                  {/* Gradient overlay for text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white pointer-events-none" />
+                  {/* Reduced gradient overlay for better globe visibility */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-white/80 pointer-events-none" />
 
-                  {/* Azyah branding overlaid on globe */}
-                  <div className="absolute bottom-6 left-6 flex flex-col gap-3 z-10">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src="/marketing/azyah-logo.png"
-                        alt="Azyah"
-                        className="h-10 w-10 object-contain drop-shadow-lg"
+                  {/* Search bar at top of globe */}
+                  <div className="absolute top-16 left-4 right-4 z-10">
+                    <div className="relative max-w-md mx-auto">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                      <Input
+                        type="text"
+                        placeholder="Search brands, countries..."
+                        value={globeSearchQuery}
+                        onChange={(e) => setGlobeSearchQuery(e.target.value)}
+                        onClick={() => navigate("/explore")}
+                        className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-full focus-visible:ring-primary/50 backdrop-blur-sm"
+                        style={{ fontSize: '16px' }}
+                        readOnly
                       />
-                      <h1
-                        className="text-4xl font-serif text-white tracking-wider"
-                        style={{
-                          fontWeight: 300,
-                          letterSpacing: "0.15em",
-                          textShadow:
-                            "0 2px 8px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2)",
-                        }}
-                      >
-                        zyah
-                      </h1>
                     </div>
+                  </div>
 
-                    {/* Feature Bubbles */}
-                    <div className="flex flex-wrap gap-2">
-                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Discover fashion worldwide
-                      </div>
-                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        AI-powered • Virtual try-on
-                      </div>
-                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Tap countries to explore
-                      </div>
-                    </div>
+                  {/* Skip to Feed button */}
+                  <div className="absolute top-16 right-4 z-10">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSkipToFeed}
+                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full backdrop-blur-sm"
+                    >
+                      <Play className="w-3 h-3 mr-1.5" />
+                      Skip to Feed
+                    </Button>
+                  </div>
+
+                  {/* Azyah branding - repositioned to bottom left, not covering globe */}
+                  <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+                    <img
+                      src="/marketing/azyah-logo.png"
+                      alt="Azyah"
+                      className="h-8 w-8 object-contain drop-shadow-lg"
+                    />
+                    <span className="text-2xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
+                      Azyah
+                    </span>
+                  </div>
+
+                  {/* Add your pin CTA */}
+                  <div className="absolute bottom-4 right-4 z-10">
+                    <button 
+                      onClick={() => navigate("/onboarding/signup")}
+                      className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
+                      <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Title & Subtitle */}
-                <div className="flex-1 flex flex-col items-center justify-start pt-2 pb-20 px-8 text-center">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-3">{slide.title}</h2>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed max-w-xl">{slide.subtitle}</p>
+                {/* Title & Subtitle - Positioned below globe */}
+                <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-20 px-6 text-center bg-white">
+                  <h2 className="text-xl md:text-2xl font-serif font-medium text-foreground mb-2">Discover Modest Fashion Worldwide</h2>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>✨ AI-powered virtual try-on</p>
+                    <p>🌍 Top countries to explore</p>
+                    <p>🎬 UGC collab and earn rewards</p>
+                  </div>
                 </div>
               </div>
             )}
