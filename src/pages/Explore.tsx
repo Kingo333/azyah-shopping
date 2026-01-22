@@ -317,6 +317,7 @@ const Explore: React.FC = () => {
           featuredCountry={featuredCountry}
           onSkipToFeed={handleSkipToFeed}
           className="w-full h-full"
+          activeTab={activeTab}
         />
 
         {/* Hint Text */}

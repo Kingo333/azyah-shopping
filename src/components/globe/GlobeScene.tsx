@@ -20,6 +20,14 @@ const EARTH_BUMP = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/
 const EARTH_SPEC = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-water.png';
 const CLOUDS_TEXTURE = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-clouds.png';
 
+// Tab-specific pin colors for consistent category coloring
+const TAB_PIN_COLORS = {
+  brands: '#7c1d3e',    // Burgundy/maroon
+  following: '#3b82f6', // Blue
+  shoppers: '#22c55e',  // Green
+  'your-fit': '#a855f7' // Purple
+};
+
 interface CountryPinProps {
   country: CountryCoordinates;
   isActive: boolean;
@@ -27,9 +35,10 @@ interface CountryPinProps {
   brandCount: number;
   isFeatured?: boolean;
   onClick: () => void;
+  activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
 }
 
-function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onClick }: CountryPinProps) {
+function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onClick, activeTab = 'brands' }: CountryPinProps) {
   const position = useMemo(() => 
     latLngToVector3(country.lat, country.lng, 1.02), 
     [country.lat, country.lng]
@@ -49,11 +58,12 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
   
   const pinSize = isFeatured ? 0.04 : isActive ? 0.035 : 0.03;
 
-  // Determine pin color based on state
+  // Determine pin color based on state and active tab
   const getColor = () => {
+    if (isActive) return '#f97316'; // Orange for selected (always)
     if (isFeatured) return '#fbbf24'; // Gold for featured
-    if (isActive) return '#f97316'; // Orange for selected
-    return '#7c1d3e'; // Maroon for normal
+    // Use tab-specific color for all pins in that category
+    return TAB_PIN_COLORS[activeTab] || '#7c1d3e';
   };
 
   const color = getColor();
@@ -243,9 +253,10 @@ interface GlobeProps {
   onCountrySelect: (code: string) => void;
   autoRotate: boolean;
   featuredCountry?: string | null;
+  activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
 }
 
-function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRotate, featuredCountry }: GlobeProps) {
+function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRotate, featuredCountry, activeTab = 'brands' }: GlobeProps) {
   const globeRef = useRef<THREE.Group>(null);
   
   const brandCountMap = useMemo(() => {
@@ -285,6 +296,7 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
             brandCount={brandCountMap.get(upperCode) || 0}
             isFeatured={featuredCountry?.toUpperCase() === upperCode}
             onClick={() => onCountrySelect(country.code)}
+            activeTab={activeTab}
           />
         );
       })}
@@ -299,6 +311,7 @@ interface GlobeSceneProps {
   autoRotate?: boolean;
   featuredCountry?: string | null;
   className?: string;
+  activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
 }
 
 export function GlobeScene({ 
@@ -307,7 +320,8 @@ export function GlobeScene({
   onCountrySelect,
   autoRotate = true,
   featuredCountry,
-  className = ''
+  className = '',
+  activeTab = 'brands'
 }: GlobeSceneProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -350,6 +364,7 @@ export function GlobeScene({
             onCountrySelect={onCountrySelect}
             autoRotate={autoRotate}
             featuredCountry={featuredCountry}
+            activeTab={activeTab}
           />
           
           <OrbitControls 
