@@ -28,7 +28,8 @@ const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/
 
 // Routes where bottom nav should NOT appear (removed '/' and '/landing' to allow guest preview)
 const EXCLUDED_ROUTES = [
-  '/onboarding',
+  '/onboarding/signup',
+  '/onboarding/calibration',
   '/reset-password',
   '/terms',
   '/privacy',

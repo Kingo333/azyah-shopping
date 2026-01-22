@@ -70,25 +70,36 @@ const Explore: React.FC = () => {
   // Fetch following data for following tab filter
   const { following } = useFollows();
 
-  // Fetch countries with shoppers (users with public profiles)
-  const { data: countriesWithShoppers = [] } = useQuery<{ code: string; count: number }[]>({
+  // Fetch countries with shoppers (users from users table - includes all users)
+  const { data: countriesWithShoppers = [], data: allShoppersCount = 0 } = useQuery<{ code: string; count: number }[]>({
     queryKey: ['countries-with-shoppers'],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any)
-        .from('public_profiles')
-        .select('country')
-        .not('country', 'is', null);
+      // Get all users with their country from the users table
+      const result = await supabase
+        .from('users')
+        .select('country');
       
-      if (result.error) return [];
+      if (result.error) {
+        console.error('Error fetching shoppers:', result.error);
+        return [];
+      }
 
       const counts = new Map<string, number>();
-      (result.data || []).forEach((p: { country: string | null }) => {
-        if (p.country) {
-          const code = p.country.toUpperCase();
+      let noCountryCount = 0;
+      
+      (result.data || []).forEach((u: { country: string | null }) => {
+        if (u.country) {
+          const code = u.country.toUpperCase();
           counts.set(code, (counts.get(code) || 0) + 1);
+        } else {
+          noCountryCount++;
         }
       });
+      
+      // If there are users without countries, add them to a "GLOBAL" pin
+      if (noCountryCount > 0) {
+        counts.set('GLOBAL', noCountryCount);
+      }
       
       return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
     },
@@ -275,28 +286,28 @@ const Explore: React.FC = () => {
               <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-4 gap-1">
                 <TabsTrigger 
                   value="brands" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-2"
                 >
                   <Store className="h-3.5 w-3.5 mr-1" />
                   Brands
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#3b82f6] rounded-full text-xs px-2"
                 >
                   <Heart className="h-3.5 w-3.5 mr-1" />
                   Following
                 </TabsTrigger>
                 <TabsTrigger 
                   value="shoppers" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#22c55e] rounded-full text-xs px-2"
                 >
                   <Users className="h-3.5 w-3.5 mr-1" />
                   Shoppers
                 </TabsTrigger>
                 <TabsTrigger 
                   value="your-fit" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-2"
                 >
                   <Ruler className="h-3.5 w-3.5 mr-1" />
                   Your Fit
