@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame, extend } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { COUNTRY_COORDINATES, latLngToVector3, type CountryCoordinates } from '@/lib/countryCoordinates';
 
@@ -10,8 +10,15 @@ extend({
   Mesh: THREE.Mesh, 
   SphereGeometry: THREE.SphereGeometry,
   MeshStandardMaterial: THREE.MeshStandardMaterial,
-  MeshBasicMaterial: THREE.MeshBasicMaterial
+  MeshBasicMaterial: THREE.MeshBasicMaterial,
+  MeshPhongMaterial: THREE.MeshPhongMaterial
 });
+
+// Earth texture URLs (NASA Blue Marble)
+const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+const EARTH_BUMP = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
+const EARTH_SPEC = 'https://unpkg.com/three-globe/example/img/earth-water.png';
+const CLOUDS_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-clouds.png';
 
 interface CountryPinProps {
   country: CountryCoordinates;
@@ -57,16 +64,25 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
           onClick();
         }}
       >
-        <sphereGeometry args={[isFeatured ? 0.03 : 0.025, 16, 16]} />
+        <sphereGeometry args={[isFeatured ? 0.035 : 0.028, 16, 16]} />
         <meshStandardMaterial 
           color={color} 
           emissive={color}
-          emissiveIntensity={isActive ? 0.9 : isFeatured ? 0.7 : 0.5}
+          emissiveIntensity={isActive ? 1.0 : isFeatured ? 0.8 : 0.6}
+        />
+      </mesh>
+      {/* Outer glow ring */}
+      <mesh>
+        <sphereGeometry args={[isFeatured ? 0.045 : 0.038, 16, 16]} />
+        <meshBasicMaterial 
+          color={color}
+          transparent
+          opacity={0.3}
         />
       </mesh>
       {isActive && (
         <Html
-          position={[0, 0.1, 0]}
+          position={[0, 0.12, 0]}
           center
           style={{
             pointerEvents: 'none',
@@ -81,7 +97,7 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
       )}
       {isFeatured && !isActive && (
         <Html
-          position={[0, 0.06, 0]}
+          position={[0, 0.08, 0]}
           center
           style={{
             pointerEvents: 'none',
@@ -94,6 +110,85 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
         </Html>
       )}
     </group>
+  );
+}
+
+// Realistic Earth component with textures
+function RealisticEarth() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  // Load all Earth textures
+  const [earthMap, bumpMap, specMap] = useTexture([
+    EARTH_TEXTURE,
+    EARTH_BUMP,
+    EARTH_SPEC
+  ]);
+
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshPhongMaterial
+        map={earthMap}
+        bumpMap={bumpMap}
+        bumpScale={0.05}
+        specularMap={specMap}
+        specular={new THREE.Color(0x333333)}
+        shininess={5}
+      />
+    </mesh>
+  );
+}
+
+// Cloud layer component
+function CloudLayer() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const cloudsTexture = useTexture(CLOUDS_TEXTURE);
+  
+  useFrame(() => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += 0.0003; // Slow cloud rotation
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} scale={[1.01, 1.01, 1.01]}>
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshStandardMaterial
+        map={cloudsTexture}
+        transparent
+        opacity={0.35}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+// Atmosphere glow
+function AtmosphereGlow() {
+  return (
+    <mesh scale={[1.12, 1.12, 1.12]}>
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshBasicMaterial
+        color="#4da6ff"
+        transparent
+        opacity={0.08}
+        side={THREE.BackSide}
+      />
+    </mesh>
+  );
+}
+
+// Simple fallback Earth (no textures, for loading state)
+function SimpleFallbackEarth() {
+  return (
+    <mesh>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshStandardMaterial
+        color="#1a5f7a"
+        metalness={0.1}
+        roughness={0.8}
+      />
+    </mesh>
   );
 }
 
@@ -122,37 +217,14 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
 
   return (
     <group ref={globeRef}>
-      {/* Earth sphere - dark cinematic */}
-      <mesh>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial
-          color="#1a1a2e"
-          metalness={0.2}
-          roughness={0.7}
-        />
-      </mesh>
+      {/* Realistic Earth with textures */}
+      <Suspense fallback={<SimpleFallbackEarth />}>
+        <RealisticEarth />
+        <CloudLayer />
+      </Suspense>
       
-      {/* Atmosphere glow - maroon tint */}
-      <mesh>
-        <sphereGeometry args={[1.02, 64, 64]} />
-        <meshStandardMaterial
-          color="#7c1d3e"
-          transparent
-          opacity={0.08}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      {/* Grid lines for visual appeal */}
-      <mesh>
-        <sphereGeometry args={[1.005, 32, 32]} />
-        <meshBasicMaterial
-          color="#4a4a6a"
-          wireframe
-          transparent
-          opacity={0.12}
-        />
-      </mesh>
+      {/* Atmosphere glow */}
+      <AtmosphereGlow />
 
       {/* Country pins */}
       {COUNTRY_COORDINATES.map((country) => {

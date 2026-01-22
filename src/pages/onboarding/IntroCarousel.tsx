@@ -10,6 +10,7 @@ import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { SEOHead } from "@/components/SEOHead";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 
 type SlideType =
   | {
@@ -435,20 +436,22 @@ export default function IntroCarousel() {
           >
             {slide.type === "hero" && (
               <div className="h-full flex flex-col">
-                {/* Full-bleed hero image with overlaid branding */}
-                <div className="relative h-[55%] overflow-hidden">
-                  <img
-                    src={isMobile && slide.mobileImage ? slide.mobileImage : slide.image}
-                    alt={slide.title}
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                    loading="eager"
-                    fetchPriority="high"
+                {/* Full-bleed globe hero with overlaid branding */}
+                <div className="relative h-[55%] overflow-hidden bg-gray-900">
+                  {/* Interactive 3D Globe */}
+                  <GlobeWrapper
+                    countriesWithBrands={[]}
+                    selectedCountry={null}
+                    onCountrySelect={() => {}}
+                    autoRotate={true}
+                    className="w-full h-full"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
+                  
+                  {/* Gradient overlay for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white pointer-events-none" />
 
-                  {/* Azyah branding overlaid on image */}
-                  <div className="absolute bottom-6 left-6 flex flex-col gap-3">
+                  {/* Azyah branding overlaid on globe */}
+                  <div className="absolute bottom-6 left-6 flex flex-col gap-3 z-10">
                     <div className="flex items-center gap-2">
                       <img
                         src="/marketing/azyah-logo.png"
@@ -471,13 +474,13 @@ export default function IntroCarousel() {
                     {/* Feature Bubbles */}
                     <div className="flex flex-wrap gap-2">
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        AI-powered curation
+                        Discover fashion worldwide
                       </div>
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Build your virtual wardrobe • Exclusive salon rewards
+                        AI-powered • Virtual try-on
                       </div>
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Collaborate with brands
+                        Tap countries to explore
                       </div>
                     </div>
                   </div>
