@@ -155,6 +155,21 @@ function RealisticEarth() {
   );
 }
 
+// Safe wrapper for RealisticEarth - falls back to SimpleFallbackEarth on texture load errors
+function SafeRealisticEarth() {
+  const [hasError, setHasError] = useState(false);
+  
+  if (hasError) return <SimpleFallbackEarth />;
+  
+  return (
+    <ErrorBoundary onError={() => setHasError(true)}>
+      <Suspense fallback={<SimpleFallbackEarth />}>
+        <RealisticEarth />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 // Cloud layer component - renders clouds over Earth
 function CloudLayer() {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -273,10 +288,8 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
 
   return (
     <group ref={globeRef}>
-      {/* Realistic Earth with textures */}
-      <Suspense fallback={<SimpleFallbackEarth />}>
-        <RealisticEarth />
-      </Suspense>
+      {/* Realistic Earth with textures - falls back to simple sphere offline */}
+      <SafeRealisticEarth />
       
       {/* Cloud layer - optional, fails gracefully */}
       <SafeCloudLayer />
