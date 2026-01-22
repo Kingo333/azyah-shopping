@@ -4152,6 +4152,51 @@ export type Database = {
         }
         Relationships: []
       }
+      video_job_logs: {
+        Row: {
+          action: string
+          body_snippet: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          input_image_url: string | null
+          is_success: boolean | null
+          job_id: string | null
+          provider_status_code: number | null
+          step: string | null
+          used_image_url: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          body_snippet?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_image_url?: string | null
+          is_success?: boolean | null
+          job_id?: string | null
+          provider_status_code?: number | null
+          step?: string | null
+          used_image_url?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          body_snippet?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_image_url?: string | null
+          is_success?: boolean | null
+          job_id?: string | null
+          provider_status_code?: number | null
+          step?: string | null
+          used_image_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       voice_sessions: {
         Row: {
           created_at: string

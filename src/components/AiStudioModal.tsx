@@ -813,6 +813,27 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           </div>
                         </div>
                         
+                        {/* Debug helpers */}
+                        <div className="flex justify-center gap-2 mb-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(videoInputUrl);
+                              toast({ title: 'URL copied' });
+                            }}
+                            className="text-[10px] px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition"
+                          >
+                            Copy URL
+                          </button>
+                          <a
+                            href={videoInputUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition"
+                          >
+                            Test URL ↗
+                          </a>
+                        </div>
+                        
                         {/* Change image button */}
                         <button
                           onClick={() => {

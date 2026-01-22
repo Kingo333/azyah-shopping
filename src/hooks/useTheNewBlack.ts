@@ -27,6 +27,8 @@ interface VideoCheckResult {
   stored?: boolean;
   message?: string;
   error?: string;
+  step?: string;
+  debug?: Record<string, unknown>;
 }
 
 // Free picture generation for video flow (no credit deduction)
@@ -143,6 +145,53 @@ export function useTheNewBlack() {
     }
   }, [toast]);
 
+  // Helper: Get user-friendly error message based on step
+  const getVideoErrorMessage = (data: any): { title: string; description: string } => {
+    const step = data.step || 'unknown';
+    const baseError = data.error || 'Video generation failed';
+    
+    switch (step) {
+      case 'image_url_check':
+        return {
+          title: 'Image not accessible',
+          description: 'The image URL could not be verified. Please re-upload the image or try a different one.'
+        };
+      case 'provider_start':
+        if (baseError.includes('empty response')) {
+          return {
+            title: 'Provider issue',
+            description: 'Video provider returned an empty response. Try a different image or try again later.'
+          };
+        }
+        return {
+          title: 'Video start failed',
+          description: `Provider error: ${baseError.substring(0, 100)}`
+        };
+      case 'provider_poll':
+        return {
+          title: 'Video check failed',
+          description: 'Could not check video status. The video may still be processing - try again in a minute.'
+        };
+      case 'credits':
+        return {
+          title: 'No video credits',
+          description: data.is_premium 
+            ? 'You have used all your daily video credits. Try again tomorrow!'
+            : 'Sign up for premium to get 4 video credits daily!'
+        };
+      case 'auth':
+        return {
+          title: 'Authentication required',
+          description: 'Please sign out and back in, then try again.'
+        };
+      default:
+        return {
+          title: 'Video generation failed',
+          description: baseError
+        };
+    }
+  };
+
   // Start video generation
   const startVideoGeneration = useCallback(async (imageUrl: string): Promise<VideoStartResult> => {
     setLoading(true);
@@ -158,21 +207,29 @@ export function useTheNewBlack() {
         }
       });
 
+      // Handle invoke error (network/auth issues)
       if (invokeError) {
-        throw invokeError;
+        console.error('[useTheNewBlack] Invoke error:', invokeError);
+        throw new Error(invokeError.message || 'Failed to call video function');
       }
 
+      // Handle structured error response (now always returns 200)
       if (!data.ok) {
-        if (data.error?.includes('No video credits')) {
-          toast({
-            title: 'No video credits remaining',
-            description: data.is_premium 
-              ? 'You have used all your daily video credits. Try again tomorrow!'
-              : 'Sign up for premium to get 4 video credits daily!',
-            variant: 'destructive'
-          });
+        console.log('[useTheNewBlack] Video start failed:', data);
+        const { title, description } = getVideoErrorMessage(data);
+        
+        toast({
+          title,
+          description,
+          variant: 'destructive'
+        });
+        
+        // Log debug info if available
+        if (data.debug) {
+          console.log('[useTheNewBlack] Debug info:', data.debug);
         }
-        throw new Error(data.error || 'Video generation failed');
+        
+        return { ok: false, error: data.error || description };
       }
 
       console.log('[useTheNewBlack] Video generation started, job ID:', data.job_id);
@@ -188,24 +245,11 @@ export function useTheNewBlack() {
       const errorMessage = err instanceof Error ? err.message : 'Video generation failed';
       setError(errorMessage);
       
-      // Provide actionable messages based on error type
-      let userDescription = errorMessage;
-      
-      if (errorMessage.includes('empty response') || errorMessage.includes('provider returned')) {
-        userDescription = 'Video provider issue. Please try a different image or try again later.';
-      } else if (errorMessage.includes('image_url_check') || errorMessage.includes('content-type')) {
-        userDescription = 'Image could not be verified. Please re-upload the image.';
-      } else if (errorMessage.includes('not an image') || errorMessage.includes('content-type')) {
-        userDescription = 'The uploaded file is not a valid image. Please use JPG or PNG.';
-      } else if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
-        userDescription = 'Please sign out and back in, then try again.';
-      } else if (errorMessage.includes('credits')) {
-        userDescription = 'No video credits remaining. Please upgrade your plan.';
-      }
-      
       toast({
         title: 'Video generation failed',
-        description: userDescription,
+        description: errorMessage.includes('non-2xx') 
+          ? 'Server error. Please try again.'
+          : errorMessage,
         variant: 'destructive'
       });
       return { ok: false, error: errorMessage };
@@ -235,7 +279,7 @@ export function useTheNewBlack() {
     }
   }, []);
 
-  // Poll for video completion
+  // Poll for video completion with initial delay
   const pollVideoUntilComplete = useCallback(async (
     jobId: string,
     onComplete: (result: VideoCheckResult) => void,
@@ -244,6 +288,8 @@ export function useTheNewBlack() {
   ) => {
     setVideoPolling(true);
     let attempts = 0;
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
@@ -257,19 +303,46 @@ export function useTheNewBlack() {
       }
 
       attempts++;
-      onProgress?.(`Checking status (${attempts}/${maxAttempts})...`);
+      const minutesElapsed = Math.floor((attempts * 5) / 60);
+      const secondsElapsed = (attempts * 5) % 60;
+      onProgress?.(`Processing... ${minutesElapsed}:${secondsElapsed.toString().padStart(2, '0')} (typically 2-5 min)`);
 
       const result = await checkVideoStatus(jobId);
 
+      // Handle structured errors - only fail on permanent errors
       if (!result.ok) {
-        setVideoPolling(false);
-        toast({
-          title: 'Error checking video status',
-          description: result.error || 'Please try again.',
-          variant: 'destructive'
-        });
+        consecutiveErrors++;
+        console.log('[useTheNewBlack] Poll error:', result, `(${consecutiveErrors}/${maxConsecutiveErrors})`);
+        
+        // Check if it's a permanent error (workflow not found, etc.)
+        if (result.error?.includes('workflow not found') || result.step === 'validation') {
+          setVideoPolling(false);
+          toast({
+            title: 'Video generation failed',
+            description: result.error || 'Please try generating again.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        // For transient errors, only fail after multiple consecutive errors
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          setVideoPolling(false);
+          toast({
+            title: 'Error checking video status',
+            description: 'Multiple errors occurred. Please try again.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        // Continue polling despite error
+        setTimeout(poll, 5000);
         return;
       }
+
+      // Reset error count on success
+      consecutiveErrors = 0;
 
       if (result.status === 'completed') {
         setVideoPolling(false);
@@ -285,7 +358,9 @@ export function useTheNewBlack() {
       setTimeout(poll, 5000);
     };
 
-    poll();
+    // Initial delay before first poll (15 seconds) - video takes 2-5 min
+    onProgress?.('Starting video generation... (typically 2-5 min)');
+    setTimeout(poll, 15000);
   }, [checkVideoStatus, toast]);
 
   const clearError = useCallback(() => {
