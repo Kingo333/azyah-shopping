@@ -64,24 +64,29 @@ export const BottomNavigation: React.FC = () => {
   useEffect(() => {
     if (isAutoHidePage) {
       setIsMinimized(false);
+      window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
       
       const timer = setTimeout(() => {
         setIsMinimized(true);
+        window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: true } }));
       }, 2000);
       
       return () => clearTimeout(timer);
     } else {
       // Always show on non-auto-hide pages (like dashboard)
       setIsMinimized(false);
+      window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
     }
   }, [location.pathname, isAutoHidePage]);
 
   const handleExpandNav = useCallback(() => {
     setIsMinimized(false);
+    window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
     // Re-trigger auto-hide after expansion
     setTimeout(() => {
       if (isAutoHidePage) {
         setIsMinimized(true);
+        window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: true } }));
       }
     }, 3000);
   }, [isAutoHidePage]);
