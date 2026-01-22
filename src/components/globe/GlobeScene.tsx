@@ -354,7 +354,7 @@ export function GlobeScene({
   return (
     <div className={`w-full h-full ${className}`}>
       <Canvas
-        camera={{ position: [0, 0, 2.5], fov: 45 }}
+        camera={{ position: [0, 0, 3.5], fov: 45 }}
         gl={{ 
           antialias: true, 
           alpha: true,
@@ -383,8 +383,8 @@ export function GlobeScene({
           <OrbitControls 
             enableZoom={true}
             enablePan={false}
-            minDistance={1.5}
-            maxDistance={4}
+            minDistance={2.5}
+            maxDistance={5}
             autoRotate={false}
             rotateSpeed={0.5}
             zoomSpeed={0.5}
