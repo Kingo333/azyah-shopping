@@ -346,8 +346,21 @@ export default function IntroCarousel() {
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [globeSearchQuery, setGlobeSearchQuery] = useState('');
+  const [isNavMinimized, setIsNavMinimized] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  // Listen for bottom nav state changes
+  useEffect(() => {
+    const handleNavStateChange = (event: CustomEvent<{ minimized: boolean }>) => {
+      setIsNavMinimized(event.detail.minimized);
+    };
+    
+    window.addEventListener('bottomNavStateChange', handleNavStateChange as EventListener);
+    return () => {
+      window.removeEventListener('bottomNavStateChange', handleNavStateChange as EventListener);
+    };
+  }, []);
 
   // Fetch countries with brands for globe
   const { data: countriesWithBrands = [] } = useQuery<{ code: string; count: number }[]>({
@@ -931,10 +944,10 @@ export default function IntroCarousel() {
         </AnimatePresence>
       </div>
 
-      {/* Fixed Bottom CTA Section - uses less padding since nav auto-minimizes */}
+      {/* Fixed Bottom CTA Section - dynamically adjusts based on nav state */}
       <div 
-        className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20 transition-all duration-300"
+        style={{ paddingBottom: isNavMinimized ? 'calc(env(safe-area-inset-bottom) + 16px)' : 'calc(env(safe-area-inset-bottom) + 80px)' }}
       >
         {/* Azyah branding - centered above dots */}
         <div className="flex items-center justify-center gap-2 mb-2">
