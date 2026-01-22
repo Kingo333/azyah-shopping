@@ -86,9 +86,11 @@ export const BottomNavigation: React.FC = () => {
     }, 3000);
   }, [isAutoHidePage]);
 
-  // Don't render if not logged in (and not guest), on Dress Me pages, or excluded pages
+  // Show bottom nav for logged in users, guest mode, or landing page (to preview nav)
   const isGuest = isGuestMode();
-  if ((!user && !isGuest) || isDressMePage || isExcludedPage) {
+  const isLandingPage = location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/onboarding/intro';
+  
+  if ((!user && !isGuest && !isLandingPage) || isDressMePage || isExcludedPage) {
     return null;
   }
 

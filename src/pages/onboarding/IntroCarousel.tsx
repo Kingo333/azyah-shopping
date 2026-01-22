@@ -268,7 +268,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           </div>
         </div>
 
-        {/* Skip to Feed and Add your pin - top right, stacked */}
+        {/* Skip to Feed, Add your pin, and Feature pill - top right */}
         <div className="absolute top-16 right-4 z-10 flex flex-col gap-2 items-end">
           <Button
             size="sm"
@@ -278,29 +278,47 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           >
             Skip to Feed
           </Button>
-          {/* Add your pin - now underneath Skip to Feed */}
-          <button 
-            onClick={() => navigate("/onboarding/signup")}
-            className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
-          >
-            <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
-            <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
-          </button>
+          {/* Row with Add your pin + Feature pill slideshow */}
+          <div className="flex items-center gap-2">
+            {/* Animated pill slideshow */}
+            <div className="relative h-8 overflow-hidden min-w-[130px]">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={currentPillIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="absolute right-0 inline-flex items-center bg-white/15 backdrop-blur-sm border border-white/25 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap"
+                >
+                  {FEATURE_PILLS[currentPillIndex]}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+            {/* Add your pin */}
+            <button 
+              onClick={() => navigate("/onboarding/signup")}
+              className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-primary to-amber-400 animate-pulse" />
+              <span className="text-xs text-white/90 group-hover:text-white">Add your pin</span>
+            </button>
+          </div>
         </div>
 
         {/* Overlays that hide when interacting with globe */}
         <AnimatePresence>
           {!isGlobeInteracting && (
             <>
-              {/* Discovery text pill - positioned in lower center area */}
+              {/* Discovery text pill - centered in lower area */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3 }}
-                className="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 text-center px-4 w-full pointer-events-none"
+                className="absolute bottom-52 left-0 right-0 z-20 text-center px-4 pointer-events-none"
               >
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-md mx-auto">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-sm mx-auto">
                   <h2 className="text-xl font-serif text-white mb-2 drop-shadow-lg">Discover Your Style</h2>
                   <p className="text-sm text-white/80 leading-relaxed">
                     The platform for discovering fashion,
@@ -312,42 +330,6 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
                 </div>
               </motion.div>
 
-              {/* Animated feature pill slideshow + Azyah branding - bottom left */}
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="absolute bottom-48 left-4 flex flex-col gap-3 z-20 pointer-events-none"
-              >
-                {/* Animated pill slideshow */}
-                <div className="relative h-8 overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={currentPillIndex}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.4 }}
-                      className="absolute inline-flex items-center bg-white/15 backdrop-blur-sm border border-white/25 text-white text-xs px-4 py-1.5 rounded-full whitespace-nowrap"
-                    >
-                      {FEATURE_PILLS[currentPillIndex]}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-                
-                {/* Azyah Logo */}
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/marketing/azyah-logo.png"
-                    alt="Azyah"
-                    className="h-8 w-8 object-contain drop-shadow-lg"
-                  />
-                  <span className="text-2xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300 }}>
-                    Azyah
-                  </span>
-                </div>
-              </motion.div>
             </>
           )}
         </AnimatePresence>
@@ -952,8 +934,20 @@ export default function IntroCarousel() {
       {/* Fixed Bottom CTA Section */}
       <div 
         className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}
       >
+        {/* Azyah branding - centered above dots */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <img
+            src="/marketing/azyah-logo.png"
+            alt="Azyah"
+            className="h-6 w-6 object-contain"
+          />
+          <span className="text-lg font-serif text-foreground tracking-wider" style={{ fontWeight: 300 }}>
+            Azyah
+          </span>
+        </div>
+        
         {/* Navigation Dots */}
         <div className="flex justify-center gap-2 mb-3 md:mb-4">
           {slides.map((_, index) => (
