@@ -44,16 +44,19 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
     }
   });
 
-  if (!hasBrands) return null;
+  // Show all country pins - smaller if no brands
+  const pinSize = hasBrands ? (isFeatured ? 0.035 : 0.028) : 0.015;
 
   // Determine pin color based on state
   const getColor = () => {
+    if (!hasBrands) return '#6b7280'; // Gray for no brands
     if (isFeatured) return '#fbbf24'; // Gold for featured
     if (isActive) return '#f97316'; // Orange for selected
     return '#7c1d3e'; // Maroon for normal
   };
 
   const color = getColor();
+  const emissiveIntensity = hasBrands ? (isActive ? 1.0 : isFeatured ? 0.8 : 0.6) : 0.2;
 
   return (
     <group position={position}>
@@ -64,22 +67,24 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
           onClick();
         }}
       >
-        <sphereGeometry args={[isFeatured ? 0.035 : 0.028, 16, 16]} />
+        <sphereGeometry args={[pinSize, 16, 16]} />
         <meshStandardMaterial 
           color={color} 
           emissive={color}
-          emissiveIntensity={isActive ? 1.0 : isFeatured ? 0.8 : 0.6}
+          emissiveIntensity={emissiveIntensity}
         />
       </mesh>
-      {/* Outer glow ring */}
-      <mesh>
-        <sphereGeometry args={[isFeatured ? 0.045 : 0.038, 16, 16]} />
-        <meshBasicMaterial 
-          color={color}
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
+      {/* Outer glow ring - only for countries with brands */}
+      {hasBrands && (
+        <mesh>
+          <sphereGeometry args={[isFeatured ? 0.045 : 0.038, 16, 16]} />
+          <meshBasicMaterial 
+            color={color}
+            transparent
+            opacity={0.3}
+          />
+        </mesh>
+      )}
       {isActive && (
         <Html
           position={[0, 0.12, 0]}

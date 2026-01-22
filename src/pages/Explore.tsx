@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Home, Search, Globe as GlobeIcon, MapPin } from 'lucide-react';
+import { Home, Search, Globe as GlobeIcon, MapPin, Users, Store, Ruler, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,13 +14,30 @@ import { CountryDrawer } from '@/components/globe/CountryDrawer';
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 
+type ExploreTab = 'all' | 'following' | 'brands' | 'shoppers' | 'your-fit';
+
 const Explore: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<ExploreTab>('all');
+
+  // Sync tab from URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['all', 'following', 'brands', 'shoppers', 'your-fit'].includes(tab)) {
+      setActiveTab(tab as ExploreTab);
+    }
+  }, [searchParams]);
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as ExploreTab);
+    setSearchParams({ tab: value });
+  };
 
   // Fetch countries with brands
   const { data: countriesWithBrands = [], isLoading: countriesLoading } = useQuery<{ code: string; count: number }[]>({
@@ -94,6 +112,7 @@ const Explore: React.FC = () => {
 
   // Total brands count
   const totalBrands = countriesWithBrands.reduce((sum, c) => sum + c.count, 0);
+  const totalCountries = countriesWithBrands.length || COUNTRY_COORDINATES.length;
 
   return (
     <div className="h-[100dvh] bg-gray-900 flex flex-col overflow-hidden">
@@ -118,7 +137,10 @@ const Explore: React.FC = () => {
             <div className="flex-1 text-center">
               <h1 className="text-lg font-serif font-medium text-white">Explore</h1>
               <p className="text-xs text-white/60">
-                {totalBrands} brands across {countriesWithBrands.length} countries
+                {totalBrands > 0 
+                  ? `${totalBrands} brands across ${countriesWithBrands.length} countries`
+                  : `Discover brands in ${totalCountries} countries`
+                }
               </p>
             </div>
 
@@ -172,35 +194,80 @@ const Explore: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Filter Tabs */}
+          <div className="mt-3">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-5 gap-1">
+                <TabsTrigger 
+                  value="all" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                >
+                  <GlobeIcon className="h-3.5 w-3.5 mr-1" />
+                  All
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="following" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                >
+                  <Heart className="h-3.5 w-3.5 mr-1" />
+                  Following
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="brands" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                >
+                  <Store className="h-3.5 w-3.5 mr-1" />
+                  Brands
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="shoppers" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                >
+                  <Users className="h-3.5 w-3.5 mr-1" />
+                  Shoppers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="your-fit" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 rounded-full text-xs px-2"
+                >
+                  <Ruler className="h-3.5 w-3.5 mr-1" />
+                  Your Fit
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </header>
 
-      {/* Globe - Full Screen */}
+      {/* Globe - Full Screen - Always visible */}
       <div className="flex-1 relative">
-        {countriesLoading ? (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-            <div className="text-center">
-              <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-white/60">Loading globe...</p>
-            </div>
-          </div>
-        ) : (
-          <GlobeWrapper
-            countriesWithBrands={countriesWithBrands}
-            selectedCountry={selectedCountry}
-            onCountrySelect={handleCountrySelect}
-            autoRotate={!drawerOpen}
-            featuredCountry={featuredCountry}
-            onSkipToFeed={handleSkipToFeed}
-            className="w-full h-full"
-          />
-        )}
+        <GlobeWrapper
+          countriesWithBrands={countriesWithBrands}
+          selectedCountry={selectedCountry}
+          onCountrySelect={handleCountrySelect}
+          autoRotate={!drawerOpen}
+          featuredCountry={featuredCountry}
+          onSkipToFeed={handleSkipToFeed}
+          className="w-full h-full"
+        />
 
         {/* Hint Text */}
         <div className="absolute bottom-24 left-0 right-0 text-center pointer-events-none">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
             <GlobeIcon className="h-4 w-4 text-white/70" />
-            <span className="text-sm text-white/70">Tap a country to explore</span>
+            <span className="text-sm text-white/70">
+              {activeTab === 'all' 
+                ? 'Tap a country to explore' 
+                : activeTab === 'brands'
+                  ? 'Tap to see brands in each country'
+                  : activeTab === 'shoppers'
+                    ? 'Tap to see shoppers in each country'
+                    : activeTab === 'following'
+                      ? 'Tap to see who you follow in each country'
+                      : 'Tap to find people with similar fit'
+              }
+            </span>
           </div>
         </div>
       </div>
