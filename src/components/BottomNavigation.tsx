@@ -4,7 +4,7 @@ import { Home, Users, ShoppingBag, Sparkles, ChevronUp } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 interface NavItem {
   id: string;
@@ -27,8 +27,10 @@ const navItems: NavItem[] = [
 const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/community', '/trending', '/influencers', '/brands', '/wishlist', '/forum', '/affiliate', '/events'];
 
 // Routes where bottom nav should NOT appear
-// Note: Landing/intro pages now SHOW nav to allow guest preview into the app
 const EXCLUDED_ROUTES = [
+  '/',
+  '/landing',
+  '/onboarding',
   '/reset-password',
   '/terms',
   '/privacy',
@@ -85,28 +87,11 @@ export const BottomNavigation: React.FC = () => {
     }, 3000);
   }, [isAutoHidePage]);
 
-  // Allow showing on landing/intro for guest preview
-  // Auto-set guest mode when navigating from landing pages
-  const isLandingPage = location.pathname === '/' || 
-                        location.pathname === '/landing' || 
-                        location.pathname.startsWith('/onboarding/intro');
-  
-  // Don't render if not logged in (and not guest) on non-landing pages, or on Dress Me pages, or excluded pages
+  // Don't render if not logged in (and not guest), on Dress Me pages, or excluded pages
   const isGuest = isGuestMode();
-  const shouldShowOnLanding = isLandingPage; // Always show on landing for preview
-  const shouldShow = (user || isGuest || shouldShowOnLanding) && !isDressMePage && !isExcludedPage;
-  
-  if (!shouldShow) {
+  if ((!user && !isGuest) || isDressMePage || isExcludedPage) {
     return null;
   }
-
-  // Handle navigation with guest mode auto-set
-  const handleNavigation = (path: string) => {
-    if (!user && !isGuest) {
-      setGuestMode();
-    }
-    navigate(path);
-  };
 
   return (
     <>
@@ -150,7 +135,7 @@ export const BottomNavigation: React.FC = () => {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => handleNavigation(item.path)}
+                        onClick={() => navigate(item.path)}
                         className="relative flex flex-col items-center justify-end gap-1 py-2 px-3"
                       >
                         {/* Pop-out circular button - positioned above */}
@@ -186,7 +171,7 @@ export const BottomNavigation: React.FC = () => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => handleNavigation(item.path)}
+                      onClick={() => navigate(item.path)}
                       className={`flex flex-col items-center justify-end gap-1 py-2 px-3 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
