@@ -931,10 +931,10 @@ export default function IntroCarousel() {
         </AnimatePresence>
       </div>
 
-      {/* Fixed Bottom CTA Section */}
+      {/* Fixed Bottom CTA Section - uses less padding since nav auto-minimizes */}
       <div 
         className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
       >
         {/* Azyah branding - centered above dots */}
         <div className="flex items-center justify-center gap-2 mb-2">
