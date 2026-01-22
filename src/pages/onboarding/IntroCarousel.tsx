@@ -527,8 +527,8 @@ export default function IntroCarousel() {
                     </div>
                   </div>
 
-                  {/* Azyah branding + Feature pills - stacked at bottom left */}
-                  <div className="absolute bottom-4 left-4 flex flex-col gap-3 z-10 max-w-[calc(100%-120px)]">
+                  {/* Azyah branding + Feature pills - stacked at bottom left, above fixed CTA */}
+                  <div className="absolute bottom-48 left-4 flex flex-col gap-3 z-10 max-w-[calc(100%-120px)]">
                     {/* Azyah Logo */}
                     <div className="flex items-center gap-2">
                       <img
@@ -558,8 +558,8 @@ export default function IntroCarousel() {
                     </div>
                   </div>
 
-                  {/* Add your pin CTA */}
-                  <div className="absolute bottom-4 right-4 z-10">
+                  {/* Add your pin CTA - above fixed CTA */}
+                  <div className="absolute bottom-48 right-4 z-10">
                     <button 
                       onClick={() => navigate("/onboarding/signup")}
                       className="group flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-full px-3 py-2 transition-all duration-300"
