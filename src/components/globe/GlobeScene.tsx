@@ -174,32 +174,48 @@ function CountryPin({
           }}
         >
           <div 
-            className="bg-white dark:bg-gray-900 border border-primary/20 rounded-lg px-2.5 py-1.5 shadow-xl cursor-pointer hover:scale-105 transition-transform"
+            style={{ 
+              backgroundColor: 'white', 
+              border: '1px solid rgba(124, 29, 62, 0.2)',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              cursor: 'pointer'
+            }}
             onClick={(e) => {
               e.stopPropagation();
               if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
               onClick();
             }}
           >
-            <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {brandData.logo_url ? (
                 <img 
                   src={brandData.logo_url} 
                   alt={brandData.name} 
-                  className="w-6 h-6 rounded-full object-cover ring-1 ring-primary/20 flex-shrink-0" 
+                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} 
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-semibold text-[10px]">
+                <div style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  borderRadius: '50%', 
+                  backgroundColor: 'rgba(124, 29, 62, 0.1)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0 
+                }}>
+                  <span style={{ color: '#7c1d3e', fontWeight: 600, fontSize: '10px' }}>
                     {brandData.name?.charAt(0) || 'B'}
                   </span>
                 </div>
               )}
-              <div className="flex flex-col">
-                <p className="text-[11px] font-semibold text-gray-900 dark:text-white leading-tight">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <p style={{ fontSize: '11px', fontWeight: 600, color: '#1f2937', lineHeight: 1.2, margin: 0 }}>
                   {brandData.name}
                 </p>
-                <p className="text-[9px] font-medium text-primary">Explore</p>
+                <p style={{ fontSize: '9px', fontWeight: 500, color: '#7c1d3e', margin: 0 }}>Explore</p>
               </div>
             </div>
           </div>
