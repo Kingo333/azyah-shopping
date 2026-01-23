@@ -119,16 +119,17 @@ function CountryPin({
       )}
       {isActive && (
         <Html
-          position={[0, 0.12, 0]}
+          position={[0, 0.15, 0]}
           center
+          zIndexRange={[100, 0]}
           style={{
             pointerEvents: 'none',
-            whiteSpace: 'nowrap',
+            zIndex: 100,
           }}
         >
-          <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-xl">
-            <p className="text-sm font-medium text-foreground">{country.name}</p>
-            <p className="text-xs text-muted-foreground">{brandCount} brand{brandCount !== 1 ? 's' : ''}</p>
+          <div className="bg-white dark:bg-gray-900 border-2 border-primary/30 rounded-xl px-4 py-2.5 shadow-2xl min-w-[120px]">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{country.name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">{brandCount} brand{brandCount !== 1 ? 's' : ''}</p>
           </div>
         </Html>
       )}
@@ -149,27 +150,40 @@ function CountryPin({
       {/* Brand popup for IntroCarousel - shows on first click */}
       {showPopup && brandData && (
         <Html
-          position={[0, 0.12, 0]}
+          position={[0, 0.15, 0]}
           center
+          zIndexRange={[100, 0]}
           style={{
-            whiteSpace: 'nowrap',
+            pointerEvents: 'auto',
+            zIndex: 100,
           }}
         >
           <div 
-            className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-4 py-3 shadow-xl cursor-pointer hover:scale-105 transition-transform"
-            onClick={onClick}
+            className="bg-white dark:bg-gray-900 border-2 border-primary/30 rounded-xl px-4 py-3 shadow-2xl cursor-pointer hover:scale-105 transition-transform min-w-[140px]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
           >
-            <div className="flex items-center gap-2">
-              {brandData.logo_url && (
+            <div className="flex items-center gap-3">
+              {brandData.logo_url ? (
                 <img 
                   src={brandData.logo_url} 
                   alt={brandData.name} 
-                  className="w-8 h-8 rounded-full object-cover ring-1 ring-border" 
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0" 
                 />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary font-bold text-sm">
+                    {brandData.name?.charAt(0) || 'B'}
+                  </span>
+                </div>
               )}
-              <div>
-                <p className="text-sm font-semibold text-foreground">{brandData.name}</p>
-                <p className="text-xs text-primary">Tap to explore →</p>
+              <div className="flex flex-col">
+                <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                  {brandData.name}
+                </p>
+                <p className="text-xs font-medium text-primary mt-0.5">Tap to explore →</p>
               </div>
             </div>
           </div>
