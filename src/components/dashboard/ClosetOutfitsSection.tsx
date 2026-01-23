@@ -132,7 +132,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         
         {/* Helper text */}
         <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
-          Add your own or brand items to create looks, inspo, mood boards & earn
+          Add your own or brand items to create looks & earn
         </p>
         
         {/* Two-Card Grid */}
