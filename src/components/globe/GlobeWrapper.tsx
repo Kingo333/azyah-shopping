@@ -4,6 +4,11 @@ import { GlobeFallback } from './GlobeFallback';
 // Lazy load the GlobeScene to reduce initial bundle size
 const GlobeScene = lazy(() => import('./GlobeScene'));
 
+interface BrandData {
+  name: string;
+  logo_url: string | null;
+}
+
 interface GlobeWrapperProps {
   countriesWithBrands: { code: string; count: number }[];
   selectedCountry: string | null;
@@ -14,6 +19,9 @@ interface GlobeWrapperProps {
   onSkipToFeed?: () => void;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
   cameraDistance?: number;
+  // For IntroCarousel: show brand popup on first click instead of immediate navigation
+  brandDataByCountry?: Map<string, BrandData>;
+  showBrandPopupOnClick?: boolean;
 }
 
 // Detect WebGL support
@@ -63,6 +71,8 @@ export function GlobeWrapper({
   onSkipToFeed,
   activeTab = 'brands',
   cameraDistance,
+  brandDataByCountry,
+  showBrandPopupOnClick = false,
 }: GlobeWrapperProps) {
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -131,6 +141,8 @@ export function GlobeWrapper({
           className={className}
           activeTab={activeTab}
           cameraDistance={cameraDistance}
+          brandDataByCountry={brandDataByCountry}
+          showBrandPopupOnClick={showBrandPopupOnClick}
         />
       </Suspense>
     </GlobeErrorBoundary>

@@ -28,6 +28,11 @@ const TAB_PIN_COLORS = {
   'your-fit': '#a855f7' // Purple
 };
 
+interface BrandData {
+  name: string;
+  logo_url: string | null;
+}
+
 interface CountryPinProps {
   country: CountryCoordinates;
   isActive: boolean;
@@ -36,15 +41,22 @@ interface CountryPinProps {
   isFeatured?: boolean;
   onClick: () => void;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
+  // For popup on first click (IntroCarousel)
+  brandData?: BrandData;
+  showBrandPopupOnClick?: boolean;
 }
 
-function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onClick, activeTab = 'brands' }: CountryPinProps) {
+function CountryPin({ 
+  country, isActive, hasBrands, brandCount, isFeatured, onClick, activeTab = 'brands',
+  brandData, showBrandPopupOnClick = false 
+}: CountryPinProps) {
   const position = useMemo(() => 
     latLngToVector3(country.lat, country.lng, 1.02), 
     [country.lat, country.lng]
   );
   
   const meshRef = useRef<THREE.Mesh>(null);
+  const [showPopup, setShowPopup] = useState(false);
   
   useFrame((state) => {
     if (meshRef.current && hasBrands) {
@@ -69,14 +81,23 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
   const color = getColor();
   const emissiveIntensity = isActive ? 1.2 : isFeatured ? 1.0 : 0.8;
 
+  const handlePinClick = (e: any) => {
+    e.stopPropagation();
+    if (showBrandPopupOnClick && brandData && !showPopup) {
+      // First click: show popup
+      setShowPopup(true);
+    } else {
+      // Second click or normal behavior: navigate
+      setShowPopup(false);
+      onClick();
+    }
+  };
+
   return (
     <group position={position}>
       <mesh 
         ref={meshRef} 
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
+        onClick={handlePinClick}
       >
         <sphereGeometry args={[pinSize, 16, 16]} />
         <meshStandardMaterial 
@@ -122,6 +143,35 @@ function CountryPin({ country, isActive, hasBrands, brandCount, isFeatured, onCl
         >
           <div className="bg-amber-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-lg">
             <p className="text-[10px] font-medium text-white">★ Featured</p>
+          </div>
+        </Html>
+      )}
+      {/* Brand popup for IntroCarousel - shows on first click */}
+      {showPopup && brandData && (
+        <Html
+          position={[0, 0.12, 0]}
+          center
+          style={{
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <div 
+            className="bg-background/95 backdrop-blur-sm border border-border rounded-xl px-4 py-3 shadow-xl cursor-pointer hover:scale-105 transition-transform"
+            onClick={onClick}
+          >
+            <div className="flex items-center gap-2">
+              {brandData.logo_url && (
+                <img 
+                  src={brandData.logo_url} 
+                  alt={brandData.name} 
+                  className="w-8 h-8 rounded-full object-cover ring-1 ring-border" 
+                />
+              )}
+              <div>
+                <p className="text-sm font-semibold text-foreground">{brandData.name}</p>
+                <p className="text-xs text-primary">Tap to explore →</p>
+              </div>
+            </div>
           </div>
         </Html>
       )}
@@ -269,9 +319,11 @@ interface GlobeProps {
   autoRotate: boolean;
   featuredCountry?: string | null;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
+  brandDataByCountry?: Map<string, BrandData>;
+  showBrandPopupOnClick?: boolean;
 }
 
-function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRotate, featuredCountry, activeTab = 'brands' }: GlobeProps) {
+function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRotate, featuredCountry, activeTab = 'brands', brandDataByCountry, showBrandPopupOnClick = false }: GlobeProps) {
   const globeRef = useRef<THREE.Group>(null);
   
   const brandCountMap = useMemo(() => {
@@ -310,6 +362,8 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
             isFeatured={featuredCountry?.toUpperCase() === upperCode}
             onClick={() => onCountrySelect(country.code)}
             activeTab={activeTab}
+            brandData={brandDataByCountry?.get(upperCode)}
+            showBrandPopupOnClick={showBrandPopupOnClick}
           />
         );
       })}
@@ -326,6 +380,8 @@ interface GlobeSceneProps {
   className?: string;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
   cameraDistance?: number;
+  brandDataByCountry?: Map<string, BrandData>;
+  showBrandPopupOnClick?: boolean;
 }
 
 export function GlobeScene({ 
@@ -336,7 +392,9 @@ export function GlobeScene({
   featuredCountry,
   className = '',
   activeTab = 'brands',
-  cameraDistance = 3.5
+  cameraDistance = 3.5,
+  brandDataByCountry,
+  showBrandPopupOnClick = false,
 }: GlobeSceneProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -354,7 +412,7 @@ export function GlobeScene({
   }
 
   return (
-    <div className={`w-full h-full ${className}`}>
+    <div className={`w-full h-full relative z-0 ${className}`}>
       <Canvas
         camera={{ position: [0, 0, cameraDistance], fov: 45 }}
         gl={{ 
@@ -380,6 +438,8 @@ export function GlobeScene({
             autoRotate={autoRotate}
             featuredCountry={featuredCountry}
             activeTab={activeTab}
+            brandDataByCountry={brandDataByCountry}
+            showBrandPopupOnClick={showBrandPopupOnClick}
           />
           
           <OrbitControls 

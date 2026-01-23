@@ -192,6 +192,7 @@ const FEATURE_PILLS = [
 // HeroSlide component for the first carousel slide
 interface HeroSlideProps {
   countriesWithBrands: { code: string; count: number }[];
+  brandDataByCountry: Map<string, { name: string; logo_url: string | null }>;
   handleSkipToFeed: () => void;
   navigate: (path: string) => void;
   setIsUserInteracting: (interacting: boolean) => void;
@@ -200,6 +201,7 @@ interface HeroSlideProps {
 
 const HeroSlide: React.FC<HeroSlideProps> = ({
   countriesWithBrands,
+  brandDataByCountry,
   handleSkipToFeed,
   navigate,
   setIsUserInteracting,
@@ -252,13 +254,15 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           countriesWithBrands={countriesWithBrands}
           selectedCountry={null}
           onCountrySelect={() => {
-            // Set guest mode and navigate to explore when clicking a pin
+            // Set guest mode and navigate to explore when clicking a pin (after popup)
             setGuestMode();
             navigate("/explore");
           }}
           autoRotate={!isGlobeInteracting}
           className="w-full h-full"
           cameraDistance={isMobile ? 4.5 : 3.5}
+          brandDataByCountry={brandDataByCountry}
+          showBrandPopupOnClick={true}
         />
         
         {/* Reduced gradient overlay for better globe visibility */}
@@ -379,31 +383,49 @@ export default function IntroCarousel() {
     };
   }, []);
 
-  // Fetch countries with brands for globe
-  const { data: countriesWithBrands = [] } = useQuery<{ code: string; count: number }[]>({
-    queryKey: ['countries-with-brands-intro'],
+  // Fetch countries with brands for globe (including brand data for popup)
+  interface BrandWithCountry {
+    country_code: string | null;
+    name: string;
+    logo_url: string | null;
+  }
+  
+  const { data: countriesData = { countries: [], brandDataByCountry: new Map() } } = useQuery({
+    queryKey: ['countries-with-brands-intro-detailed'],
     queryFn: async () => {
       const result = await supabase
         .from('brands')
-        .select('country_code')
+        .select('country_code, name, logo_url')
         .not('country_code', 'is', null);
       
       if (result.error) {
         console.error('Error fetching countries:', result.error);
-        return [];
+        return { countries: [], brandDataByCountry: new Map() };
       }
 
       const counts = new Map<string, number>();
-      (result.data || []).forEach((b: { country_code: string | null }) => {
+      const brandDataMap = new Map<string, { name: string; logo_url: string | null }>();
+      
+      (result.data || []).forEach((b: BrandWithCountry) => {
         if (b.country_code) {
           const code = b.country_code.toUpperCase();
           counts.set(code, (counts.get(code) || 0) + 1);
+          // Keep first brand as representative for popup
+          if (!brandDataMap.has(code)) {
+            brandDataMap.set(code, { name: b.name, logo_url: b.logo_url });
+          }
         }
       });
       
-      return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+      return {
+        countries: Array.from(counts.entries()).map(([code, count]) => ({ code, count })),
+        brandDataByCountry: brandDataMap
+      };
     },
   });
+  
+  const countriesWithBrands = countriesData.countries;
+  const brandDataByCountry = countriesData.brandDataByCountry;
 
   const handleSkipToFeed = () => {
     setGuestMode();
@@ -661,6 +683,7 @@ export default function IntroCarousel() {
             {slide.type === "hero" && (
               <HeroSlide 
                 countriesWithBrands={countriesWithBrands}
+                brandDataByCountry={brandDataByCountry}
                 handleSkipToFeed={handleSkipToFeed}
                 navigate={navigate}
                 setIsUserInteracting={setIsUserInteracting}

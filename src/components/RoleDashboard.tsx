@@ -351,7 +351,7 @@ const RoleDashboard: React.FC = () => {
     );
   };
 
-  const renderShopperDashboard = () => <div className="space-y-0 pb-20">
+  const renderShopperDashboard = () => <div className="space-y-0 pb-[calc(80px+env(safe-area-inset-bottom))]">
       {/* Search Card First */}
       <DashboardTopCarousel
         showProfileCard={false}
