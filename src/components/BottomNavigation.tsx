@@ -4,7 +4,9 @@ import { Home, Users, ShoppingBag, Sparkles, ChevronUp } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { isGuestMode } from '@/hooks/useGuestMode';
+import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface NavItem {
   id: string;
@@ -12,6 +14,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   isCenter?: boolean;
+  requiresAuth?: boolean; // Routes that require auth (show prompt for guests)
 }
 
 // Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Collabs
@@ -19,8 +22,8 @@ const navItems: NavItem[] = [
   { id: 'insights', label: 'Insights', icon: Home, path: '/dashboard' },
   { id: 'community', label: 'Explore', icon: Users, path: '/explore' },
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
-  { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me' },
-  { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc' },
+  { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me', requiresAuth: true },
+  { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc', requiresAuth: true },
 ];
 
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
@@ -42,6 +45,7 @@ export const BottomNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isMinimized, setIsMinimized] = useState(false);
 
   const isActive = (path: string) => {
@@ -59,6 +63,35 @@ export const BottomNavigation: React.FC = () => {
   const isExcludedPage = EXCLUDED_ROUTES.some(route => 
     route === location.pathname || location.pathname.startsWith(route + '/')
   );
+  const isLandingPage = location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/onboarding/intro';
+
+  // Handle navigation with auto guest mode activation
+  const handleNavClick = useCallback((item: NavItem) => {
+    // If route requires auth and user is not logged in, show prompt
+    if (item.requiresAuth && !user) {
+      toast({
+        title: "Create an account",
+        description: `Sign up to access ${item.label}`,
+        action: (
+          <Button 
+            size="sm" 
+            onClick={() => navigate('/onboarding/signup')}
+            className="bg-primary text-primary-foreground"
+          >
+            Sign Up
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    // If user is not logged in and on landing/intro page, enable guest mode before navigating
+    if (!user && isLandingPage && !isGuestMode()) {
+      setGuestMode();
+    }
+
+    navigate(item.path);
+  }, [user, isLandingPage, navigate, toast]);
 
   // Auto-hide logic for auto-hide pages
   useEffect(() => {
@@ -93,7 +126,6 @@ export const BottomNavigation: React.FC = () => {
 
   // Show bottom nav for logged in users, guest mode, or landing page (to preview nav)
   const isGuest = isGuestMode();
-  const isLandingPage = location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/onboarding/intro';
   
   if ((!user && !isGuest && !isLandingPage) || isDressMePage || isExcludedPage) {
     return null;
@@ -141,7 +173,7 @@ export const BottomNavigation: React.FC = () => {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => navigate(item.path)}
+                        onClick={() => handleNavClick(item)}
                         className="relative flex flex-col items-center justify-end gap-1 py-2 px-3"
                       >
                         {/* Pop-out circular button - positioned above */}
@@ -177,7 +209,7 @@ export const BottomNavigation: React.FC = () => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => navigate(item.path)}
+                      onClick={() => handleNavClick(item)}
                       className={`flex flex-col items-center justify-end gap-1 py-2 px-3 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
