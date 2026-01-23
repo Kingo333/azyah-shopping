@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image, Briefcase } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image, Briefcase, Globe, Instagram, Twitter } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
@@ -280,14 +280,62 @@ const BrandDetail = () => {
                   <p className="text-muted-foreground mb-4">{brand.bio}</p>
                 )}
                 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Website Link */}
                   {brand.website && (
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" asChild className="gap-2">
                       <a href={brand.website} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Visit Website
+                        <Globe className="h-4 w-4" />
+                        Website
                       </a>
                     </Button>
+                  )}
+                  
+                  {/* Social Links from socials JSONB field */}
+                  {(brand.socials as any)?.instagram && (
+                    <Button variant="ghost" size="sm" asChild className="h-9 w-9 p-0 rounded-full">
+                      <a 
+                        href={`https://instagram.com/${(brand.socials as any).instagram}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                      >
+                        <Instagram className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                  
+                  {(brand.socials as any)?.tiktok && (
+                    <Button variant="ghost" size="sm" asChild className="h-9 w-9 p-0 rounded-full">
+                      <a 
+                        href={`https://tiktok.com/@${(brand.socials as any).tiktok}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        aria-label="TikTok"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                        </svg>
+                      </a>
+                    </Button>
+                  )}
+                  
+                  {(brand.socials as any)?.twitter && (
+                    <Button variant="ghost" size="sm" asChild className="h-9 w-9 p-0 rounded-full">
+                      <a 
+                        href={`https://twitter.com/${(brand.socials as any).twitter}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        aria-label="Twitter"
+                      >
+                        <Twitter className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+
+                  {/* Divider if there are social links and product count */}
+                  {(brand.website || (brand.socials as any)?.instagram || (brand.socials as any)?.tiktok || (brand.socials as any)?.twitter) && (isFashionBrand || isSalonOrAgency) && (
+                    <div className="h-5 w-px bg-border mx-1" />
                   )}
                   
                   {isFashionBrand && (
