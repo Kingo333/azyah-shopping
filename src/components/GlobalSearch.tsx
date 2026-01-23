@@ -155,7 +155,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
   }, [query]);
 
   const handleFollow = async (userId: string, isCurrentlyFollowing: boolean) => {
-    if (!user) return;
+    if (!user) {
+      // Show login prompt for guest users
+      toast({
+        title: "Create an account",
+        description: "Log in to follow shoppers and save your preferences",
+      });
+      return;
+    }
 
     try {
       if (isCurrentlyFollowing) {
@@ -344,29 +351,27 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                         <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
                       )}
                     </div>
-                    {user && (
-                      <Button
-                        variant={result.isFollowing ? "outline" : "default"}
-                        size="sm"
-                        className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFollow(result.id, result.isFollowing || false);
-                        }}
-                      >
-                        {result.isFollowing ? (
-                          <>
-                            <UserMinus className="h-3.5 w-3.5 sm:mr-1" />
-                            <span className="hidden sm:inline">Unfollow</span>
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-3.5 w-3.5 sm:mr-1" />
-                            <span className="hidden sm:inline">Follow</span>
-                          </>
-                        )}
-                      </Button>
-                    )}
+                    <Button
+                      variant={result.isFollowing ? "outline" : "default"}
+                      size="sm"
+                      className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollow(result.id, result.isFollowing || false);
+                      }}
+                    >
+                      {result.isFollowing ? (
+                        <>
+                          <UserMinus className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Unfollow</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Follow</span>
+                        </>
+                      )}
+                    </Button>
                   </div>
                 ))}
                 {!loading && query && filterResultsByType('user').length === 0 && (
