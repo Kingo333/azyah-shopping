@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Home, Search, Globe as GlobeIcon, MapPin, Users, Store, Ruler, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,9 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
 import { GlobeWrapper } from '@/components/globe/GlobeWrapper';
 import { CountryDrawer } from '@/components/globe/CountryDrawer';
-import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
+import GlobalSearch from '@/components/GlobalSearch';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -23,8 +22,8 @@ const Explore: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ExploreTab>('brands');
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
   // Sync tab from URL
   useEffect(() => {
@@ -177,18 +176,26 @@ const Explore: React.FC = () => {
     navigate('/swipe');
   };
 
-  // Filter countries by search
-  const filteredCountries = searchQuery
-    ? COUNTRY_COORDINATES.filter(c => 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.code.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+  // Get the appropriate initial tab for GlobalSearch based on active explore tab
+  const getGlobalSearchInitialTab = (): 'products' | 'users' | 'brands' => {
+    switch (activeTab) {
+      case 'brands': return 'brands';
+      case 'shoppers':
+      case 'your-fit': return 'users';
+      case 'following': return 'products';
+      default: return 'products';
+    }
+  };
 
-  // Handle search result selection
-  const handleSearchSelect = (code: string) => {
-    setSearchQuery('');
-    handleCountrySelect(code);
+  // Get search placeholder text
+  const getSearchPlaceholder = () => {
+    switch (activeTab) {
+      case 'brands': return 'Search brands, products...';
+      case 'following': return 'Search who you follow...';
+      case 'shoppers': return 'Search shoppers...';
+      case 'your-fit': return 'Search by style...';
+      default: return 'Search...';
+    }
   };
 
   // Total counts based on active tab
@@ -240,52 +247,19 @@ const Explore: React.FC = () => {
             </Button>
           </div>
 
-          {/* Search Bar - Contextual to tab */}
-          <div className="relative mt-3">
+          {/* Search Bar - Opens GlobalSearch modal (same as dashboard) */}
+          <div 
+            className="relative mt-3 cursor-pointer" 
+            onClick={() => setGlobalSearchOpen(true)}
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
             <Input
               type="text"
-              placeholder={
-                activeTab === 'brands' 
-                  ? 'Search countries with brands...' 
-                  : activeTab === 'following'
-                    ? 'Search countries you follow...'
-                    : activeTab === 'shoppers'
-                      ? 'Search countries with shoppers...'
-                      : 'Search countries with similar fit...'
-              }
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full focus-visible:ring-primary/50"
+              placeholder={getSearchPlaceholder()}
+              readOnly
+              className="pl-10 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-full focus-visible:ring-primary/50 cursor-pointer"
               style={{ fontSize: '16px' }}
             />
-            
-            {/* Search Results Dropdown */}
-            {searchQuery && filteredCountries.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-md rounded-lg border border-border shadow-xl max-h-60 overflow-y-auto z-30">
-                {filteredCountries.slice(0, 10).map((country) => {
-                  const brandData = countriesWithBrands.find(c => c.code.toUpperCase() === country.code.toUpperCase());
-                  return (
-                    <button
-                      key={country.code}
-                      onClick={() => handleSearchSelect(country.code)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
-                    >
-                      <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{country.name}</p>
-                        <p className="text-xs text-muted-foreground">{country.region}</p>
-                      </div>
-                      {brandData && (
-                        <Badge variant="secondary" className="text-xs">
-                          {brandData.count} brands
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* Filter Tabs */}
@@ -371,6 +345,13 @@ const Explore: React.FC = () => {
           }
         }}
         activeTab={activeTab}
+      />
+
+      {/* GlobalSearch Modal - Same behavior as dashboard search */}
+      <GlobalSearch
+        isOpen={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        initialTab={getGlobalSearchInitialTab()}
       />
     </div>
   );

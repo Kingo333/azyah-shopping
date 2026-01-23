@@ -13,6 +13,7 @@ interface GlobeWrapperProps {
   className?: string;
   onSkipToFeed?: () => void;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
+  cameraDistance?: number;
 }
 
 // Detect WebGL support
@@ -61,6 +62,7 @@ export function GlobeWrapper({
   className = '',
   onSkipToFeed,
   activeTab = 'brands',
+  cameraDistance,
 }: GlobeWrapperProps) {
   const [hasWebGL, setHasWebGL] = useState<boolean | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -128,6 +130,7 @@ export function GlobeWrapper({
           featuredCountry={featuredCountry}
           className={className}
           activeTab={activeTab}
+          cameraDistance={cameraDistance}
         />
       </Suspense>
     </GlobeErrorBoundary>

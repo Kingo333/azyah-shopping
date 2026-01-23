@@ -325,6 +325,7 @@ interface GlobeSceneProps {
   featuredCountry?: string | null;
   className?: string;
   activeTab?: 'brands' | 'following' | 'shoppers' | 'your-fit';
+  cameraDistance?: number;
 }
 
 export function GlobeScene({ 
@@ -334,7 +335,8 @@ export function GlobeScene({
   autoRotate = true,
   featuredCountry,
   className = '',
-  activeTab = 'brands'
+  activeTab = 'brands',
+  cameraDistance = 3.5
 }: GlobeSceneProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -354,7 +356,7 @@ export function GlobeScene({
   return (
     <div className={`w-full h-full ${className}`}>
       <Canvas
-        camera={{ position: [0, 0, 3.5], fov: 45 }}
+        camera={{ position: [0, 0, cameraDistance], fov: 45 }}
         gl={{ 
           antialias: true, 
           alpha: true,
