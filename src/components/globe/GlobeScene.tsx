@@ -57,6 +57,7 @@ function CountryPin({
   
   const meshRef = useRef<THREE.Mesh>(null);
   const [showPopup, setShowPopup] = useState(false);
+  const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useFrame((state) => {
     if (meshRef.current && hasBrands) {
@@ -64,6 +65,20 @@ function CountryPin({
       meshRef.current.scale.setScalar(scale);
     }
   });
+
+  // Auto-hide popup after 2 seconds
+  useEffect(() => {
+    if (showPopup) {
+      popupTimeoutRef.current = setTimeout(() => {
+        setShowPopup(false);
+      }, 2000);
+    }
+    return () => {
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current);
+      }
+    };
+  }, [showPopup]);
 
   // Only show pins for countries with brands
   if (!hasBrands) return null;
@@ -147,7 +162,7 @@ function CountryPin({
           </div>
         </Html>
       )}
-      {/* Brand popup for IntroCarousel - shows on first click */}
+      {/* Brand popup for IntroCarousel - shows on first click, auto-hides after 2s */}
       {showPopup && brandData && (
         <Html
           position={[0, 0.15, 0]}
@@ -159,31 +174,32 @@ function CountryPin({
           }}
         >
           <div 
-            className="bg-white dark:bg-gray-900 border-2 border-primary/30 rounded-xl px-4 py-3 shadow-2xl cursor-pointer hover:scale-105 transition-transform min-w-[140px]"
+            className="bg-white dark:bg-gray-900 border border-primary/20 rounded-lg px-2.5 py-1.5 shadow-xl cursor-pointer hover:scale-105 transition-transform"
             onClick={(e) => {
               e.stopPropagation();
+              if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
               onClick();
             }}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {brandData.logo_url ? (
                 <img 
                   src={brandData.logo_url} 
                   alt={brandData.name} 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0" 
+                  className="w-6 h-6 rounded-full object-cover ring-1 ring-primary/20 flex-shrink-0" 
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-bold text-sm">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary font-semibold text-[10px]">
                     {brandData.name?.charAt(0) || 'B'}
                   </span>
                 </div>
               )}
               <div className="flex flex-col">
-                <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                <p className="text-[11px] font-semibold text-gray-900 dark:text-white leading-tight">
                   {brandData.name}
                 </p>
-                <p className="text-xs font-medium text-primary mt-0.5">Tap to explore →</p>
+                <p className="text-[9px] font-medium text-primary">Explore</p>
               </div>
             </div>
           </div>
