@@ -213,59 +213,63 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent 
         className={cn(
-          "bg-background/95 backdrop-blur-xl border-t border-border/50 transition-all duration-300",
+          "bg-background/95 backdrop-blur-2xl border-t border-border/20 shadow-2xl transition-all duration-300 ease-out",
           isExpanded ? "h-[95vh]" : "max-h-[55vh]"
         )}
       >
-        <DrawerHeader className="pb-2 relative">
-          {/* Expand/Collapse Button */}
+        <DrawerHeader className="pb-3 relative border-b border-border/30">
+          {/* Expand/Collapse Button with View All label */}
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="absolute top-2 right-4 p-2 rounded-full hover:bg-accent/50 transition-colors"
-            aria-label={isExpanded ? "Collapse drawer" : "Expand drawer"}
+            className="absolute top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all"
+            aria-label={isExpanded ? "Minimize drawer" : "View all"}
           >
+            <span className="text-xs font-medium text-muted-foreground">
+              {isExpanded ? 'Minimize' : 'View All'}
+            </span>
             {isExpanded ? (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
-              <ChevronUp className="w-5 h-5 text-muted-foreground" />
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
             )}
           </button>
 
-          <div className="flex items-center justify-between pr-10">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 pr-24">
+            <div className="p-2 rounded-xl bg-primary/10">
               <MapPin className="w-5 h-5 text-primary" />
-              <DrawerTitle className="text-xl font-serif">{countryName}</DrawerTitle>
+            </div>
+            <div>
+              <DrawerTitle className="text-xl font-semibold tracking-tight">{countryName}</DrawerTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {showBrandsContent 
+                  ? `${brands?.length || 0} brands • ${products?.length || 0} products`
+                  : `${shoppers?.length || 0} shoppers`
+                }
+              </p>
             </div>
           </div>
-          
-          <p className="text-xs text-muted-foreground mt-1">
-            {showBrandsContent 
-              ? `${brands?.length || 0} brands • ${products?.length || 0} products`
-              : `${shoppers?.length || 0} shoppers`
-            }
-          </p>
 
           {/* Swipe CTA with micro-note */}
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center gap-3 mt-4">
             <Button
               onClick={handleSwipeToCountry}
               size="sm"
-              className="gap-2"
+              className="gap-2 rounded-full px-4 shadow-sm"
             >
               <Play className="w-3.5 h-3.5" />
-              Swipe
+              Start Swiping
             </Button>
             <p className="text-xs text-muted-foreground">
-              Swipe to discover products from {countryName}
+              Discover products from {countryName}
             </p>
           </div>
 
-          {/* Tabs for Brands/Products - only in brands content mode */}
+          {/* Premium Pill Tabs for Brands/Products - only in brands content mode */}
           {showBrandsContent && (
-            <Tabs value={drawerTab} onValueChange={(v) => setDrawerTab(v as 'brands' | 'products')} className="mt-3">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="brands">Brands</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
+            <Tabs value={drawerTab} onValueChange={(v) => setDrawerTab(v as 'brands' | 'products')} className="mt-4">
+              <TabsList className="w-full grid grid-cols-2 bg-black/5 dark:bg-white/10 p-1 rounded-full">
+                <TabsTrigger value="brands" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all">Brands</TabsTrigger>
+                <TabsTrigger value="products" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all">Products</TabsTrigger>
               </TabsList>
             </Tabs>
           )}
@@ -287,11 +291,11 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                       <button 
                         key={brand.id} 
                         onClick={() => handleBrandClick(brand.slug)} 
-                        className="flex flex-col items-center p-3 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm hover:bg-accent/50 transition-colors"
+                        className="flex flex-col items-center p-3 rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md hover:scale-[1.02] transition-all duration-200"
                       >
-                        <Avatar className="w-12 h-12 mb-2">
+                        <Avatar className="w-14 h-14 mb-2 ring-2 ring-white/50 shadow-sm">
                           <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">{brand.name.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{brand.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="text-xs font-medium text-center line-clamp-2">{brand.name}</span>
                       </button>
@@ -314,10 +318,10 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                     {products.slice(0, isExpanded ? 12 : 6).map((product) => (
                       <Card
                         key={product.id}
-                        className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-card/80 backdrop-blur-sm border-border/50"
+                        className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] bg-card/80 backdrop-blur-sm border-border/30 rounded-xl"
                         onClick={() => handleProductClick(product.id)}
                       >
-                        <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                        <div className="aspect-[3/4] relative overflow-hidden bg-muted rounded-t-xl">
                           <SmartImage
                             src={getPrimaryImageUrl(product)}
                             alt={product.title}
@@ -325,10 +329,10 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                             sizes="(max-width: 640px) 100px, 120px"
                           />
                         </div>
-                        <div className="p-2">
-                          <p className="text-[10px] text-muted-foreground truncate">{getBrandName(product.brand_id)}</p>
-                          <p className="text-xs font-medium truncate">{product.title}</p>
-                          <p className="text-xs text-primary font-semibold">{formatPrice(product.price_cents, product.currency)}</p>
+                        <div className="p-2.5">
+                          <p className="text-[10px] text-muted-foreground truncate uppercase tracking-wide">{getBrandName(product.brand_id)}</p>
+                          <p className="text-xs font-medium truncate mt-0.5">{product.title}</p>
+                          <p className="text-xs text-primary font-semibold mt-1">{formatPrice(product.price_cents, product.currency)}</p>
                         </div>
                       </Card>
                     ))}

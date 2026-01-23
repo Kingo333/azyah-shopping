@@ -251,11 +251,16 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-2xl max-h-[85vh] overflow-hidden overflow-x-hidden !p-3 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]" overlayClassName="bg-black/85">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-semibold">
+      <DialogContent 
+        className="w-[calc(100vw-1.5rem)] max-w-2xl max-h-[85vh] overflow-hidden overflow-x-hidden !p-4 sm:!p-6 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-white/30 dark:border-white/10 !rounded-3xl shadow-2xl shadow-black/20 fixed top-[env(safe-area-inset-top,5%)] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]" 
+        overlayClassName="bg-black/60 backdrop-blur-sm"
+      >
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2.5 text-lg">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Search className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-semibold text-foreground">
               Find items, friends & brands
             </span>
           </DialogTitle>
@@ -263,35 +268,35 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search products, users, brands..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10 bg-background/80 backdrop-blur-sm border-border/50"
+              className="pl-11 h-12 bg-white/50 dark:bg-white/10 backdrop-blur-sm border-black/10 dark:border-white/20 rounded-xl text-base placeholder:text-muted-foreground/70 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
               autoFocus
             />
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')} className="min-w-0 overflow-hidden">
-            <TabsList className="!grid w-full !grid-cols-3 gap-1.5 sm:gap-2 bg-transparent !p-0 !h-auto min-w-0">
+            <TabsList className="!grid w-full !grid-cols-3 bg-black/5 dark:bg-white/10 !p-1 !h-auto min-w-0 !rounded-full">
               <TabsTrigger 
                 value="products" 
-                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-2 !px-3 !rounded-full !text-xs sm:!text-sm text-muted-foreground hover:text-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm overflow-hidden"
               >
                 <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Products</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-2 !px-3 !rounded-full !text-xs sm:!text-sm text-muted-foreground hover:text-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm overflow-hidden"
               >
                 <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Shoppers</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="brands" 
-                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-2 !px-3 !rounded-full !text-xs sm:!text-sm text-muted-foreground hover:text-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm overflow-hidden"
               >
                 <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Brands</span>
