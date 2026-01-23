@@ -14,7 +14,7 @@ import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import GlobalSearch from "@/components/GlobalSearch";
+
 
 type SlideType =
   | {
@@ -196,7 +196,6 @@ interface HeroSlideProps {
   navigate: (path: string) => void;
   setIsUserInteracting: (interacting: boolean) => void;
   isMobile: boolean;
-  onSearchClick: () => void;
 }
 
 const HeroSlide: React.FC<HeroSlideProps> = ({
@@ -205,7 +204,6 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   navigate,
   setIsUserInteracting,
   isMobile,
-  onSearchClick,
 }) => {
   const [isGlobeInteracting, setIsGlobeInteracting] = useState(false);
   const [currentPillIndex, setCurrentPillIndex] = useState(0);
@@ -253,7 +251,11 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         <GlobeWrapper
           countriesWithBrands={countriesWithBrands}
           selectedCountry={null}
-          onCountrySelect={() => navigate("/explore")}
+          onCountrySelect={() => {
+            // Set guest mode and navigate to explore when clicking a pin
+            setGuestMode();
+            navigate("/explore");
+          }}
           autoRotate={!isGlobeInteracting}
           className="w-full h-full"
           cameraDistance={isMobile ? 4.5 : 3.5}
@@ -262,10 +264,14 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         {/* Reduced gradient overlay for better globe visibility */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
 
-        {/* Search bar - opens GlobalSearch modal */}
+        {/* Search bar - redirects to Explore page */}
         <div 
           className="absolute top-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4 cursor-pointer"
-          onClick={onSearchClick}
+          onClick={() => {
+            // Set guest mode and navigate to explore when clicking search
+            setGuestMode();
+            navigate("/explore");
+          }}
         >
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
@@ -357,7 +363,7 @@ export default function IntroCarousel() {
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [isNavMinimized, setIsNavMinimized] = useState(false);
-  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -659,7 +665,6 @@ export default function IntroCarousel() {
                 navigate={navigate}
                 setIsUserInteracting={setIsUserInteracting}
                 isMobile={isMobile}
-                onSearchClick={() => setGlobalSearchOpen(true)}
               />
             )}
 
@@ -995,12 +1000,6 @@ export default function IntroCarousel() {
           Join the Community
         </Button>
       </div>
-
-      {/* GlobalSearch Modal - Same as dashboard */}
-      <GlobalSearch
-        isOpen={globalSearchOpen}
-        onClose={() => setGlobalSearchOpen(false)}
-      />
     </div>
   );
 }
