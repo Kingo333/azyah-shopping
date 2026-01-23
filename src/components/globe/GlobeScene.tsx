@@ -172,15 +172,25 @@ function CountryPin({
             pointerEvents: 'auto',
             zIndex: 100,
           }}
+          as="div"
+          wrapperClass=""
+          prepend
+          transform={false}
+          occlude={false}
         >
           <div 
             style={{ 
-              backgroundColor: 'white', 
-              border: '1px solid rgba(124, 29, 62, 0.2)',
+              background: '#ffffff',
+              backgroundColor: '#ffffff',
+              border: '1px solid rgba(124, 29, 62, 0.3)',
               borderRadius: '8px',
               padding: '6px 10px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-              cursor: 'pointer'
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.8)',
+              cursor: 'pointer',
+              minWidth: '120px',
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
+              isolation: 'isolate',
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -188,7 +198,7 @@ function CountryPin({
               onClick();
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent' }}>
               {brandData.logo_url ? (
                 <img 
                   src={brandData.logo_url} 
@@ -211,11 +221,11 @@ function CountryPin({
                   </span>
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <p style={{ fontSize: '11px', fontWeight: 600, color: '#1f2937', lineHeight: 1.2, margin: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+                <p style={{ fontSize: '11px', fontWeight: 600, color: '#111827', lineHeight: 1.2, margin: 0, background: 'transparent' }}>
                   {brandData.name}
                 </p>
-                <p style={{ fontSize: '9px', fontWeight: 500, color: '#7c1d3e', margin: 0 }}>Explore</p>
+                <p style={{ fontSize: '9px', fontWeight: 500, color: '#7c1d3e', margin: 0, background: 'transparent' }}>Explore</p>
               </div>
             </div>
           </div>
