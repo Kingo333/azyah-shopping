@@ -213,7 +213,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent 
         className={cn(
-          "bg-background/95 backdrop-blur-2xl border-t border-border/20 shadow-2xl transition-all duration-300 ease-out",
+          "bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl transition-all duration-300 ease-out",
           isExpanded ? "h-[95vh]" : "max-h-[55vh]"
         )}
       >

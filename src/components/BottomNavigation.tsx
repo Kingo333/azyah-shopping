@@ -58,7 +58,8 @@ export const BottomNavigation: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const isAutoHidePage = AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
+  const isDashboardPage = location.pathname === '/dashboard';
+  const isAutoHidePage = !isDashboardPage && AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
   const isDressMePage = location.pathname.startsWith('/dress-me');
   const isExcludedPage = EXCLUDED_ROUTES.some(route => 
     route === location.pathname || location.pathname.startsWith(route + '/')
@@ -93,8 +94,15 @@ export const BottomNavigation: React.FC = () => {
     navigate(item.path);
   }, [user, isLandingPage, navigate, toast]);
 
-  // Auto-hide logic for auto-hide pages
+  // Auto-hide logic for auto-hide pages (dashboard always visible)
   useEffect(() => {
+    // Dashboard always shows nav - never minimize
+    if (isDashboardPage) {
+      setIsMinimized(false);
+      window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
+      return;
+    }
+    
     if (isAutoHidePage) {
       setIsMinimized(false);
       window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
@@ -106,11 +114,11 @@ export const BottomNavigation: React.FC = () => {
       
       return () => clearTimeout(timer);
     } else {
-      // Always show on non-auto-hide pages (like dashboard)
+      // Always show on non-auto-hide pages
       setIsMinimized(false);
       window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
     }
-  }, [location.pathname, isAutoHidePage]);
+  }, [location.pathname, isAutoHidePage, isDashboardPage]);
 
   const handleExpandNav = useCallback(() => {
     setIsMinimized(false);
