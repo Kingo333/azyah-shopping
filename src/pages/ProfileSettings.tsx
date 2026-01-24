@@ -1105,6 +1105,13 @@ const ProfileSettings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Your Fit Modal */}
+      <AddYourFitModal
+        open={showFitModal}
+        onOpenChange={setShowFitModal}
+        onComplete={() => setShowFitModal(false)}
+      />
     </div>
   );
 };
