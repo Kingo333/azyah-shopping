@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
 import { GlobeWrapper } from '@/components/globe/GlobeWrapper';
 import { CountryDrawer } from '@/components/globe/CountryDrawer';
+import { FollowingDrawer } from '@/components/explore/FollowingDrawer';
+import { YourFitDrawer } from '@/components/explore/YourFitDrawer';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -22,6 +24,8 @@ const Explore: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [followingDrawerOpen, setFollowingDrawerOpen] = useState(false);
+  const [yourFitDrawerOpen, setYourFitDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ExploreTab>('brands');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
@@ -33,10 +37,18 @@ const Explore: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Handle tab change
+  // Handle tab change - open appropriate drawers for Following and Your Fit
   const handleTabChange = (value: string) => {
-    setActiveTab(value as ExploreTab);
+    const newTab = value as ExploreTab;
+    setActiveTab(newTab);
     setSearchParams({ tab: value });
+
+    // For Following and Your Fit, open the global drawer immediately
+    if (newTab === 'following') {
+      setFollowingDrawerOpen(true);
+    } else if (newTab === 'your-fit') {
+      setYourFitDrawerOpen(true);
+    }
   };
 
   // Fetch countries with brands (no is_active filter - column doesn't exist)
@@ -150,19 +162,23 @@ const Explore: React.FC = () => {
       case 'brands':
         return countriesWithBrands;
       case 'following':
-        return countriesFollowing;
+        // For following, show decorative globe - no active filtering
+        return [];
       case 'shoppers':
         return countriesWithShoppers;
       case 'your-fit':
-        // For now, show shoppers with similar fit - same as shoppers for now
-        return countriesWithShoppers;
+        // For your-fit, show decorative globe - no active filtering
+        return [];
       default:
         return countriesWithBrands;
     }
-  }, [activeTab, countriesWithBrands, countriesFollowing, countriesWithShoppers]);
+  }, [activeTab, countriesWithBrands, countriesWithShoppers]);
 
-  // Handle country selection
+  // Handle country selection - only for Brands and Shoppers tabs
   const handleCountrySelect = (code: string) => {
+    if (activeTab === 'following' || activeTab === 'your-fit') {
+      return; // Don't open country drawer for these tabs
+    }
     setSelectedCountry(code);
     setDrawerOpen(true);
   };
@@ -331,14 +347,13 @@ const Explore: React.FC = () => {
         </div>
       </div>
 
-      {/* Country Drawer - pass activeTab for contextual content */}
+      {/* Country Drawer - for Brands and Shoppers tabs */}
       <CountryDrawer
         countryCode={selectedCountry}
         open={drawerOpen}
         onOpenChange={(open) => {
           setDrawerOpen(open);
           if (!open) {
-            // Don't clear selectedCountry immediately to allow re-opening
             setTimeout(() => {
               if (!drawerOpen) setSelectedCountry(null);
             }, 300);
@@ -347,7 +362,19 @@ const Explore: React.FC = () => {
         activeTab={activeTab}
       />
 
-      {/* GlobalSearch Modal - Same behavior as dashboard search */}
+      {/* Following Drawer - Global, no country required */}
+      <FollowingDrawer
+        open={followingDrawerOpen}
+        onOpenChange={setFollowingDrawerOpen}
+      />
+
+      {/* Your Fit Drawer - Global, with measurement gating */}
+      <YourFitDrawer
+        open={yourFitDrawerOpen}
+        onOpenChange={setYourFitDrawerOpen}
+      />
+
+      {/* GlobalSearch Modal */}
       <GlobalSearch
         isOpen={globalSearchOpen}
         onClose={() => setGlobalSearchOpen(false)}
