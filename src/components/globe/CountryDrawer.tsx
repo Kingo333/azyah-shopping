@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play, Shirt, Sparkles } from 'lucide-react';
+import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play, Shirt, Sparkles, EyeOff, Eye, User } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -14,13 +14,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -76,10 +77,96 @@ interface CountryDrawerProps {
 export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'brands' }: CountryDrawerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const countryName = countryCode === 'GLOBAL' ? 'Global Community' : (countryCode ? getCountryNameFromCode(countryCode) : '');
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'brands' | 'products'>('brands');
   const [shoppersSubTab, setShoppersSubTab] = useState<'people' | 'posts'>('people');
+
+  // Fetch current user's profile and visibility status
+  const { data: currentUserProfile } = useQuery({
+    queryKey: ['current-user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('users')
+        .select('id, name, username, avatar_url, preferences, country')
+        .eq('id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id && open && activeTab === 'shoppers',
+  });
+
+  // Check if user is visible on globe (default true)
+  const isVisibleOnGlobe = currentUserProfile?.preferences 
+    ? (currentUserProfile.preferences as Record<string, unknown>).visible_on_globe !== false
+    : true;
+
+  // Mutation to toggle visibility
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async (visible: boolean) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const currentPrefs = (currentUserProfile?.preferences as Record<string, unknown>) || {};
+      const { error } = await supabase
+        .from('users')
+        .update({
+          preferences: {
+            ...currentPrefs,
+            visible_on_globe: visible,
+          },
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, visible) => {
+      queryClient.invalidateQueries({ queryKey: ['current-user-profile', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['country-shoppers'] });
+      toast({
+        description: visible ? 'You are now visible on the globe' : 'You are now hidden from the globe',
+      });
+    },
+    onError: () => {
+      toast({
+        description: 'Failed to update visibility',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Fetch current user's public fits
+  const { data: currentUserFits } = useQuery({
+    queryKey: ['current-user-fits', user?.id],
+    queryFn: async (): Promise<ShopperFit[]> => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('fits')
+        .select('id, user_id, title, image_preview, render_path')
+        .eq('user_id', user.id)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      return (data || []) as ShopperFit[];
+    },
+    enabled: !!user?.id && open && activeTab === 'shoppers',
+  });
+
+  // Fetch current user's public wardrobe items
+  const { data: currentUserItems } = useQuery({
+    queryKey: ['current-user-public-items', user?.id],
+    queryFn: async (): Promise<PublicWardrobeItem[]> => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('wardrobe_items')
+        .select('id, user_id, name, brand, category, image_url, image_bg_removed_url')
+        .eq('user_id', user.id)
+        .eq('public_reuse_permitted', true)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      return (data || []) as PublicWardrobeItem[];
+    },
+    enabled: !!user?.id && open && activeTab === 'shoppers',
+  });
 
   // Fetch brands in this country
   const { data: brands, isLoading: brandsLoading } = useQuery({
@@ -402,73 +489,184 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             <div className="space-y-4 py-4">
               {shoppersSubTab === 'people' ? (
                 // People Tab - Shows shoppers with their fits
-                isLoadingShoppers ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
-                  </div>
-                ) : shoppers && shoppers.length > 0 ? (
-                  <div className="space-y-4">
-                    {shoppers.map((shopper) => {
-                      const userFits = shopperFits?.filter(f => f.user_id === shopper.id) || [];
-                      
-                      return (
-                        <div key={shopper.id} className="space-y-2">
-                          {/* Shopper Header */}
-                          <button 
-                            onClick={() => handleShopperClick(shopper.id)} 
-                            className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
-                          >
-                            <Avatar className="w-10 h-10">
-                              <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                                {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium block truncate">
-                                {shopper.name || shopper.username || 'Anonymous'}
-                              </span>
-                              {shopper.username && shopper.name && (
-                                <span className="text-xs text-muted-foreground">@{shopper.username}</span>
-                              )}
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          </button>
-                          
-                          {/* Shopper's Public Fits */}
-                          {userFits.length > 0 && (
-                            <div className="grid grid-cols-3 gap-2 ml-12">
-                              {userFits.slice(0, 3).map((fit) => (
-                                <Card 
-                                  key={fit.id} 
-                                  className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
-                                  onClick={() => handleFitClick(fit.id)}
-                                >
-                                  <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                                    <SmartImage 
-                                      src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
-                                      alt={fit.title || 'Outfit'} 
-                                      className="w-full h-full object-cover"
-                                      sizes="80px"
-                                    />
-                                  </div>
-                                  {fit.title && (
-                                    <p className="text-[10px] p-1 truncate text-muted-foreground">{fit.title}</p>
-                                  )}
-                                </Card>
-                              ))}
-                            </div>
+                <div className="space-y-4">
+                  {/* Current User's Content Section */}
+                  {user && currentUserProfile && (
+                    <div className="space-y-3 pb-4 border-b border-border/50">
+                      {/* Your Content Header with Visibility Toggle */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-semibold">Your Content</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {isVisibleOnGlobe ? 'Visible' : 'Hidden'}
+                          </span>
+                          <Switch
+                            checked={isVisibleOnGlobe}
+                            onCheckedChange={(checked) => toggleVisibilityMutation.mutate(checked)}
+                            disabled={toggleVisibilityMutation.isPending}
+                          />
+                          {isVisibleOnGlobe ? (
+                            <Eye className="w-4 h-4 text-primary" />
+                          ) : (
+                            <EyeOff className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No shoppers in this country yet</p>
-                  </div>
-                )
+                      </div>
+
+                      {/* Your Profile */}
+                      <button 
+                        onClick={() => handleShopperClick(user.id)} 
+                        className="flex items-center gap-3 w-full text-left bg-primary/5 hover:bg-primary/10 rounded-lg p-2 transition-colors"
+                      >
+                        <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+                          <AvatarImage src={currentUserProfile.avatar_url || undefined} alt={currentUserProfile.name || currentUserProfile.username || 'You'} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                            {(currentUserProfile.name || currentUserProfile.username || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium block truncate">
+                            {currentUserProfile.name || currentUserProfile.username || 'You'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">Your profile</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      </button>
+
+                      {/* Your Public Fits */}
+                      {currentUserFits && currentUserFits.length > 0 && (
+                        <div className="ml-12">
+                          <p className="text-xs text-muted-foreground mb-2">Your public outfits</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {currentUserFits.slice(0, 3).map((fit) => (
+                              <Card 
+                                key={fit.id} 
+                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-primary/20"
+                                onClick={() => handleFitClick(fit.id)}
+                              >
+                                <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                                  <SmartImage 
+                                    src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
+                                    alt={fit.title || 'Outfit'} 
+                                    className="w-full h-full object-cover"
+                                    sizes="80px"
+                                  />
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Your Public Items */}
+                      {currentUserItems && currentUserItems.length > 0 && (
+                        <div className="ml-12">
+                          <p className="text-xs text-muted-foreground mb-2">Your shared items</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {currentUserItems.slice(0, 3).map((item) => {
+                              const displayImage = item.image_bg_removed_url || item.image_url;
+                              return (
+                                <Card 
+                                  key={item.id} 
+                                  className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-primary/20"
+                                  onClick={() => handleItemClick(item.id)}
+                                >
+                                  <div className="aspect-square relative overflow-hidden bg-muted flex items-center justify-center">
+                                    {displayImage ? (
+                                      <img src={displayImage} alt={item.name || 'Item'} className="w-full h-full object-contain" />
+                                    ) : (
+                                      <Shirt className="w-6 h-6 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* No content message */}
+                      {(!currentUserFits || currentUserFits.length === 0) && (!currentUserItems || currentUserItems.length === 0) && (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Make outfits or items public to appear on the globe
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Other Shoppers */}
+                  {isLoadingShoppers ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+                    </div>
+                  ) : shoppers && shoppers.filter(s => s.id !== user?.id).length > 0 ? (
+                    <div className="space-y-4">
+                      <p className="text-xs text-muted-foreground font-medium">Other shoppers in {countryName}</p>
+                      {shoppers.filter(s => s.id !== user?.id).map((shopper) => {
+                        const userFits = shopperFits?.filter(f => f.user_id === shopper.id) || [];
+                        
+                        return (
+                          <div key={shopper.id} className="space-y-2">
+                            {/* Shopper Header */}
+                            <button 
+                              onClick={() => handleShopperClick(shopper.id)} 
+                              className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
+                            >
+                              <Avatar className="w-10 h-10">
+                                <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
+                                <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                  {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium block truncate">
+                                  {shopper.name || shopper.username || 'Anonymous'}
+                                </span>
+                                {shopper.username && shopper.name && (
+                                  <span className="text-xs text-muted-foreground">@{shopper.username}</span>
+                                )}
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            </button>
+                            
+                            {/* Shopper's Public Fits */}
+                            {userFits.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2 ml-12">
+                                {userFits.slice(0, 3).map((fit) => (
+                                  <Card 
+                                    key={fit.id} 
+                                    className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
+                                    onClick={() => handleFitClick(fit.id)}
+                                  >
+                                    <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                                      <SmartImage 
+                                        src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
+                                        alt={fit.title || 'Outfit'} 
+                                        className="w-full h-full object-cover"
+                                        sizes="80px"
+                                      />
+                                    </div>
+                                    {fit.title && (
+                                      <p className="text-[10px] p-1 truncate text-muted-foreground">{fit.title}</p>
+                                    )}
+                                  </Card>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : !user ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No shoppers in this country yet</p>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 // Posts Tab - Shows public outfits + public items (NOT the posts table)
                 itemsLoading ? (
