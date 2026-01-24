@@ -310,7 +310,8 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
       });
     }
     onOpenChange(false);
-    navigate(`/explore/outfit/${fitId}`);
+    // Navigate to community outfit view which has likes and comments
+    navigate(`/community/outfit/${fitId}`);
   };
 
   const handleItemClick = (itemId: string) => {
