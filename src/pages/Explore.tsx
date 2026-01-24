@@ -15,6 +15,7 @@ import { YourFitDrawer } from '@/components/explore/YourFitDrawer';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
 import GlobalSearch from '@/components/GlobalSearch';
+import { getCountryCodeFromName } from '@/lib/countryCurrency';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -82,7 +83,7 @@ const Explore: React.FC = () => {
   const { following } = useFollows();
 
   // Fetch countries with shoppers (users from users table - includes all users)
-  const { data: countriesWithShoppers = [], data: allShoppersCount = 0 } = useQuery<{ code: string; count: number }[]>({
+  const { data: countriesWithShoppers = [] } = useQuery<{ code: string; count: number }[]>({
     queryKey: ['countries-with-shoppers'],
     queryFn: async () => {
       // Get all users with their country from the users table
@@ -100,8 +101,14 @@ const Explore: React.FC = () => {
       
       (result.data || []).forEach((u: { country: string | null }) => {
         if (u.country) {
-          const code = u.country.toUpperCase();
-          counts.set(code, (counts.get(code) || 0) + 1);
+          // Convert country NAME to CODE (e.g., "United Arab Emirates" -> "AE")
+          const code = getCountryCodeFromName(u.country);
+          if (code) {
+            counts.set(code.toUpperCase(), (counts.get(code.toUpperCase()) || 0) + 1);
+          } else {
+            // Unknown country name -> treat as global
+            noCountryCount++;
+          }
         } else {
           noCountryCount++;
         }

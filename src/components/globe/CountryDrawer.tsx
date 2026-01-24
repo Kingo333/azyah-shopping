@@ -206,32 +206,42 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     queryFn: async (): Promise<CountryShopper[]> => {
       if (!countryCode) return [];
       
-      let query = supabase
-        .from('users_public')
-        .select('id, name, username, avatar_url')
-        .limit(20);
-      
-      // For GLOBAL, get users without a country set
+      // For GLOBAL, get users without a country set or with unrecognized country
       if (countryCode === 'GLOBAL') {
-        // Get all users - we can't filter by null country in public view
-        // Just return all users for now
-      } else {
-        // Get users from this specific country
         const usersResult = await supabase
           .from('users')
           .select('id')
-          .eq('country', countryCode);
+          .or('country.is.null,country.eq.');
         
-        if (usersResult.data && usersResult.data.length > 0) {
-          const userIds = usersResult.data.map(u => u.id);
-          query = query.in('id', userIds);
-        } else {
-          return [];
-        }
+        if (!usersResult.data || usersResult.data.length === 0) return [];
+        
+        const userIds = usersResult.data.map(u => u.id);
+        const { data } = await supabase
+          .from('users_public')
+          .select('id, name, username, avatar_url')
+          .in('id', userIds)
+          .limit(20);
+        return (data ?? []) as CountryShopper[];
+      } else {
+        // Convert country CODE to NAME for query (e.g., "AE" -> "United Arab Emirates")
+        const countryNameForQuery = getCountryNameFromCode(countryCode);
+        if (!countryNameForQuery) return [];
+        
+        const usersResult = await supabase
+          .from('users')
+          .select('id')
+          .eq('country', countryNameForQuery);
+        
+        if (!usersResult.data || usersResult.data.length === 0) return [];
+        
+        const userIds = usersResult.data.map(u => u.id);
+        const { data } = await supabase
+          .from('users_public')
+          .select('id, name, username, avatar_url')
+          .in('id', userIds)
+          .limit(20);
+        return (data ?? []) as CountryShopper[];
       }
-      
-      const result = await query;
-      return (result.data ?? []) as CountryShopper[];
     },
     enabled: !!countryCode && open && activeTab === 'shoppers',
   });
