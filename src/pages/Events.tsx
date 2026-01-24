@@ -19,6 +19,7 @@ interface RetailEvent {
   event_date: string;
   location: string;
   status: string;
+  banner_image_url?: string;
   retailer: {
     name: string;
     logo_url?: string;
@@ -426,6 +427,17 @@ const Events = () => {
         </Button>
 
         <div className="mb-8">
+          {/* Event Banner Image */}
+          {selectedEvent.banner_image_url && (
+            <div className="w-full h-48 sm:h-64 rounded-xl overflow-hidden mb-6">
+              <img 
+                src={selectedEvent.banner_image_url} 
+                alt={selectedEvent.name} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          
           <div className="flex items-start gap-4 mb-4">
             {selectedEvent.retailer.logo_url && <img src={selectedEvent.retailer.logo_url} alt={selectedEvent.retailer.name} className="w-16 h-16 rounded-lg object-cover" />}
               <div className="flex-1">
@@ -621,7 +633,17 @@ const Events = () => {
             </p>
           </CardContent>
         </Card> : <div className="grid gap-6">
-          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
+              {/* Event Banner Image */}
+              {event.banner_image_url && (
+                <div className="w-full h-40 sm:h-48 overflow-hidden">
+                  <img 
+                    src={event.banner_image_url} 
+                    alt={event.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-4">
