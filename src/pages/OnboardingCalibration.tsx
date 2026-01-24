@@ -4,9 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Brain, ChevronRight, Check, Sparkles } from 'lucide-react';
+import { Brain, ChevronRight, Check, Sparkles, Ruler } from 'lucide-react';
 import { CALIBRATION_OPTIONS } from '@/constants/styleTags';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -18,8 +27,20 @@ interface CalibrationState {
   style: string[];
 }
 
-const STEPS = ['coverage', 'fit', 'fabric', 'style'] as const;
+interface MeasurementsState {
+  height: string;
+  weight: string;
+  topSize: string;
+  bottomSize: string;
+  dressSize: string;
+}
+
+const STEPS = ['coverage', 'fit', 'fabric', 'style', 'measurements'] as const;
 type Step = typeof STEPS[number];
+
+const TOP_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const BOTTOM_SIZES = ['24', '26', '28', '30', '32', '34', '36', '38', '40', '42'];
+const DRESS_SIZES = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20'];
 
 export default function OnboardingCalibration() {
   const navigate = useNavigate();
@@ -30,6 +51,13 @@ export default function OnboardingCalibration() {
     fit: '',
     fabric: '',
     style: []
+  });
+  const [measurements, setMeasurements] = useState<MeasurementsState>({
+    height: '',
+    weight: '',
+    topSize: '',
+    bottomSize: '',
+    dressSize: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -49,7 +77,7 @@ export default function OnboardingCalibration() {
         }
         return prev;
       });
-    } else {
+    } else if (currentStepKey !== 'measurements') {
       setPreferences(prev => ({ ...prev, [currentStepKey]: value }));
     }
   };
@@ -58,7 +86,11 @@ export default function OnboardingCalibration() {
     if (currentStepKey === 'style') {
       return preferences.style.length > 0;
     }
-    return preferences[currentStepKey] !== '';
+    if (currentStepKey === 'measurements') {
+      // Measurements step is always optional (can proceed without filling anything)
+      return true;
+    }
+    return preferences[currentStepKey as keyof CalibrationState] !== '';
   };
 
   const handleNext = () => {
@@ -87,11 +119,28 @@ export default function OnboardingCalibration() {
 
     setSaving(true);
     try {
-      const prefsToSave = skipped ? {} : {
+      // Build style preferences
+      const stylePrefs = skipped ? {} : {
         coverage: preferences.coverage,
         fit: preferences.fit,
         fabric: preferences.fabric,
         style: preferences.style
+      };
+
+      // Build measurements if provided
+      const measurementsData = measurements.height ? {
+        height: parseFloat(measurements.height),
+        weight: measurements.weight ? parseFloat(measurements.weight) : undefined,
+        top_size: measurements.topSize || undefined,
+        bottom_size: measurements.bottomSize || undefined,
+        dress_size: measurements.dressSize || undefined,
+        updated_at: new Date().toISOString(),
+      } : undefined;
+
+      const prefsToSave = {
+        ...stylePrefs,
+        ...(measurementsData ? { measurements: measurementsData } : {}),
+        measurements_prompted: true, // Flag to not nag again
       };
 
       const { error } = await supabase
@@ -106,8 +155,8 @@ export default function OnboardingCalibration() {
       if (error) throw error;
 
       if (!skipped) {
-        toast.success('Style preferences saved!', {
-          description: 'We\'ll use these to personalize your feed.'
+        toast.success('Preferences saved!', {
+          description: 'We\'ll use these to personalize your experience.'
         });
       }
     } catch (error) {
@@ -124,6 +173,7 @@ export default function OnboardingCalibration() {
       case 'fit': return 'Fit Preference';
       case 'fabric': return 'Fabric Comfort';
       case 'style': return 'Style Direction';
+      case 'measurements': return 'Your Fit (Optional)';
     }
   };
 
@@ -133,10 +183,12 @@ export default function OnboardingCalibration() {
       case 'fit': return 'What fit feels most comfortable?';
       case 'fabric': return 'Which fabrics do you gravitate toward?';
       case 'style': return 'Choose up to 2 style directions';
+      case 'measurements': return 'Help us find outfits from people your size';
     }
   };
 
   const getOptions = (step: Step) => {
+    if (step === 'measurements') return [];
     return CALIBRATION_OPTIONS[step];
   };
 
@@ -144,8 +196,103 @@ export default function OnboardingCalibration() {
     if (currentStepKey === 'style') {
       return preferences.style.includes(value);
     }
-    return preferences[currentStepKey] === value;
+    if (currentStepKey === 'measurements') return false;
+    return preferences[currentStepKey as keyof CalibrationState] === value;
   };
+
+  // Render measurements step content
+  const renderMeasurementsStep = () => (
+    <div className="flex-1 space-y-4">
+      <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+        <div className="flex items-center gap-2 mb-2">
+          <Ruler className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Why add measurements?</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          We'll show you outfits from people with similar body measurements. 
+          This is completely optional and private.
+        </p>
+      </div>
+
+      {/* Height - Primary */}
+      <div className="space-y-2">
+        <Label htmlFor="height">Height (cm)</Label>
+        <Input
+          id="height"
+          type="number"
+          placeholder="e.g., 165"
+          value={measurements.height}
+          onChange={(e) => setMeasurements(prev => ({ ...prev, height: e.target.value }))}
+        />
+      </div>
+
+      {/* Weight - Optional */}
+      <div className="space-y-2">
+        <Label htmlFor="weight">Weight (kg) - optional</Label>
+        <Input
+          id="weight"
+          type="number"
+          placeholder="e.g., 60"
+          value={measurements.weight}
+          onChange={(e) => setMeasurements(prev => ({ ...prev, weight: e.target.value }))}
+        />
+      </div>
+
+      {/* Size Preferences */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-2">
+          <Label>Top Size</Label>
+          <Select 
+            value={measurements.topSize} 
+            onValueChange={(v) => setMeasurements(prev => ({ ...prev, topSize: v }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              {TOP_SIZES.map((size) => (
+                <SelectItem key={size} value={size}>{size}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Bottom</Label>
+          <Select 
+            value={measurements.bottomSize} 
+            onValueChange={(v) => setMeasurements(prev => ({ ...prev, bottomSize: v }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              {BOTTOM_SIZES.map((size) => (
+                <SelectItem key={size} value={size}>{size}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Dress</Label>
+          <Select 
+            value={measurements.dressSize} 
+            onValueChange={(v) => setMeasurements(prev => ({ ...prev, dressSize: v }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              {DRESS_SIZES.map((size) => (
+                <SelectItem key={size} value={size}>{size}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -158,9 +305,15 @@ export default function OnboardingCalibration() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Brain className="h-4 w-4 text-primary" />
+                {currentStepKey === 'measurements' ? (
+                  <Ruler className="h-4 w-4 text-primary" />
+                ) : (
+                  <Brain className="h-4 w-4 text-primary" />
+                )}
               </div>
-              <span className="text-sm font-medium">Style Calibration</span>
+              <span className="text-sm font-medium">
+                {currentStepKey === 'measurements' ? 'Your Fit' : 'Style Calibration'}
+              </span>
             </div>
             <Button 
               variant="ghost" 
@@ -189,10 +342,13 @@ export default function OnboardingCalibration() {
         <div className="mb-6 text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs mb-3">
             <Sparkles className="h-3 w-3" />
-            Quick Calibration
+            {currentStepKey === 'measurements' ? 'Optional Step' : 'Quick Calibration'}
           </div>
           <p className="text-sm text-muted-foreground">
-            We learn your style to match you to brands
+            {currentStepKey === 'measurements' 
+              ? 'Find outfits from people your size'
+              : 'We learn your style to match you to brands'
+            }
           </p>
         </div>
 
@@ -208,45 +364,52 @@ export default function OnboardingCalibration() {
               </p>
             </div>
 
-            {/* Options */}
-            <div className="flex-1 space-y-3">
-              {getOptions(currentStepKey).map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleSelect(option.value)}
-                  className={cn(
-                    "w-full p-4 rounded-xl border-2 text-left transition-all",
-                    isSelected(option.value)
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/50"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{option.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {option.description}
-                      </p>
-                    </div>
-                    {isSelected(option.value) && (
-                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="h-3 w-3 text-primary-foreground" />
+            {/* Content - Either options or measurements form */}
+            {currentStepKey === 'measurements' ? (
+              renderMeasurementsStep()
+            ) : (
+              <>
+                {/* Options */}
+                <div className="flex-1 space-y-3">
+                  {getOptions(currentStepKey).map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleSelect(option.value)}
+                      className={cn(
+                        "w-full p-4 rounded-xl border-2 text-left transition-all",
+                        isSelected(option.value)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{option.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {option.description}
+                          </p>
+                        </div>
+                        {isSelected(option.value) && (
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+                    </button>
+                  ))}
+                </div>
 
-            {/* Selected styles indicator for multi-select */}
-            {currentStepKey === 'style' && preferences.style.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {preferences.style.map(s => (
-                  <Badge key={s} variant="secondary" className="text-xs">
-                    {CALIBRATION_OPTIONS.style.find(o => o.value === s)?.label}
-                  </Badge>
-                ))}
-              </div>
+                {/* Selected styles indicator for multi-select */}
+                {currentStepKey === 'style' && preferences.style.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {preferences.style.map(s => (
+                      <Badge key={s} variant="secondary" className="text-xs">
+                        {CALIBRATION_OPTIONS.style.find(o => o.value === s)?.label}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

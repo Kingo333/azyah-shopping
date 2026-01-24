@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play } from 'lucide-react';
+import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play, Shirt, Sparkles } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -56,6 +56,16 @@ interface ShopperFit {
   render_path: string | null;
 }
 
+interface PublicWardrobeItem {
+  id: string;
+  user_id: string;
+  name: string | null;
+  brand: string | null;
+  category: string | null;
+  image_url: string | null;
+  image_bg_removed_url: string | null;
+}
+
 interface CountryDrawerProps {
   countryCode: string | null;
   open: boolean;
@@ -69,6 +79,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const countryName = countryCode === 'GLOBAL' ? 'Global Community' : (countryCode ? getCountryNameFromCode(countryCode) : '');
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'brands' | 'products'>('brands');
+  const [shoppersSubTab, setShoppersSubTab] = useState<'people' | 'posts'>('people');
 
   // Fetch brands in this country
   const { data: brands, isLoading: brandsLoading } = useQuery({
@@ -82,7 +93,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
         .limit(10);
       return (result.data ?? []) as CountryBrand[];
     },
-    enabled: !!countryCode && open && (activeTab === 'brands' || activeTab === 'following'),
+    enabled: !!countryCode && open && activeTab === 'brands',
   });
 
   // Fetch products from brands in this country
@@ -99,7 +110,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
         .limit(12);
       return (result.data ?? []) as CountryProduct[];
     },
-    enabled: !!brands && brands.length > 0 && open && (activeTab === 'brands' || activeTab === 'following'),
+    enabled: !!brands && brands.length > 0 && open && activeTab === 'brands',
   });
 
   // Fetch shoppers in this country or globally
@@ -135,7 +146,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
       const result = await query;
       return (result.data ?? []) as CountryShopper[];
     },
-    enabled: !!countryCode && open && (activeTab === 'shoppers' || activeTab === 'your-fit'),
+    enabled: !!countryCode && open && activeTab === 'shoppers',
   });
 
   // Fetch shopper public fits
@@ -150,10 +161,27 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
         .in('user_id', shopperIds)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
       return (data || []) as ShopperFit[];
     },
-    enabled: shopperIds.length > 0 && open && (activeTab === 'shoppers' || activeTab === 'your-fit'),
+    enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
+  });
+
+  // Fetch public wardrobe items from shoppers in this country (for Posts sub-tab)
+  const { data: publicItems = [], isLoading: itemsLoading } = useQuery({
+    queryKey: ['country-public-items', shopperIds.join(',')],
+    queryFn: async (): Promise<PublicWardrobeItem[]> => {
+      if (shopperIds.length === 0) return [];
+      const { data } = await supabase
+        .from('wardrobe_items')
+        .select('id, user_id, name, brand, category, image_url, image_bg_removed_url')
+        .in('user_id', shopperIds)
+        .eq('public_reuse_permitted', true)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      return (data || []) as PublicWardrobeItem[];
+    },
+    enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
   });
 
   const handleBrandClick = (slug: string) => {
@@ -188,6 +216,11 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     navigate(`/explore/outfit/${fitId}`);
   };
 
+  const handleItemClick = (itemId: string) => {
+    onOpenChange(false);
+    navigate(`/community/item/${itemId}`);
+  };
+
   const formatPrice = (cents: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -201,13 +234,17 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   };
 
   // Determine what to show based on activeTab
-  const showBrandsContent = activeTab === 'brands' || activeTab === 'following';
-  const showShoppersContent = activeTab === 'shoppers' || activeTab === 'your-fit';
+  const showBrandsContent = activeTab === 'brands';
+  const showShoppersContent = activeTab === 'shoppers';
 
   // Check loading states per content type
   const isLoadingBrands = brandsLoading;
   const isLoadingProducts = productsLoading;
   const isLoadingShoppers = shoppersLoading;
+
+  // Get total counts for posts sub-tab
+  const totalOutfits = shopperFits?.length || 0;
+  const totalItems = publicItems?.length || 0;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -264,7 +301,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             </p>
           </div>
 
-          {/* Premium Pill Tabs for Brands/Products - only in brands content mode */}
+          {/* Premium Pill Tabs - Brands/Products for brands, People/Posts for shoppers */}
           {showBrandsContent && (
             <Tabs value={drawerTab} onValueChange={(v) => setDrawerTab(v as 'brands' | 'products')} className="mt-4">
               <TabsList className="w-full grid grid-cols-2 bg-black/5 dark:bg-white/10 p-1 rounded-full">
@@ -273,12 +310,27 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
               </TabsList>
             </Tabs>
           )}
+
+          {showShoppersContent && (
+            <Tabs value={shoppersSubTab} onValueChange={(v) => setShoppersSubTab(v as 'people' | 'posts')} className="mt-4">
+              <TabsList className="w-full grid grid-cols-2 bg-black/5 dark:bg-white/10 p-1 rounded-full">
+                <TabsTrigger value="people" className="rounded-full data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  People
+                </TabsTrigger>
+                <TabsTrigger value="posts" className="rounded-full data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Posts
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </DrawerHeader>
 
         <ScrollArea className="flex-1 px-4 pb-4">
           {showBrandsContent ? (
             // Brands & Products Content with Tabs
-            <div className="space-y-4">
+            <div className="space-y-4 py-4">
               {drawerTab === 'brands' ? (
                 // Brands Tab Content
                 isLoadingBrands ? (
@@ -345,88 +397,164 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                 )
               )}
             </div>
-          ) : (
-            // Shoppers Content with their public fits
-            <div className="space-y-4">
-              {isLoadingShoppers ? (
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
-                </div>
-              ) : shoppers && shoppers.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-foreground">
-                    {activeTab === 'your-fit' ? 'People with Similar Fit' : 'Shoppers'}
-                  </h3>
-                  
-                  {/* Shoppers Grid with their fits */}
-                  {shoppers.map((shopper) => {
-                    const userFits = shopperFits?.filter(f => f.user_id === shopper.id) || [];
-                    
-                    return (
-                      <div key={shopper.id} className="space-y-2">
-                        {/* Shopper Header */}
-                        <button 
-                          onClick={() => handleShopperClick(shopper.id)} 
-                          className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
-                        >
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                              {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium block truncate">
-                              {shopper.name || shopper.username || 'Anonymous'}
-                            </span>
-                            {shopper.username && shopper.name && (
-                              <span className="text-xs text-muted-foreground">@{shopper.username}</span>
-                            )}
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        </button>
-                        
-                        {/* Shopper's Public Fits */}
-                        {userFits.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2 ml-12">
-                            {userFits.slice(0, 3).map((fit) => (
-                              <Card 
-                                key={fit.id} 
-                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
-                                onClick={() => handleFitClick(fit.id)}
-                              >
-                                <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                                  <SmartImage 
-                                    src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
-                                    alt={fit.title || 'Outfit'} 
-                                    className="w-full h-full object-cover"
-                                    sizes="80px"
-                                  />
-                                </div>
-                                {fit.title && (
-                                  <p className="text-[10px] p-1 truncate text-muted-foreground">{fit.title}</p>
-                                )}
-                              </Card>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+          ) : showShoppersContent ? (
+            // Shoppers Content with People/Posts sub-tabs
+            <div className="space-y-4 py-4">
+              {shoppersSubTab === 'people' ? (
+                // People Tab - Shows shoppers with their fits
+                isLoadingShoppers ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+                  </div>
+                ) : shoppers && shoppers.length > 0 ? (
+                  <div className="space-y-4">
+                    {shoppers.map((shopper) => {
+                      const userFits = shopperFits?.filter(f => f.user_id === shopper.id) || [];
+                      
+                      return (
+                        <div key={shopper.id} className="space-y-2">
+                          {/* Shopper Header */}
+                          <button 
+                            onClick={() => handleShopperClick(shopper.id)} 
+                            className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
+                          >
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium block truncate">
+                                {shopper.name || shopper.username || 'Anonymous'}
+                              </span>
+                              {shopper.username && shopper.name && (
+                                <span className="text-xs text-muted-foreground">@{shopper.username}</span>
+                              )}
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          </button>
+                          
+                          {/* Shopper's Public Fits */}
+                          {userFits.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 ml-12">
+                              {userFits.slice(0, 3).map((fit) => (
+                                <Card 
+                                  key={fit.id} 
+                                  className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
+                                  onClick={() => handleFitClick(fit.id)}
+                                >
+                                  <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                                    <SmartImage 
+                                      src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
+                                      alt={fit.title || 'Outfit'} 
+                                      className="w-full h-full object-cover"
+                                      sizes="80px"
+                                    />
+                                  </div>
+                                  {fit.title && (
+                                    <p className="text-[10px] p-1 truncate text-muted-foreground">{fit.title}</p>
+                                  )}
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No shoppers in this country yet</p>
+                  </div>
+                )
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">
-                    {activeTab === 'your-fit' 
-                      ? 'No people with similar fit in this area yet' 
-                      : 'No shoppers in this country yet'
-                    }
-                  </p>
-                </div>
+                // Posts Tab - Shows public outfits + public items (NOT the posts table)
+                itemsLoading ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+                  </div>
+                ) : (totalOutfits > 0 || totalItems > 0) ? (
+                  <div className="space-y-6">
+                    {/* Public Outfits Section */}
+                    {shopperFits && shopperFits.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          Community Outfits ({totalOutfits})
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {shopperFits.slice(0, isExpanded ? 12 : 6).map((fit) => (
+                            <Card 
+                              key={fit.id} 
+                              className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                              onClick={() => handleFitClick(fit.id)}
+                            >
+                              <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                                <SmartImage 
+                                  src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
+                                  alt={fit.title || 'Outfit'} 
+                                  className="w-full h-full object-cover"
+                                  sizes="100px"
+                                />
+                              </div>
+                              {fit.title && (
+                                <p className="text-[10px] p-1.5 truncate font-medium">{fit.title}</p>
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Public Items Section */}
+                    {publicItems && publicItems.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Shirt className="w-4 h-4 text-primary" />
+                          Shared Items ({totalItems})
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {publicItems.slice(0, isExpanded ? 12 : 6).map((item) => {
+                            const displayImage = item.image_bg_removed_url || item.image_url;
+                            const displayName = item.name || item.brand || 'Item';
+                            
+                            return (
+                              <Card 
+                                key={item.id} 
+                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                                onClick={() => handleItemClick(item.id)}
+                              >
+                                <div className="aspect-square relative overflow-hidden bg-muted flex items-center justify-center">
+                                  {displayImage ? (
+                                    <img 
+                                      src={displayImage} 
+                                      alt={displayName} 
+                                      className="w-full h-full object-contain"
+                                    />
+                                  ) : (
+                                    <Shirt className="w-8 h-8 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <p className="text-[10px] p-1.5 truncate font-medium">{displayName}</p>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No public outfits or items yet</p>
+                    <p className="text-xs mt-1">Shoppers haven't shared content from this country</p>
+                  </div>
+                )
               )}
             </div>
-          )}
+          ) : null}
         </ScrollArea>
       </DrawerContent>
     </Drawer>
