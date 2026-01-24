@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign, Ruler } from 'lucide-react';
+import { AddYourFitModal } from '@/components/profile/AddYourFitModal';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
@@ -56,6 +57,8 @@ const ProfileSettings: React.FC = () => {
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
   const [shoppingPrefsOpen, setShoppingPrefsOpen] = useState(false);
+  const [yourFitOpen, setYourFitOpen] = useState(false);
+  const [showFitModal, setShowFitModal] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   
@@ -776,6 +779,33 @@ const ProfileSettings: React.FC = () => {
               
               <Button onClick={saveShoppingPrefs} disabled={savingShoppingPrefs} className="w-full">
                 {savingShoppingPrefs ? 'Saving...' : 'Save Preferences'}
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Your Fit / Measurements - Collapsible */}
+          <Collapsible open={yourFitOpen} onOpenChange={setYourFitOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center">
+                    <Ruler className="h-5 w-5 text-violet-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Your Fit / Measurements</h3>
+                    <p className="text-sm text-muted-foreground">Find outfits from people your size</p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", yourFitOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Add your measurements to discover outfits from people with a similar body type. This information is private and only used for matching.
+              </p>
+              <Button onClick={() => setShowFitModal(true)} variant="outline" className="w-full gap-2">
+                <Ruler className="h-4 w-4" />
+                Edit Measurements
               </Button>
             </CollapsibleContent>
           </Collapsible>

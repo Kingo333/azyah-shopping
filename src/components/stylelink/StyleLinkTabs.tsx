@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import PostsGrid from './PostsGrid';
 import StyledGrid from './StyledGrid';
-import CreateStyleLinkPostModal from './CreateStyleLinkPostModal';
+import UserItemsGrid from './UserItemsGrid';
 import { StyleLinkOutfit } from '@/hooks/useStyleLinkData';
 
 interface StyleLinkTabsProps {
@@ -22,9 +20,8 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
   outfits,
   onOutfitClick,
 }) => {
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState('outfits');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -48,10 +45,10 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
 
   const getSearchPlaceholder = () => {
     switch (activeTab) {
-      case 'posts':
-        return 'Search posts...';
-      case 'styled':
+      case 'outfits':
         return 'Search outfits...';
+      case 'items':
+        return 'Search items...';
       default:
         return 'Search...';
     }
@@ -65,24 +62,24 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
           "transition-all duration-200 bg-background/95 backdrop-blur-sm -mx-4 px-4",
           isSticky && "sticky top-0 z-20 py-2 shadow-sm border-b"
         )}>
-          {/* Premium Tab Headers */}
+          {/* Tab Headers - Renamed from Posts/Styled to Outfits/Items */}
           <TabsList className="grid w-full grid-cols-2 h-9 p-0.5 bg-muted/60 rounded-lg">
             <TabsTrigger 
-              value="posts" 
+              value="outfits" 
               className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              Posts
+              Outfits
             </TabsTrigger>
             <TabsTrigger 
-              value="styled" 
+              value="items" 
               className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              Styled
+              Items
             </TabsTrigger>
           </TabsList>
         </div>
 
-        {/* Search Bar - Refined */}
+        {/* Search Bar */}
         <div className="relative mt-3">
           <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -94,27 +91,8 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
           />
         </div>
 
-        {/* Posts Tab */}
-        <TabsContent value="posts" className="mt-3">
-          {isOwner && (
-            <Button 
-              onClick={() => setShowCreatePostModal(true)}
-              className="w-full mb-3 h-8 text-xs"
-              variant="outline"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add Post
-            </Button>
-          )}
-          <PostsGrid 
-            userId={userId} 
-            isOwner={isOwner} 
-            searchQuery={searchQuery}
-          />
-        </TabsContent>
-
-        {/* Styled Tab (Existing Outfits) */}
-        <TabsContent value="styled" className="mt-3">
+        {/* Outfits Tab (formerly Styled) */}
+        <TabsContent value="outfits" className="mt-3">
           <StyledGrid 
             outfits={outfits} 
             isOwner={isOwner}
@@ -122,13 +100,16 @@ const StyleLinkTabs: React.FC<StyleLinkTabsProps> = ({
             searchQuery={searchQuery}
           />
         </TabsContent>
-      </Tabs>
 
-      {/* Create Post Modal */}
-      <CreateStyleLinkPostModal
-        open={showCreatePostModal}
-        onOpenChange={setShowCreatePostModal}
-      />
+        {/* Items Tab (formerly Posts - now shows public wardrobe items) */}
+        <TabsContent value="items" className="mt-3">
+          <UserItemsGrid 
+            userId={userId} 
+            isOwner={isOwner} 
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
