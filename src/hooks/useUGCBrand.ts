@@ -134,7 +134,9 @@ export const useCreateReview = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (review: {
-      brand_id: string;
+      brand_id?: string;
+      brand_name?: string;
+      brand_name_normalized?: string;
       rating: number;
       payment_rating?: number;
       vibe_rating?: number;
@@ -150,14 +152,21 @@ export const useCreateReview = () => {
     }) => {
       const { data, error } = await supabase
         .from('brand_reviews')
-        .insert([review])
+        .insert([{
+          ...review,
+          brand_id: review.brand_id || null,
+          brand_name: review.brand_name || null,
+          brand_name_normalized: review.brand_name_normalized || null,
+        }])
         .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['brand-reviews', variables.brand_id] });
+      if (variables.brand_id) {
+        queryClient.invalidateQueries({ queryKey: ['brand-reviews', variables.brand_id] });
+      }
       queryClient.invalidateQueries({ queryKey: ['all-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['ugc-brands'] });
       toast({ title: 'Review posted successfully' });
@@ -499,7 +508,9 @@ export const useAllReviews = () => {
         comment_count: (review as any).comment_count ?? 0,
         payment_rating: (review as any).payment_rating ?? null,
         vibe_rating: (review as any).vibe_rating ?? null,
-      })) as (BrandReview & { ugc_brands?: { name: string; logo_url?: string } })[];
+        brand_name: (review as any).brand_name ?? null,
+        brand_name_normalized: (review as any).brand_name_normalized ?? null,
+      })) as (BrandReview & { ugc_brands?: { name: string; logo_url?: string }; brand_name?: string; brand_name_normalized?: string })[];
     },
   });
 };
