@@ -3894,6 +3894,9 @@ export type Database = {
           beauty_credits: number
           bg_removals_quota_monthly: number | null
           bg_removals_used_monthly: number | null
+          bonus_ai_credits: number | null
+          bonus_beauty_credits: number | null
+          bonus_video_credits: number | null
           created_at: string
           credits_remaining: number
           credits_used_today: number
@@ -3910,6 +3913,9 @@ export type Database = {
           beauty_credits?: number
           bg_removals_quota_monthly?: number | null
           bg_removals_used_monthly?: number | null
+          bonus_ai_credits?: number | null
+          bonus_beauty_credits?: number | null
+          bonus_video_credits?: number | null
           created_at?: string
           credits_remaining?: number
           credits_used_today?: number
@@ -3926,6 +3932,9 @@ export type Database = {
           beauty_credits?: number
           bg_removals_quota_monthly?: number | null
           bg_removals_used_monthly?: number | null
+          bonus_ai_credits?: number | null
+          bonus_beauty_credits?: number | null
+          bonus_video_credits?: number | null
           created_at?: string
           credits_remaining?: number
           credits_used_today?: number
@@ -5949,6 +5958,15 @@ export type Database = {
         Returns: boolean
       }
       redeem_offer: { Args: { p_offer_id: string }; Returns: Json }
+      redeem_points_for_credits: {
+        Args: {
+          credit_amount: number
+          credit_type: string
+          points_cost: number
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       secure_update_payment_status: {
         Args: {
           new_status: string

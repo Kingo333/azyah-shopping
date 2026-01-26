@@ -8,6 +8,7 @@ import { Calendar, DollarSign, Gift, Users, Clock, Target, MessageSquare, Hash, 
 import { Collaboration } from '@/types/ugc';
 import { PLATFORM_OPTIONS } from '@/types/ugc';
 import { ApplyModal } from './ApplyModal';
+import { BrandReputationPanel } from './BrandReputationPanel';
 
 interface CollabDetailModalProps {
   collaboration: Collaboration;
@@ -91,6 +92,9 @@ export const CollabDetailModal: React.FC<CollabDetailModalProps> = ({
               </Badge>
             </div>
           </DialogHeader>
+
+          {/* Brand Reputation Panel */}
+          <BrandReputationPanel brandId={collaboration.owner_org_id} />
           
           <ScrollArea className="flex-1 -mx-6 px-6">
             <div className="space-y-6">

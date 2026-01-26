@@ -10,6 +10,7 @@ import { Users, Calendar, DollarSign, Gift, Crown, ArrowUp } from 'lucide-react'
 import { PLATFORM_OPTIONS } from '@/types/ugc';
 import { CollabDetailModal } from './CollabDetailModal';
 import { Collaboration } from '@/types/ugc';
+import { BrandReputationPanel } from './BrandReputationPanel';
 
 
 export const CollabList: React.FC = () => {
@@ -117,9 +118,12 @@ export const CollabList: React.FC = () => {
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-base line-clamp-1">{collab.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {collab.brands?.name || collab.retailers?.name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          {collab.brands?.name || collab.retailers?.name}
+                        </p>
+                        <BrandReputationPanel brandId={collab.owner_org_id} compact />
+                      </div>
                     </div>
                   </div>
                   
