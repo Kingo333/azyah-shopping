@@ -67,16 +67,10 @@ export const BrandCard = ({ brand, onClick }: BrandCardProps) => {
             )}
           </div>
 
-          {/* Stats */}
+          {/* Stats - Only show reviews count and category */}
           <div className="flex gap-2 flex-wrap">
             {brand.reviews_count > 0 && (
               <Badge variant="secondary">{brand.reviews_count} Reviews</Badge>
-            )}
-            {brand.questions_count > 0 && (
-              <Badge variant="secondary">{brand.questions_count} Questions</Badge>
-            )}
-            {brand.scams_count > 0 && (
-              <Badge variant="destructive">{brand.scams_count} Scams</Badge>
             )}
             {brand.category && (
               <Badge variant="outline">{brand.category}</Badge>

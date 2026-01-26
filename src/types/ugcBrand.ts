@@ -29,7 +29,9 @@ export interface UGCBrandStats {
 
 export interface BrandReview {
   id: string;
-  brand_id: string;
+  brand_id?: string;
+  brand_name?: string;
+  brand_name_normalized?: string;
   user_id: string;
   rating: number;
   payment_rating?: number;
@@ -53,6 +55,10 @@ export interface BrandReview {
   users?: {
     name: string;
     avatar_url?: string;
+  };
+  ugc_brands?: {
+    name: string;
+    logo_url?: string;
   };
 }
 

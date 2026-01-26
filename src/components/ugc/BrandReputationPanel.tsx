@@ -1,15 +1,15 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, MessageSquare, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Star, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface BrandReputationPanelProps {
   brandId: string;
-  compact?: boolean; // For card badge vs modal panel
-  onNavigateToTab?: (tab: 'reviews' | 'questions' | 'scams') => void;
+  compact?: boolean;
+  onNavigateToTab?: (tab: 'reviews') => void;
 }
 
 interface BrandStats {
@@ -17,8 +17,6 @@ interface BrandStats {
   name: string;
   avg_rating: number | null;
   reviews_count: number;
-  questions_count: number;
-  scams_count: number;
 }
 
 interface ReviewSnippet {
@@ -43,12 +41,11 @@ export const BrandReputationPanel: React.FC<BrandReputationPanelProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ugc_brand_stats')
-        .select('id, name, avg_rating, reviews_count, questions_count, scams_count')
+        .select('id, name, avg_rating, reviews_count')
         .eq('id', brandId)
         .single();
 
       if (error) {
-        // Brand might not exist in UGC brands table, return null stats
         return null;
       }
       return data as BrandStats;
@@ -69,7 +66,6 @@ export const BrandReputationPanel: React.FC<BrandReputationPanelProps> = ({
         .limit(2);
 
       if (error) return [];
-      // Map to ReviewSnippet format
       return (data || []).map(r => ({
         ...r,
         users: { name: 'Creator' }
@@ -112,7 +108,7 @@ export const BrandReputationPanel: React.FC<BrandReputationPanelProps> = ({
     );
   }
 
-  const hasStats = stats && (stats.reviews_count > 0 || stats.questions_count > 0 || stats.scams_count > 0);
+  const hasStats = stats && stats.reviews_count > 0;
 
   return (
     <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
@@ -121,12 +117,6 @@ export const BrandReputationPanel: React.FC<BrandReputationPanelProps> = ({
           <Star className="h-4 w-4" />
           Brand Reputation
         </h4>
-        {stats?.scams_count && stats.scams_count > 0 && (
-          <Badge variant="destructive" className="text-[10px]">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            {stats.scams_count} report{stats.scams_count !== 1 ? 's' : ''}
-          </Badge>
-        )}
       </div>
 
       {!hasStats ? (
@@ -198,26 +188,16 @@ export const BrandReputationPanel: React.FC<BrandReputationPanelProps> = ({
             </div>
           )}
 
-          {/* Quick links */}
+          {/* Quick link to reviews */}
           {onNavigateToTab && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <div className="pt-2 border-t">
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => onNavigateToTab('reviews')}
               >
-                <MessageSquare className="h-3 w-3 mr-1" />
-                Reviews
-                <ChevronRight className="h-3 w-3 ml-1" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => onNavigateToTab('questions')}
-              >
-                Q&A ({stats?.questions_count || 0})
+                All Reviews
                 <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>

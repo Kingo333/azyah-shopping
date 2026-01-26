@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollabList } from '@/components/ugc/CollabList';
 import { ReviewsList } from '@/components/ugc/brand/ReviewsList';
-import { QuestionsList } from '@/components/ugc/brand/QuestionsList';
-import { ScamsList } from '@/components/ugc/brand/ScamsList';
 
 export default function UGCCollaborations() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  // Normalize legacy tab values - redirect questions/scams to reviews
+  const normalizedTab = useMemo(() => {
+    if (tabParam === 'questions' || tabParam === 'scams') {
+      return 'reviews';
+    }
+    if (tabParam === 'reviews') {
+      return 'reviews';
+    }
+    return 'collabs';
+  }, [tabParam]);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,12 +46,10 @@ export default function UGCCollaborations() {
       {/* Main Content */}
       <main className="pt-4 px-4 pb-20">
         <div className="max-w-[1200px] mx-auto">
-          <Tabs defaultValue="collabs" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
+          <Tabs value={normalizedTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="collabs">collabs</TabsTrigger>
               <TabsTrigger value="reviews">reviews</TabsTrigger>
-              <TabsTrigger value="questions">questions</TabsTrigger>
-              <TabsTrigger value="scams">scams</TabsTrigger>
             </TabsList>
 
             <TabsContent value="collabs">
@@ -45,14 +58,6 @@ export default function UGCCollaborations() {
 
             <TabsContent value="reviews">
               <ReviewsList />
-            </TabsContent>
-
-            <TabsContent value="questions">
-              <QuestionsList />
-            </TabsContent>
-
-            <TabsContent value="scams">
-              <ScamsList />
             </TabsContent>
           </Tabs>
         </div>

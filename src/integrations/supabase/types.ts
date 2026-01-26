@@ -518,6 +518,8 @@ export type Database = {
         Row: {
           body: string | null
           brand_id: string | null
+          brand_name: string | null
+          brand_name_normalized: string | null
           comment_count: number
           communication_rating: number | null
           created_at: string | null
@@ -546,6 +548,8 @@ export type Database = {
         Insert: {
           body?: string | null
           brand_id?: string | null
+          brand_name?: string | null
+          brand_name_normalized?: string | null
           comment_count?: number
           communication_rating?: number | null
           created_at?: string | null
@@ -574,6 +578,8 @@ export type Database = {
         Update: {
           body?: string | null
           brand_id?: string | null
+          brand_name?: string | null
+          brand_name_normalized?: string | null
           comment_count?: number
           communication_rating?: number | null
           created_at?: string | null
