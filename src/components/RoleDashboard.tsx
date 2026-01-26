@@ -362,30 +362,10 @@ const RoleDashboard: React.FC = () => {
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* Row 1: Sarah Fashion (compact) + AI Try-On (compact) */}
+      {/* Row 1: StyleLink (full width) */}
       <div className="px-4 pb-2">
-        <div className="grid grid-cols-2 gap-3">
-          {/* Left: Compact StyleLinkCard inline */}
-          <div className="rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background p-2 flex items-center gap-2">
-            <StyleLinkCardCompact />
-          </div>
-
-          {/* Right: Compact AI Try-On */}
-          <Card 
-            className="p-2 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background border cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAiStudioModalOpen(true)}
-          >
-            <div className="flex items-center gap-2 h-full">
-              <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center flex-shrink-0">
-                <Shirt className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-foreground">AI Try-On</p>
-                <p className="text-[9px] text-muted-foreground">Virtual fitting</p>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            </div>
-          </Card>
+        <div className="rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background p-2 flex items-center gap-2">
+          <StyleLinkCardCompact />
         </div>
       </div>
 
