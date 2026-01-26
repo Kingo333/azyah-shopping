@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X, Shuffle } from 'lucide-react';
+import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X, Shuffle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
@@ -576,9 +576,10 @@ export default function DressMeWardrobe() {
             </TabsContent>
 
             <TabsContent value="outfits" className="mt-3 space-y-3">
-              {/* Occasion filter chips */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {['All', 'From Followers', 'From Friends', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
+              {/* Simplified filter chips - primary filters visible, occasions in dropdown */}
+              <div className="flex gap-2 items-center">
+                {/* Primary filters */}
+                {['All', 'From Followers', 'From Friends'].map((occasion) => (
                   <Button
                     key={occasion}
                     variant={selectedOccasion === occasion ? 'default' : 'outline'}
@@ -588,7 +589,7 @@ export default function DressMeWardrobe() {
                   >
                     {occasion}
                     {occasion === 'From Followers' && suggestionFits.length > 0 && (
-                      <span className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 rounded-full px-1.5 py-0.5 text-xs font-semibold">
+                      <span className="ml-1 bg-primary-foreground text-primary rounded-full px-1.5 py-0.5 text-xs font-semibold">
                         {suggestionFits.length}
                       </span>
                     )}
@@ -599,6 +600,38 @@ export default function DressMeWardrobe() {
                     )}
                   </Button>
                 ))}
+                
+                {/* Occasion dropdown - secondary filters */}
+                <div className="relative">
+                  <Button
+                    variant={['Work', 'Casual', 'Home', 'School', 'Date'].includes(selectedOccasion) ? 'default' : 'outline'}
+                    size="sm"
+                    className="shrink-0 rounded-full text-xs px-3 h-8 gap-1"
+                    onClick={(e) => {
+                      const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
+                      dropdown.classList.toggle('hidden');
+                    }}
+                  >
+                    {['Work', 'Casual', 'Home', 'School', 'Date'].includes(selectedOccasion) ? selectedOccasion : 'Occasion'}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                  <div className="hidden absolute top-full left-0 mt-1 bg-background border rounded-lg shadow-lg z-10 min-w-[100px]">
+                    {['Work', 'Casual', 'Home', 'School', 'Date'].map((occ) => (
+                      <button
+                        key={occ}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted first:rounded-t-lg last:rounded-b-lg ${
+                          selectedOccasion === occ ? 'bg-muted font-medium' : ''
+                        }`}
+                        onClick={(e) => {
+                          setSelectedOccasion(occ);
+                          (e.currentTarget.parentElement as HTMLElement).classList.add('hidden');
+                        }}
+                      >
+                        {occ}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Outfits Grid */}

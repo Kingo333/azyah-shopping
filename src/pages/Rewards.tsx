@@ -1,6 +1,6 @@
 /**
- * Rewards Page - Points wallet and salon rewards
- * Salons are now country-gated based on shopper's country
+ * Rewards Page - Points wallet and credit redemption
+ * Points can be redeemed for bonus app credits (AI try-on, beauty, video)
  */
 
 import React, { useState } from 'react';
@@ -10,48 +10,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PointsBalance } from '@/components/rewards/PointsBalance';
 import { DailyCheckin } from '@/components/rewards/DailyCheckin';
-import { SalonCard } from '@/components/rewards/SalonCard';
-import { RewardOfferCard } from '@/components/rewards/RewardOfferCard';
-import { useSalons, useSalonOffers, useRedemptions } from '@/hooks/useSalons';
+import { CreditRedemptionCard } from '@/components/rewards/CreditRedemptionCard';
 import { useUserPoints, formatActionType } from '@/hooks/useUserPoints';
 import { usePremium } from '@/hooks/usePremium';
+import { useRedemptions } from '@/hooks/useSalons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Coins, Store, History, Crown, ArrowUp, ArrowDown, Trophy, MapPin } from 'lucide-react';
+import { Coins, History, Crown, ArrowUp, ArrowDown, Trophy, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
-import { getCountryNameFromCode } from '@/lib/countryCurrency';
 
 export default function Rewards() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   
-  // Fetch shopper's country for salon filtering
-  const { data: shopperProfile } = useQuery({
-    queryKey: ['shopper-country', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase
-        .from('users')
-        .select('country')
-        .eq('id', user.id)
-        .single();
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000
-  });
-  
-  const shopperCountry = shopperProfile?.country || null;
-  
   const { data: pointsData, isLoading: pointsLoading } = useUserPoints();
-  // Pass shopper country to filter salons
-  const { data: salons = [], isLoading: salonsLoading } = useSalons(shopperCountry || undefined);
-  const { data: offers = [], isLoading: offersLoading } = useSalonOffers(selectedSalonId || undefined);
   const { data: redemptions = [], isLoading: redemptionsLoading } = useRedemptions();
   const { isPremium } = usePremium();
 
@@ -85,9 +59,9 @@ export default function Rewards() {
             <div className="flex items-center gap-3">
               <Crown className="h-8 w-8" />
               <div className="flex-1">
-                <h3 className="font-medium">Unlock Salon Rewards</h3>
+                <h3 className="font-medium">Unlock Premium Features</h3>
                 <p className="text-sm text-white/80">
-                  Upgrade to Premium to redeem points for discounts
+                  More credits, unlimited outfits & exclusive perks
                 </p>
               </div>
               <Button variant="secondary" size="sm">
@@ -98,113 +72,26 @@ export default function Rewards() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="salons" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="salons" className="flex items-center gap-1.5">
-              <Store className="h-4 w-4" />
-              <span className="hidden sm:inline">Salons</span>
-            </TabsTrigger>
-            <TabsTrigger value="offers" className="flex items-center gap-1.5">
-              <Coins className="h-4 w-4" />
-              <span className="hidden sm:inline">Offers</span>
+        <Tabs defaultValue="credits" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="credits" className="flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4" />
+              <span>Redeem</span>
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-1.5">
               <History className="h-4 w-4" />
-              <span className="hidden sm:inline">History</span>
+              <span>History</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Salons Tab */}
-          <TabsContent value="salons" className="mt-4 space-y-4">
-            {/* Country notice */}
-            {shopperCountry && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                <MapPin className="h-4 w-4" />
-                <span>Showing salons available in {getCountryNameFromCode(shopperCountry) || shopperCountry}</span>
-              </div>
-            )}
-            
-            {!shopperCountry && (
-              <div className="text-center py-4 text-muted-foreground bg-muted/30 rounded-lg">
-                <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-medium">Set your country to see available salons</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => navigate('/settings')}
-                >
-                  Update Profile
-                </Button>
-              </div>
-            )}
-
-            {salonsLoading ? (
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map(i => (
-                  <Skeleton key={i} className="h-48" />
-                ))}
-              </div>
-            ) : salons.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Store className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No partner salons in your area yet</p>
-                <p className="text-sm mt-1">
-                  {shopperCountry 
-                    ? `We're working on bringing salon partners to ${getCountryNameFromCode(shopperCountry) || shopperCountry}!`
-                    : 'Set your country in settings to see available salons.'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {salons.map(salon => (
-                  <SalonCard 
-                    key={salon.id} 
-                    salon={salon}
-                    onClick={() => setSelectedSalonId(salon.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Offers Tab */}
-          <TabsContent value="offers" className="mt-4 space-y-4">
-            {selectedSalonId && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setSelectedSalonId(null)}
-                className="mb-2"
-              >
-                ← All Offers
-              </Button>
-            )}
-            
-            {offersLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-32" />
-                ))}
-              </div>
-            ) : offers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Coins className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No offers available right now</p>
-                <p className="text-sm mt-1">Check back soon!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {offers.map(offer => (
-                  <RewardOfferCard 
-                    key={offer.id} 
-                    offer={offer}
-                    userBalance={balance}
-                    isPremium={isPremium}
-                  />
-                ))}
-              </div>
-            )}
+          {/* Credits Redemption Tab */}
+          <TabsContent value="credits" className="mt-4 space-y-4">
+            <CreditRedemptionCard 
+              userBalance={balance}
+              onRedemptionSuccess={() => {
+                // Points will auto-refresh via query invalidation
+              }}
+            />
           </TabsContent>
 
           {/* History Tab */}
@@ -263,7 +150,7 @@ export default function Rewards() {
                   </div>
                 )}
 
-                {/* Redemptions */}
+                {/* Credit Redemptions */}
                 {redemptions.length > 0 && (
                   <>
                     <h3 className="font-medium text-sm text-muted-foreground mt-6">Redemptions</h3>
@@ -274,9 +161,9 @@ export default function Rewards() {
                           className="flex items-center justify-between p-3 bg-card border rounded-lg"
                         >
                           <div>
-                            <p className="text-sm font-medium">{redemption.offer?.title}</p>
+                            <p className="text-sm font-medium">{redemption.offer?.title || 'Credit Redemption'}</p>
                             <p className="text-xs text-muted-foreground">
-                              {redemption.salon?.name} • {format(new Date(redemption.created_at), 'MMM d')}
+                              {format(new Date(redemption.created_at), 'MMM d')}
                             </p>
                           </div>
                           <span className={`text-xs px-2 py-1 rounded-full capitalize ${
@@ -304,7 +191,7 @@ export default function Rewards() {
         <section className="mt-6">
           <div className="mb-2">
             <h2 className="text-base font-serif font-medium text-foreground flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" />
+              <Trophy className="h-4 w-4 text-primary" />
               Fashion Leaderboard
             </h2>
             <p className="text-[10px] font-light text-muted-foreground">

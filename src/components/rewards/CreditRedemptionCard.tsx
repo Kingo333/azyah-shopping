@@ -88,7 +88,8 @@ export const CreditRedemptionCard: React.FC<CreditRedemptionCardProps> = ({
     setRedeeming(pkg.id);
 
     try {
-      const { data, error } = await supabase.rpc('redeem_points_for_credits', {
+      // Use type assertion since the RPC was just created and types aren't regenerated yet
+      const { data, error } = await (supabase.rpc as any)('redeem_points_for_credits', {
         target_user_id: user.id,
         credit_type: pkg.type,
         credit_amount: pkg.amount,
