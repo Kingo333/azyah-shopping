@@ -35,6 +35,12 @@ interface FormData {
   visibility: string;
   max_creators?: number;
   application_deadline?: string;
+  // Campaign settings
+  total_budget?: number;
+  slots_total?: number;
+  posts_per_creator: number;
+  acceptance_mode: string;
+  payout_hold_days: number;
 }
 
 export const CreateCollabWizard: React.FC<CreateCollabWizardProps> = ({
@@ -55,7 +61,13 @@ export const CreateCollabWizard: React.FC<CreateCollabWizardProps> = ({
     amount: 0,
     visibility: 'public',
     max_creators: undefined,
-    application_deadline: undefined
+    application_deadline: undefined,
+    // Campaign settings defaults
+    total_budget: undefined,
+    slots_total: undefined,
+    posts_per_creator: 1,
+    acceptance_mode: 'manual',
+    payout_hold_days: 7
   });
   const [newTalkingPoint, setNewTalkingPoint] = useState('');
 
@@ -162,6 +174,12 @@ export const CreateCollabWizard: React.FC<CreateCollabWizardProps> = ({
         visibility: formData.visibility,
         max_creators: formData.max_creators,
         application_deadline: formData.application_deadline,
+        // Campaign settings
+        total_budget: formData.total_budget,
+        slots_total: formData.slots_total,
+        posts_per_creator: formData.posts_per_creator,
+        acceptance_mode: formData.acceptance_mode,
+        payout_hold_days: formData.payout_hold_days,
         status,
         created_by: ownerOrgId
       });
@@ -184,7 +202,12 @@ export const CreateCollabWizard: React.FC<CreateCollabWizardProps> = ({
         amount: 0,
         visibility: 'public',
         max_creators: undefined,
-        application_deadline: undefined
+        application_deadline: undefined,
+        total_budget: undefined,
+        slots_total: undefined,
+        posts_per_creator: 1,
+        acceptance_mode: 'manual',
+        payout_hold_days: 7
       });
     } catch (error) {
       toast({
@@ -459,6 +482,112 @@ export const CreateCollabWizard: React.FC<CreateCollabWizardProps> = ({
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Campaign Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Campaign Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="total_budget">Total Campaign Budget</Label>
+                    <Input
+                      id="total_budget"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.total_budget || ''}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        total_budget: e.target.value ? parseFloat(e.target.value) : undefined 
+                      }))}
+                      placeholder="e.g., 5000"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total budget for all creator payouts
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="slots_total">Total Slots (Max Creators)</Label>
+                    <Input
+                      id="slots_total"
+                      type="number"
+                      min="1"
+                      value={formData.slots_total || ''}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        slots_total: e.target.value ? parseInt(e.target.value) : undefined 
+                      }))}
+                      placeholder="e.g., 20"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Once full, new applicants join waitlist
+                    </p>
+                  </div>
+                </div>
+
+                {formData.total_budget && formData.slots_total && (
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm font-medium">
+                      Calculated payout: {formData.currency} {(formData.total_budget / formData.slots_total).toFixed(2)} per creator
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="posts_per_creator">Posts per Creator</Label>
+                    <Input
+                      id="posts_per_creator"
+                      type="number"
+                      min="1"
+                      value={formData.posts_per_creator}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        posts_per_creator: parseInt(e.target.value) || 1 
+                      }))}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Max submissions allowed
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Acceptance Mode</Label>
+                    <RadioGroup
+                      value={formData.acceptance_mode}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, acceptance_mode: value }))}
+                      className="mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="manual" id="manual" />
+                        <Label htmlFor="manual" className="text-sm">Manual Review</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="auto_first_n" id="auto" />
+                        <Label htmlFor="auto" className="text-sm">Auto-accept until full</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <div>
+                    <Label htmlFor="payout_hold_days">Payout Hold (Days)</Label>
+                    <Input
+                      id="payout_hold_days"
+                      type="number"
+                      min="0"
+                      value={formData.payout_hold_days}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        payout_hold_days: parseInt(e.target.value) || 0 
+                      }))}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Days before payout confirmation
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

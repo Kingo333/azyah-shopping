@@ -2,9 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ManageCollaborationsTable } from './ManageCollaborationsTable';
+import { DeliverableReviewQueue } from './DeliverableReviewQueue';
+import { PayoutTrackingTable } from './PayoutTrackingTable';
 import { useCollaborations } from '@/hooks/useCollaborations';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Users, TrendingUp, Clock, CheckCircle, FileCheck, DollarSign } from 'lucide-react';
 
 interface CollabDashboardProps {
   ownerOrgId: string;
@@ -74,6 +76,14 @@ export const CollabDashboard: React.FC<CollabDashboardProps> = ({
       <Tabs defaultValue="manage" className="space-y-4">
         <TabsList>
           <TabsTrigger value="manage">Manage</TabsTrigger>
+          <TabsTrigger value="deliverables" className="flex items-center gap-1">
+            <FileCheck className="h-4 w-4" />
+            Deliverables
+          </TabsTrigger>
+          <TabsTrigger value="payouts" className="flex items-center gap-1">
+            <DollarSign className="h-4 w-4" />
+            Payouts
+          </TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -82,6 +92,14 @@ export const CollabDashboard: React.FC<CollabDashboardProps> = ({
             ownerOrgId={ownerOrgId} 
             orgType={orgType} 
           />
+        </TabsContent>
+
+        <TabsContent value="deliverables">
+          <DeliverableReviewQueue ownerOrgId={ownerOrgId} />
+        </TabsContent>
+
+        <TabsContent value="payouts">
+          <PayoutTrackingTable ownerOrgId={ownerOrgId} />
         </TabsContent>
 
         <TabsContent value="analytics">
