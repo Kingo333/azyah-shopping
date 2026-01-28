@@ -9,7 +9,7 @@ export const useCollaborations = (userRole?: string, orgId?: string) => {
   return useQuery({
     queryKey: ['collaborations', userRole, orgId],
     queryFn: async (): Promise<Collaboration[]> => {
-      // First get collaborations without joins to avoid schema relationship errors
+      // Get collaborations
       let query = supabase
         .from('collaborations')
         .select('*');
@@ -31,10 +31,23 @@ export const useCollaborations = (userRole?: string, orgId?: string) => {
       const { data: collaborations, error } = await query;
       if (error) throw error;
 
-      // Get application counts for each collaboration
+      // Get capacity data from view
       const collabIds = collaborations?.map(c => c.id) || [];
-      let applicationCounts: Record<string, number> = {};
+      let capacityMap: Record<string, any> = {};
       
+      if (collabIds.length > 0) {
+        const { data: capacityData } = await supabase
+          .from('collab_capacity')
+          .select('*')
+          .in('collab_id', collabIds);
+        
+        capacityData?.forEach(cap => {
+          capacityMap[cap.collab_id] = cap;
+        });
+      }
+
+      // Get application counts
+      let applicationCounts: Record<string, number> = {};
       if (collabIds.length > 0) {
         const { data: applications } = await supabase
           .from('collab_applications')
@@ -47,13 +60,17 @@ export const useCollaborations = (userRole?: string, orgId?: string) => {
         }, {} as Record<string, number>) || {};
       }
 
-      // For now, return collaborations without brand/retailer info to avoid relationship errors
       return (collaborations?.map(collab => ({
         ...collab,
         applications_count: applicationCounts[collab.id] || 0,
         deliverables: collab.deliverables as Record<string, any>,
         platforms: collab.platforms as string[],
-        talking_points: collab.talking_points as string[]
+        talking_points: collab.talking_points as string[],
+        // Add capacity data
+        slots_filled: capacityMap[collab.id]?.slots_filled || 0,
+        slots_remaining: capacityMap[collab.id]?.slots_remaining,
+        waitlist_count: capacityMap[collab.id]?.waitlist_count || 0,
+        base_payout_per_slot: capacityMap[collab.id]?.base_payout_per_slot
       })) || []) as unknown as Collaboration[];
     },
     enabled: !!userRole
@@ -118,7 +135,7 @@ export const useUserApplications = () => {
         .from('collab_applications')
         .select(`
           *,
-          collaborations (title)
+          collaborations (id, title, total_budget, slots_total, currency, platforms, status)
         `)
         .eq('shopper_id', user.id)
         .order('created_at', { ascending: false });
@@ -130,6 +147,52 @@ export const useUserApplications = () => {
       })) || []) as unknown as CollabApplication[];
     },
     enabled: !!user?.id
+  });
+};
+
+// Get user's application for a specific collab
+export const useUserApplicationForCollab = (collabId: string) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['user-application', user?.id, collabId],
+    queryFn: async (): Promise<CollabApplication | null> => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('collab_applications')
+        .select('*')
+        .eq('shopper_id', user.id)
+        .eq('collab_id', collabId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data ? ({
+        ...data,
+        social_links: data.social_links as Record<string, string>
+      } as unknown as CollabApplication) : null;
+    },
+    enabled: !!user?.id && !!collabId
+  });
+};
+
+// Get waitlist position
+export const useWaitlistPosition = (collabId: string) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['waitlist-position', user?.id, collabId],
+    queryFn: async (): Promise<number | null> => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase.rpc('get_waitlist_position', {
+        p_collab_id: collabId
+      });
+
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id && !!collabId
   });
 };
 
@@ -183,26 +246,51 @@ export const useUpdateCollaboration = () => {
   });
 };
 
+// Apply to collaboration via secure RPC
 export const useApplyToCollaboration = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (application: Omit<Database['public']['Tables']['collab_applications']['Insert'], 'id' | 'created_at'>) => {
-      const { data, error } = await supabase
-        .from('collab_applications')
-        .insert([application])
-        .select()
-        .single();
+    mutationFn: async ({ 
+      collab_id, 
+      social_links, 
+      note 
+    }: { 
+      collab_id: string; 
+      social_links: Record<string, string>; 
+      note?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('apply_to_collab', {
+        p_collab_id: collab_id,
+        p_social_links: social_links,
+        p_note: note || null
+      });
 
       if (error) throw error;
-      return data;
+      
+      const result = data?.[0];
+      if (result?.status === 'error') {
+        throw new Error(result.message);
+      }
+      
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['user-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['user-application'] });
       queryClient.invalidateQueries({ queryKey: ['collab-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['collaborations'] });
+      
       toast({
-        title: 'Application submitted',
-        description: 'Your application has been submitted successfully.'
+        title: result?.status === 'WAITLISTED' ? 'Added to Waitlist' : 'Application submitted',
+        description: result?.message || 'Your application has been submitted successfully.'
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Application failed',
+        description: error.message,
+        variant: 'destructive'
       });
     }
   });
