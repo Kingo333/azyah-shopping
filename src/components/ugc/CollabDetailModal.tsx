@@ -4,11 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, DollarSign, Gift, Users, Clock, Target, MessageSquare, Hash, AtSign, ExternalLink } from 'lucide-react';
+import { Calendar, DollarSign, Gift, Users, Clock, Target, MessageSquare, AlertCircle } from 'lucide-react';
 import { Collaboration } from '@/types/ugc';
 import { PLATFORM_OPTIONS } from '@/types/ugc';
 import { ApplyModal } from './ApplyModal';
 import { BrandReputationPanel } from './BrandReputationPanel';
+import { CreatorProgressPanel } from './CreatorProgressPanel';
+import { useUserApplicationForCollab, useWaitlistPosition } from '@/hooks/useCollaborations';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CollabDetailModalProps {
   collaboration: Collaboration;
@@ -22,6 +25,8 @@ export const CollabDetailModal: React.FC<CollabDetailModalProps> = ({
   onOpenChange 
 }) => {
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const { data: userApplication, isLoading: appLoading } = useUserApplicationForCollab(collaboration.id);
+  const { data: waitlistPosition } = useWaitlistPosition(collaboration.id);
 
   const formatDeadline = (deadline: string) => {
     const date = new Date(deadline);
@@ -214,14 +219,48 @@ export const CollabDetailModal: React.FC<CollabDetailModalProps> = ({
             </div>
           </ScrollArea>
 
+          {/* Creator Progress Panel (for accepted creators) */}
+          {userApplication?.status === 'ACCEPTED' && (
+            <>
+              <Separator />
+              <CreatorProgressPanel 
+                collaboration={collaboration} 
+                application={userApplication} 
+              />
+            </>
+          )}
+
+          {/* Application Status Messages */}
+          {userApplication && userApplication.status !== 'ACCEPTED' && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {userApplication.status === 'PENDING' && 'Your application is being reviewed by the brand.'}
+                {userApplication.status === 'WAITLISTED' && `You're on the waitlist${waitlistPosition ? ` (position #${waitlistPosition})` : ''}. We'll notify you if a spot opens up.`}
+                {userApplication.status === 'REJECTED' && 'Unfortunately, your application was not accepted for this campaign.'}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="pt-4 border-t">
-            <Button 
-              onClick={() => setShowApplyModal(true)} 
-              className="w-full"
-              size="lg"
-            >
-              Apply to Collaboration
-            </Button>
+            {!userApplication ? (
+              <Button 
+                onClick={() => setShowApplyModal(true)} 
+                className="w-full"
+                size="lg"
+                disabled={appLoading}
+              >
+                Apply to Collaboration
+              </Button>
+            ) : userApplication.status === 'ACCEPTED' ? (
+              <p className="text-center text-sm text-muted-foreground">
+                You're accepted! Submit your posts above to get paid.
+              </p>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                Application {userApplication.status.toLowerCase()}
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -79,9 +79,9 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
         throw new Error('Please provide at least one social media link for the required platforms');
       }
 
+      // Use RPC - no need to pass shopper_id, auth.uid() is used server-side
       await applyMutation.mutateAsync({
         collab_id: collaboration.id,
-        shopper_id: user.id,
         social_links: requiredLinks,
         note: note.trim() || undefined
       });

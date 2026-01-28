@@ -1,23 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCollaborations } from '@/hooks/useCollaborations';
+import { useCollaborations, useUserApplications } from '@/hooks/useCollaborations';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Calendar, DollarSign, Gift, Crown, ArrowUp } from 'lucide-react';
-import { PLATFORM_OPTIONS } from '@/types/ugc';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Users, Calendar, DollarSign, Gift, Crown, ArrowUp, Clock, CheckCircle } from 'lucide-react';
+import { PLATFORM_OPTIONS, ApplicationStatus } from '@/types/ugc';
 import { CollabDetailModal } from './CollabDetailModal';
 import { Collaboration } from '@/types/ugc';
 import { BrandReputationPanel } from './BrandReputationPanel';
 
+type FilterType = 'all' | 'applied' | 'accepted' | 'waitlist';
 
 export const CollabList: React.FC = () => {
   const { user } = useAuth();
   const { isPremium, createPaymentIntent } = useSubscription();
   const [selectedCollab, setSelectedCollab] = useState<Collaboration | null>(null);
+  const [filter, setFilter] = useState<FilterType>('all');
+  
   const { data: collaborations, isLoading } = useCollaborations('shopper');
+  const { data: userApplications } = useUserApplications();
+
+  // Create a map of collab_id -> application status
+  const applicationMap = useMemo(() => {
+    const map: Record<string, ApplicationStatus> = {};
+    userApplications?.forEach(app => {
+      map[app.collab_id] = app.status;
+    });
+    return map;
+  }, [userApplications]);
+
+  // Filter collaborations based on selected filter
+  const filteredCollaborations = useMemo(() => {
+    if (!collaborations) return [];
+    
+    switch (filter) {
+      case 'applied':
+        return collaborations.filter(c => 
+          applicationMap[c.id] === 'PENDING' || applicationMap[c.id] === 'WAITLISTED'
+        );
+      case 'accepted':
+        return collaborations.filter(c => applicationMap[c.id] === 'ACCEPTED');
+      case 'waitlist':
+        return collaborations.filter(c => applicationMap[c.id] === 'WAITLISTED');
+      default:
+        return collaborations;
+    }
+  }, [collaborations, applicationMap, filter]);
 
   const formatDeadline = (deadline: string) => {
     const date = new Date(deadline);
@@ -55,6 +87,14 @@ export const CollabList: React.FC = () => {
     }).join(' ');
   };
 
+  const formatCurrency = (amount: number, currency: string = 'AED') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -83,19 +123,40 @@ export const CollabList: React.FC = () => {
   }
 
   // Apply freemium logic: show only 5 collaborations for non-premium users
-  const displayedCollaborations = isPremium ? collaborations : collaborations.slice(0, 5);
-  const hasMoreCollaborations = !isPremium && collaborations.length > 5;
+  const displayedCollaborations = isPremium ? filteredCollaborations : filteredCollaborations.slice(0, 5);
+  const hasMoreCollaborations = !isPremium && filteredCollaborations.length > 5;
 
   return (
     <>
       <ScrollArea className="h-full pr-4">
         <div className="grid gap-4">
-          {!isPremium && collaborations.length > 5 && (
+          {/* Filter Chips */}
+          <div className="sticky top-0 bg-background z-10 pb-2">
+            <ToggleGroup 
+              type="single" 
+              value={filter} 
+              onValueChange={(v) => v && setFilter(v as FilterType)}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="all" size="sm">All</ToggleGroupItem>
+              <ToggleGroupItem value="applied" size="sm">
+                <Clock className="h-3 w-3 mr-1" />
+                Applied
+              </ToggleGroupItem>
+              <ToggleGroupItem value="accepted" size="sm">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Accepted
+              </ToggleGroupItem>
+              <ToggleGroupItem value="waitlist" size="sm">Waitlist</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          {!isPremium && filteredCollaborations.length > 5 && (
             <div className="mb-4 p-3 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">
-                  Showing 5 of {collaborations.length} collaborations
+                  Showing 5 of {filteredCollaborations.length} collaborations
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -104,45 +165,77 @@ export const CollabList: React.FC = () => {
             </div>
           )}
           
-          {displayedCollaborations.map((collab) => (
-            <Card key={collab.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCollab(collab)}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    {(collab.brands?.logo_url || collab.retailers?.logo_url) && (
-                      <img 
-                        src={collab.brands?.logo_url || collab.retailers?.logo_url} 
-                        alt="Brand logo"
-                        className="w-10 h-10 rounded-full object-cover bg-muted"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base line-clamp-1">{collab.title}</h3>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-muted-foreground">
-                          {collab.brands?.name || collab.retailers?.name}
-                        </p>
-                        <BrandReputationPanel brandId={collab.owner_org_id} compact />
+          {displayedCollaborations.length === 0 && filter !== 'all' && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No collaborations in this category</p>
+              <Button variant="link" onClick={() => setFilter('all')}>View all collaborations</Button>
+            </div>
+          )}
+          
+          {displayedCollaborations.map((collab) => {
+            const appStatus = applicationMap[collab.id];
+            const hasSlots = collab.slots_total != null;
+            const isFull = hasSlots && (collab.slots_remaining ?? 0) <= 0;
+            
+            return (
+              <Card key={collab.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCollab(collab)}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      {(collab.brands?.logo_url || collab.retailers?.logo_url) && (
+                        <img 
+                          src={collab.brands?.logo_url || collab.retailers?.logo_url} 
+                          alt="Brand logo"
+                          className="w-10 h-10 rounded-full object-cover bg-muted"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base line-clamp-1">{collab.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {collab.brands?.name || collab.retailers?.name}
+                          </p>
+                          <BrandReputationPanel brandId={collab.owner_org_id} compact />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Badge variant={collab.comp_type === 'PRODUCT_AND_PAID' ? 'default' : 'secondary'} className="shrink-0">
-                      {collab.comp_type === 'PRODUCT_AND_PAID' ? (
-                        <><DollarSign className="h-3 w-3 mr-1" />Paid</>
-                      ) : (
-                        <><Gift className="h-3 w-3 mr-1" />Product</>
+                    
+                    <div className="flex items-center gap-2 ml-4">
+                      {appStatus && (
+                        <Badge variant={appStatus === 'ACCEPTED' ? 'default' : 'secondary'} className="shrink-0">
+                          {appStatus === 'ACCEPTED' ? 'Accepted' : appStatus === 'WAITLISTED' ? 'Waitlisted' : 'Applied'}
+                        </Badge>
                       )}
-                    </Badge>
+                      <Badge variant={collab.comp_type === 'PRODUCT_AND_PAID' ? 'default' : 'secondary'} className="shrink-0">
+                        {collab.comp_type === 'PRODUCT_AND_PAID' ? (
+                          <><DollarSign className="h-3 w-3 mr-1" />Paid</>
+                        ) : (
+                          <><Gift className="h-3 w-3 mr-1" />Product</>
+                        )}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
 
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                   {collab.brief || 'No description provided'}
                 </p>
 
                 <div className="space-y-2">
+                  {/* Payout Per Post & Slots */}
+                  {hasSlots && (
+                    <div className="flex items-center gap-4 text-sm">
+                      {collab.base_payout_per_slot && collab.base_payout_per_slot > 0 && (
+                        <Badge variant="outline" className="text-primary border-primary">
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          {formatCurrency(collab.base_payout_per_slot, collab.currency || 'AED')} / post
+                        </Badge>
+                      )}
+                      <span className={`text-xs ${isFull ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {isFull ? 'Full - Waitlist available' : `${collab.slots_filled || 0}/${collab.slots_total} spots filled`}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Platforms:</span>
@@ -167,14 +260,11 @@ export const CollabList: React.FC = () => {
                     )}
                   </div>
 
-                  {collab.comp_type === 'PRODUCT_AND_PAID' && collab.amount && (
+                  {!hasSlots && collab.comp_type === 'PRODUCT_AND_PAID' && collab.amount && (
                     <div className="flex items-center gap-1 text-sm font-medium text-primary">
                       <DollarSign className="h-4 w-4" />
                       <span>
-                        {new Intl.NumberFormat('en-US', { 
-                          style: 'currency', 
-                          currency: collab.currency || 'USD' 
-                        }).format(collab.amount)}
+                        {formatCurrency(collab.amount, collab.currency || 'USD')}
                       </span>
                     </div>
                   )}
@@ -182,12 +272,13 @@ export const CollabList: React.FC = () => {
 
                 <div className="mt-3 pt-3 border-t">
                   <Button size="sm" className="w-full">
-                    View Details & Apply
+                    {appStatus === 'ACCEPTED' ? 'View Progress' : appStatus ? 'View Status' : 'View Details & Apply'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
           
           {hasMoreCollaborations && (
             <Card className="border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
