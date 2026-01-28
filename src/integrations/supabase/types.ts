@@ -1004,8 +1004,11 @@ export type Database = {
       }
       collaborations: {
         Row: {
+          acceptance_mode: string | null
           amount: number | null
           application_deadline: string | null
+          application_strategy: string | null
+          bonus_pool: number | null
           brief: string | null
           comp_type: Database["public"]["Enums"]["collab_comp_type"]
           created_at: string | null
@@ -1015,17 +1018,24 @@ export type Database = {
           id: string
           max_creators: number | null
           owner_org_id: string
+          payout_hold_days: number | null
           platforms: string[] | null
+          posts_per_creator: number | null
+          slots_total: number | null
           status: Database["public"]["Enums"]["collab_status"] | null
           talking_points: string[] | null
           title: string
           tone: string | null
+          total_budget: number | null
           updated_at: string | null
           visibility: string | null
         }
         Insert: {
+          acceptance_mode?: string | null
           amount?: number | null
           application_deadline?: string | null
+          application_strategy?: string | null
+          bonus_pool?: number | null
           brief?: string | null
           comp_type: Database["public"]["Enums"]["collab_comp_type"]
           created_at?: string | null
@@ -1035,17 +1045,24 @@ export type Database = {
           id?: string
           max_creators?: number | null
           owner_org_id: string
+          payout_hold_days?: number | null
           platforms?: string[] | null
+          posts_per_creator?: number | null
+          slots_total?: number | null
           status?: Database["public"]["Enums"]["collab_status"] | null
           talking_points?: string[] | null
           title: string
           tone?: string | null
+          total_budget?: number | null
           updated_at?: string | null
           visibility?: string | null
         }
         Update: {
+          acceptance_mode?: string | null
           amount?: number | null
           application_deadline?: string | null
+          application_strategy?: string | null
+          bonus_pool?: number | null
           brief?: string | null
           comp_type?: Database["public"]["Enums"]["collab_comp_type"]
           created_at?: string | null
@@ -1055,11 +1072,15 @@ export type Database = {
           id?: string
           max_creators?: number | null
           owner_org_id?: string
+          payout_hold_days?: number | null
           platforms?: string[] | null
+          posts_per_creator?: number | null
+          slots_total?: number | null
           status?: Database["public"]["Enums"]["collab_status"] | null
           talking_points?: string[] | null
           title?: string
           tone?: string | null
+          total_budget?: number | null
           updated_at?: string | null
           visibility?: string | null
         }
@@ -1160,6 +1181,141 @@ export type Database = {
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "import_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_deliverables: {
+        Row: {
+          application_id: string
+          collab_id: string
+          created_at: string | null
+          creator_id: string
+          id: string
+          platform: string
+          post_url: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screenshot_path: string
+          status: Database["public"]["Enums"]["deliverable_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          application_id: string
+          collab_id: string
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          platform: string
+          post_url: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_path: string
+          status?: Database["public"]["Enums"]["deliverable_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          application_id?: string
+          collab_id?: string
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          platform?: string
+          post_url?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_path?: string
+          status?: Database["public"]["Enums"]["deliverable_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_deliverables_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "collab_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_deliverables_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collaborations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_payouts: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          collab_id: string
+          created_at: string | null
+          creator_id: string
+          currency: string
+          deliverable_id: string
+          hold_until: string | null
+          id: string
+          marked_by: string | null
+          marked_unpaid_reason: string | null
+          notes: string | null
+          paid_at: string | null
+          payout_type: string
+          status: Database["public"]["Enums"]["payout_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          collab_id: string
+          created_at?: string | null
+          creator_id: string
+          currency?: string
+          deliverable_id: string
+          hold_until?: string | null
+          id?: string
+          marked_by?: string | null
+          marked_unpaid_reason?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payout_type?: string
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          collab_id?: string
+          created_at?: string | null
+          creator_id?: string
+          currency?: string
+          deliverable_id?: string
+          hold_until?: string | null
+          id?: string
+          marked_by?: string | null
+          marked_unpaid_reason?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payout_type?: string
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payouts_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collaborations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payouts_deliverable_id_fkey"
+            columns: ["deliverable_id"]
+            isOneToOne: false
+            referencedRelation: "creator_deliverables"
             referencedColumns: ["id"]
           },
         ]
@@ -5886,6 +6042,7 @@ export type Database = {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
       }
+      is_collab_owner: { Args: { p_collab_id: string }; Returns: boolean }
       is_username_available: {
         Args: { check_username: string }
         Returns: boolean
@@ -6042,7 +6199,12 @@ export type Database = {
       }
     }
     Enums: {
-      application_status: "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN"
+      application_status:
+        | "PENDING"
+        | "ACCEPTED"
+        | "REJECTED"
+        | "WITHDRAWN"
+        | "WAITLISTED"
       category_type:
         | "clothing"
         | "footwear"
@@ -6059,6 +6221,12 @@ export type Database = {
         | "bags"
       collab_comp_type: "PRODUCT_EXCHANGE" | "PRODUCT_AND_PAID"
       collab_status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED"
+      deliverable_status:
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "revision_requested"
+        | "rejected"
       gender_type: "men" | "women" | "unisex" | "kids"
       order_status:
         | "pending"
@@ -6076,6 +6244,13 @@ export type Database = {
         | "evening"
         | "weekend"
         | "date_night"
+      payout_status:
+        | "pending_approval"
+        | "owed"
+        | "hold"
+        | "confirmed"
+        | "paid"
+        | "unpaid_issue"
       product_status:
         | "active"
         | "inactive"
@@ -6295,7 +6470,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      application_status: ["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN"],
+      application_status: [
+        "PENDING",
+        "ACCEPTED",
+        "REJECTED",
+        "WITHDRAWN",
+        "WAITLISTED",
+      ],
       category_type: [
         "clothing",
         "footwear",
@@ -6313,6 +6494,13 @@ export const Constants = {
       ],
       collab_comp_type: ["PRODUCT_EXCHANGE", "PRODUCT_AND_PAID"],
       collab_status: ["DRAFT", "ACTIVE", "PAUSED", "CLOSED"],
+      deliverable_status: [
+        "submitted",
+        "under_review",
+        "approved",
+        "revision_requested",
+        "rejected",
+      ],
       gender_type: ["men", "women", "unisex", "kids"],
       order_status: [
         "pending",
@@ -6331,6 +6519,14 @@ export const Constants = {
         "evening",
         "weekend",
         "date_night",
+      ],
+      payout_status: [
+        "pending_approval",
+        "owed",
+        "hold",
+        "confirmed",
+        "paid",
+        "unpaid_issue",
       ],
       product_status: [
         "active",
