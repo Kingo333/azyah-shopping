@@ -321,3 +321,67 @@ export const useUpdateApplication = () => {
     }
   });
 };
+
+// Accept applicant via secure RPC (enforces slot capacity)
+export const useAcceptApplicant = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const { data, error } = await supabase.rpc('accept_applicant', {
+        p_application_id: applicationId
+      });
+
+      if (error) throw error;
+      
+      const result = data?.[0] as { success: boolean; message: string; new_status?: string };
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to accept applicant');
+      }
+      
+      return result;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['collab-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['collaborations'] });
+      queryClient.invalidateQueries({ queryKey: ['user-applications'] });
+      
+      if (result?.new_status === 'WAITLISTED') {
+        toast({
+          title: 'Added to Waitlist',
+          description: result.message || 'Slots are full. Applicant has been waitlisted.'
+        });
+      } else {
+        toast({
+          title: 'Application Accepted',
+          description: 'The creator has been notified of your decision.'
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Accept failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+};
+
+// Get collaboration capacity data
+export const useCollabCapacity = (collabId: string) => {
+  return useQuery({
+    queryKey: ['collab-capacity', collabId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('collab_capacity')
+        .select('*')
+        .eq('collab_id', collabId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!collabId
+  });
+};

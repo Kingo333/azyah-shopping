@@ -49,6 +49,27 @@ export const useCampaignPayouts = (collabId: string) => {
   });
 };
 
+// All payouts for org owners (brand or retailer) - optional collab filter
+export const usePayouts = (ownerOrgId?: string, collabFilter?: string) => {
+  return useQuery({
+    queryKey: ['payouts', ownerOrgId, collabFilter],
+    queryFn: async (): Promise<CreatorPayout[]> => {
+      let query = supabase
+        .from('creator_payouts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (collabFilter) {
+        query = query.eq('collab_id', collabFilter);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as unknown as CreatorPayout[];
+    }
+  });
+};
+
 // Update payout status via RPC
 export const useUpdatePayoutStatus = () => {
   const queryClient = useQueryClient();

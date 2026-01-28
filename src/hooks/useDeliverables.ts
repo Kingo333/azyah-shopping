@@ -49,6 +49,27 @@ export const useCampaignDeliverables = (collabId: string) => {
   });
 };
 
+// All deliverables for org owners (brand or retailer) - optional collab filter
+export const useDeliverables = (ownerOrgId?: string, collabFilter?: string) => {
+  return useQuery({
+    queryKey: ['deliverables', ownerOrgId, collabFilter],
+    queryFn: async (): Promise<CreatorDeliverable[]> => {
+      let query = supabase
+        .from('creator_deliverables')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (collabFilter) {
+        query = query.eq('collab_id', collabFilter);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as unknown as CreatorDeliverable[];
+    }
+  });
+};
+
 // Submit deliverable via RPC
 export const useSubmitDeliverable = () => {
   const queryClient = useQueryClient();
