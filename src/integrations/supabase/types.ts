@@ -962,6 +962,13 @@ export type Database = {
             foreignKeyName: "collab_applications_collab_id_fkey"
             columns: ["collab_id"]
             isOneToOne: false
+            referencedRelation: "collab_capacity"
+            referencedColumns: ["collab_id"]
+          },
+          {
+            foreignKeyName: "collab_applications_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
             referencedRelation: "collaborations"
             referencedColumns: ["id"]
           },
@@ -993,6 +1000,13 @@ export type Database = {
           old_status?: Database["public"]["Enums"]["collab_status"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "collab_status_history_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_capacity"
+            referencedColumns: ["collab_id"]
+          },
           {
             foreignKeyName: "collab_status_history_collab_id_fkey"
             columns: ["collab_id"]
@@ -1243,6 +1257,13 @@ export type Database = {
             foreignKeyName: "creator_deliverables_collab_id_fkey"
             columns: ["collab_id"]
             isOneToOne: false
+            referencedRelation: "collab_capacity"
+            referencedColumns: ["collab_id"]
+          },
+          {
+            foreignKeyName: "creator_deliverables_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
             referencedRelation: "collaborations"
             referencedColumns: ["id"]
           },
@@ -1304,6 +1325,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "creator_payouts_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_capacity"
+            referencedColumns: ["collab_id"]
+          },
           {
             foreignKeyName: "creator_payouts_collab_id_fkey"
             columns: ["collab_id"]
@@ -4751,6 +4779,17 @@ export type Database = {
         }
         Relationships: []
       }
+      collab_capacity: {
+        Row: {
+          base_payout_per_slot: number | null
+          collab_id: string | null
+          slots_filled: number | null
+          slots_remaining: number | null
+          slots_total: number | null
+          waitlist_count: number | null
+        }
+        Relationships: []
+      }
       products_public: {
         Row: {
           brand_info: Json | null
@@ -4952,6 +4991,13 @@ export type Database = {
     }
     Functions: {
       __is_read_only_tx: { Args: never; Returns: boolean }
+      accept_applicant: {
+        Args: { p_application_id: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
       admin_access_payment_data: {
         Args: { payment_id: string }
         Returns: {
@@ -5209,6 +5255,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      apply_to_collab: {
+        Args: { p_collab_id: string; p_note?: string; p_social_links: Json }
+        Returns: {
+          application_id: string
+          message: string
+          status: string
+        }[]
+      }
       approve_redemption: { Args: { p_redemption_id: string }; Returns: Json }
       award_points: {
         Args: {
@@ -5395,6 +5449,10 @@ export type Database = {
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_deliverable_screenshot_path: {
+        Args: { p_deliverable_id: string }
+        Returns: string
       }
       get_fallback_trending_categories: {
         Args: { limit_count?: number }
@@ -6030,6 +6088,7 @@ export type Database = {
           used_today: number
         }[]
       }
+      get_waitlist_position: { Args: { p_collab_id: string }; Returns: number }
       get_wardrobe_limit: { Args: { target_user_id: string }; Returns: number }
       has_role: {
         Args: {
@@ -6130,6 +6189,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      review_deliverable: {
+        Args: { p_action: string; p_deliverable_id: string; p_notes?: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
       secure_update_payment_status: {
         Args: {
           new_status: string
@@ -6139,6 +6205,20 @@ export type Database = {
         Returns: boolean
       }
       slugify: { Args: { text_input: string }; Returns: string }
+      submit_deliverable: {
+        Args: {
+          p_application_id: string
+          p_collab_id: string
+          p_platform: string
+          p_post_url: string
+          p_screenshot_path: string
+        }
+        Returns: {
+          deliverable_id: string
+          message: string
+          success: boolean
+        }[]
+      }
       sync_my_profile_from_auth: {
         Args: never
         Returns: {
@@ -6147,6 +6227,13 @@ export type Database = {
         }[]
       }
       tier_from_price_aed: { Args: { aed_price: number }; Returns: string }
+      update_payout_status: {
+        Args: { p_payout_id: string; p_reason?: string; p_status: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }
         Returns: string
