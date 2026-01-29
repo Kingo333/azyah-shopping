@@ -61,7 +61,7 @@ const slides: SlideType[] = [
   {
     type: "interactive-swipe",
     title: "Your Style, Your Swipes",
-    subtitle: "Swipe right to save, left to pass. Our AI learns your unique style and uses your measurements to find the perfect fits.",
+    subtitle: "Swipe right to save, left to pass. Your feed learns with every swipe.",
     images: ["/onboarding/product-bag.png", "/onboarding/product-shoes.png", "/onboarding/product-shirt.png"],
     productInfo: [
       {
@@ -91,7 +91,7 @@ const slides: SlideType[] = [
   {
     type: "ugc",
     title: "Rate & Review Brands",
-    subtitle: "Share your experience working with brands and help fellow creators",
+    subtitle: "Share honest feedback and help creators stay safe",
   },
 ];
 const faqData = [
@@ -761,35 +761,27 @@ export default function IntroCarousel() {
 
                 {/* UGC Features Grid */}
                 <div className="flex-1 flex flex-col justify-start pt-2">
-                  <div className="grid grid-cols-1 gap-2 mb-3">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-4 border border-primary/20">
-                      <span className="text-2xl mb-3 block">⭐</span>
+                  <div className="grid grid-cols-1 gap-4 mb-4">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-5 border border-primary/20 min-h-[120px]">
+                      <span className="text-3xl mb-3 block">⭐</span>
                       <h4 className="font-bold text-base text-foreground mb-2">Honest Reviews</h4>
                       <p className="text-sm text-muted-foreground">
                         Rate brands on payment, communication, and overall experience
                       </p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-4 border border-accent/20">
-                      <span className="text-2xl mb-3 block">🚨</span>
+                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-5 border border-accent/20 min-h-[120px]">
+                      <span className="text-3xl mb-3 block">🚨</span>
                       <h4 className="font-bold text-base text-foreground mb-2">Report Scams</h4>
                       <p className="text-sm text-muted-foreground">
                         Warn other creators about brands with unfair practices
                       </p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-4 border border-secondary/20">
-                      <span className="text-2xl mb-3 block">❓</span>
-                      <h4 className="font-bold text-base text-foreground mb-2">Ask Questions</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Get answers from creators who've worked with the brand
-                      </p>
-                    </div>
                   </div>
 
                   {/* Community Badge */}
-                  <p className="text-center text-sm text-muted-foreground font-medium -mt-2">
-                    100% anonymous • Community-powered
+                  <p className="text-center text-sm text-muted-foreground font-medium">
+                    100% anonymous · Community-powered
                   </p>
                 </div>
               </div>
