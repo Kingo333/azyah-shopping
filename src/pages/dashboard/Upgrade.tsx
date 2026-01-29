@@ -36,8 +36,8 @@ const features = [
   },
   { 
     icon: <Gift className="h-5 w-5" />,
-    name: 'Nail & Salon Rewards',
-    description: 'Exclusive rewards and benefits'
+    name: 'Redeem Points for Credits',
+    description: 'Convert points to AI credits'
   },
 ];
 
@@ -48,7 +48,7 @@ const comparisonFeatures = [
   { name: 'AI Try-on', free: '4 total', premium: '10/day' },
   { name: 'AI Beauty Consultant', free: '4 credits', premium: 'Unlimited' },
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
-  { name: 'Nail / Salon rewards', free: false, premium: true },
+  { name: 'Points → Credits', free: false, premium: true },
   { name: 'Priority support', free: false, premium: true },
 ];
 
@@ -296,7 +296,7 @@ export default function Upgrade() {
         </div>
 
         {/* Feature Highlights - 2 column grid on mobile */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {features.map((feature, index) => (
             <div key={index} className="flex items-center justify-center gap-1 bg-primary/10 text-primary px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-medium">
               <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">{feature.icon}</span>

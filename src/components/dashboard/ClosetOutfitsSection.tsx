@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { usePublicFits } from '@/hooks/useFits';
@@ -11,6 +12,7 @@ import { isGuestMode } from '@/hooks/useGuestMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { cn } from '@/lib/utils';
 
 const IMAGE_CYCLE_INTERVAL = 3000;
 
@@ -114,28 +116,49 @@ export const ClosetOutfitsSection: React.FC = () => {
 
   const displayClosetItems = getDisplayItems();
 
+  const [isOpen, setIsOpen] = useState(false);
+  const itemCount = closetItems?.length ?? 0;
+
   return (
     <>
       <section className="px-4 pt-3 md:max-w-lg lg:max-w-xl">
-        {/* Section Header */}
-        <div className="flex items-center justify-between mb-0.5">
-          <h2 className="text-base font-serif font-medium text-foreground">Wardrobe</h2>
-          <Button 
-            variant="link" 
-            size="sm" 
-            onClick={() => handleNavigate('/dress-me/wardrobe', 'view your wardrobe')}
-            className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
-          >
-            View All
-          </Button>
-        </div>
-        
-        {/* Helper text */}
-        <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
-          Add your own or brand items to create looks & earn
-        </p>
-        
-        {/* Two-Card Grid */}
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          {/* Collapsible Header */}
+          <CollapsibleTrigger asChild>
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1.5 -mx-2 transition-colors mb-0.5"
+              role="button"
+              aria-expanded={isOpen}
+            >
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-serif font-medium text-foreground">Wardrobe</h2>
+                <span className="text-xs text-muted-foreground">· {itemCount} items</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleNavigate('/dress-me/wardrobe', 'view your wardrobe');
+                  }}
+                  className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+                >
+                  View All
+                </Button>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            {/* Helper text */}
+            <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight mt-1">
+              Add your own or brand items to create looks & earn
+            </p>
+            
+            {/* Two-Card Grid */}
         <div className="grid grid-cols-2 gap-2">
           {/* Left Card - Closet Items (Grid Layout) */}
           <div 
@@ -246,7 +269,9 @@ export const ClosetOutfitsSection: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+          </div>
+          </CollapsibleContent>
+        </Collapsible>
       </section>
       
       {/* Guest Action Prompt */}
