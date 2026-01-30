@@ -1,359 +1,298 @@
 
-# Azyah UX Fix Pack - Implementation Plan
 
-## Audit Summary
+# Premium "Find Better Deals" UI Upgrade
 
-### Files Identified
+## Overview
 
-| Component | File Path | Status |
-|-----------|-----------|--------|
-| AddYourFitModal (size dropdowns) | `src/components/profile/AddYourFitModal.tsx` | Select components already implemented correctly with Radix UI |
-| YourFitDrawer | `src/components/explore/YourFitDrawer.tsx` | Uses AddYourFitModal |
-| ProfileSettings (fit section) | `src/pages/ProfileSettings.tsx` | Opens AddYourFitModal via button (line 806) |
-| Brand profile labels | `src/pages/BrandDetail.tsx` (line 350) | Shows "Marketing Agency" for non-fashion brands |
-| Brand category selector | `src/components/brand/BrandCategorySelectorModal.tsx` | Contains "Marketing Agency" label |
-| Try-On button on product cards | `src/pages/BrandDetail.tsx` (lines 69-77, 101-110) | Has "Try On" badge on explore product cards |
-| Intro Carousel - Gallery slide | `src/pages/onboarding/IntroCarousel.tsx` (line 178) | "Earn points at salons" text |
-| Intro Carousel - Swipe slide | `src/pages/onboarding/IntroCarousel.tsx` (line 64) | Current subtext needs update |
-| Dashboard layout | `src/components/RoleDashboard.tsx` (lines 406-461) | Wardrobe before Trending Looks |
-| Events thumbnail | `src/components/RoleDashboard.tsx` (lines 486-491) | Uses `featuredEvent.image_url` |
-| Events query | `src/components/RoleDashboard.tsx` (lines 143-150) | Query missing `banner_image_url` |
-| Auth screen | `src/pages/onboarding/SignUp.tsx` (lines 538, 632) | "(Clothing brands, agencies & studios)" text |
-| Globe clustering | `src/components/globe/GlobeScene.tsx` | Country pins show count, drawer opens with list |
+Transform the Deals UI from a generic flat admin-panel style to a premium, glassy, Phia-like experience that matches the Explore globe's glassmorphism aesthetic.
+
+**Scope**: Visual-only changes. No feature logic, routes, or data handling will be modified.
 
 ---
 
-## Fix A1: Size Dropdowns Already Functional
+## Current State Analysis
 
-**Finding:** The size dropdowns in `AddYourFitModal.tsx` are correctly implemented using Radix UI Select components (lines 165-209). The Select, SelectTrigger, SelectContent, and SelectItem components are properly imported and used.
-
-**Root cause investigation needed:** If dropdowns aren't working, it may be a z-index conflict with the Dialog. The modal already has `className="max-w-md z-[70]"` and `overlayClassName="z-[70]"`.
-
-**Potential fix:** Ensure SelectContent has proper z-index stacking. Update:
-
-```text
-File: src/components/profile/AddYourFitModal.tsx
-
-Lines 169, 185, 201: Add className with z-index to SelectContent
-FROM: <SelectContent>
-TO:   <SelectContent className="z-[80]">
-```
-
-This ensures dropdown menus appear above the Dialog (z-70).
+| Component | Issue |
+|-----------|-------|
+| `DealsDrawer.tsx` | Standard drawer with white background, basic tabs, no glass effect |
+| `DealResultCard.tsx` | Plain Card with heavy borders, "ring" highlight for best deal |
+| `PriceVerdict.tsx` | Thick bar (8px), large marker knob, plain labels |
+| Tab styling | Generic TabsList, not segmented control |
+| Scan panel | Missing - no visual feedback showing scanned image/URL |
 
 ---
 
-## Fix A2: Remove Weight Field
+## Implementation Plan
 
-**File:** `src/components/profile/AddYourFitModal.tsx`
+### 1. DealsDrawer - Glass Bottom Sheet
 
-**Changes:**
-1. Remove `weight` state variable (line 51)
-2. Remove weight from measurements object (line 85)
-3. Remove weight input JSX (lines 149-159)
+**File**: `src/components/deals/DealsDrawer.tsx`
+
+Transform the drawer container to match CountryDrawer's glassmorphism:
 
 ```text
-Line 51: DELETE
-  const [weight, setWeight] = useState('');
+Current:
+  DrawerContent className="max-h-[90vh]"
 
-Line 85: DELETE
-  weight: weight ? parseFloat(weight) : undefined,
-
-Lines 149-159: DELETE entire block
-  {/* Weight - Optional */}
-  <div className="space-y-2">
-    <Label htmlFor="weight">Weight (kg) - optional</Label>
-    <Input
-      id="weight"
-      type="number"
-      placeholder="e.g., 60"
-      value={weight}
-      onChange={(e) => setWeight(e.target.value)}
-    />
-  </div>
+Updated:
+  DrawerContent className="
+    bg-white/85 dark:bg-gray-900/85
+    backdrop-blur-2xl
+    border-t border-white/20
+    shadow-2xl
+    max-h-[85vh]
+    rounded-t-[28px]
+  "
 ```
 
-**Also update:** `src/components/explore/YourFitDrawer.tsx` - Remove weight from UserMeasurements interface (line 31) but keep it optional in type to avoid breaking existing data.
+**Header redesign**:
+- Smaller icon (6x6 rounded-xl gradient)
+- Title with subtle text-shadow for depth
+- Sparkles icon with animate-pulse glow
 
----
+### 2. Glass Segmented Control Tabs
 
-## Fix B1: Brand Profile Labels
+**File**: `src/components/deals/DealsDrawer.tsx`
 
-**Problem:** `src/pages/BrandDetail.tsx` line 350 shows "Marketing Agency" for non-fashion brands.
-
-**Solution:** Since all brands have been migrated to fashion/clothing brands, update the label mapping:
+Replace generic tabs with a premium pill-based segmented control:
 
 ```text
-File: src/pages/BrandDetail.tsx
+TabsList className="
+  w-full grid grid-cols-3 
+  bg-black/5 dark:bg-white/10 
+  p-1.5 rounded-full
+"
 
-Line 155-156: Update condition to only show Salon label
-FROM:
-const isSalonOrAgency = brand?.category === 'salon' || brand?.category === 'agency' || brand?.category === 'studio';
-const isFashionBrand = brand?.category === 'fashion_brand' || !brand?.category;
-
-TO:
-const isSalonOrAgency = brand?.category === 'salon';
-const isFashionBrand = !isSalonOrAgency;
-
-Line 350: Update label
-FROM:
-{brand.category === 'salon' ? 'Salon & Spa' : 'Marketing Agency'}
-
-TO:
-Salon & Spa
+TabsTrigger className="
+  rounded-full text-xs font-medium
+  transition-all duration-200
+  data-[state=inactive]:text-muted-foreground/70
+  data-[state=active]:bg-white/90 dark:data-[state=active]:bg-white/20
+  data-[state=active]:text-foreground
+  data-[state=active]:shadow-[0_0_12px_rgba(251,191,36,0.3)]
+  data-[state=active]:border data-[state=active]:border-white/30
+"
 ```
 
-**Alternative (safer):** Show "Fashion Brand" for non-salon brands:
+### 3. Scan Panel Component
+
+**New Component**: `src/components/deals/ScanPanel.tsx`
+
+A glassmorphic panel that shows the input (uploaded image, URL thumbnail, or query) with status:
 
 ```text
-Line 347-352: Update entire conditional block
-FROM:
-{isSalonOrAgency && (
-  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-    <Briefcase className="h-4 w-4" />
-    {brand.category === 'salon' ? 'Salon & Spa' : 'Marketing Agency'}
-  </div>
-)}
++--------------------------------------------------+
+| [📷 Image]  "Scanning the web..."                |
+|             ████████░░░░ shimmer animation       |
++--------------------------------------------------+
 
-TO:
-{isSalonOrAgency ? (
-  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-    <Briefcase className="h-4 w-4" />
-    Salon & Spa
-  </div>
-) : (
-  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-    <ShoppingBag className="h-4 w-4" />
-    Fashion Brand
-  </div>
-)}
+After results:
++--------------------------------------------------+
+| [📷 Image]  ✨ 40+ deals found                   |
+|             [Try another] button                 |
++--------------------------------------------------+
 ```
 
----
+Styling:
+- `bg-white/50 dark:bg-white/10 backdrop-blur-xl`
+- `rounded-2xl border border-white/20`
+- `shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]`
+- Shimmer loading effect via CSS keyframes
 
-## Fix C: Remove Old Try-On Button from Explore Product Cards
+### 4. Redesigned PriceVerdict
 
-**File:** `src/pages/BrandDetail.tsx`
+**File**: `src/components/deals/PriceVerdict.tsx`
 
-**Changes:**
-1. Remove "Try On" label badge (lines 69-77)
-2. Remove Try On button from hover actions (lines 101-110)
-3. Remove ProductTryOnModal import and usage (lines 19, 33, 122-126)
+Transform from thick bar to elegant thin bar with chip labels:
+
+**Before**:
+- 8px height bar
+- Large 12px marker knob
+- Plain text labels
+
+**After**:
+- 4px height bar with rounded ends
+- 6px glowing dot marker with pulse animation
+- Labels as tiny pill badges (rounded-full, bg-white/70)
 
 ```text
-Lines 69-77: DELETE entire block
-{/* Try On label */}
-{hasOutfit && (
-  <div 
-    className="absolute top-7 left-1.5 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-90 cursor-pointer hover:opacity-100"
-    onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
-  >
-    Try On
-  </div>
-)}
-
-Lines 101-110: DELETE entire block
-{hasOutfit && (
-  <Button
-    size="sm"
-    variant="ghost"
-    className="h-7 w-7 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
-    onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
-  >
-    <User className="h-4 w-4 text-white" />
-  </Button>
-)}
-
-Lines 122-126: DELETE ProductTryOnModal component
-
-Line 33: DELETE tryOnModalOpen state
-  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
-
-Line 19: DELETE import
-  import ProductTryOnModal from '@/components/ProductTryOnModal';
-
-Line 16, 32: DELETE useProductHasOutfit hook usage
+Visual:
+[Low] ─────────•───────── [High]
+ ↓                          ↓
+pill badge              pill badge
+bg-green-500/20         bg-red-500/20
+text-green-600          text-red-500
 ```
 
----
-
-## Fix D1: "Create, Collaborate, Inspire" Slide Copy
-
-**File:** `src/pages/onboarding/IntroCarousel.tsx`
-
+Marker styling:
 ```text
-Line 178: Update text
-FROM:
-<p className="text-xs text-muted-foreground">Earn points at salons</p>
-
-TO:
-<p className="text-xs text-muted-foreground">Earn points</p>
+w-2 h-2 rounded-full 
+bg-white 
+shadow-[0_0_8px_rgba(255,255,255,0.8),0_0_4px_rgba(251,191,36,0.6)]
+ring-2 ring-amber-400/50
 ```
 
----
+### 5. Glass DealResultCard
 
-## Fix D2: "Your Style, Your Swipes" Subtext
+**File**: `src/components/deals/DealResultCard.tsx`
 
-**File:** `src/pages/onboarding/IntroCarousel.tsx`
+Replace solid Card with glassmorphic card:
 
 ```text
-Line 64: Update subtitle
-FROM:
-subtitle: "Swipe right to save, left to pass. Your feed learns with every swipe.",
+Current:
+  Card className="overflow-hidden hover:shadow-md"
+  + ring-2 ring-green-500 for best deal
 
-TO:
-subtitle: "Swipe right to save, left to pass. Your feed learns your style and fit over time.",
+Updated:
+  className="
+    overflow-hidden rounded-2xl
+    bg-white/60 dark:bg-white/10
+    backdrop-blur-xl
+    border border-white/30 dark:border-white/10
+    shadow-[0_4px_24px_rgba(0,0,0,0.06)]
+    hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]
+    hover:bg-white/80 dark:hover:bg-white/15
+    transition-all duration-200
+  "
 ```
 
----
+**Best Deal badge**:
+- Small pill in top-left corner
+- `bg-green-500/90 backdrop-blur-sm`
+- `text-[9px] font-semibold text-white`
+- `shadow-[0_0_8px_rgba(34,197,94,0.4)]`
 
-## Fix E1: Dashboard Layout - Move Wardrobe Below Trending Looks
+**Open button**:
+- Icon-only button (ExternalLink)
+- `w-8 h-8 rounded-full`
+- `bg-amber-500/90 hover:bg-amber-500`
+- `text-white`
 
-**File:** `src/components/RoleDashboard.tsx`
+**Price styling**:
+- Larger `text-lg font-bold`
+- Merchant/rating in smaller `text-[10px] text-muted-foreground/80`
 
-**Changes:** Swap the order of `ClosetOutfitsSection` (line 406) and "Trending Looks Section" (lines 408-461).
+### 6. Tab Content Updates
 
+**Files**: `PhotoTab.tsx`, `LinkTab.tsx`, `SearchTab.tsx`
+
+**Dropzone (PhotoTab)**:
 ```text
-Lines 405-461: Reorder sections
+Current: border-2 border-dashed, basic hover
 
-CURRENT ORDER:
-{/* Wardrobe Data Section */}
-<ClosetOutfitsSection />
-
-{/* Trending Looks Section */}
-<section className="px-4 pt-3">
-  ...
-</section>
-
-NEW ORDER:
-{/* Trending Looks Section */}
-<section className="px-4 pt-3">
-  ...
-</section>
-
-{/* Wardrobe Data Section */}
-<ClosetOutfitsSection />
+Updated:
+  border border-dashed border-white/40
+  bg-white/30 dark:bg-white/5
+  backdrop-blur-sm
+  rounded-2xl
+  hover:border-amber-500/50
+  hover:bg-white/50
+  transition-all
 ```
 
----
-
-## Fix E2: Events Card Thumbnail Not Showing
-
-**File:** `src/components/RoleDashboard.tsx`
-
-**Problem:** The query fetches `image_url` but events table uses `banner_image_url`.
-
+**Input fields (LinkTab, SearchTab)**:
 ```text
-Line 145: Query already includes '*' which should fetch all fields including banner_image_url
+className="
+  pl-10 h-12
+  bg-white/50 dark:bg-white/10
+  backdrop-blur-sm
+  border-white/30 dark:border-white/20
+  rounded-xl
+  focus:ring-2 focus:ring-amber-500/30
+  focus:border-amber-500/50
+"
+```
 
-Line 488: Update image source
-FROM:
-src={featuredEvent.image_url || '/placeholder.svg'}
+**Submit buttons**:
+- `bg-gradient-to-r from-amber-500 to-orange-500`
+- `rounded-xl h-11`
+- `shadow-[0_4px_16px_rgba(251,191,36,0.3)]`
+- `hover:shadow-[0_6px_20px_rgba(251,191,36,0.4)]`
 
-TO:
-src={featuredEvent.banner_image_url || featuredEvent.image_url || '/placeholder.svg'}
+### 7. CSS Additions
+
+**File**: `src/index.css`
+
+Add shimmer animation for loading states:
+
+```css
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.4) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
 ```
 
 ---
 
-## Fix F: Auth Screen Copy Cleanup
-
-**File:** `src/pages/onboarding/SignUp.tsx`
+## Component Hierarchy
 
 ```text
-Lines 537-538: Remove agencies mention
-FROM:
-<p>
-  Are you a brand?{' '}
-  <span className="text-muted-foreground/80">(Clothing brands, agencies & studios)</span>
-  {' '}
-
-TO:
-<p>
-  Are you a brand?{' '}
-
-Lines 631-632: Remove agencies mention (dark theme version)
-FROM:
-<p>
-  Are you a brand?{' '}
-  <span className="text-white/70">(Clothing brands, agencies & studios)</span>
-  {' '}
-
-TO:
-<p>
-  Are you a brand?{' '}
+DealsDrawer (glass container)
+├── Header
+│   ├── Icon (gradient amber/orange)
+│   ├── Title + Sparkles
+│   └── Glass segmented tabs [Photo | Link | Search]
+│
+└── Tab Content
+    ├── ScanPanel (shows input + status)
+    ├── PriceVerdict (thin bar + chip labels + glow dot)
+    ├── Disclaimer (tiny text)
+    └── Results List
+        └── DealResultCard × N (glass cards)
 ```
 
 ---
 
-## Fix G: Globe Clustered Pin Behavior
+## Accessibility Considerations
 
-**Current Implementation:** The globe already handles multiple brands per country correctly:
-- Each country is represented by ONE pin regardless of brand count
-- The pin shows `brandCount` in the tooltip (line 147): "X brand(s)"
-- Clicking a pin opens `CountryDrawer` which lists all brands in that country
-- CountryDrawer has tabs for "Brands" and "Products"
-
-**No changes needed** - the system already works as specified:
-1. Pin click opens country drawer
-2. Drawer shows list of all brands in that country
-3. User can select a specific brand to navigate
-
-**Optional enhancement (if requested):** Add visual indicator for clustered pins (multiple brands):
-
-```text
-File: src/components/globe/GlobeScene.tsx
-
-Line 86: Adjust pin size based on brand count
-FROM:
-const pinSize = isFeatured ? 0.04 : isActive ? 0.035 : 0.03;
-
-TO:
-const baseSize = isFeatured ? 0.04 : isActive ? 0.035 : 0.03;
-const pinSize = baseSize + Math.min(brandCount * 0.002, 0.01); // Scale up slightly for more brands
-```
+| Element | Requirement |
+|---------|-------------|
+| Tab triggers | Maintain focus-visible ring (`ring-2 ring-ring`) |
+| Price labels | WCAG AA contrast (green-600/red-500 on light backgrounds) |
+| Best Deal badge | 4.5:1 contrast (white on green-500) |
+| Button focus | Visible outline on keyboard focus |
+| Loading states | Announce via aria-live for screen readers |
 
 ---
 
-## Files Changed Summary
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/profile/AddYourFitModal.tsx` | Add z-[80] to SelectContent, remove weight field |
-| `src/components/explore/YourFitDrawer.tsx` | Keep weight optional in type (no functional change) |
-| `src/pages/BrandDetail.tsx` | Remove Try-On badge/button, update category labels |
-| `src/pages/onboarding/IntroCarousel.tsx` | Update "Earn points at salons" -> "Earn points", update swipe subtext |
-| `src/components/RoleDashboard.tsx` | Reorder Wardrobe below Trending Looks, fix event thumbnail field |
-| `src/pages/onboarding/SignUp.tsx` | Remove "(Clothing brands, agencies & studios)" text |
+| `src/components/deals/DealsDrawer.tsx` | Glass container, segmented tabs |
+| `src/components/deals/PriceVerdict.tsx` | Thin bar, chip labels, glow marker |
+| `src/components/deals/DealResultCard.tsx` | Glass card, icon button, pill badge |
+| `src/components/deals/PhotoTab.tsx` | Glass dropzone, ScanPanel, shimmer loading |
+| `src/components/deals/LinkTab.tsx` | Glass input, ScanPanel |
+| `src/components/deals/SearchTab.tsx` | Glass input |
+| `src/index.css` | Add shimmer keyframes |
 
 ---
 
-## Risk Assessment
+## Visual Reference
 
-| Change | Risk Level | Notes |
-|--------|------------|-------|
-| Size dropdown z-index | Low | CSS-only, no logic change |
-| Remove weight field | Low | UI-only, backend column preserved |
-| Brand labels | Low | Display text only |
-| Remove Try-On | Low | Removing deprecated feature |
-| Intro copy changes | Low | Static text updates |
-| Dashboard reorder | Low | Component order swap |
-| Event thumbnail | Low | Fallback chain for image |
-| Auth copy | Low | Static text removal |
-| Globe clustering | None | Already implemented correctly |
+The updated UI will match:
+- **CountryDrawer** glass styling: `bg-white/80 backdrop-blur-2xl border-white/20`
+- **GlobalSearch** tabs: Pill-shaped, active state with primary color
+- **Phia overlay** aesthetic: Floating tool feel, amber/gold accent color
 
 ---
 
-## Verification Checklist
+## No Breaking Changes
 
-After implementation:
-- [ ] Size dropdowns open and select values properly in AddYourFitModal
-- [ ] No weight field visible in fit modals
-- [ ] Brand profiles show "Fashion Brand" or "Salon & Spa" (no "Marketing Agency")
-- [ ] No "Try On" badges on brand product cards in Explore
-- [ ] Gallery slide shows "Earn points" (not "at salons")
-- [ ] Swipe slide shows soft fit mention in subtext
-- [ ] Trending Looks appears above Wardrobe on dashboard
-- [ ] Event cards show thumbnail images
-- [ ] Auth screens have no mention of "agencies & studios"
-- [ ] Globe pin clicks open country drawer with brand list
+- All existing props, state, and data flow remain unchanged
+- Route `/deals` and drawer behavior preserved
+- Edge function calls (`deals-from-image`, `deals-from-url`, `deals-search`) untouched
+- Only Tailwind classes and minor DOM structure adjustments
+
