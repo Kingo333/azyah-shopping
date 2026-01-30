@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, ImageIcon } from 'lucide-react';
+import { Search, Loader2, ImageIcon, Sparkles } from 'lucide-react';
 import { useDealsSearch } from '@/hooks/useDealsSearch';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
@@ -31,20 +31,37 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
       {/* Search Input */}
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
           <Input
             type="text"
             placeholder="Search for a product..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 h-11"
+            className="
+              pl-10 h-12 
+              bg-white/50 dark:bg-white/10 
+              backdrop-blur-sm 
+              border-white/30 dark:border-white/20 
+              rounded-xl
+              focus:ring-2 focus:ring-amber-500/30
+              focus:border-amber-500/50
+              placeholder:text-muted-foreground/50
+            "
             style={{ fontSize: '16px' }}
             disabled={isLoading}
           />
         </div>
         <Button 
           type="submit" 
-          className="w-full gap-2"
+          className="
+            w-full gap-2 h-11 rounded-xl
+            bg-gradient-to-r from-amber-500 to-orange-500
+            hover:from-amber-600 hover:to-orange-600
+            text-white font-medium
+            shadow-[0_4px_16px_rgba(251,191,36,0.3)]
+            hover:shadow-[0_6px_20px_rgba(251,191,36,0.4)]
+            transition-all duration-200
+          "
           disabled={!query.trim() || isLoading}
         >
           {isLoading ? (
@@ -65,7 +82,12 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
       {error && (
         <div className="text-center py-4">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={handleReset}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3 rounded-xl bg-white/50 border-white/30" 
+            onClick={handleReset}
+          >
             Try again
           </Button>
         </div>
@@ -74,15 +96,21 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
       {/* Results */}
       {data && !isLoading && (
         <div className="space-y-4">
-          {/* Search query confirmation */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Results for "<span className="font-medium text-foreground">{data.query}</span>"
-            </p>
+          {/* Search query confirmation with glass panel */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 dark:bg-white/10 backdrop-blur-xl border border-white/20">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground/60" />
+              <p className="text-sm text-muted-foreground">
+                "<span className="font-medium text-foreground">{data.query}</span>"
+              </p>
+            </div>
             {data.deals_found > 0 && (
-              <span className="text-sm font-medium text-green-600">
-                {data.deals_found}+ deals
-              </span>
+              <div className="flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-green-500" />
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  {data.deals_found}+
+                </span>
+              </div>
             )}
           </div>
 
@@ -95,7 +123,7 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
           />
 
           {/* Disclaimer */}
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-[10px] text-muted-foreground/70 text-center">
             Results pulled from public web listings. Prices may change.
           </p>
 
@@ -112,11 +140,11 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
 
           {data.shopping_results.length === 0 && (
             <div className="text-center py-6">
-              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <ImageIcon className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
                 No deals found for "{data.query}"
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground/70 mt-1">
                 Try a different search term
               </p>
             </div>
@@ -124,7 +152,11 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
 
           {/* New search */}
           {data.deals_found > 0 && (
-            <Button variant="outline" className="w-full" onClick={handleReset}>
+            <Button 
+              variant="outline" 
+              className="w-full rounded-xl bg-white/50 dark:bg-white/10 border-white/30 hover:bg-white/70" 
+              onClick={handleReset}
+            >
               New Search
             </Button>
           )}

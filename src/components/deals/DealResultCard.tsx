@@ -1,7 +1,5 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,35 +26,48 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
   };
 
   return (
-    <Card 
+    <div 
       className={cn(
-        "overflow-hidden hover:shadow-md transition-shadow",
-        isBestDeal && "ring-2 ring-green-500/50",
+        "overflow-hidden rounded-2xl",
+        "bg-white/60 dark:bg-white/10",
+        "backdrop-blur-xl",
+        "border border-white/30 dark:border-white/10",
+        "shadow-[0_4px_24px_rgba(0,0,0,0.06)]",
+        "hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]",
+        "hover:bg-white/80 dark:hover:bg-white/15",
+        "transition-all duration-200",
         className
       )}
     >
       <div className="flex gap-3 p-3">
         {/* Thumbnail */}
-        <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">
+        <div className="w-18 h-18 flex-shrink-0 bg-white/50 dark:bg-white/10 rounded-xl overflow-hidden relative">
           {result.thumbnail ? (
             <img 
               src={result.thumbnail} 
               alt={result.title}
               className="w-full h-full object-cover"
+              style={{ width: '72px', height: '72px' }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs" style={{ width: '72px', height: '72px' }}>
               No image
             </div>
           )}
           
           {isBestDeal && (
-            <Badge className="absolute top-1 left-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5">
+            <span className="
+              absolute top-1 left-1 
+              bg-green-500/90 backdrop-blur-sm
+              text-white text-[9px] font-semibold
+              px-1.5 py-0.5 rounded-full
+              shadow-[0_0_8px_rgba(34,197,94,0.4)]
+            ">
               Best Deal
-            </Badge>
+            </span>
           )}
         </div>
 
@@ -66,19 +77,19 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
             <h3 className="text-sm font-medium line-clamp-2 leading-tight">
               {result.title}
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[10px] text-muted-foreground/80 mt-0.5">
               {result.source}
             </p>
           </div>
 
           <div className="flex items-center justify-between mt-2">
             <div>
-              <p className="text-base font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground">
                 {result.price || 'Price unavailable'}
               </p>
               {result.rating && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/80">
+                  <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
                   <span>{result.rating}</span>
                   {result.reviews && (
                     <span>({result.reviews.toLocaleString()})</span>
@@ -88,18 +99,22 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
             </div>
 
             <Button 
-              size="sm" 
-              variant="outline"
-              className="h-7 text-xs gap-1"
+              size="icon"
+              className="
+                w-8 h-8 rounded-full
+                bg-amber-500/90 hover:bg-amber-500
+                text-white
+                shadow-[0_2px_8px_rgba(251,191,36,0.3)]
+                hover:shadow-[0_4px_12px_rgba(251,191,36,0.4)]
+              "
               onClick={handleOpenDeal}
             >
-              Open
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
