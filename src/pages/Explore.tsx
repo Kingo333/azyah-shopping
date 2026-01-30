@@ -324,7 +324,7 @@ const Explore: React.FC = () => {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="deals" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#f59e0b] rounded-full text-xs px-1.5"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5"
                 >
                   <Tag className="h-3 w-3 mr-0.5" />
                   Deals

@@ -135,31 +135,143 @@ serve(async (req) => {
       if (pageResponse.ok) {
         const html = await pageResponse.text();
         extractedProduct = extractMetadata(html);
-        console.log(`[deals-from-url] Extracted: title="${extractedProduct.title}", brand="${extractedProduct.brand}"`);
+        console.log(`[deals-from-url] Extracted: title="${extractedProduct.title}", image="${extractedProduct.image?.substring(0, 50)}..."`);
       }
     } catch (err) {
       console.warn('[deals-from-url] Failed to fetch product page:', err);
     }
 
-    // Build search query
-    let searchQuery = '';
-    if (extractedProduct.title) {
-      searchQuery = extractedProduct.title;
-      if (extractedProduct.brand && !searchQuery.toLowerCase().includes(extractedProduct.brand.toLowerCase())) {
-        searchQuery = `${extractedProduct.brand} ${searchQuery}`;
-      }
-    } else {
-      // Fallback: extract from URL
+    const allShoppingResults: ShoppingResult[] = [];
+    const seenLinks = new Set<string>();
+
+    // Step 2: If we have an og:image, run Google Lens for visual similarity (PRIMARY)
+    if (extractedProduct.image) {
+      console.log(`[deals-from-url] Running Google Lens on og:image...`);
+      
       try {
-        const urlObj = new URL(url);
-        const pathParts = urlObj.pathname.split('/').filter(Boolean);
-        searchQuery = pathParts[pathParts.length - 1]?.replace(/[-_]/g, ' ') || '';
-      } catch {
-        searchQuery = '';
+        const lensParams = new URLSearchParams({
+          engine: 'google_lens',
+          url: extractedProduct.image,
+          api_key: SERPAPI_KEY,
+          gl: 'ae',
+          hl: 'en',
+        });
+
+        const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
+        const lensData = await lensResponse.json();
+
+        if (!lensData.error) {
+          // Extract visual matches and search for each
+          const visualMatches = (lensData.visual_matches || [])
+            .slice(0, 3)
+            .filter((match: any) => {
+              const source = (match.source || '').toLowerCase();
+              return !source.includes('pinterest') && !source.includes('instagram');
+            });
+
+          console.log(`[deals-from-url] Lens found ${visualMatches.length} visual matches`);
+
+          // Search shopping for each visual match
+          for (const match of visualMatches) {
+            if (!match.title) continue;
+
+            const shoppingParams = new URLSearchParams({
+              engine: 'google_shopping',
+              q: match.title,
+              api_key: SERPAPI_KEY,
+              gl: 'ae',
+              hl: 'en',
+              location: 'United Arab Emirates',
+            });
+
+            try {
+              const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
+              const shoppingData = await shoppingResponse.json();
+
+              if (shoppingData.shopping_results) {
+                for (const result of shoppingData.shopping_results.slice(0, 10)) {
+                  if (seenLinks.has(result.link)) continue;
+                  seenLinks.add(result.link);
+
+                  allShoppingResults.push({
+                    title: result.title || '',
+                    link: result.link || '',
+                    thumbnail: result.thumbnail || '',
+                    source: result.source || '',
+                    price: result.price || '',
+                    extracted_price: result.extracted_price || null,
+                    rating: result.rating || undefined,
+                    reviews: result.reviews || undefined,
+                    position: allShoppingResults.length + 1,
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn(`[deals-from-url] Shopping search error for "${match.title}":`, err);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[deals-from-url] Lens API error:', err);
       }
     }
 
-    if (!searchQuery) {
+    // Step 3: If Lens didn't yield enough results, fall back to text search
+    if (allShoppingResults.length < 5) {
+      let searchQuery = '';
+      if (extractedProduct.title) {
+        searchQuery = extractedProduct.title;
+        if (extractedProduct.brand && !searchQuery.toLowerCase().includes(extractedProduct.brand.toLowerCase())) {
+          searchQuery = `${extractedProduct.brand} ${searchQuery}`;
+        }
+      } else {
+        // Fallback: extract from URL
+        try {
+          const urlObj = new URL(url);
+          const pathParts = urlObj.pathname.split('/').filter(Boolean);
+          searchQuery = pathParts[pathParts.length - 1]?.replace(/[-_]/g, ' ') || '';
+        } catch {
+          searchQuery = '';
+        }
+      }
+
+      if (searchQuery) {
+        console.log(`[deals-from-url] Text fallback search: "${searchQuery.substring(0, 80)}..."`);
+
+        const shoppingParams = new URLSearchParams({
+          engine: 'google_shopping',
+          q: searchQuery,
+          api_key: SERPAPI_KEY,
+          gl: 'ae',
+          hl: 'en',
+          location: 'United Arab Emirates',
+        });
+
+        const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
+        const shoppingData = await shoppingResponse.json();
+
+        if (!shoppingData.error && shoppingData.shopping_results) {
+          for (const result of shoppingData.shopping_results.slice(0, 20)) {
+            if (seenLinks.has(result.link)) continue;
+            seenLinks.add(result.link);
+
+            allShoppingResults.push({
+              title: result.title || '',
+              link: result.link || '',
+              thumbnail: result.thumbnail || '',
+              source: result.source || '',
+              price: result.price || '',
+              extracted_price: result.extracted_price || null,
+              rating: result.rating || undefined,
+              reviews: result.reviews || undefined,
+              position: allShoppingResults.length + 1,
+            });
+          }
+        }
+      }
+    }
+
+    if (allShoppingResults.length === 0 && !extractedProduct.title && !extractedProduct.image) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -174,43 +286,10 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Search Google Shopping
-    const shoppingParams = new URLSearchParams({
-      engine: 'google_shopping',
-      q: searchQuery,
-      api_key: SERPAPI_KEY,
-      gl: 'ae',
-      hl: 'en',
-      location: 'United Arab Emirates',
-    });
+    console.log(`[deals-from-url] Total shopping results: ${allShoppingResults.length}`);
 
-    console.log(`[deals-from-url] Searching shopping: "${searchQuery.substring(0, 80)}..."`);
-    
-    const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
-    const shoppingData = await shoppingResponse.json();
-
-    if (shoppingData.error) {
-      throw new Error(`Shopping API error: ${shoppingData.error}`);
-    }
-
-    const shoppingResults: ShoppingResult[] = (shoppingData.shopping_results || [])
-      .slice(0, 20)
-      .map((result: any, index: number) => ({
-        title: result.title || '',
-        link: result.link || '',
-        thumbnail: result.thumbnail || '',
-        source: result.source || '',
-        price: result.price || '',
-        extracted_price: result.extracted_price || null,
-        rating: result.rating || undefined,
-        reviews: result.reviews || undefined,
-        position: index + 1,
-      }));
-
-    console.log(`[deals-from-url] Found ${shoppingResults.length} shopping results`);
-
-    // Step 3: Compute price statistics with guardrails
-    const validPrices = shoppingResults
+    // Step 4: Compute price statistics with guardrails
+    const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
 
@@ -237,7 +316,7 @@ serve(async (req) => {
     }
 
     // Sort by price
-    shoppingResults.sort((a, b) => {
+    allShoppingResults.sort((a, b) => {
       if (a.extracted_price === null) return 1;
       if (b.extracted_price === null) return -1;
       return a.extracted_price - b.extracted_price;
@@ -247,12 +326,12 @@ serve(async (req) => {
       success: true,
       input_url: url,
       extracted_product: extractedProduct,
-      shopping_results: shoppingResults,
+      shopping_results: allShoppingResults,
       price_stats: priceStats,
-      deals_found: shoppingResults.length,
+      deals_found: allShoppingResults.length,
     };
 
-    console.log(`[deals-from-url] Success: ${shoppingResults.length} deals found`);
+    console.log(`[deals-from-url] Success: ${allShoppingResults.length} deals found`);
 
     return new Response(
       JSON.stringify(response),

@@ -1,13 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, Loader2, ImageIcon } from 'lucide-react';
 import { useDealsFromImage } from '@/hooks/useDealsFromImage';
+import { useDealsMatchCatalog } from '@/hooks/useDealsMatchCatalog';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
 import { ScanPanel } from './ScanPanel';
+import { AzyahMatchesSection } from './AzyahMatchesSection';
 import { cn } from '@/lib/utils';
 
 interface PhotoTabProps {
@@ -21,6 +23,16 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   
   const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
+  const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
+
+  // Trigger catalog match when we get results
+  useEffect(() => {
+    if (data?.shopping_results?.length > 0) {
+      const topResult = data.shopping_results[0];
+      const avgPrice = data.price_stats.median ? data.price_stats.median * 100 : undefined;
+      matchCatalog(topResult.title, undefined, avgPrice);
+    }
+  }, [data, matchCatalog]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -29,6 +41,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     setIsUploading(true);
     setUploadError(null);
     reset();
+    resetCatalog();
 
     try {
       // Create unique filename with short expiry path
@@ -61,14 +74,14 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       // Start searching
       await searchFromImage(signedData.signedUrl);
 
-      // Schedule cleanup (delete after search completes)
+      // Schedule cleanup after longer delay (15 min) so Lens calls don't break
       setTimeout(async () => {
         try {
           await supabase.storage.from('deals-uploads').remove([fileName]);
         } catch {
           // Ignore cleanup errors
         }
-      }, 60000); // 1 minute after upload
+      }, 900000); // 15 minutes after upload
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -76,7 +89,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     } finally {
       setIsUploading(false);
     }
-  }, [user, searchFromImage, reset]);
+  }, [user, searchFromImage, reset, resetCatalog]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -94,6 +107,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     setUploadedImage(null);
     setUploadError(null);
     reset();
+    resetCatalog();
   };
 
   // Show upload UI if no image yet
@@ -108,18 +122,18 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
             "bg-white/30 dark:bg-white/5",
             "backdrop-blur-sm",
             isDragActive 
-              ? "border-amber-500/50 bg-amber-500/10" 
-              : "hover:border-amber-500/50 hover:bg-white/50",
+              ? "border-primary/50 bg-primary/10" 
+              : "hover:border-primary/50 hover:bg-white/50",
             (isUploading) && "opacity-50 cursor-not-allowed"
           )}
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center backdrop-blur-sm">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-500/20 to-slate-600/20 flex items-center justify-center backdrop-blur-sm">
               {isUploading ? (
-                <Loader2 className="h-7 w-7 text-amber-500 animate-spin" />
+                <Loader2 className="h-7 w-7 text-muted-foreground animate-spin" />
               ) : (
-                <Camera className="h-7 w-7 text-amber-500" />
+                <Camera className="h-7 w-7 text-muted-foreground" />
               )}
             </div>
             <div>
@@ -200,6 +214,12 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
             median={data.price_stats.median}
             high={data.price_stats.high}
             validCount={data.price_stats.valid_count}
+          />
+
+          {/* Similar on Azyah */}
+          <AzyahMatchesSection 
+            matches={catalogData?.matches || []} 
+            isLoading={catalogLoading}
           />
 
           {/* Disclaimer */}

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link2, Loader2, ExternalLink, ImageIcon } from 'lucide-react';
 import { useDealsFromUrl } from '@/hooks/useDealsFromUrl';
+import { useDealsMatchCatalog } from '@/hooks/useDealsMatchCatalog';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
 import { ScanPanel } from './ScanPanel';
+import { AzyahMatchesSection } from './AzyahMatchesSection';
 
 interface LinkTabProps {
   onClose?: () => void;
@@ -14,6 +16,18 @@ interface LinkTabProps {
 export function LinkTab({ onClose }: LinkTabProps) {
   const [url, setUrl] = useState('');
   const { searchFromUrl, data, isLoading, error, reset } = useDealsFromUrl();
+  const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
+
+  // Trigger catalog match when we get results
+  useEffect(() => {
+    if (data?.extracted_product?.title || data?.shopping_results?.length > 0) {
+      const queryTitle = data.extracted_product?.title || data.shopping_results[0]?.title || '';
+      const avgPrice = data.price_stats.median ? data.price_stats.median * 100 : undefined;
+      if (queryTitle) {
+        matchCatalog(queryTitle, undefined, avgPrice);
+      }
+    }
+  }, [data, matchCatalog]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +40,14 @@ export function LinkTab({ onClose }: LinkTabProps) {
       return;
     }
 
+    resetCatalog();
     await searchFromUrl(url.trim());
   };
 
   const handleReset = () => {
     setUrl('');
     reset();
+    resetCatalog();
   };
 
   const isValidUrl = (() => {
@@ -60,8 +76,8 @@ export function LinkTab({ onClose }: LinkTabProps) {
               backdrop-blur-sm 
               border-white/30 dark:border-white/20 
               rounded-xl
-              focus:ring-2 focus:ring-amber-500/30
-              focus:border-amber-500/50
+              focus:ring-2 focus:ring-primary/30
+              focus:border-primary/50
               placeholder:text-muted-foreground/50
             "
             style={{ fontSize: '16px' }}
@@ -72,11 +88,10 @@ export function LinkTab({ onClose }: LinkTabProps) {
           type="submit" 
           className="
             w-full gap-2 h-11 rounded-xl
-            bg-gradient-to-r from-amber-500 to-orange-500
-            hover:from-amber-600 hover:to-orange-600
+            bg-gradient-to-r from-slate-700 to-slate-800
+            hover:from-slate-600 hover:to-slate-700
             text-white font-medium
-            shadow-[0_4px_16px_rgba(251,191,36,0.3)]
-            hover:shadow-[0_6px_20px_rgba(251,191,36,0.4)]
+            shadow-lg
             transition-all duration-200
           "
           disabled={!isValidUrl || isLoading}
@@ -131,6 +146,12 @@ export function LinkTab({ onClose }: LinkTabProps) {
             median={data.price_stats.median}
             high={data.price_stats.high}
             validCount={data.price_stats.valid_count}
+          />
+
+          {/* Similar on Azyah */}
+          <AzyahMatchesSection 
+            matches={catalogData?.matches || []} 
+            isLoading={catalogLoading}
           />
 
           {/* Disclaimer */}

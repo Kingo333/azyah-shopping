@@ -40,20 +40,19 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
       )}
     >
       <div className="flex gap-3 p-3">
-        {/* Thumbnail */}
-        <div className="w-18 h-18 flex-shrink-0 bg-white/50 dark:bg-white/10 rounded-xl overflow-hidden relative">
+        {/* Thumbnail - smaller square on left */}
+        <div className="w-16 h-16 flex-shrink-0 bg-white/50 dark:bg-white/10 rounded-xl overflow-hidden relative">
           {result.thumbnail ? (
             <img 
               src={result.thumbnail} 
               alt={result.title}
               className="w-full h-full object-cover"
-              style={{ width: '72px', height: '72px' }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs" style={{ width: '72px', height: '72px' }}>
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
               No image
             </div>
           )}
@@ -62,34 +61,37 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
             <span className="
               absolute top-1 left-1 
               bg-green-500/90 backdrop-blur-sm
-              text-white text-[9px] font-semibold
+              text-white text-[8px] font-semibold
               px-1.5 py-0.5 rounded-full
               shadow-[0_0_8px_rgba(34,197,94,0.4)]
             ">
-              Best Deal
+              Best
             </span>
           )}
         </div>
 
-        {/* Content */}
+        {/* Content - Brand/Source + Price PRIMARY, Title SECONDARY */}
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-medium line-clamp-2 leading-tight">
-              {result.title}
-            </h3>
-            <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+            {/* Source/Brand - PRIMARY */}
+            <p className="text-xs font-medium text-foreground/80 truncate">
               {result.source}
+            </p>
+            {/* Price - PRIMARY */}
+            <p className="text-lg font-bold text-foreground mt-0.5">
+              {result.price || 'Price unavailable'}
             </p>
           </div>
 
-          <div className="flex items-center justify-between mt-2">
-            <div>
-              <p className="text-lg font-bold text-foreground">
-                {result.price || 'Price unavailable'}
-              </p>
+          <div className="flex items-end justify-between mt-1">
+            <div className="min-w-0 flex-1 mr-2">
+              {/* Title - SECONDARY */}
+              <h3 className="text-[11px] text-muted-foreground/80 line-clamp-2 leading-tight">
+                {result.title}
+              </h3>
               {result.rating && (
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/80">
-                  <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mt-0.5">
+                  <Star className="h-2.5 w-2.5 fill-current text-muted-foreground/50" />
                   <span>{result.rating}</span>
                   {result.reviews && (
                     <span>({result.reviews.toLocaleString()})</span>
@@ -101,11 +103,10 @@ export function DealResultCard({ result, isBestDeal, className }: DealResultCard
             <Button 
               size="icon"
               className="
-                w-8 h-8 rounded-full
-                bg-amber-500/90 hover:bg-amber-500
+                w-8 h-8 rounded-full flex-shrink-0
+                bg-slate-700 hover:bg-slate-600
                 text-white
-                shadow-[0_2px_8px_rgba(251,191,36,0.3)]
-                hover:shadow-[0_4px_12px_rgba(251,191,36,0.4)]
+                shadow-lg
               "
               onClick={handleOpenDeal}
             >

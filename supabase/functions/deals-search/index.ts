@@ -29,6 +29,7 @@ interface DealsResponse {
     valid_count: number;
   };
   deals_found: number;
+  used_lens_fallback?: boolean;
   error?: string;
 }
 
@@ -76,9 +77,21 @@ serve(async (req) => {
       );
     }
 
+    // Validate query length
+    if (q.trim().length > 200) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Query too long (max 200 chars)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[deals-search] Searching for user ${user.id}: "${q}"`);
 
-    // Call Google Shopping via SerpApi
+    const allShoppingResults: ShoppingResult[] = [];
+    const seenLinks = new Set<string>();
+    let usedLensFallback = false;
+
+    // Step 1: Call Google Shopping via SerpApi
     const params = new URLSearchParams({
       engine: 'google_shopping',
       q: q.trim(),
@@ -100,9 +113,12 @@ serve(async (req) => {
       throw new Error(`Shopping API error: ${shoppingData.error}`);
     }
 
-    const shoppingResults: ShoppingResult[] = (shoppingData.shopping_results || [])
-      .slice(0, 30)
-      .map((result: any, index: number) => ({
+    // Add initial shopping results
+    for (const result of (shoppingData.shopping_results || []).slice(0, 30)) {
+      if (seenLinks.has(result.link)) continue;
+      seenLinks.add(result.link);
+
+      allShoppingResults.push({
         title: result.title || '',
         link: result.link || '',
         thumbnail: result.thumbnail || '',
@@ -111,13 +127,92 @@ serve(async (req) => {
         extracted_price: result.extracted_price || null,
         rating: result.rating || undefined,
         reviews: result.reviews || undefined,
-        position: index + 1,
-      }));
+        position: allShoppingResults.length + 1,
+      });
+    }
 
-    console.log(`[deals-search] Found ${shoppingResults.length} results`);
+    console.log(`[deals-search] Initial shopping results: ${allShoppingResults.length}`);
 
-    // Compute price statistics with guardrails
-    const validPrices = shoppingResults
+    // Step 2: If <5 results, use Google Lens fallback with top result thumbnail
+    if (allShoppingResults.length < 5 && allShoppingResults.length > 0) {
+      const topResult = allShoppingResults[0];
+      
+      if (topResult.thumbnail) {
+        console.log(`[deals-search] Running Lens fallback on top result thumbnail...`);
+        usedLensFallback = true;
+
+        try {
+          const lensParams = new URLSearchParams({
+            engine: 'google_lens',
+            url: topResult.thumbnail,
+            api_key: SERPAPI_KEY,
+            gl: 'ae',
+            hl: 'en',
+          });
+
+          const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
+          const lensData = await lensResponse.json();
+
+          if (!lensData.error) {
+            const visualMatches = (lensData.visual_matches || [])
+              .slice(0, 5)
+              .filter((match: any) => {
+                const source = (match.source || '').toLowerCase();
+                return !source.includes('pinterest') && !source.includes('instagram');
+              });
+
+            console.log(`[deals-search] Lens found ${visualMatches.length} visual matches`);
+
+            // Search shopping for each visual match
+            for (const match of visualMatches.slice(0, 3)) {
+              if (!match.title) continue;
+
+              const expandParams = new URLSearchParams({
+                engine: 'google_shopping',
+                q: match.title,
+                api_key: SERPAPI_KEY,
+                gl: 'ae',
+                hl: 'en',
+                location: 'United Arab Emirates',
+              });
+
+              try {
+                const expandResponse = await fetch(`https://serpapi.com/search?${expandParams.toString()}`);
+                const expandData = await expandResponse.json();
+
+                if (expandData.shopping_results) {
+                  for (const result of expandData.shopping_results.slice(0, 10)) {
+                    if (seenLinks.has(result.link)) continue;
+                    seenLinks.add(result.link);
+
+                    allShoppingResults.push({
+                      title: result.title || '',
+                      link: result.link || '',
+                      thumbnail: result.thumbnail || '',
+                      source: result.source || '',
+                      price: result.price || '',
+                      extracted_price: result.extracted_price || null,
+                      rating: result.rating || undefined,
+                      reviews: result.reviews || undefined,
+                      position: allShoppingResults.length + 1,
+                    });
+                  }
+                }
+              } catch (err) {
+                console.warn(`[deals-search] Expand search error for "${match.title}":`, err);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[deals-search] Lens fallback error:', err);
+        }
+      }
+    }
+
+    console.log(`[deals-search] Final result count: ${allShoppingResults.length}`);
+
+    // Step 3: Compute price statistics with guardrails
+    const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
 
@@ -145,7 +240,7 @@ serve(async (req) => {
 
     // Sort by price if not already sorted by API
     if (!sort_by) {
-      shoppingResults.sort((a, b) => {
+      allShoppingResults.sort((a, b) => {
         if (a.extracted_price === null) return 1;
         if (b.extracted_price === null) return -1;
         return a.extracted_price - b.extracted_price;
@@ -155,9 +250,10 @@ serve(async (req) => {
     const response: DealsResponse = {
       success: true,
       query: q.trim(),
-      shopping_results: shoppingResults,
+      shopping_results: allShoppingResults,
       price_stats: priceStats,
-      deals_found: shoppingResults.length,
+      deals_found: allShoppingResults.length,
+      used_lens_fallback: usedLensFallback,
     };
 
     return new Response(
