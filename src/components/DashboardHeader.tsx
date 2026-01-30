@@ -3,13 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, User, HelpCircle } from 'lucide-react';
+import { Sun, Moon, User, HelpCircle, Search } from 'lucide-react';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { usePremium } from '@/hooks/usePremium';
 
-const DashboardHeader: React.FC = () => {
+interface DashboardHeaderProps {
+  onOpenSearch?: () => void;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenSearch }) => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -21,10 +25,6 @@ const DashboardHeader: React.FC = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  const getUserName = () => {
-    return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
-  };
-
   const handleUpgradeClick = () => {
     if (isGuest || !user) {
       setShowGuestPrompt(true);
@@ -33,7 +33,6 @@ const DashboardHeader: React.FC = () => {
     }
   };
 
-  // Don't show upgrade button if user is premium
   const showUpgradeButton = !isPremium && !premiumLoading;
 
   return (
@@ -50,7 +49,7 @@ const DashboardHeader: React.FC = () => {
           <span className="font-serif font-medium text-foreground">Azyah</span>
         </div>
 
-        {/* Center - Upgrade Button (hidden for premium users) */}
+        {/* Center - Upgrade Button */}
         {showUpgradeButton && (
           <Button 
             onClick={handleUpgradeClick}
@@ -63,7 +62,17 @@ const DashboardHeader: React.FC = () => {
         )}
 
         {/* Right Icons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {onOpenSearch && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={onOpenSearch}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          )}
           <FeedbackModal userType="shopper">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <HelpCircle className="h-4 w-4" />
@@ -91,7 +100,6 @@ const DashboardHeader: React.FC = () => {
         </div>
       </div>
       
-      {/* Guest Action Prompt */}
       <GuestActionPrompt 
         open={showGuestPrompt} 
         onOpenChange={setShowGuestPrompt}
