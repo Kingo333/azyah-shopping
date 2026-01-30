@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ImageIcon, Link2, Search } from 'lucide-react';
+import { Check, ImageIcon, Link2, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ScanPanelProps {
@@ -45,7 +45,7 @@ export function ScanPanel({
             className="w-full h-full object-cover"
           />
         ) : (
-          <TypeIcon className="h-6 w-6 text-amber-500" />
+          <TypeIcon className="h-6 w-6 text-muted-foreground" />
         )}
       </div>
 
@@ -58,7 +58,7 @@ export function ScanPanel({
         {isLoading ? (
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+              <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
               <span className="text-sm font-medium">Scanning the web...</span>
             </div>
             {/* Shimmer bar */}
@@ -68,7 +68,7 @@ export function ScanPanel({
           </div>
         ) : dealsFound !== undefined && dealsFound > 0 ? (
           <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-green-500" />
+            <Check className="h-3.5 w-3.5 text-green-500" />
             <span className="text-sm font-medium text-green-600 dark:text-green-400">
               {dealsFound}+ deals found
             </span>

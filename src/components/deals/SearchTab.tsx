@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, ImageIcon, Sparkles } from 'lucide-react';
+import { Search, Loader2, ImageIcon, Check } from 'lucide-react';
 import { useDealsSearch } from '@/hooks/useDealsSearch';
+import { useDealsMatchCatalog } from '@/hooks/useDealsMatchCatalog';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
+import { AzyahMatchesSection } from './AzyahMatchesSection';
 
 interface SearchTabProps {
   onClose?: () => void;
@@ -14,16 +16,27 @@ interface SearchTabProps {
 export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
   const [query, setQuery] = useState(initialQuery);
   const { search, data, isLoading, error, reset } = useDealsSearch();
+  const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
+
+  // Trigger catalog match when we get results
+  useEffect(() => {
+    if (data?.query) {
+      const avgPrice = data.price_stats.median ? data.price_stats.median * 100 : undefined;
+      matchCatalog(data.query, undefined, avgPrice);
+    }
+  }, [data, matchCatalog]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    resetCatalog();
     await search(query.trim());
   };
 
   const handleReset = () => {
     setQuery('');
     reset();
+    resetCatalog();
   };
 
   return (
@@ -43,8 +56,8 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
               backdrop-blur-sm 
               border-white/30 dark:border-white/20 
               rounded-xl
-              focus:ring-2 focus:ring-amber-500/30
-              focus:border-amber-500/50
+              focus:ring-2 focus:ring-primary/30
+              focus:border-primary/50
               placeholder:text-muted-foreground/50
             "
             style={{ fontSize: '16px' }}
@@ -55,11 +68,10 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
           type="submit" 
           className="
             w-full gap-2 h-11 rounded-xl
-            bg-gradient-to-r from-amber-500 to-orange-500
-            hover:from-amber-600 hover:to-orange-600
+            bg-gradient-to-r from-slate-700 to-slate-800
+            hover:from-slate-600 hover:to-slate-700
             text-white font-medium
-            shadow-[0_4px_16px_rgba(251,191,36,0.3)]
-            hover:shadow-[0_6px_20px_rgba(251,191,36,0.4)]
+            shadow-lg
             transition-all duration-200
           "
           disabled={!query.trim() || isLoading}
@@ -106,7 +118,7 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
             </div>
             {data.deals_found > 0 && (
               <div className="flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5 text-green-500" />
+                <Check className="h-3.5 w-3.5 text-green-500" />
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">
                   {data.deals_found}+
                 </span>
@@ -120,6 +132,12 @@ export function SearchTab({ onClose, initialQuery = '' }: SearchTabProps) {
             median={data.price_stats.median}
             high={data.price_stats.high}
             validCount={data.price_stats.valid_count}
+          />
+
+          {/* Similar on Azyah */}
+          <AzyahMatchesSection 
+            matches={catalogData?.matches || []} 
+            isLoading={catalogLoading}
           />
 
           {/* Disclaimer */}

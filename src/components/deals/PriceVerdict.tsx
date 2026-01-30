@@ -70,16 +70,16 @@ export function PriceVerdict({
           </span>
         </div>
         
-        {/* Thin price bar */}
-        <div className="relative h-1 bg-gradient-to-r from-green-500 via-amber-400 to-red-500 rounded-full">
-          {/* Glowing median marker */}
+        {/* Thin price bar - semantic colors preserved */}
+        <div className="relative h-1 bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 rounded-full">
+          {/* Glowing median marker - neutral white glow */}
           <div 
             className="
               absolute top-1/2 -translate-y-1/2 
               w-2 h-2 rounded-full 
               bg-white 
-              shadow-[0_0_8px_rgba(255,255,255,0.8),0_0_4px_rgba(251,191,36,0.6)]
-              ring-2 ring-amber-400/50
+              shadow-[0_0_8px_rgba(255,255,255,0.9),0_0_4px_rgba(0,0,0,0.2)]
+              ring-2 ring-white/70
             "
             style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
           />
