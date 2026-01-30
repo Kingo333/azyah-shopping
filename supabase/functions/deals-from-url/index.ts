@@ -52,6 +52,63 @@ function hashKey(input: string): string {
   return `url_${Math.abs(hash).toString(36)}`;
 }
 
+// Normalize link to handle // or www. prefixes
+function normalizeLink(link: string | undefined | null): string {
+  if (!link) return '';
+  let normalized = link.trim();
+  if (normalized.startsWith('//')) {
+    normalized = 'https:' + normalized;
+  } else if (normalized.startsWith('www.')) {
+    normalized = 'https://' + normalized;
+  }
+  return normalized;
+}
+
+// Extract numeric price from string like "AED 599.00" or "$49.99"
+function extractNumericPrice(priceStr: string | undefined | null): number | null {
+  if (!priceStr) return null;
+  const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
+  return match ? parseFloat(match[0]) : null;
+}
+
+// Robust dedup key that handles empty links
+function dedupKey(result: any): string {
+  const link = normalizeLink(result.link);
+  const productId = (result.product_id || '').trim();
+  
+  // Priority 1: Valid URL link
+  if (link && link.startsWith('http')) {
+    return `link:${link}`;
+  }
+  
+  // Priority 2: Product ID
+  if (productId) {
+    return `pid:${productId}`;
+  }
+  
+  // Priority 3: Composite key (source + normalized price + title prefix)
+  const source = (result.source || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+  const price = result.extracted_price ?? extractNumericPrice(result.price) ?? 0;
+  const title = (result.title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
+  
+  return `mix:${source}|${price}|${title}`;
+}
+
+// Merge all shopping-related arrays from SerpApi response
+function mergeShoppingArrays(data: any): any[] {
+  return [
+    ...(data.shopping_results || []),
+    ...(data.inline_shopping_results || []),
+    ...(data.sponsored_shopping_results || []),
+    ...(data.related_shopping_results || []),
+  ];
+}
+
 async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
   const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS);
   
@@ -210,7 +267,13 @@ serve(async (req) => {
     }
 
     const allShoppingResults: ShoppingResult[] = [];
-    const seenLinks = new Set<string>();
+    const seenKeys = new Set<string>();
+    let rawResultCount = 0;
+
+    // Run BOTH Lens and text searches in parallel for maximum coverage
+
+    // Track all queries we'll run
+    const shoppingQueries: string[] = [];
 
     // Use Google Lens if we have an og:image
     if (extractedProduct.image) {
@@ -230,7 +293,7 @@ serve(async (req) => {
 
         if (!lensData.error) {
           const visualMatches = (lensData.visual_matches || [])
-            .slice(0, 3)
+            .slice(0, 5) // Increased from 3 to 5
             .filter((match: any) => {
               const source = (match.source || '').toLowerCase();
               return !source.includes('pinterest') && !source.includes('instagram');
@@ -238,42 +301,10 @@ serve(async (req) => {
 
           console.log(`[deals-from-url] Lens found ${visualMatches.length} visual matches`);
 
+          // Add visual match titles to our shopping queries
           for (const match of visualMatches) {
-            if (!match.title) continue;
-
-            const shoppingParams = new URLSearchParams({
-              engine: 'google_shopping',
-              q: match.title,
-              api_key: SERPAPI_KEY,
-              gl: 'ae',
-              hl: 'en',
-              location: 'United Arab Emirates',
-            });
-
-            try {
-              const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
-              const shoppingData = await shoppingResponse.json();
-
-              if (shoppingData.shopping_results) {
-                for (const result of shoppingData.shopping_results.slice(0, 10)) {
-                  if (seenLinks.has(result.link)) continue;
-                  seenLinks.add(result.link);
-
-                  allShoppingResults.push({
-                    title: result.title || '',
-                    link: result.link || '',
-                    thumbnail: result.thumbnail || '',
-                    source: result.source || '',
-                    price: result.price || '',
-                    extracted_price: result.extracted_price || null,
-                    rating: result.rating || undefined,
-                    reviews: result.reviews || undefined,
-                    position: allShoppingResults.length + 1,
-                  });
-                }
-              }
-            } catch (err) {
-              console.warn(`[deals-from-url] Shopping search error:`, err);
+            if (match.title) {
+              shoppingQueries.push(match.title);
             }
           }
         }
@@ -282,59 +313,79 @@ serve(async (req) => {
       }
     }
 
-    // Text fallback if needed
-    if (allShoppingResults.length < 5) {
-      let searchQuery = '';
-      if (extractedProduct.title) {
-        searchQuery = extractedProduct.title;
-        if (extractedProduct.brand && !searchQuery.toLowerCase().includes(extractedProduct.brand.toLowerCase())) {
-          searchQuery = `${extractedProduct.brand} ${searchQuery}`;
-        }
-      } else {
-        try {
-          const urlObj = new URL(url);
-          const pathParts = urlObj.pathname.split('/').filter(Boolean);
-          searchQuery = pathParts[pathParts.length - 1]?.replace(/[-_]/g, ' ') || '';
-        } catch {
-          searchQuery = '';
-        }
+    // ALWAYS add text-based search query (not conditional on Lens results)
+    if (extractedProduct.title) {
+      let textQuery = extractedProduct.title;
+      if (extractedProduct.brand && !textQuery.toLowerCase().includes(extractedProduct.brand.toLowerCase())) {
+        textQuery = `${extractedProduct.brand} ${textQuery}`;
       }
+      shoppingQueries.push(textQuery);
+      
+      // Add a simplified query (brand + category terms only)
+      const words = extractedProduct.title.split(/\s+/).filter((w: string) => w.length > 3).slice(0, 3);
+      if (words.length >= 2 && extractedProduct.brand) {
+        shoppingQueries.push(`${extractedProduct.brand} ${words.join(' ')}`);
+      }
+    } else {
+      // Fallback: extract from URL path
+      try {
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/').filter(Boolean);
+        const pathQuery = pathParts[pathParts.length - 1]?.replace(/[-_]/g, ' ') || '';
+        if (pathQuery) {
+          shoppingQueries.push(pathQuery);
+        }
+      } catch {
+        // Ignore URL parse errors
+      }
+    }
 
-      if (searchQuery) {
-        console.log(`[deals-from-url] Text fallback search: "${searchQuery.substring(0, 80)}..."`);
+    console.log(`[deals-from-url] Running ${shoppingQueries.length} shopping queries`);
 
-        const shoppingParams = new URLSearchParams({
-          engine: 'google_shopping',
-          q: searchQuery,
-          api_key: SERPAPI_KEY,
-          gl: 'ae',
-          hl: 'en',
-          location: 'United Arab Emirates',
-        });
+    // Run all shopping queries
+    for (const query of shoppingQueries.slice(0, 6)) { // Limit to 6 queries max
+      if (!query) continue;
 
+      const shoppingParams = new URLSearchParams({
+        engine: 'google_shopping',
+        q: query,
+        api_key: SERPAPI_KEY,
+        gl: 'ae',
+        hl: 'en',
+        location: 'United Arab Emirates',
+      });
+
+      try {
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
 
-        if (!shoppingData.error && shoppingData.shopping_results) {
-          for (const result of shoppingData.shopping_results.slice(0, 20)) {
-            if (seenLinks.has(result.link)) continue;
-            seenLinks.add(result.link);
+        // Merge ALL shopping arrays from response
+        const allResults = mergeShoppingArrays(shoppingData);
+        rawResultCount += allResults.length;
 
-            allShoppingResults.push({
-              title: result.title || '',
-              link: result.link || '',
-              thumbnail: result.thumbnail || '',
-              source: result.source || '',
-              price: result.price || '',
-              extracted_price: result.extracted_price || null,
-              rating: result.rating || undefined,
-              reviews: result.reviews || undefined,
-              position: allShoppingResults.length + 1,
-            });
-          }
+        for (const result of allResults.slice(0, 15)) {
+          const key = dedupKey(result);
+          if (!key || seenKeys.has(key)) continue;
+          seenKeys.add(key);
+
+          allShoppingResults.push({
+            title: result.title || '',
+            link: normalizeLink(result.link),
+            thumbnail: result.thumbnail || '',
+            source: result.source || '',
+            price: result.price || '',
+            extracted_price: result.extracted_price ?? extractNumericPrice(result.price),
+            rating: result.rating || undefined,
+            reviews: result.reviews || undefined,
+            position: allShoppingResults.length + 1,
+          });
         }
+      } catch (err) {
+        console.warn(`[deals-from-url] Shopping search error:`, err);
       }
     }
+
+    console.log(`[deals-from-url] Pipeline: raw_total=${rawResultCount}, after_dedupe=${allShoppingResults.length}`);
 
     if (allShoppingResults.length === 0 && !extractedProduct.title && !extractedProduct.image) {
       return new Response(
@@ -350,8 +401,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`[deals-from-url] Total shopping results: ${allShoppingResults.length}`);
 
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)

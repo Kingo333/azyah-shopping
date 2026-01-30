@@ -48,6 +48,20 @@ function priceProximity(priceA: number, priceB: number): number {
   return ratio;
 }
 
+// Extract brand keywords from a title
+function extractBrandKeywords(title: string): string[] {
+  const commonBrands = ['nike', 'adidas', 'zara', 'hm', 'gucci', 'prada', 'asos', 'mango', 'massimo', 'uniqlo', 'gap', 'levis', 'calvin', 'tommy', 'ralph', 'armani', 'versace', 'chanel', 'dior', 'burberry'];
+  const titleLower = title.toLowerCase();
+  return commonBrands.filter(brand => titleLower.includes(brand));
+}
+
+// Extract category keywords from a title
+function extractCategoryKeywords(title: string): string[] {
+  const categories = ['shoes', 'sneakers', 'dress', 'shirt', 'pants', 'jeans', 'jacket', 'coat', 'bag', 'handbag', 'watch', 'abaya', 'hijab', 'blazer', 'sweater', 'hoodie', 'skirt', 'top', 'blouse', 'boots', 'sandals', 'heels'];
+  const titleLower = title.toLowerCase();
+  return categories.filter(cat => titleLower.includes(cat));
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -97,7 +111,11 @@ serve(async (req) => {
       .filter((w: string) => w.length > 2)
       .slice(0, 5);
 
-    // Fetch active products from catalog
+    // Extract brand and category hints from query
+    const queryBrands = extractBrandKeywords(query_title);
+    const queryCategories = extractCategoryKeywords(query_title);
+
+    // Fetch ALL active products from catalog (removed is_external filter)
     const { data: products, error: dbError } = await supabase
       .from('products')
       .select(`
@@ -112,8 +130,7 @@ serve(async (req) => {
         brands:brand_id (name)
       `)
       .eq('status', 'active')
-      .eq('is_external', false)
-      .limit(200);
+      .limit(300); // Increased limit
 
     if (dbError) {
       console.error('[deals-match-catalog] DB error:', dbError);
@@ -134,17 +151,18 @@ serve(async (req) => {
 
     for (const product of products) {
       let score = 0;
+      const brandName = (product.brands as any)?.name || null;
 
-      // Title similarity (weight: 0.5)
+      // Title similarity (weight: 0.4)
       const titleSim = textSimilarity(query_title, product.title || '');
-      score += titleSim * 0.5;
+      score += titleSim * 0.4;
 
-      // Tag match (weight: 0.2)
+      // Tag match (weight: 0.15)
       if (product.tags && Array.isArray(product.tags)) {
         const tagMatches = keywords.filter((k: string) => 
           product.tags.some((t: string) => t.toLowerCase().includes(k))
         ).length;
-        score += (tagMatches / Math.max(keywords.length, 1)) * 0.2;
+        score += (tagMatches / Math.max(keywords.length, 1)) * 0.15;
       }
 
       // Category match (weight: 0.15)
@@ -154,16 +172,31 @@ serve(async (req) => {
           score += 0.15;
         }
       }
-
-      // Price proximity (weight: 0.15)
-      if (price_cents && product.price_cents) {
-        score += priceProximity(price_cents, product.price_cents) * 0.15;
+      
+      // Category keyword match from query
+      if (queryCategories.length > 0 && product.category_slug) {
+        const catSlug = product.category_slug.toLowerCase();
+        if (queryCategories.some(qc => catSlug.includes(qc) || qc.includes(catSlug.split('-')[0]))) {
+          score += 0.1;
+        }
       }
 
-      // Only include products with meaningful score
-      if (score >= 0.1) {
+      // Brand match (weight: 0.1)
+      if (queryBrands.length > 0 && brandName) {
+        const productBrandLower = brandName.toLowerCase();
+        if (queryBrands.some(qb => productBrandLower.includes(qb))) {
+          score += 0.1;
+        }
+      }
+
+      // Price proximity (weight: 0.1)
+      if (price_cents && product.price_cents) {
+        score += priceProximity(price_cents, product.price_cents) * 0.1;
+      }
+
+      // Lowered threshold from 0.1 to 0.05
+      if (score >= 0.05) {
         const mediaUrl = product.media_urls?.[0] || '';
-        const brandName = (product.brands as any)?.name || null;
 
         scoredProducts.push({
           id: product.id,
@@ -181,15 +214,52 @@ serve(async (req) => {
     // Sort by score descending
     scoredProducts.sort((a, b) => b.match_score - a.match_score);
 
-    // Take top N
-    const matches = scoredProducts.slice(0, Math.min(limit, 8));
+    // FALLBACK: If no matches found, return products by price proximity + category
+    let matches = scoredProducts.slice(0, Math.min(limit, 8));
 
-    console.log(`[deals-match-catalog] Found ${matches.length} matches (top score: ${matches[0]?.match_score.toFixed(2) || 0})`);
+    if (matches.length === 0 && products.length > 0) {
+      console.log(`[deals-match-catalog] No scored matches, using price/category fallback`);
+      
+      // Filter by category keywords if available
+      let fallbackProducts = products;
+      if (queryCategories.length > 0) {
+        const catFiltered = products.filter(p => {
+          if (!p.category_slug) return false;
+          const catSlug = p.category_slug.toLowerCase();
+          return queryCategories.some(qc => catSlug.includes(qc));
+        });
+        if (catFiltered.length > 0) {
+          fallbackProducts = catFiltered;
+        }
+      }
+
+      // Sort by price proximity
+      if (price_cents) {
+        fallbackProducts.sort((a, b) => {
+          const diffA = Math.abs((a.price_cents || 0) - price_cents);
+          const diffB = Math.abs((b.price_cents || 0) - price_cents);
+          return diffA - diffB;
+        });
+      }
+
+      matches = fallbackProducts.slice(0, Math.min(limit, 8)).map(p => ({
+        id: p.id,
+        title: p.title,
+        price_cents: p.price_cents,
+        currency: p.currency || 'AED',
+        media_url: p.media_urls?.[0] || '',
+        category_slug: p.category_slug,
+        brand_name: (p.brands as any)?.name || null,
+        match_score: 0.01, // Indicate this is a fallback match
+      }));
+    }
+
+    console.log(`[deals-match-catalog] Found ${matches.length} matches (scored: ${scoredProducts.length}, top score: ${matches[0]?.match_score.toFixed(2) || 0})`);
 
     const response: MatchCatalogResponse = {
       success: true,
       matches,
-      total_found: scoredProducts.length,
+      total_found: scoredProducts.length || matches.length,
     };
 
     return new Response(
