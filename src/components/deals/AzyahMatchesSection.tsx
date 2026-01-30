@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Store, ChevronRight, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useEmblaCarousel from 'embla-carousel-react';
+import { upgradeAsosImageUrl } from '@/utils/asosImageUtils';
 
 interface CatalogMatch {
   id: string;
@@ -13,6 +14,8 @@ interface CatalogMatch {
   category_slug: string | null;
   brand_name: string | null;
   match_score: number;
+  affiliate_url?: string | null;
+  external_url?: string | null;
 }
 
 interface AzyahMatchesSectionProps {
@@ -24,11 +27,51 @@ interface AzyahMatchesSectionProps {
 export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatchesSectionProps) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+  const [emblaRef] = useEmblaCarousel({ 
     align: 'start',
     containScroll: 'trimSnaps',
     dragFree: true
   });
+
+  // Get display image URL with ASOS handling
+  const getDisplayImageUrl = useCallback((url: string | null | undefined): string => {
+    if (!url) return '/placeholder.svg';
+    if (url.includes('asos-media.com')) {
+      return upgradeAsosImageUrl(url, 400);
+    }
+    return url;
+  }, []);
+
+  const formatPrice = useCallback((cents: number, currency: string) => {
+    return new Intl.NumberFormat('en-AE', {
+      style: 'currency',
+      currency: currency || 'AED',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(cents / 100);
+  }, []);
+
+  const handleProductClick = useCallback((productId: string) => {
+    navigate(`/products/${productId}`);
+  }, [navigate]);
+
+  const handleShopClick = useCallback((e: React.MouseEvent, url: string) => {
+    e.stopPropagation();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const handleExpandToggle = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
+
+  // Get external link for product
+  const getExternalLink = useCallback((match: CatalogMatch): string | null => {
+    return match.affiliate_url || match.external_url || null;
+  }, []);
+
+  // Show 6 products in carousel, 8 in expanded grid
+  const displayMatches = expanded ? matches.slice(0, 8) : matches.slice(0, 6);
+  const hasMore = matches.length > 6;
 
   if (isLoading) {
     return (
@@ -53,80 +96,74 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     return null;
   }
 
-  const formatPrice = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: currency || 'AED',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(cents / 100);
-  };
-
-  const handleProductClick = (productId: string) => {
-    navigate(`/products/${productId}`);
-  };
-
-  const displayMatches = expanded ? matches.slice(0, 8) : matches.slice(0, 3);
-  const hasMore = matches.length > 3;
-
   // Carousel card component
-  const ProductCard = ({ match, compact = false }: { match: CatalogMatch; compact?: boolean }) => (
-    <div
-      onClick={() => handleProductClick(match.id)}
-      className={cn(
-        "overflow-hidden rounded-xl cursor-pointer flex-shrink-0",
-        "bg-white/60 dark:bg-white/10",
-        "backdrop-blur-xl",
-        "border border-white/30 dark:border-white/10",
-        "shadow-sm",
-        "hover:shadow-md hover:bg-white/80 dark:hover:bg-white/15",
-        "transition-all duration-200",
-        "group",
-        compact ? "w-28" : ""
-      )}
-    >
-      {/* Image */}
-      <div className={cn(
-        "bg-white/50 dark:bg-white/5 overflow-hidden",
-        compact ? "aspect-[3/4]" : "aspect-square"
-      )}>
-        {match.media_url ? (
+  const ProductCard = ({ match, compact = false }: { match: CatalogMatch; compact?: boolean }) => {
+    const externalLink = getExternalLink(match);
+    const imageUrl = getDisplayImageUrl(match.media_url);
+    
+    return (
+      <div
+        onClick={() => handleProductClick(match.id)}
+        className={cn(
+          "overflow-hidden rounded-xl cursor-pointer flex-shrink-0",
+          "bg-white/60 dark:bg-white/10",
+          "backdrop-blur-xl",
+          "border border-white/30 dark:border-white/10",
+          "shadow-sm",
+          "hover:shadow-md hover:bg-white/80 dark:hover:bg-white/15",
+          "transition-all duration-200",
+          "group",
+          compact ? "w-28" : ""
+        )}
+      >
+        {/* Image */}
+        <div className={cn(
+          "bg-white/50 dark:bg-white/5 overflow-hidden relative",
+          compact ? "aspect-[3/4]" : "aspect-square"
+        )}>
           <img
-            src={match.media_url}
+            src={imageUrl}
             alt={match.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/placeholder.svg';
             }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-            <Store className="h-6 w-6" />
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Content */}
-      <div className="p-2">
-        {/* Brand */}
-        {match.brand_name && (
-          <p className="text-[10px] font-medium text-muted-foreground/80 truncate">
-            {match.brand_name}
+        {/* Content */}
+        <div className="p-2">
+          {/* Brand */}
+          {match.brand_name && (
+            <p className="text-[10px] font-medium text-muted-foreground/80 truncate">
+              {match.brand_name}
+            </p>
+          )}
+          
+          {/* Price */}
+          <p className="text-sm font-bold text-foreground">
+            {formatPrice(match.price_cents, match.currency)}
           </p>
-        )}
-        
-        {/* Price */}
-        <p className="text-sm font-bold text-foreground">
-          {formatPrice(match.price_cents, match.currency)}
-        </p>
-        
-        {/* Title */}
-        <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
-          {match.title}
-        </p>
+          
+          {/* Title */}
+          <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+            {match.title}
+          </p>
+
+          {/* Shop button if external link exists */}
+          {externalLink && (
+            <button
+              onClick={(e) => handleShopClick(e, externalLink)}
+              className="mt-2 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Shop
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Expanded grid view
   if (expanded) {
@@ -141,7 +178,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
             </span>
           </div>
           <button
-            onClick={() => setExpanded(false)}
+            onClick={handleExpandToggle}
             className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
           >
             Show less
@@ -157,7 +194,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     );
   }
 
-  // Carousel view (default - 3 cards)
+  // Carousel view (default - 6 cards, 3 visible at a time)
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between px-1">
@@ -170,7 +207,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
         </div>
         {hasMore && (
           <button
-            onClick={() => setExpanded(true)}
+            onClick={handleExpandToggle}
             className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
           >
             View more
