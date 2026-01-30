@@ -36,7 +36,8 @@ import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorial
 import { CategoryTabs } from '@/components/dashboard/CategoryTabs';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 import { StyleLinkCardCompact } from '@/components/dashboard/StyleLinkCardCompact';
-
+import { DealsCard } from '@/components/deals/DealsCard';
+import { DealsDrawer } from '@/components/deals/DealsDrawer';
 
 interface UserProfile {
   id: string;
@@ -101,7 +102,8 @@ const RoleDashboard: React.FC = () => {
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
-  
+  const [dealsDrawerOpen, setDealsDrawerOpen] = useState(false);
+
   // Load saved category selection on component mount
   useEffect(() => {
     const savedCategory = localStorage.getItem('selectedTrendingCategory');
@@ -352,15 +354,10 @@ const RoleDashboard: React.FC = () => {
   };
 
   const renderShopperDashboard = () => <div className="space-y-0 pb-[calc(80px+env(safe-area-inset-bottom))]">
-      {/* Search Card First */}
-      <DashboardTopCarousel
-        showProfileCard={false}
-        showSearchCard={true}
-        showPointsCard={false}
-        showAiTryOnCard={false}
-        onOpenGlobalSearch={handleOpenSearchFromCard}
-        onOpenAiTryOn={() => setAiStudioModalOpen(true)}
-      />
+      {/* Deals Card - Premium Feature */}
+      <div className="px-4 pt-4 pb-2">
+        <DealsCard onOpenDeals={() => setDealsDrawerOpen(true)} />
+      </div>
 
       {/* Row 1: StyleLink (full width) */}
       <div className="px-4 pb-2">
@@ -664,7 +661,7 @@ const RoleDashboard: React.FC = () => {
       <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" />
       <div className="min-h-screen bg-[hsl(var(--azyah-ivory))]">
         {/* New Dashboard Header */}
-        <DashboardHeader />
+        <DashboardHeader onOpenSearch={() => setSearchOpen(true)} />
 
           {/* Role-based Dashboard Content - Only render ONE dashboard */}
           {/* For guests (no userProfile), show shopper dashboard */}
@@ -705,6 +702,12 @@ const RoleDashboard: React.FC = () => {
         <DiscoverTutorialOverlay 
           isVisible={showDiscoverTutorial} 
           onDismiss={handleDismissDiscoverTutorial} 
+        />
+        
+        {/* Deals Drawer */}
+        <DealsDrawer
+          open={dealsDrawerOpen}
+          onOpenChange={setDealsDrawerOpen}
         />
       </div>
     </ErrorBoundary>;

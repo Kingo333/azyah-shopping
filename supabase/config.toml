@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.thenewblack-video]
 verify_jwt = false
+
+[functions.deals-from-image]
+verify_jwt = true
+
+[functions.deals-from-url]
+verify_jwt = true
+
+[functions.deals-search]
+verify_jwt = true

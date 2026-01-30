@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Home, Search, Globe as GlobeIcon, MapPin, Users, Store, Ruler, Heart } from 'lucide-react';
+import { Home, Search, Globe as GlobeIcon, MapPin, Users, Store, Ruler, Heart, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,12 +12,13 @@ import { GlobeWrapper } from '@/components/globe/GlobeWrapper';
 import { CountryDrawer } from '@/components/globe/CountryDrawer';
 import { FollowingDrawer } from '@/components/explore/FollowingDrawer';
 import { YourFitDrawer } from '@/components/explore/YourFitDrawer';
+import { DealsDrawer } from '@/components/deals/DealsDrawer';
 import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
 import GlobalSearch from '@/components/GlobalSearch';
 import { getCountryCodeFromName } from '@/lib/countryCurrency';
 
-type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
+type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit' | 'deals';
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
@@ -27,28 +28,31 @@ const Explore: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [followingDrawerOpen, setFollowingDrawerOpen] = useState(false);
   const [yourFitDrawerOpen, setYourFitDrawerOpen] = useState(false);
+  const [dealsDrawerOpen, setDealsDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ExploreTab>('brands');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
   // Sync tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['brands', 'following', 'shoppers', 'your-fit'].includes(tab)) {
+    if (tab && ['brands', 'following', 'shoppers', 'your-fit', 'deals'].includes(tab)) {
       setActiveTab(tab as ExploreTab);
     }
   }, [searchParams]);
 
-  // Handle tab change - open appropriate drawers for Following and Your Fit
+  // Handle tab change - open appropriate drawers for Following, Your Fit, and Deals
   const handleTabChange = (value: string) => {
     const newTab = value as ExploreTab;
     setActiveTab(newTab);
     setSearchParams({ tab: value });
 
-    // For Following and Your Fit, open the global drawer immediately
+    // For Following, Your Fit, and Deals, open the global drawer immediately
     if (newTab === 'following') {
       setFollowingDrawerOpen(true);
     } else if (newTab === 'your-fit') {
       setYourFitDrawerOpen(true);
+    } else if (newTab === 'deals') {
+      setDealsDrawerOpen(true);
     }
   };
 
@@ -174,7 +178,8 @@ const Explore: React.FC = () => {
       case 'shoppers':
         return countriesWithShoppers;
       case 'your-fit':
-        // For your-fit, show decorative globe - no active filtering
+      case 'deals':
+        // For your-fit and deals, show decorative globe - no active filtering
         return [];
       default:
         return countriesWithBrands;
@@ -183,7 +188,7 @@ const Explore: React.FC = () => {
 
   // Handle country selection - only for Brands and Shoppers tabs
   const handleCountrySelect = (code: string) => {
-    if (activeTab === 'following' || activeTab === 'your-fit') {
+    if (activeTab === 'following' || activeTab === 'your-fit' || activeTab === 'deals') {
       return; // Don't open country drawer for these tabs
     }
     setSelectedCountry(code);
@@ -288,34 +293,41 @@ const Explore: React.FC = () => {
           {/* Filter Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-4 gap-1">
+              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-5 gap-1">
                 <TabsTrigger 
                   value="brands" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-1.5"
                 >
-                  <Store className="h-3.5 w-3.5 mr-1" />
+                  <Store className="h-3 w-3 mr-0.5" />
                   Brands
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#3b82f6] rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#3b82f6] rounded-full text-xs px-1.5"
                 >
-                  <Heart className="h-3.5 w-3.5 mr-1" />
-                  Following
+                  <Heart className="h-3 w-3 mr-0.5" />
+                  Follow
                 </TabsTrigger>
                 <TabsTrigger 
                   value="shoppers" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#22c55e] rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#22c55e] rounded-full text-xs px-1.5"
                 >
-                  <Users className="h-3.5 w-3.5 mr-1" />
-                  Shoppers
+                  <Users className="h-3 w-3 mr-0.5" />
+                  People
                 </TabsTrigger>
                 <TabsTrigger 
                   value="your-fit" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-2"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-1.5"
                 >
-                  <Ruler className="h-3.5 w-3.5 mr-1" />
-                  Your Fit
+                  <Ruler className="h-3 w-3 mr-0.5" />
+                  Fit
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="deals" 
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#f59e0b] rounded-full text-xs px-1.5"
+                >
+                  <Tag className="h-3 w-3 mr-0.5" />
+                  Deals
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -333,7 +345,7 @@ const Explore: React.FC = () => {
           featuredCountry={featuredCountry}
           onSkipToFeed={handleSkipToFeed}
           className="w-full h-full"
-          activeTab={activeTab}
+          activeTab={activeTab === 'deals' ? 'brands' : activeTab}
         />
 
         {/* Hint Text */}
@@ -347,7 +359,9 @@ const Explore: React.FC = () => {
                   ? 'Tap to see shoppers in each country'
                   : activeTab === 'following'
                     ? 'Tap to see who you follow in each country'
-                    : 'Tap to find people with similar fit'
+                    : activeTab === 'deals'
+                      ? 'Find better prices on any product'
+                      : 'Tap to find people with similar fit'
               }
             </span>
           </div>
@@ -366,7 +380,7 @@ const Explore: React.FC = () => {
             }, 300);
           }
         }}
-        activeTab={activeTab}
+        activeTab={activeTab === 'deals' ? 'brands' : activeTab}
       />
 
       {/* Following Drawer - Global, no country required */}
@@ -379,6 +393,12 @@ const Explore: React.FC = () => {
       <YourFitDrawer
         open={yourFitDrawerOpen}
         onOpenChange={setYourFitDrawerOpen}
+      />
+
+      {/* Deals Drawer */}
+      <DealsDrawer
+        open={dealsDrawerOpen}
+        onOpenChange={setDealsDrawerOpen}
       />
 
       {/* GlobalSearch Modal */}
