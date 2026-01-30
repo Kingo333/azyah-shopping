@@ -6,7 +6,6 @@ import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { ProfileCompletionCard } from './ProfileCompletionCard';
-import { QuickSearchCard } from './QuickSearchCard';
 import { PointsSummaryCard } from './PointsSummaryCard';
 import { AiTryOnCard } from './AiTryOnCard';
 import { StyleLinkCard } from './StyleLinkCard';
@@ -82,12 +81,8 @@ export function DashboardTopCarousel({
     });
   }
   
-  if (showSearchCard) {
-    slides.push({
-      key: 'search',
-      component: <QuickSearchCard onOpenSearch={onOpenGlobalSearch} />
-    });
-  }
+  // QuickSearchCard removed - replaced by DealsCard in RoleDashboard
+  // Global search is now accessible via header search icon
   
   if (showPointsCard) {
     slides.push({
