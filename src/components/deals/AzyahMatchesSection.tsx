@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ExternalLink, Store } from 'lucide-react';
+import { Store, ChevronRight, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import useEmblaCarousel from 'embla-carousel-react';
 
 interface CatalogMatch {
   id: string;
@@ -23,6 +23,12 @@ interface AzyahMatchesSectionProps {
 
 export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatchesSectionProps) {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    align: 'start',
+    containScroll: 'trimSnaps',
+    dragFree: true
+  });
 
   if (isLoading) {
     return (
@@ -31,11 +37,11 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
           <Store className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Similar on Azyah</h3>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="flex gap-2 overflow-hidden">
+          {[1, 2, 3].map((i) => (
             <div 
               key={i}
-              className="h-32 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-xl"
+              className="h-40 w-28 flex-shrink-0 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-xl"
             />
           ))}
         </div>
@@ -60,71 +66,125 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     navigate(`/products/${productId}`);
   };
 
-  return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex items-center gap-2 px-1">
-        <Store className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Similar on Azyah</h3>
-        <span className="text-[10px] text-muted-foreground/70 bg-muted/30 px-1.5 py-0.5 rounded-full">
-          {matches.length} found
-        </span>
+  const displayMatches = expanded ? matches.slice(0, 8) : matches.slice(0, 3);
+  const hasMore = matches.length > 3;
+
+  // Carousel card component
+  const ProductCard = ({ match, compact = false }: { match: CatalogMatch; compact?: boolean }) => (
+    <div
+      onClick={() => handleProductClick(match.id)}
+      className={cn(
+        "overflow-hidden rounded-xl cursor-pointer flex-shrink-0",
+        "bg-white/60 dark:bg-white/10",
+        "backdrop-blur-xl",
+        "border border-white/30 dark:border-white/10",
+        "shadow-sm",
+        "hover:shadow-md hover:bg-white/80 dark:hover:bg-white/15",
+        "transition-all duration-200",
+        "group",
+        compact ? "w-28" : ""
+      )}
+    >
+      {/* Image */}
+      <div className={cn(
+        "bg-white/50 dark:bg-white/5 overflow-hidden",
+        compact ? "aspect-[3/4]" : "aspect-square"
+      )}>
+        {match.media_url ? (
+          <img
+            src={match.media_url}
+            alt={match.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder.svg';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+            <Store className="h-6 w-6" />
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {matches.slice(0, 8).map((match) => (
-          <div
-            key={match.id}
-            onClick={() => handleProductClick(match.id)}
-            className={cn(
-              "overflow-hidden rounded-xl cursor-pointer",
-              "bg-white/60 dark:bg-white/10",
-              "backdrop-blur-xl",
-              "border border-white/30 dark:border-white/10",
-              "shadow-sm",
-              "hover:shadow-md hover:bg-white/80 dark:hover:bg-white/15",
-              "transition-all duration-200",
-              "group"
-            )}
-          >
-            {/* Image */}
-            <div className="aspect-square bg-white/50 dark:bg-white/5 overflow-hidden">
-              {match.media_url ? (
-                <img
-                  src={match.media_url}
-                  alt={match.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-                  <Store className="h-8 w-8" />
-                </div>
-              )}
-            </div>
+      {/* Content */}
+      <div className="p-2">
+        {/* Brand */}
+        {match.brand_name && (
+          <p className="text-[10px] font-medium text-muted-foreground/80 truncate">
+            {match.brand_name}
+          </p>
+        )}
+        
+        {/* Price */}
+        <p className="text-sm font-bold text-foreground">
+          {formatPrice(match.price_cents, match.currency)}
+        </p>
+        
+        {/* Title */}
+        <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+          {match.title}
+        </p>
+      </div>
+    </div>
+  );
 
-            {/* Content */}
-            <div className="p-2">
-              {/* Brand */}
-              {match.brand_name && (
-                <p className="text-[10px] font-medium text-muted-foreground/80 truncate">
-                  {match.brand_name}
-                </p>
-              )}
-              
-              {/* Price */}
-              <p className="text-sm font-bold text-foreground">
-                {formatPrice(match.price_cents, match.currency)}
-              </p>
-              
-              {/* Title */}
-              <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
-                {match.title}
-              </p>
-            </div>
+  // Expanded grid view
+  if (expanded) {
+    return (
+      <div className={cn("space-y-3", className)}>
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Store className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Similar on Azyah</h3>
+            <span className="text-[10px] text-muted-foreground/70 bg-muted/30 px-1.5 py-0.5 rounded-full">
+              {matches.length} found
+            </span>
           </div>
-        ))}
+          <button
+            onClick={() => setExpanded(false)}
+            className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
+          >
+            Show less
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {displayMatches.map((match) => (
+            <ProductCard key={match.id} match={match} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Carousel view (default - 3 cards)
+  return (
+    <div className={cn("space-y-3", className)}>
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Store className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Similar on Azyah</h3>
+          <span className="text-[10px] text-muted-foreground/70 bg-muted/30 px-1.5 py-0.5 rounded-full">
+            {matches.length} found
+          </span>
+        </div>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
+          >
+            View more
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex gap-2">
+          {displayMatches.map((match) => (
+            <ProductCard key={match.id} match={match} compact />
+          ))}
+        </div>
       </div>
     </div>
   );
