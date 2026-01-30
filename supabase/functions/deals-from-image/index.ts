@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const RATE_LIMIT_WINDOW_MS = 60000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const CACHE_TTL_MS = 30 * 60 * 1000;
+
 interface LensVisualMatch {
   title: string;
   link: string;
@@ -37,11 +41,68 @@ interface DealsResponse {
     valid_count: number;
   };
   deals_found: number;
+  cached?: boolean;
   error?: string;
 }
 
+function hashKey(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return `img_${Math.abs(hash).toString(36)}`;
+}
+
+async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
+  const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS);
+  
+  const { data: existing } = await supabase
+    .from('deals_rate_limit')
+    .select('request_count')
+    .eq('user_id', userId)
+    .eq('window_start', windowStart.toISOString())
+    .single();
+
+  if (existing) {
+    if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+      return false;
+    }
+    await supabase
+      .from('deals_rate_limit')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('user_id', userId)
+      .eq('window_start', windowStart.toISOString());
+  } else {
+    await supabase
+      .from('deals_rate_limit')
+      .insert({ user_id: userId, window_start: windowStart.toISOString(), request_count: 1 });
+  }
+  return true;
+}
+
+async function getCache(supabase: any, key: string): Promise<any | null> {
+  const { data } = await supabase
+    .from('deals_cache')
+    .select('payload, expires_at')
+    .eq('key', key)
+    .single();
+
+  if (data && new Date(data.expires_at) > new Date()) {
+    return data.payload;
+  }
+  return null;
+}
+
+async function setCache(supabase: any, key: string, payload: any): Promise<void> {
+  const expiresAt = new Date(Date.now() + CACHE_TTL_MS).toISOString();
+  await supabase
+    .from('deals_cache')
+    .upsert({ key, payload, expires_at: expiresAt }, { onConflict: 'key' });
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -52,7 +113,6 @@ serve(async (req) => {
       throw new Error('SERPAPI_API_KEY not configured');
     }
 
-    // Verify JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -65,13 +125,20 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const allowed = await checkRateLimit(supabase, user.id);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -84,14 +151,25 @@ serve(async (req) => {
       );
     }
 
+    // Check cache
+    const cacheKey = hashKey(imageUrl);
+    const cached = await getCache(supabase, cacheKey);
+    if (cached) {
+      console.log(`[deals-from-image] Cache hit`);
+      return new Response(
+        JSON.stringify({ ...cached, cached: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[deals-from-image] Processing image for user ${user.id}: ${imageUrl.substring(0, 100)}...`);
 
-    // Step 1: Call Google Lens via SerpApi
+    // Call Google Lens
     const lensParams = new URLSearchParams({
       engine: 'google_lens',
       url: imageUrl,
       api_key: SERPAPI_KEY,
-      gl: 'ae',  // UAE default
+      gl: 'ae',
       hl: 'en',
     });
 
@@ -104,11 +182,9 @@ serve(async (req) => {
       throw new Error(`Lens API error: ${lensData.error}`);
     }
 
-    // Extract visual matches
     const visualMatches: LensVisualMatch[] = (lensData.visual_matches || [])
       .slice(0, 5)
       .filter((match: any) => {
-        // Filter out Pinterest, editorial sources
         const source = (match.source || '').toLowerCase();
         return !source.includes('pinterest') && !source.includes('instagram');
       })
@@ -121,14 +197,11 @@ serve(async (req) => {
 
     console.log(`[deals-from-image] Found ${visualMatches.length} visual matches`);
 
-    // Step 2: Build search queries from top matches
     const allShoppingResults: ShoppingResult[] = [];
     const seenLinks = new Set<string>();
 
-    // Use top 3 visual matches to search
     const searchQueries = visualMatches.slice(0, 3).map(m => m.title).filter(Boolean);
     
-    // If no good matches, use generic approach
     if (searchQueries.length === 0 && lensData.knowledge_graph?.title) {
       searchQueries.push(lensData.knowledge_graph.title);
     }
@@ -176,7 +249,6 @@ serve(async (req) => {
 
     console.log(`[deals-from-image] Total shopping results: ${allShoppingResults.length}`);
 
-    // Step 3: Compute price statistics with guardrails
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
@@ -189,14 +261,9 @@ serve(async (req) => {
     };
 
     if (validPrices.length >= 5) {
-      // Sort prices
       const sorted = [...validPrices].sort((a, b) => a - b);
-      
-      // Calculate median
       const mid = Math.floor(sorted.length / 2);
       const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      
-      // Remove outliers (below 10% or above 5x median)
       const filtered = sorted.filter(p => p >= median * 0.1 && p <= median * 5);
       
       if (filtered.length >= 5) {
@@ -206,7 +273,6 @@ serve(async (req) => {
       }
     }
 
-    // Sort results by price (lowest first)
     allShoppingResults.sort((a, b) => {
       if (a.extracted_price === null) return 1;
       if (b.extracted_price === null) return -1;
@@ -221,6 +287,9 @@ serve(async (req) => {
       price_stats: priceStats,
       deals_found: allShoppingResults.length,
     };
+
+    // Cache the response
+    await setCache(supabase, cacheKey, response);
 
     console.log(`[deals-from-image] Success: ${allShoppingResults.length} deals found`);
 

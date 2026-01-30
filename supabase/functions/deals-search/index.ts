@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 interface ShoppingResult {
   title: string;
   link: string;
@@ -30,7 +34,89 @@ interface DealsResponse {
   };
   deals_found: number;
   used_lens_fallback?: boolean;
+  cached?: boolean;
   error?: string;
+}
+
+// Simple hash function for cache keys
+function hashKey(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return `search_${Math.abs(hash).toString(36)}`;
+}
+
+async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
+  const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS);
+  
+  // Try to increment or insert
+  const { data, error } = await supabase
+    .from('deals_rate_limit')
+    .upsert(
+      { user_id: userId, window_start: windowStart.toISOString(), request_count: 1 },
+      { onConflict: 'user_id,window_start', ignoreDuplicates: false }
+    )
+    .select('request_count')
+    .single();
+
+  if (error) {
+    // If upsert failed, try to get existing and increment
+    const { data: existing } = await supabase
+      .from('deals_rate_limit')
+      .select('request_count')
+      .eq('user_id', userId)
+      .eq('window_start', windowStart.toISOString())
+      .single();
+
+    if (existing) {
+      if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+        return false;
+      }
+      await supabase
+        .from('deals_rate_limit')
+        .update({ request_count: existing.request_count + 1 })
+        .eq('user_id', userId)
+        .eq('window_start', windowStart.toISOString());
+    }
+    return true;
+  }
+
+  // Check if we hit the upsert successfully and need to increment
+  if (data && data.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  // Increment the count
+  await supabase
+    .from('deals_rate_limit')
+    .update({ request_count: (data?.request_count || 0) + 1 })
+    .eq('user_id', userId)
+    .eq('window_start', windowStart.toISOString());
+
+  return true;
+}
+
+async function getCache(supabase: any, key: string): Promise<any | null> {
+  const { data } = await supabase
+    .from('deals_cache')
+    .select('payload, expires_at')
+    .eq('key', key)
+    .single();
+
+  if (data && new Date(data.expires_at) > new Date()) {
+    return data.payload;
+  }
+  return null;
+}
+
+async function setCache(supabase: any, key: string, payload: any): Promise<void> {
+  const expiresAt = new Date(Date.now() + CACHE_TTL_MS).toISOString();
+  await supabase
+    .from('deals_cache')
+    .upsert({ key, payload, expires_at: expiresAt }, { onConflict: 'key' });
 }
 
 serve(async (req) => {
@@ -68,6 +154,15 @@ serve(async (req) => {
       );
     }
 
+    // Check rate limit
+    const allowed = await checkRateLimit(supabase, user.id);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { q, sort_by } = await req.json();
 
     if (!q || typeof q !== 'string' || q.trim().length === 0) {
@@ -85,6 +180,17 @@ serve(async (req) => {
       );
     }
 
+    // Check cache
+    const cacheKey = hashKey(`${q.trim().toLowerCase()}_${sort_by || ''}`);
+    const cached = await getCache(supabase, cacheKey);
+    if (cached) {
+      console.log(`[deals-search] Cache hit for "${q.substring(0, 30)}..."`);
+      return new Response(
+        JSON.stringify({ ...cached, cached: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[deals-search] Searching for user ${user.id}: "${q}"`);
 
     const allShoppingResults: ShoppingResult[] = [];
@@ -96,12 +202,11 @@ serve(async (req) => {
       engine: 'google_shopping',
       q: q.trim(),
       api_key: SERPAPI_KEY,
-      gl: 'ae',  // UAE default
+      gl: 'ae',
       hl: 'en',
       location: 'United Arab Emirates',
     });
 
-    // Add sort if specified (1 = price low to high, 2 = price high to low)
     if (sort_by === 1 || sort_by === 2) {
       params.set('tbs', sort_by === 1 ? 'p_ord:p' : 'p_ord:pd');
     }
@@ -113,7 +218,6 @@ serve(async (req) => {
       throw new Error(`Shopping API error: ${shoppingData.error}`);
     }
 
-    // Add initial shopping results
     for (const result of (shoppingData.shopping_results || []).slice(0, 30)) {
       if (seenLinks.has(result.link)) continue;
       seenLinks.add(result.link);
@@ -133,12 +237,12 @@ serve(async (req) => {
 
     console.log(`[deals-search] Initial shopping results: ${allShoppingResults.length}`);
 
-    // Step 2: If <5 results, use Google Lens fallback with top result thumbnail
+    // Step 2: Lens fallback if <5 results
     if (allShoppingResults.length < 5 && allShoppingResults.length > 0) {
       const topResult = allShoppingResults[0];
       
       if (topResult.thumbnail) {
-        console.log(`[deals-search] Running Lens fallback on top result thumbnail...`);
+        console.log(`[deals-search] Running Lens fallback...`);
         usedLensFallback = true;
 
         try {
@@ -161,9 +265,6 @@ serve(async (req) => {
                 return !source.includes('pinterest') && !source.includes('instagram');
               });
 
-            console.log(`[deals-search] Lens found ${visualMatches.length} visual matches`);
-
-            // Search shopping for each visual match
             for (const match of visualMatches.slice(0, 3)) {
               if (!match.title) continue;
 
@@ -199,7 +300,7 @@ serve(async (req) => {
                   }
                 }
               } catch (err) {
-                console.warn(`[deals-search] Expand search error for "${match.title}":`, err);
+                console.warn(`[deals-search] Expand search error:`, err);
               }
             }
           }
@@ -211,7 +312,7 @@ serve(async (req) => {
 
     console.log(`[deals-search] Final result count: ${allShoppingResults.length}`);
 
-    // Step 3: Compute price statistics with guardrails
+    // Step 3: Compute price statistics
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
@@ -227,8 +328,6 @@ serve(async (req) => {
       const sorted = [...validPrices].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
       const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      
-      // Remove outliers
       const filtered = sorted.filter(p => p >= median * 0.1 && p <= median * 5);
       
       if (filtered.length >= 5) {
@@ -238,7 +337,6 @@ serve(async (req) => {
       }
     }
 
-    // Sort by price if not already sorted by API
     if (!sort_by) {
       allShoppingResults.sort((a, b) => {
         if (a.extracted_price === null) return 1;
@@ -255,6 +353,9 @@ serve(async (req) => {
       deals_found: allShoppingResults.length,
       used_lens_fallback: usedLensFallback,
     };
+
+    // Cache the response
+    await setCache(supabase, cacheKey, response);
 
     return new Response(
       JSON.stringify(response),

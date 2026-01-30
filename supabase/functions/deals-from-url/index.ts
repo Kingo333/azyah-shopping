@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const RATE_LIMIT_WINDOW_MS = 60000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const CACHE_TTL_MS = 30 * 60 * 1000;
+
 interface ShoppingResult {
   title: string;
   link: string;
@@ -34,42 +38,93 @@ interface DealsResponse {
     valid_count: number;
   };
   deals_found: number;
+  cached?: boolean;
   error?: string;
 }
 
-// Extract product metadata from HTML
+function hashKey(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return `url_${Math.abs(hash).toString(36)}`;
+}
+
+async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
+  const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS);
+  
+  const { data: existing } = await supabase
+    .from('deals_rate_limit')
+    .select('request_count')
+    .eq('user_id', userId)
+    .eq('window_start', windowStart.toISOString())
+    .single();
+
+  if (existing) {
+    if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+      return false;
+    }
+    await supabase
+      .from('deals_rate_limit')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('user_id', userId)
+      .eq('window_start', windowStart.toISOString());
+  } else {
+    await supabase
+      .from('deals_rate_limit')
+      .insert({ user_id: userId, window_start: windowStart.toISOString(), request_count: 1 });
+  }
+  return true;
+}
+
+async function getCache(supabase: any, key: string): Promise<any | null> {
+  const { data } = await supabase
+    .from('deals_cache')
+    .select('payload, expires_at')
+    .eq('key', key)
+    .single();
+
+  if (data && new Date(data.expires_at) > new Date()) {
+    return data.payload;
+  }
+  return null;
+}
+
+async function setCache(supabase: any, key: string, payload: any): Promise<void> {
+  const expiresAt = new Date(Date.now() + CACHE_TTL_MS).toISOString();
+  await supabase
+    .from('deals_cache')
+    .upsert({ key, payload, expires_at: expiresAt }, { onConflict: 'key' });
+}
+
 function extractMetadata(html: string): { title: string | null; image: string | null; brand: string | null } {
   let title: string | null = null;
   let image: string | null = null;
   let brand: string | null = null;
 
-  // Extract og:title
   const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
   if (ogTitleMatch) {
     title = ogTitleMatch[1];
   } else {
-    // Fallback to <title>
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     if (titleMatch) {
       title = titleMatch[1];
     }
   }
 
-  // Extract og:image
   const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
   if (ogImageMatch) {
     image = ogImageMatch[1];
   }
 
-  // Extract brand hints
   const ogSiteMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i);
   if (ogSiteMatch) {
     brand = ogSiteMatch[1];
   }
 
-  // Clean up title
   if (title) {
-    // Remove common suffixes like "| Brand Name" or "- Store"
     title = title.replace(/\s*[\|\-–—]\s*[^|\-–—]+$/, '').trim();
   }
 
@@ -77,7 +132,6 @@ function extractMetadata(html: string): { title: string | null; image: string | 
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -88,7 +142,6 @@ serve(async (req) => {
       throw new Error('SERPAPI_API_KEY not configured');
     }
 
-    // Verify JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -101,13 +154,20 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const allowed = await checkRateLimit(supabase, user.id);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -120,16 +180,24 @@ serve(async (req) => {
       );
     }
 
+    // Check cache
+    const cacheKey = hashKey(url.toLowerCase());
+    const cached = await getCache(supabase, cacheKey);
+    if (cached) {
+      console.log(`[deals-from-url] Cache hit for URL`);
+      return new Response(
+        JSON.stringify({ ...cached, cached: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[deals-from-url] Processing URL for user ${user.id}: ${url}`);
 
-    // Step 1: Fetch and extract product metadata
     let extractedProduct = { title: null as string | null, image: null as string | null, brand: null as string | null };
     
     try {
       const pageResponse = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)',
-        },
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' },
       });
       
       if (pageResponse.ok) {
@@ -144,7 +212,7 @@ serve(async (req) => {
     const allShoppingResults: ShoppingResult[] = [];
     const seenLinks = new Set<string>();
 
-    // Step 2: If we have an og:image, run Google Lens for visual similarity (PRIMARY)
+    // Use Google Lens if we have an og:image
     if (extractedProduct.image) {
       console.log(`[deals-from-url] Running Google Lens on og:image...`);
       
@@ -161,7 +229,6 @@ serve(async (req) => {
         const lensData = await lensResponse.json();
 
         if (!lensData.error) {
-          // Extract visual matches and search for each
           const visualMatches = (lensData.visual_matches || [])
             .slice(0, 3)
             .filter((match: any) => {
@@ -171,7 +238,6 @@ serve(async (req) => {
 
           console.log(`[deals-from-url] Lens found ${visualMatches.length} visual matches`);
 
-          // Search shopping for each visual match
           for (const match of visualMatches) {
             if (!match.title) continue;
 
@@ -207,7 +273,7 @@ serve(async (req) => {
                 }
               }
             } catch (err) {
-              console.warn(`[deals-from-url] Shopping search error for "${match.title}":`, err);
+              console.warn(`[deals-from-url] Shopping search error:`, err);
             }
           }
         }
@@ -216,7 +282,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 3: If Lens didn't yield enough results, fall back to text search
+    // Text fallback if needed
     if (allShoppingResults.length < 5) {
       let searchQuery = '';
       if (extractedProduct.title) {
@@ -225,7 +291,6 @@ serve(async (req) => {
           searchQuery = `${extractedProduct.brand} ${searchQuery}`;
         }
       } else {
-        // Fallback: extract from URL
         try {
           const urlObj = new URL(url);
           const pathParts = urlObj.pathname.split('/').filter(Boolean);
@@ -288,7 +353,6 @@ serve(async (req) => {
 
     console.log(`[deals-from-url] Total shopping results: ${allShoppingResults.length}`);
 
-    // Step 4: Compute price statistics with guardrails
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
@@ -304,8 +368,6 @@ serve(async (req) => {
       const sorted = [...validPrices].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
       const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      
-      // Remove outliers
       const filtered = sorted.filter(p => p >= median * 0.1 && p <= median * 5);
       
       if (filtered.length >= 5) {
@@ -315,7 +377,6 @@ serve(async (req) => {
       }
     }
 
-    // Sort by price
     allShoppingResults.sort((a, b) => {
       if (a.extracted_price === null) return 1;
       if (b.extracted_price === null) return -1;
@@ -330,6 +391,9 @@ serve(async (req) => {
       price_stats: priceStats,
       deals_found: allShoppingResults.length,
     };
+
+    // Cache the response
+    await setCache(supabase, cacheKey, response);
 
     console.log(`[deals-from-url] Success: ${allShoppingResults.length} deals found`);
 
