@@ -402,9 +402,6 @@ const RoleDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Wardrobe Data Section */}
-      <ClosetOutfitsSection />
-
       {/* Trending Looks Section */}
       <section className="px-4 pt-3">
         <div className="flex items-center justify-between mb-2">
@@ -460,6 +457,9 @@ const RoleDashboard: React.FC = () => {
         <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
       </section>
 
+      {/* Wardrobe Data Section */}
+      <ClosetOutfitsSection />
+
       {/* Events Section */}
       <section className="px-4 pt-3">
         <div className="flex items-center justify-between mb-1">
@@ -485,7 +485,7 @@ const RoleDashboard: React.FC = () => {
               {/* Event Image */}
               <div className="w-32 h-32 flex-shrink-0 bg-muted">
                 <img 
-                  src={featuredEvent.image_url || '/placeholder.svg'} 
+                  src={featuredEvent.banner_image_url || featuredEvent.image_url || '/placeholder.svg'} 
                   alt={featuredEvent.name}
                   className="w-full h-full object-cover"
                 />

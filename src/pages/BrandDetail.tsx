@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,17 +6,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image, Briefcase, Globe, Instagram, Twitter } from 'lucide-react';
+import { ArrowLeft, Package, Heart, Star, ShoppingBag, Image, Briefcase, Globe, Instagram, Twitter } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useToast } from '@/hooks/use-toast';
-import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
-import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { PortfolioGallery } from '@/components/brand/PortfolioGallery';
 
 // ProductCard component for seamless grid display
@@ -29,8 +27,6 @@ const BrandProductCard: React.FC<{
   requireAuth: (action: string, callback: () => void) => void;
 }> = ({ product, onProductClick, onLike, formatPrice, user, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
-  const { data: hasOutfit } = useProductHasOutfit(product.id);
-  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
   const { toast } = useToast();
 
   const handleAddToWishlist = async () => {
@@ -65,16 +61,6 @@ const BrandProductCard: React.FC<{
             {getImageCount(product)}
           </div>
         )}
-
-        {/* Try On label */}
-        {hasOutfit && (
-          <div 
-            className="absolute top-7 left-1.5 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-90 cursor-pointer hover:opacity-100"
-            onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
-          >
-            Try On
-          </div>
-        )}
         
         {/* Hover gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -98,16 +84,6 @@ const BrandProductCard: React.FC<{
           >
             <ShoppingBag className="h-4 w-4" />
           </Button>
-          {hasOutfit && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
-              onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
-            >
-              <User className="h-4 w-4 text-white" />
-            </Button>
-          )}
         </div>
         
         {/* Product Info Overlay */}
@@ -118,12 +94,6 @@ const BrandProductCard: React.FC<{
           </div>
         </div>
       </div>
-      
-      <ProductTryOnModal
-        isOpen={tryOnModalOpen}
-        onClose={() => setTryOnModalOpen(false)}
-        product={product}
-      />
     </div>
   );
 };
@@ -151,9 +121,9 @@ const BrandDetail = () => {
     enabled: !!slug,
   });
 
-  // Determine brand type
-  const isSalonOrAgency = brand?.category === 'salon' || brand?.category === 'agency' || brand?.category === 'studio';
-  const isFashionBrand = brand?.category === 'fashion_brand' || !brand?.category;
+  // Determine brand type - only salon is treated as service provider
+  const isSalon = brand?.category === 'salon';
+  const isFashionBrand = !isSalon;
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['brand-products', brand?.id],
@@ -168,7 +138,7 @@ const BrandDetail = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!brand?.id && !isSalonOrAgency,
+    enabled: !!brand?.id && !isSalon,
   });
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
@@ -334,7 +304,7 @@ const BrandDetail = () => {
                   )}
 
                   {/* Divider if there are social links and product count */}
-                  {(brand.website || (brand.socials as any)?.instagram || (brand.socials as any)?.tiktok || (brand.socials as any)?.twitter) && (isFashionBrand || isSalonOrAgency) && (
+                  {(brand.website || (brand.socials as any)?.instagram || (brand.socials as any)?.tiktok || (brand.socials as any)?.twitter) && (
                     <div className="h-5 w-px bg-border mx-1" />
                   )}
                   
@@ -344,10 +314,10 @@ const BrandDetail = () => {
                       {products?.length || 0} products
                     </div>
                   )}
-                  {isSalonOrAgency && (
+                  {isSalon && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Briefcase className="h-4 w-4" />
-                      {brand.category === 'salon' ? 'Salon & Spa' : 'Marketing Agency'}
+                      Salon & Spa
                     </div>
                   )}
                 </div>
@@ -391,8 +361,8 @@ const BrandDetail = () => {
           </div>
         )}
 
-        {/* Portfolio Gallery - For Salons & Marketing Agencies */}
-        {isSalonOrAgency && brand?.id && (
+        {/* Portfolio Gallery - For Salons Only */}
+        {isSalon && brand?.id && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Past Work</h2>
             <PortfolioGallery brandId={brand.id} showEmptyState={false} />

@@ -48,7 +48,6 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
   
   // Form state
   const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
   const [topSize, setTopSize] = useState('');
   const [bottomSize, setBottomSize] = useState('');
   const [dressSize, setDressSize] = useState('');
@@ -82,7 +81,6 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
       // Build measurements object
       const measurements = {
         height: parseFloat(height),
-        weight: weight ? parseFloat(weight) : undefined,
         top_size: topSize || undefined,
         bottom_size: bottomSize || undefined,
         dress_size: dressSize || undefined,
@@ -146,18 +144,6 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
             />
           </div>
 
-          {/* Weight - Optional */}
-          <div className="space-y-2">
-            <Label htmlFor="weight">Weight (kg) - optional</Label>
-            <Input
-              id="weight"
-              type="number"
-              placeholder="e.g., 60"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-            />
-          </div>
-
           {/* Size Preferences */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
@@ -166,7 +152,7 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[80]">
                   {TOP_SIZES.map((size) => (
                     <SelectItem key={size} value={size}>
                       {size}
@@ -182,7 +168,7 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[80]">
                   {BOTTOM_SIZES.map((size) => (
                     <SelectItem key={size} value={size}>
                       {size}
@@ -198,7 +184,7 @@ export const AddYourFitModal: React.FC<AddYourFitModalProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[80]">
                   {DRESS_SIZES.map((size) => (
                     <SelectItem key={size} value={size}>
                       {size}
