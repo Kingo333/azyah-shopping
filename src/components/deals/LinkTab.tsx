@@ -5,6 +5,7 @@ import { Link2, Loader2, ExternalLink, ImageIcon } from 'lucide-react';
 import { useDealsFromUrl } from '@/hooks/useDealsFromUrl';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
+import { ScanPanel } from './ScanPanel';
 
 interface LinkTabProps {
   onClose?: () => void;
@@ -47,20 +48,37 @@ export function LinkTab({ onClose }: LinkTabProps) {
       {/* URL Input */}
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="relative">
-          <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
           <Input
             type="url"
             placeholder="Paste product URL here..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="pl-10 h-11"
+            className="
+              pl-10 h-12 
+              bg-white/50 dark:bg-white/10 
+              backdrop-blur-sm 
+              border-white/30 dark:border-white/20 
+              rounded-xl
+              focus:ring-2 focus:ring-amber-500/30
+              focus:border-amber-500/50
+              placeholder:text-muted-foreground/50
+            "
             style={{ fontSize: '16px' }}
             disabled={isLoading}
           />
         </div>
         <Button 
           type="submit" 
-          className="w-full gap-2"
+          className="
+            w-full gap-2 h-11 rounded-xl
+            bg-gradient-to-r from-amber-500 to-orange-500
+            hover:from-amber-600 hover:to-orange-600
+            text-white font-medium
+            shadow-[0_4px_16px_rgba(251,191,36,0.3)]
+            hover:shadow-[0_6px_20px_rgba(251,191,36,0.4)]
+            transition-all duration-200
+          "
           disabled={!isValidUrl || isLoading}
         >
           {isLoading ? (
@@ -77,36 +95,28 @@ export function LinkTab({ onClose }: LinkTabProps) {
         </Button>
       </form>
 
-      {/* Extracted product preview */}
-      {data?.extracted_product?.title && (
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          {data.extracted_product.image ? (
-            <div className="w-14 h-14 rounded-lg overflow-hidden bg-background flex-shrink-0">
-              <img 
-                src={data.extracted_product.image} 
-                alt={data.extracted_product.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium line-clamp-2">{data.extracted_product.title}</p>
-            {data.extracted_product.brand && (
-              <p className="text-xs text-muted-foreground">{data.extracted_product.brand}</p>
-            )}
-          </div>
-        </div>
+      {/* Scan Panel with extracted product */}
+      {(data?.extracted_product?.title || isLoading) && (
+        <ScanPanel
+          type="link"
+          thumbnail={data?.extracted_product?.image}
+          title={data?.extracted_product?.title}
+          isLoading={isLoading}
+          dealsFound={data?.deals_found}
+          onReset={!isLoading ? handleReset : undefined}
+        />
       )}
 
       {/* Error */}
       {error && (
         <div className="text-center py-4">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={handleReset}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3 rounded-xl bg-white/50 border-white/30" 
+            onClick={handleReset}
+          >
             Try again
           </Button>
         </div>
@@ -115,13 +125,6 @@ export function LinkTab({ onClose }: LinkTabProps) {
       {/* Results */}
       {data && !isLoading && (
         <div className="space-y-4">
-          {/* Deals count */}
-          {data.deals_found > 0 && (
-            <p className="text-sm font-medium text-green-600 text-center">
-              {data.deals_found}+ deals found
-            </p>
-          )}
-
           {/* Price Verdict */}
           <PriceVerdict
             low={data.price_stats.low}
@@ -131,7 +134,7 @@ export function LinkTab({ onClose }: LinkTabProps) {
           />
 
           {/* Disclaimer */}
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-[10px] text-muted-foreground/70 text-center">
             Results pulled from public web listings. Prices may change.
           </p>
 
@@ -148,7 +151,7 @@ export function LinkTab({ onClose }: LinkTabProps) {
 
           {data.shopping_results.length === 0 && (
             <div className="text-center py-6">
-              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <ImageIcon className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
                 No deals found for this product
               </p>
@@ -157,7 +160,11 @@ export function LinkTab({ onClose }: LinkTabProps) {
 
           {/* Try another */}
           {data.deals_found > 0 && (
-            <Button variant="outline" className="w-full" onClick={handleReset}>
+            <Button 
+              variant="outline" 
+              className="w-full rounded-xl bg-white/50 dark:bg-white/10 border-white/30 hover:bg-white/70" 
+              onClick={handleReset}
+            >
               Search another URL
             </Button>
           )}

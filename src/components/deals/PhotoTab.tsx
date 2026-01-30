@@ -3,10 +3,11 @@ import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, Loader2, ImageIcon, Sparkles } from 'lucide-react';
+import { Camera, Upload, Loader2, ImageIcon } from 'lucide-react';
 import { useDealsFromImage } from '@/hooks/useDealsFromImage';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
+import { ScanPanel } from './ScanPanel';
 import { cn } from '@/lib/utils';
 
 interface PhotoTabProps {
@@ -102,14 +103,19 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors",
-            isDragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+            "rounded-2xl p-8 text-center cursor-pointer transition-all duration-200",
+            "border border-dashed border-white/40",
+            "bg-white/30 dark:bg-white/5",
+            "backdrop-blur-sm",
+            isDragActive 
+              ? "border-amber-500/50 bg-amber-500/10" 
+              : "hover:border-amber-500/50 hover:bg-white/50",
             (isUploading) && "opacity-50 cursor-not-allowed"
           )}
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center backdrop-blur-sm">
               {isUploading ? (
                 <Loader2 className="h-7 w-7 text-amber-500 animate-spin" />
               ) : (
@@ -120,12 +126,21 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
               <p className="font-medium text-foreground">
                 {isUploading ? 'Uploading...' : 'Upload a product photo'}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground/80 mt-1">
                 JPG, PNG or WebP up to 5MB
               </p>
             </div>
             {!isUploading && (
-              <Button variant="outline" size="sm" className="mt-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="
+                  mt-2 gap-2 rounded-xl
+                  bg-white/50 dark:bg-white/10
+                  border-white/30
+                  hover:bg-white/70 dark:hover:bg-white/20
+                "
+              >
                 <Upload className="h-4 w-4" />
                 Choose Image
               </Button>
@@ -143,46 +158,21 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
   // Show loading/results UI
   return (
     <div className="space-y-4">
-      {/* Input preview */}
-      {uploadedImage && (
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <div className="w-16 h-16 rounded-lg overflow-hidden bg-background flex-shrink-0">
-            <img 
-              src={uploadedImage} 
-              alt="Uploaded" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
-                <span className="text-sm font-medium">Scanning the web...</span>
-              </div>
-            ) : data ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-600">
-                  {data.deals_found}+ deals found
-                </span>
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">Image uploaded</span>
-            )}
-          </div>
-          {!isLoading && (
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              Try another
-            </Button>
-          )}
-        </div>
-      )}
+      {/* Scan Panel */}
+      <ScanPanel
+        type="photo"
+        thumbnail={uploadedImage}
+        isLoading={isLoading}
+        dealsFound={data?.deals_found}
+        onReset={!isLoading ? handleReset : undefined}
+      />
 
       {/* Loading skeleton */}
       {isLoading && (
         <div className="space-y-3">
-          <div className="h-16 bg-muted animate-pulse rounded-lg" />
-          <div className="h-24 bg-muted animate-pulse rounded-lg" />
-          <div className="h-24 bg-muted animate-pulse rounded-lg" />
+          <div className="h-20 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-2xl" />
+          <div className="h-24 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-2xl" />
+          <div className="h-24 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-2xl" />
         </div>
       )}
 
@@ -190,7 +180,12 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       {error && (
         <div className="text-center py-6">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={handleReset}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3 rounded-xl bg-white/50 border-white/30" 
+            onClick={handleReset}
+          >
             Try again
           </Button>
         </div>
@@ -208,7 +203,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
           />
 
           {/* Disclaimer */}
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-[10px] text-muted-foreground/70 text-center">
             Results pulled from public web listings. Prices may change.
           </p>
 
@@ -225,7 +220,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
 
           {data.shopping_results.length === 0 && (
             <div className="text-center py-6">
-              <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <ImageIcon className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
                 No deals found for this image
               </p>

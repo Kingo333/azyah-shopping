@@ -21,7 +21,13 @@ export function PriceVerdict({
   // Guardrail: Don't show verdict if insufficient data
   if (validCount < 5 || low === null || median === null || high === null) {
     return (
-      <div className={cn("text-center py-3 px-4 bg-muted/50 rounded-lg", className)}>
+      <div className={cn(
+        "text-center py-3 px-4 rounded-2xl",
+        "bg-white/40 dark:bg-white/10",
+        "backdrop-blur-sm",
+        "border border-white/20",
+        className
+      )}>
         <p className="text-xs text-muted-foreground">
           {validCount > 0 
             ? `Found ${validCount} prices — need 5+ to show typical range`
@@ -42,27 +48,49 @@ export function PriceVerdict({
   };
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-green-600 font-medium">Low</span>
-        <span className="text-muted-foreground">Typical</span>
-        <span className="text-red-500 font-medium">High</span>
-      </div>
-      
-      {/* Price bar */}
-      <div className="relative h-2 bg-gradient-to-r from-green-500 via-amber-400 to-red-500 rounded-full">
-        {/* Median marker */}
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-foreground rounded-full shadow-sm"
-          style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
-        />
-      </div>
-      
-      {/* Price labels */}
-      <div className="flex items-center justify-between text-xs font-medium">
-        <span className="text-green-600">{formatPrice(low)}</span>
-        <span className="text-foreground">{formatPrice(median)}</span>
-        <span className="text-red-500">{formatPrice(high)}</span>
+    <div className={cn(
+      "p-4 rounded-2xl",
+      "bg-white/50 dark:bg-white/10",
+      "backdrop-blur-xl",
+      "border border-white/20",
+      "shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]",
+      className
+    )}>
+      <div className="space-y-3">
+        {/* Price labels as pill badges */}
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400">
+            Low
+          </span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/20 text-muted-foreground">
+            Typical
+          </span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 dark:text-red-400">
+            High
+          </span>
+        </div>
+        
+        {/* Thin price bar */}
+        <div className="relative h-1 bg-gradient-to-r from-green-500 via-amber-400 to-red-500 rounded-full">
+          {/* Glowing median marker */}
+          <div 
+            className="
+              absolute top-1/2 -translate-y-1/2 
+              w-2 h-2 rounded-full 
+              bg-white 
+              shadow-[0_0_8px_rgba(255,255,255,0.8),0_0_4px_rgba(251,191,36,0.6)]
+              ring-2 ring-amber-400/50
+            "
+            style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
+          />
+        </div>
+        
+        {/* Price values */}
+        <div className="flex items-center justify-between text-xs font-semibold">
+          <span className="text-green-600 dark:text-green-400">{formatPrice(low)}</span>
+          <span className="text-foreground">{formatPrice(median)}</span>
+          <span className="text-red-500 dark:text-red-400">{formatPrice(high)}</span>
+        </div>
       </div>
     </div>
   );
