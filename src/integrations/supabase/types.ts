@@ -1414,6 +1414,45 @@ export type Database = {
           },
         ]
       }
+      deals_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          key: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          key: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          key?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
+      deals_rate_limit: {
+        Row: {
+          request_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          request_count?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          request_count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       default_wardrobe_items: {
         Row: {
           brand: string | null
@@ -5289,6 +5328,7 @@ export type Database = {
       check_payment_encryption: { Args: never; Returns: string }
       check_retailer_data_security: { Args: never; Returns: Json }
       check_security_definer_views: { Args: never; Returns: Json }
+      cleanup_deals_cache: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: number }
       cleanup_old_ai_assets: {
         Args: never
