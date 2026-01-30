@@ -326,18 +326,64 @@ serve(async (req) => {
       if (words.length >= 2 && extractedProduct.brand) {
         shoppingQueries.push(`${extractedProduct.brand} ${words.join(' ')}`);
       }
-    } else {
-      // Fallback: extract from URL path
-      try {
-        const urlObj = new URL(url);
-        const pathParts = urlObj.pathname.split('/').filter(Boolean);
-        const pathQuery = pathParts[pathParts.length - 1]?.replace(/[-_]/g, ' ') || '';
-        if (pathQuery) {
-          shoppingQueries.push(pathQuery);
+    }
+    
+    // ALWAYS add URL-derived fallback queries (even if we got title from HTML)
+    // This handles cases where page fetch fails or title is not extracted
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace('www.', '');
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
+      
+      // Extract brand from hostname (e.g., "asos.com" -> "ASOS", "nike.com" -> "Nike")
+      let urlBrand = '';
+      if (hostname.includes('asos')) urlBrand = 'ASOS';
+      else if (hostname.includes('nike')) urlBrand = 'Nike';
+      else if (hostname.includes('zara')) urlBrand = 'Zara';
+      else if (hostname.includes('hm.com') || hostname.includes('h&m')) urlBrand = 'H&M';
+      else if (hostname.includes('amazon')) urlBrand = 'Amazon';
+      else if (hostname.includes('shein')) urlBrand = 'Shein';
+      else if (hostname.includes('namshi')) urlBrand = 'Namshi';
+      else if (hostname.includes('noon')) urlBrand = 'Noon';
+      else urlBrand = hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
+      
+      // Find the most product-like path segment (usually contains hyphens and is descriptive)
+      const productSegment = pathParts.find(part => 
+        part.includes('-') && 
+        part.length > 10 && 
+        !part.startsWith('prd') && 
+        !/^\d+$/.test(part)
+      ) || pathParts[pathParts.length - 1];
+      
+      if (productSegment) {
+        // Clean up the segment: "asos-design-relaxed-camp-collar-shirt..." -> "relaxed camp collar shirt"
+        let cleanQuery = productSegment
+          .replace(/[-_]/g, ' ')
+          .replace(/\b(prd|colourwayid|colorwayid|sku|id)\b/gi, '')
+          .replace(/\d{6,}/g, '') // Remove long product IDs
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Remove brand prefix if present in URL path
+        cleanQuery = cleanQuery.replace(/^asos\s*(design)?\s*/i, '');
+        cleanQuery = cleanQuery.replace(/^nike\s*/i, '');
+        cleanQuery = cleanQuery.replace(/^zara\s*/i, '');
+        
+        if (cleanQuery.length > 5) {
+          // Add brand + cleaned query
+          const fullQuery = `${urlBrand} ${cleanQuery}`.trim();
+          shoppingQueries.push(fullQuery);
+          console.log(`[deals-from-url] URL-derived query: "${fullQuery}"`);
+          
+          // Also add a shorter version with key terms
+          const keyTerms = cleanQuery.split(' ').filter((w: string) => w.length > 3).slice(0, 4);
+          if (keyTerms.length >= 2) {
+            shoppingQueries.push(`${urlBrand} ${keyTerms.join(' ')}`);
+          }
         }
-      } catch {
-        // Ignore URL parse errors
       }
+    } catch (err) {
+      console.warn('[deals-from-url] URL parse error:', err);
     }
 
     console.log(`[deals-from-url] Running ${shoppingQueries.length} shopping queries`);
@@ -387,7 +433,8 @@ serve(async (req) => {
 
     console.log(`[deals-from-url] Pipeline: raw_total=${rawResultCount}, after_dedupe=${allShoppingResults.length}`);
 
-    if (allShoppingResults.length === 0 && !extractedProduct.title && !extractedProduct.image) {
+    // Only return error if we have ZERO results AND no valid queries were run
+    if (allShoppingResults.length === 0 && shoppingQueries.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
