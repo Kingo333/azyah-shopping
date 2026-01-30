@@ -61,7 +61,7 @@ const slides: SlideType[] = [
   {
     type: "interactive-swipe",
     title: "Your Style, Your Swipes",
-    subtitle: "Swipe right to save, left to pass. Your feed learns with every swipe.",
+    subtitle: "Swipe right to save, left to pass. Your feed learns your style and fit over time.",
     images: ["/onboarding/product-bag.png", "/onboarding/product-shoes.png", "/onboarding/product-shirt.png"],
     productInfo: [
       {
@@ -175,7 +175,7 @@ const OutfitInspoSlider = () => {
       </div>
       <div className="bg-white p-3 text-center">
         <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
-        <p className="text-xs text-muted-foreground">Earn points at salons</p>
+        <p className="text-xs text-muted-foreground">Earn points</p>
       </div>
     </div>
   );
