@@ -55,6 +55,63 @@ function hashKey(input: string): string {
   return `img_${Math.abs(hash).toString(36)}`;
 }
 
+// Normalize link to handle // or www. prefixes
+function normalizeLink(link: string | undefined | null): string {
+  if (!link) return '';
+  let normalized = link.trim();
+  if (normalized.startsWith('//')) {
+    normalized = 'https:' + normalized;
+  } else if (normalized.startsWith('www.')) {
+    normalized = 'https://' + normalized;
+  }
+  return normalized;
+}
+
+// Extract numeric price from string like "AED 599.00" or "$49.99"
+function extractNumericPrice(priceStr: string | undefined | null): number | null {
+  if (!priceStr) return null;
+  const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
+  return match ? parseFloat(match[0]) : null;
+}
+
+// Robust dedup key that handles empty links
+function dedupKey(result: any): string {
+  const link = normalizeLink(result.link);
+  const productId = (result.product_id || '').trim();
+  
+  // Priority 1: Valid URL link
+  if (link && link.startsWith('http')) {
+    return `link:${link}`;
+  }
+  
+  // Priority 2: Product ID
+  if (productId) {
+    return `pid:${productId}`;
+  }
+  
+  // Priority 3: Composite key (source + normalized price + title prefix)
+  const source = (result.source || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+  const price = result.extracted_price ?? extractNumericPrice(result.price) ?? 0;
+  const title = (result.title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
+  
+  return `mix:${source}|${price}|${title}`;
+}
+
+// Merge all shopping-related arrays from SerpApi response
+function mergeShoppingArrays(data: any): any[] {
+  return [
+    ...(data.shopping_results || []),
+    ...(data.inline_shopping_results || []),
+    ...(data.sponsored_shopping_results || []),
+    ...(data.related_shopping_results || []),
+  ];
+}
+
 async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
   const windowStart = new Date(Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS) * RATE_LIMIT_WINDOW_MS);
   
@@ -183,14 +240,14 @@ serve(async (req) => {
     }
 
     const visualMatches: LensVisualMatch[] = (lensData.visual_matches || [])
-      .slice(0, 5)
+      .slice(0, 8) // Increased from 5 to 8
       .filter((match: any) => {
         const source = (match.source || '').toLowerCase();
         return !source.includes('pinterest') && !source.includes('instagram');
       })
       .map((match: any) => ({
         title: match.title || '',
-        link: match.link || '',
+        link: normalizeLink(match.link),
         thumbnail: match.thumbnail || '',
         source: match.source || '',
       }));
@@ -198,12 +255,25 @@ serve(async (req) => {
     console.log(`[deals-from-image] Found ${visualMatches.length} visual matches`);
 
     const allShoppingResults: ShoppingResult[] = [];
-    const seenLinks = new Set<string>();
+    const seenKeys = new Set<string>();
+    let rawResultCount = 0;
 
-    const searchQueries = visualMatches.slice(0, 3).map(m => m.title).filter(Boolean);
+    // Use up to 5 visual match titles for shopping searches
+    const searchQueries = visualMatches.slice(0, 5).map(m => m.title).filter(Boolean);
     
+    // Add knowledge graph title as fallback
     if (searchQueries.length === 0 && lensData.knowledge_graph?.title) {
       searchQueries.push(lensData.knowledge_graph.title);
+    }
+
+    // Add a generic fallback from visual match sources
+    if (searchQueries.length > 0 && visualMatches.length > 0) {
+      // Extract brand/category terms from first match
+      const firstTitle = searchQueries[0];
+      const words = firstTitle.split(/\s+/).filter((w: string) => w.length > 3).slice(0, 3);
+      if (words.length >= 2) {
+        searchQueries.push(words.join(' '));
+      }
     }
 
     for (const query of searchQueries) {
@@ -224,30 +294,33 @@ serve(async (req) => {
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
 
-        if (shoppingData.shopping_results) {
-          for (const result of shoppingData.shopping_results.slice(0, 10)) {
-            if (seenLinks.has(result.link)) continue;
-            seenLinks.add(result.link);
+        // Merge ALL shopping arrays from response
+        const allResults = mergeShoppingArrays(shoppingData);
+        rawResultCount += allResults.length;
 
-            allShoppingResults.push({
-              title: result.title || '',
-              link: result.link || '',
-              thumbnail: result.thumbnail || '',
-              source: result.source || '',
-              price: result.price || '',
-              extracted_price: result.extracted_price || null,
-              rating: result.rating || undefined,
-              reviews: result.reviews || undefined,
-              position: result.position || allShoppingResults.length + 1,
-            });
-          }
+        for (const result of allResults.slice(0, 15)) {
+          const key = dedupKey(result);
+          if (!key || seenKeys.has(key)) continue;
+          seenKeys.add(key);
+
+          allShoppingResults.push({
+            title: result.title || '',
+            link: normalizeLink(result.link),
+            thumbnail: result.thumbnail || '',
+            source: result.source || '',
+            price: result.price || '',
+            extracted_price: result.extracted_price ?? extractNumericPrice(result.price),
+            rating: result.rating || undefined,
+            reviews: result.reviews || undefined,
+            position: allShoppingResults.length + 1,
+          });
         }
       } catch (err) {
         console.error(`[deals-from-image] Shopping search error for query "${query}":`, err);
       }
     }
 
-    console.log(`[deals-from-image] Total shopping results: ${allShoppingResults.length}`);
+    console.log(`[deals-from-image] Pipeline: raw_total=${rawResultCount}, after_dedupe=${allShoppingResults.length}`);
 
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
