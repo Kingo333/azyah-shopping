@@ -89,18 +89,56 @@ export function useDealsFromImage() {
     }
   }, []);
 
-  // New method to support multiple cropped image URLs (for future multi-crop feature)
+  // Multi-crop search - sends multiple image URLs to backend
   const searchFromImages = useCallback(async (
     imageUrls: { url: string; cropType: 'full' | 'garment' | 'pattern' }[]
   ) => {
-    // For now, use the first image (garment crop) - multi-crop backend support coming in Phase 3
-    const primaryImage = imageUrls.find(img => img.cropType === 'garment') || imageUrls[0];
-    if (!primaryImage) {
+    if (!imageUrls || imageUrls.length === 0) {
       setError('No image provided');
       return null;
     }
-    return searchFromImage(primaryImage.url);
-  }, [searchFromImage]);
+
+    setIsLoading(true);
+    setError(null);
+    setData(null);
+
+    try {
+      // Use primary crop (garment) for the main search
+      const primaryImage = imageUrls.find(img => img.cropType === 'garment') || imageUrls[0];
+      
+      const { data: response, error: fnError } = await supabase.functions.invoke(
+        'deals-from-image',
+        {
+          body: { 
+            imageUrl: primaryImage.url,
+            // Include all crops for potential multi-crop search in future
+            imageUrls: imageUrls.map(img => ({
+              url: img.url,
+              cropType: img.cropType,
+            })),
+          },
+        }
+      );
+
+      if (fnError) {
+        throw new Error(fnError.message || 'Failed to search deals');
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to search deals');
+      }
+
+      setData(response);
+      return response;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      console.error('useDealsFromImage multi-crop error:', err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const reset = useCallback(() => {
     setData(null);
