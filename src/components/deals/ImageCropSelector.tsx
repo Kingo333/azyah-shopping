@@ -276,7 +276,7 @@ export function ImageCropSelector({
                 </div>
               )}
               
-              {/* Other candidate boxes (subtle indicators) */}
+              {/* Other candidate boxes (subtle indicators with labels) */}
               {!isDetecting && candidateBoxes.map((box, idx) => {
                 if (idx === selectedBoxIndex) return null;
                 const boxPixels = cropRectToPixels(boxToCropRect(box), displayDimensions.width, displayDimensions.height);
@@ -290,7 +290,12 @@ export function ImageCropSelector({
                       width: boxPixels.width,
                       height: boxPixels.height,
                     }}
-                  />
+                  >
+                    {/* Label badge */}
+                    <div className="absolute -top-5 left-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      {box.label}
+                    </div>
+                  </div>
                 );
               })}
               
@@ -298,7 +303,7 @@ export function ImageCropSelector({
               {!isDetecting && (
                 <div
                   className={cn(
-                    "absolute border-2 border-white rounded cursor-move",
+                    "absolute border-2 border-primary rounded cursor-move shadow-lg",
                     isDragging && "cursor-grabbing"
                   )}
                   style={{
@@ -311,6 +316,17 @@ export function ImageCropSelector({
                   onTouchStart={handleMouseDown}
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Label badge */}
+                  {candidateBoxes[selectedBoxIndex] && (
+                    <div className="absolute -top-6 left-0 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-medium">
+                      {candidateBoxes[selectedBoxIndex].label}
+                      {candidateBoxes[selectedBoxIndex].description && (
+                        <span className="ml-1 opacity-80">
+                          – {candidateBoxes[selectedBoxIndex].description.substring(0, 20)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {/* Corner brackets (Google Lens style) */}
                   <div className="absolute -left-0.5 -top-0.5 w-4 h-4 border-l-2 border-t-2 border-white" />
                   <div className="absolute -right-0.5 -top-0.5 w-4 h-4 border-r-2 border-t-2 border-white" />

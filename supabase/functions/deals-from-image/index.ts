@@ -40,6 +40,11 @@ interface PipelineLog {
   used_fallback_queries: boolean;
   brands_detected?: string[];
   patterns_detected?: string[];
+  // NEW: Enhanced instrumentation
+  lens_calls_count?: number;
+  visual_rerank_applied?: boolean;
+  azyah_similar_count?: number;
+  top_5_results?: Array<{ title: string; thumb: string; final_score: number }>;
 }
 
 interface DealsResponse {
@@ -445,17 +450,20 @@ serve(async (req) => {
       );
     }
 
-    const { imageUrl } = await req.json();
+    const { imageUrl, imageUrls } = await req.json();
 
-    if (!imageUrl) {
+    // Support both single imageUrl and multi-crop imageUrls array
+    const primaryImageUrl = imageUrl || (imageUrls?.[0]?.url);
+    
+    if (!primaryImageUrl) {
       return new Response(
-        JSON.stringify({ success: false, error: 'imageUrl is required' }),
+        JSON.stringify({ success: false, error: 'imageUrl or imageUrls is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check cache
-    const cacheKey = hashKey(imageUrl);
+    const cacheKey = hashKey(primaryImageUrl);
     const cached = await getCache(supabase, cacheKey);
     if (cached) {
       console.log(`[deals-from-image] Cache hit`);
@@ -465,7 +473,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[deals-from-image] Processing image for user ${user.id}: ${imageUrl.substring(0, 100)}...`);
+    console.log(`[deals-from-image] Processing image for user ${user.id}: ${primaryImageUrl.substring(0, 100)}...`);
 
     // Initialize pipeline logging
     const pipelineLog: PipelineLog = {
@@ -477,32 +485,59 @@ serve(async (req) => {
       used_fallback_queries: false,
       brands_detected: [],
       patterns_detected: [],
+      lens_calls_count: 0,
+      visual_rerank_applied: false,
     };
 
-    // Step 1: Call Google Lens
-    const lensParams = new URLSearchParams({
-      engine: 'google_lens',
-      url: imageUrl,
-      api_key: SERPAPI_KEY,
-      gl: 'ae',
-      hl: 'en',
-    });
+    // Step 1: Call Google Lens (support multi-crop)
+    const imagesToSearch = imageUrls?.length 
+      ? imageUrls.slice(0, 2) // Max 2 crops
+      : [{ url: primaryImageUrl, cropType: 'full' }];
+    
+    let allLensVisualMatches: any[] = [];
+    
+    for (const imgData of imagesToSearch) {
+      const lensParams = new URLSearchParams({
+        engine: 'google_lens',
+        url: imgData.url,
+        api_key: SERPAPI_KEY,
+        gl: 'ae',
+        hl: 'en',
+      });
 
-    console.log('[deals-from-image] Calling Google Lens API...');
-    const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
-    const lensData = await lensResponse.json();
+      console.log(`[deals-from-image] Calling Google Lens API (${imgData.cropType || 'primary'})...`);
+      const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
+      const lensData = await lensResponse.json();
+      pipelineLog.lens_calls_count = (pipelineLog.lens_calls_count || 0) + 1;
 
-    if (lensData.error) {
-      console.error('[deals-from-image] Lens API error:', lensData.error);
-      throw new Error(`Lens API error: ${lensData.error}`);
+      if (!lensData.error) {
+        const matches = lensData.visual_matches || [];
+        // Weight garment/pattern crops higher
+        const weight = imgData.cropType === 'pattern' ? 1.5 : imgData.cropType === 'garment' ? 1.2 : 1.0;
+        for (const match of matches) {
+          allLensVisualMatches.push({ ...match, _weight: weight, _cropType: imgData.cropType });
+        }
+        
+        // Also grab knowledge graph if available
+        if (lensData.knowledge_graph?.title) {
+          allLensVisualMatches.unshift({ 
+            title: lensData.knowledge_graph.title,
+            _weight: 2.0,
+            _cropType: 'knowledge_graph'
+          });
+        }
+      } else {
+        console.warn(`[deals-from-image] Lens API error for ${imgData.cropType}:`, lensData.error);
+      }
     }
 
-    const visualMatches: LensVisualMatch[] = (lensData.visual_matches || [])
-      .slice(0, 10)
+    // Process merged visual matches
+    const visualMatches: LensVisualMatch[] = allLensVisualMatches
       .filter((match: any) => {
         const source = (match.source || '').toLowerCase();
         return !source.includes('pinterest') && !source.includes('instagram');
       })
+      .slice(0, 15) // Increased limit for multi-crop
       .map((match: any) => ({
         title: match.title || '',
         link: normalizeLink(match.link),
@@ -510,15 +545,10 @@ serve(async (req) => {
         source: match.source || '',
       }));
 
-    console.log(`[deals-from-image] Found ${visualMatches.length} visual matches`);
+    console.log(`[deals-from-image] Found ${visualMatches.length} visual matches from ${pipelineLog.lens_calls_count} Lens calls`);
 
     // Extract titles for query pack building
     const visualMatchTitles = visualMatches.map(m => m.title).filter(Boolean);
-    
-    // Add knowledge graph title if available
-    if (lensData.knowledge_graph?.title) {
-      visualMatchTitles.unshift(lensData.knowledge_graph.title);
-    }
 
     // NEW: Extract brand hints from visual matches
     const detectedBrands = extractBrandHints(visualMatchTitles);
@@ -780,9 +810,75 @@ serve(async (req) => {
       result.position = index + 1;
     });
 
+    // Step 7: Visual rerank using thumbnail embeddings (via Gemini)
+    if (allShoppingResults.length >= 10) {
+      console.log('[deals-from-image] Running visual rerank on top 30 results...');
+      
+      try {
+        const topResults = allShoppingResults.slice(0, 30);
+        const validThumbnails = topResults.filter(r => 
+          r.thumbnail && r.thumbnail.startsWith('http')
+        );
+        
+        if (validThumbnails.length >= 5) {
+          const rerankResponse = await fetch(`${supabaseUrl}/functions/v1/visual-rerank`, {
+            method: 'POST',
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              queryImageUrl: primaryImageUrl,
+              results: validThumbnails.map(r => ({
+                id: r.link,
+                thumbnailUrl: r.thumbnail,
+                currentScore: r.similarity_score ?? 0,
+              })),
+            }),
+          });
+          
+          if (rerankResponse.ok) {
+            const rerankData = await rerankResponse.json();
+            if (rerankData.success && rerankData.results) {
+              for (const vr of rerankData.results) {
+                const result = allShoppingResults.find(r => r.link === vr.id);
+                if (result) {
+                  result.similarity_score = vr.combinedScore;
+                }
+              }
+              
+              // Re-sort by combined score
+              allShoppingResults.sort((a, b) => 
+                (b.similarity_score ?? 0) - (a.similarity_score ?? 0)
+              );
+              
+              // Update positions again
+              allShoppingResults.forEach((result, index) => {
+                result.position = index + 1;
+              });
+              
+              pipelineLog.visual_rerank_applied = true;
+              console.log('[deals-from-image] Visual rerank applied successfully');
+            }
+          } else {
+            console.warn('[deals-from-image] Visual rerank returned non-OK status:', rerankResponse.status);
+          }
+        }
+      } catch (err) {
+        console.warn('[deals-from-image] Visual rerank failed:', err);
+      }
+    }
+
+    // Add top 5 results to pipeline log
+    pipelineLog.top_5_results = allShoppingResults.slice(0, 5).map(r => ({
+      title: r.title.substring(0, 50),
+      thumb: r.thumbnail?.substring(0, 50) || '',
+      final_score: r.similarity_score ?? 0,
+    }));
+
     const response: DealsResponse = {
       success: true,
-      input_image: imageUrl,
+      input_image: primaryImageUrl,
       visual_matches: visualMatches,
       shopping_results: allShoppingResults,
       price_stats: priceStats,
