@@ -2,6 +2,38 @@
 
 # Image Search Enhancement Plan: Google Lens-Level Accuracy
 
+## ✅ IMPLEMENTATION STATUS: COMPLETE
+
+All 4 phases have been implemented:
+
+### Phase 1: Backend Vocabulary (DONE)
+- Added `PATTERN_WORDS` (40+ patterns) and `TRIM_WORDS` (15+ trims)
+- Added `BRAND_PATTERNS` (100+ fashion brands)
+- Updated `extractDescriptors()` to include patterns/trims
+- Updated `buildQueryPack()` to prioritize pattern queries
+- Updated scoring weights: Pattern 0.25, Category 0.20, Color 0.15, Trim 0.10, Brand 0.05-0.12
+
+### Phase 2: Smart Crop UI (DONE)
+- Created `ImageCropSelector.tsx` with draggable/resizable crop box
+- Created `imageCropUtils.ts` with canvas crop helpers
+- Updated `PhotoTab.tsx` to show crop step before search
+- Added presets: Garment, Pattern, Full Image
+
+### Phase 3: AI Overview Attributes (DONE)
+- Created `analyze-product-image` edge function
+- Returns structured JSON: category, colors, pattern, fabric, silhouette, description
+- Uses Gemini vision for analysis
+
+### Phase 4: Visual Rerank (DONE)
+- Created `visual-rerank` edge function
+- Compares query image to result thumbnails using Gemini
+- Returns similarity scores 0-1 for each result
+- Blends 60% text score + 40% visual score
+
+---
+
+## Original Plan
+
 ## Executive Summary
 
 This plan enhances the "Find Deals from Photo" feature to match Google Lens/Pinterest accuracy by adding:

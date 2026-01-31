@@ -10,20 +10,36 @@ import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
 import { ScanPanel } from './ScanPanel';
 import { AzyahMatchesSection } from './AzyahMatchesSection';
+import { ImageCropSelector } from './ImageCropSelector';
+import { cropImage, CropRect } from '@/utils/imageCropUtils';
 import { cn } from '@/lib/utils';
 
 interface PhotoTabProps {
   onClose?: () => void;
 }
 
+type PhotoState = 'upload' | 'crop' | 'loading' | 'results';
+
 export function PhotoTab({ onClose }: PhotoTabProps) {
   const { user } = useAuth();
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [photoState, setPhotoState] = useState<PhotoState>('upload');
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   
   const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
   const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // Trigger catalog match when we get results
   useEffect(() => {
@@ -34,24 +50,48 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     }
   }, [data, matchCatalog]);
 
+  // Handle file drop - show crop selector instead of immediate upload
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file || !user) return;
 
-    setIsUploading(true);
+    // Reset state
     setUploadError(null);
     reset();
     resetCatalog();
+    setOriginalFile(file);
+    
+    // Create preview URL for crop selector
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
+    setPhotoState('crop');
+  }, [user, reset, resetCatalog]);
+
+  // Handle crop confirmation - upload cropped image and search
+  const handleCropConfirm = useCallback(async (
+    crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[]
+  ) => {
+    if (!originalFile || !user) return;
+
+    setIsUploading(true);
+    setPhotoState('loading');
+    setUploadError(null);
 
     try {
-      // Create unique filename with short expiry path
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Get the primary crop (garment)
+      const primaryCrop = crops.find(c => c.type === 'garment') || crops[0];
+      
+      // Apply crop to the image
+      const croppedBlob = await cropImage(originalFile, primaryCrop.rect);
+      
+      // Create unique filename
+      const fileName = `${user.id}/${Date.now()}.jpg`;
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadErr } = await supabase.storage
         .from('deals-uploads')
-        .upload(fileName, file, {
+        .upload(fileName, croppedBlob, {
+          contentType: 'image/jpeg',
           cacheControl: '600', // 10 minutes
           upsert: true,
         });
@@ -69,27 +109,39 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
         throw new Error('Failed to create signed URL');
       }
 
-      setUploadedImage(signedData.signedUrl);
+      setUploadedImageUrl(signedData.signedUrl);
 
       // Start searching
       await searchFromImage(signedData.signedUrl);
+      setPhotoState('results');
 
-      // Schedule cleanup after longer delay (15 min) so Lens calls don't break
+      // Schedule cleanup after 15 min
       setTimeout(async () => {
         try {
           await supabase.storage.from('deals-uploads').remove([fileName]);
         } catch {
           // Ignore cleanup errors
         }
-      }, 900000); // 15 minutes after upload
+      }, 900000);
 
     } catch (err) {
       console.error('Upload error:', err);
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      setPhotoState('crop'); // Go back to crop on error
     } finally {
       setIsUploading(false);
     }
-  }, [user, searchFromImage, reset, resetCatalog]);
+  }, [user, originalFile, searchFromImage]);
+
+  // Handle cancel crop - go back to upload
+  const handleCropCancel = useCallback(() => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setOriginalFile(null);
+    setPhotoState('upload');
+  }, [previewUrl]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -104,14 +156,20 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
   });
 
   const handleReset = () => {
-    setUploadedImage(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setOriginalFile(null);
+    setUploadedImageUrl(null);
     setUploadError(null);
+    setPhotoState('upload');
     reset();
     resetCatalog();
   };
 
-  // Show upload UI if no image yet
-  if (!uploadedImage && !isLoading) {
+  // Show upload UI
+  if (photoState === 'upload') {
     return (
       <div className="space-y-4">
         <div
@@ -169,20 +227,38 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     );
   }
 
+  // Show crop selector UI
+  if (photoState === 'crop' && previewUrl) {
+    return (
+      <div className="space-y-4">
+        <ImageCropSelector
+          imageUrl={previewUrl}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+          isProcessing={isUploading}
+        />
+        
+        {uploadError && (
+          <p className="text-sm text-destructive text-center">{uploadError}</p>
+        )}
+      </div>
+    );
+  }
+
   // Show loading/results UI
   return (
     <div className="space-y-4">
       {/* Scan Panel */}
       <ScanPanel
         type="photo"
-        thumbnail={uploadedImage}
-        isLoading={isLoading}
+        thumbnail={uploadedImageUrl || previewUrl}
+        isLoading={isLoading || photoState === 'loading'}
         dealsFound={data?.deals_found}
-        onReset={!isLoading ? handleReset : undefined}
+        onReset={!isLoading && photoState !== 'loading' ? handleReset : undefined}
       />
 
       {/* Loading skeleton */}
-      {isLoading && (
+      {(isLoading || photoState === 'loading') && (
         <div className="space-y-3">
           <div className="h-20 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-2xl" />
           <div className="h-24 bg-white/30 dark:bg-white/5 backdrop-blur-sm animate-pulse rounded-2xl" />
@@ -206,7 +282,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       )}
 
       {/* Results */}
-      {data && !isLoading && (
+      {data && !isLoading && photoState === 'results' && (
         <div className="space-y-4">
           {/* Price Verdict */}
           <PriceVerdict
