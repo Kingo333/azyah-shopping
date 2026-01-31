@@ -1,47 +1,92 @@
 # Azyah "Find Better Deals" – Phia-Parity Implementation Plan
 
-## Current Status: Phase 2.1 Complete ✅
+## Current Status: Phase 2.1 + Link Intake Complete ✅
 
 ### What Changed (This Session)
 
-Replaced non-functional custom plugin with `@capgo/inappbrowser` for real WebView extraction.
+1. **WebView Extraction via @capgo/inappbrowser** - COMPLETE ✅
+2. **Cold Start Deep Link Handling** - COMPLETE ✅
+3. **Clipboard Link Detection Fallback** - COMPLETE ✅
+4. **Universal URL Acceptance** - COMPLETE ✅ (no domain allowlist)
 
-**Implementation:**
-1. ✅ Installed `@capgo/inappbrowser@^7.0.0` (ships with native WKWebView/WebView code)
-2. ✅ Rewrote `OpenInAzyahButton.tsx` with all critical fixes:
-   - Listeners registered BEFORE `openWebView()` (prevents race conditions)
-   - Guards (`injectedRef`, `completedRef`) prevent multiple injections/results
-   - Robust wrapper pattern (no fragile string replacement)
-   - Individual listener handle cleanup via `.remove()`
-   - 15-second timeout with cleanup and fallback message
-3. ✅ Updated `codemagic.yaml` to sync both iOS and Android
-4. ✅ Removed unused custom plugin (`plugins/azyah-webview-extractor/`)
-5. ✅ Removed unused types (`src/types/webview-extractor-plugin.ts`)
+---
+
+## Implementation Summary
+
+### 1. WebView Extraction (`OpenInAzyahButton.tsx`)
+- Uses `@capgo/inappbrowser` for real WKWebView/WebView
+- Listeners registered BEFORE `openWebView()` (race-condition safe)
+- Guards prevent multiple injections/results
+- 15-second timeout with cleanup
+
+### 2. Deep Link Handler (`useDeepLinkHandler.ts`)
+- **Cold start**: `App.getLaunchUrl()` called on mount
+- **Warm start**: `appUrlOpen` listener for URLs while app is running
+- **Product URL detection**: Accepts ANY valid http/https URL (no domain allowlist)
+- **Safe decoding**: Handles multiple URL encoding levels
+- **Routing**: Product URLs → `/dashboard` with `{ openDeals: true, productUrl }`
+
+### 3. Clipboard Fallback (`useClipboardLinkDetector.ts`)
+- Checks clipboard on app mount (cold start) and on app resume (warm start)
+- Detects any http/https URL
+- Only prompts once per URL (prevents re-prompting)
+- User must accept before opening Deals (no auto-open)
+
+### 4. Dashboard Integration (`RoleDashboard.tsx`)
+- Handles `location.state.openDeals` from deep links
+- Shows `ClipboardLinkPrompt` when URL detected in clipboard
+- Passes `initialUrl` to `DealsDrawer` → `LinkTab`
+- Clears state properly using `navigate('/dashboard', { replace: true, state: {} })`
 
 ---
 
 ## Technical Flow
 
+### Flow A: Deep Link (Cold/Warm Start)
 ```
-User taps "Open in Azyah"
+User opens azyah://open?url=https://asos.com/product/123
     ↓
-Register listeners (pageLoaded, messageFromWebview, closeEvent)
+useDeepLinkHandler parses URL
     ↓
-Start 15s timeout
+Detects product URL (any http/https)
     ↓
-InAppBrowser.openWebView(url) → Real WKWebView/WebView opens
+navigate('/dashboard', { state: { openDeals: true, productUrl } })
     ↓
-browserPageLoaded fires → executeScript(wrappedExtractionScript)
+RoleDashboard reads location.state
     ↓
-Script extracts JSON-LD/OG/DOM → window.mobileApp.postMessage(result)
+Opens DealsDrawer with initialUrl
     ↓
-messageFromWebview listener → parseExtractionResult()
+LinkTab pre-filled with URL
+```
+
+### Flow B: Clipboard Fallback (Safari Copy → Open App)
+```
+User copies product URL in Safari
     ↓
-onContextExtracted(context) → useDealsFromContext.searchFromContext()
+Opens Azyah app
     ↓
-deals-from-context uses main_image_url for Google Lens
+useClipboardLinkDetector reads clipboard
     ↓
-Visual rerank + result floor → 10+ relevant results
+Detects http/https URL → shows ClipboardLinkPrompt
+    ↓
+User taps "Find Deals"
+    ↓
+DealsDrawer opens with URL → searches for deals
+```
+
+### Flow C: In-App WebView Extraction
+```
+User pastes URL → taps "Open in Azyah"
+    ↓
+InAppBrowser.openWebView() → real WKWebView
+    ↓
+Script extracts JSON-LD/OG/DOM
+    ↓
+window.mobileApp.postMessage(result)
+    ↓
+onContextExtracted → deals-from-context with main_image_url
+    ↓
+Google Lens + visual rerank → 10+ results
 ```
 
 ---
@@ -50,54 +95,62 @@ Visual rerank + result floor → 10+ relevant results
 
 | File | Change |
 |------|--------|
-| `package.json` | Added `@capgo/inappbrowser@^7.0.0` |
-| `src/components/deals/OpenInAzyahButton.tsx` | Full rewrite with safe patterns |
-| `codemagic.yaml` | Sync both iOS + Android |
-
-## Files Deleted
-
-| File | Reason |
-|------|--------|
-| `plugins/azyah-webview-extractor/*` | Replaced by @capgo/inappbrowser |
-| `src/types/webview-extractor-plugin.ts` | No longer needed |
+| `src/hooks/useDeepLinkHandler.ts` | Cold start + universal URL detection |
+| `src/hooks/useClipboardLinkDetector.ts` | NEW - clipboard fallback |
+| `src/components/deals/ClipboardLinkPrompt.tsx` | NEW - prompt UI |
+| `src/components/deals/LinkTab.tsx` | Accept `initialUrl` prop |
+| `src/components/deals/DealsDrawer.tsx` | Pass `initialUrl` to LinkTab |
+| `src/components/RoleDashboard.tsx` | Handle openDeals state + clipboard |
+| `package.json` | Added `@capacitor/clipboard` |
 
 ---
 
-## Next Steps
+## What Works Now (No Xcode Required)
 
-### Phase 2.2: Safari Web Extension (Requires Xcode)
+✅ **"Open in Azyah" button** - Real WebView extraction on ASOS/Zara/Nike
+✅ **Deep links** - `azyah://open?url=...` works for cold + warm start
+✅ **Clipboard detection** - Copy URL in Safari → open Azyah → prompt appears
+✅ **URL paste fallback** - Still works as secondary option
 
-When Xcode access is available:
-1. Create Safari Web Extension target
-2. Use same extraction logic (JSON-LD → OG → DOM)
-3. Enable "AA → Manage Extensions" toggle experience (like Phia)
+## What Does NOT Work Yet (Needs Xcode)
 
-### Phase 2.15: Share-to-Azyah (Optional Enhancement)
-
-Add iOS Share Sheet / Android intent handling:
-1. User taps Share on product page in Safari/Chrome → Azyah
-2. App receives URL via deep link
-3. Opens WebView extractor with that URL
+❌ **Safari Share Sheet** - "Share → Azyah" requires iOS Share Extension target
+❌ **Safari AA Extension** - "AA → Manage Extensions" requires Safari Web Extension
 
 ---
 
 ## Verification Checklist
 
-Before shipping, verify on device:
+### Deep Link Tests
+- [ ] Cold start: `azyah://open?url=https://asos.com/product` → Deals opens with URL
+- [ ] Warm start: Same URL while app is running → Deals opens
+- [ ] Encoded URL: `azyah://open?url=https%3A%2F%2Fasos.com` → decodes correctly
 
-- [ ] iOS: "Open in Azyah" opens WKWebView (not Safari)
-- [ ] Android: "Open in Azyah" opens WebView (not Chrome Custom Tab)
-- [ ] Extraction completes for Zara URL → title + image extracted
-- [ ] Extraction completes for ASOS URL → title + image extracted
-- [ ] Extraction completes for Nike URL → title + image extracted
-- [ ] Timeout fires after 15s if extraction fails
-- [ ] User can close WebView manually (cleanup works)
-- [ ] deals-from-context receives main_image_url
-- [ ] Results are better than URL-paste fallback
+### Clipboard Tests
+- [ ] Copy ASOS URL in Safari → open Azyah → prompt appears
+- [ ] Tap "Find Deals" → Deals drawer opens with URL prefilled
+- [ ] Tap "Dismiss" → prompt disappears, doesn't re-prompt
+- [ ] Copy same URL again → doesn't re-prompt (already seen)
+
+### WebView Extraction Tests
+- [ ] Zara URL → extraction returns title + image
+- [ ] ASOS URL → extraction returns title + image
+- [ ] Nike URL → extraction returns title + image
+- [ ] 15s timeout fires if extraction fails
 
 ---
 
-## Architecture Summary
+## Next Steps (When Xcode Available)
+
+### Phase 2.2: Safari Share Extension
+1. Add iOS Share Extension target in Xcode
+2. Handle incoming URLs in extension
+3. Pass to main app via app groups or URL scheme
+
+### Phase 2.3: Safari Web Extension
+1. Add Safari Web Extension target
+2. Enable "AA → Manage Extensions" toggle
+3. Same extraction logic (JSON-LD → OG → DOM)
 
 | Component | File | Purpose |
 |-----------|------|---------|

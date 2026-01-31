@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -14,14 +14,23 @@ interface DealsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialTab?: 'photo' | 'link';
+  initialUrl?: string | null;
 }
 
 export function DealsDrawer({ 
   open, 
   onOpenChange, 
-  initialTab = 'photo'
+  initialTab = 'photo',
+  initialUrl = null,
 }: DealsDrawerProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Switch to link tab when initialUrl is provided
+  useEffect(() => {
+    if (initialUrl) {
+      setActiveTab('link');
+    }
+  }, [initialUrl]);
 
   const handleClose = () => {
     onOpenChange(false);
@@ -91,7 +100,7 @@ export function DealsDrawer({
             </TabsContent>
 
             <TabsContent value="link" className="mt-0">
-              <LinkTab onClose={handleClose} />
+              <LinkTab onClose={handleClose} initialUrl={initialUrl} />
             </TabsContent>
           </Tabs>
         </div>
