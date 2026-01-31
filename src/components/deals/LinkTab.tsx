@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Link2, Loader2, ExternalLink, ImageIcon } from 'lucide-react';
+import { Link2, Loader2, ExternalLink, ImageIcon, AlertCircle } from 'lucide-react';
 import { useDealsFromUrl } from '@/hooks/useDealsFromUrl';
 import { useDealsMatchCatalog } from '@/hooks/useDealsMatchCatalog';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
 import { ScanPanel } from './ScanPanel';
 import { AzyahMatchesSection } from './AzyahMatchesSection';
+import { OpenInAzyahButton } from './OpenInAzyahButton';
 
 interface LinkTabProps {
   onClose?: () => void;
 }
+
+// Sites that commonly block server-side requests
+const BLOCKED_SITES = ['asos.com', 'zara.com', 'nike.com', 'hm.com', 'uniqlo.com'];
 
 export function LinkTab({ onClose }: LinkTabProps) {
   const [url, setUrl] = useState('');
@@ -50,14 +54,28 @@ export function LinkTab({ onClose }: LinkTabProps) {
     resetCatalog();
   };
 
-  const isValidUrl = (() => {
+  const isValidUrl = useMemo(() => {
     try {
       new URL(url.trim());
       return true;
     } catch {
       return false;
     }
-  })();
+  }, [url]);
+
+  // Check if URL is from a commonly blocked site
+  const isBlockedSite = useMemo(() => {
+    if (!isValidUrl) return false;
+    try {
+      const hostname = new URL(url.trim()).hostname.toLowerCase();
+      return BLOCKED_SITES.some(site => hostname.includes(site.replace('.com', '')));
+    } catch {
+      return false;
+    }
+  }, [url, isValidUrl]);
+
+  // Show suggestion when results are low but we have a URL
+  const showSuggestion = data?.suggestion && data.deals_found < 5;
 
   return (
     <div className="space-y-4">
@@ -122,6 +140,19 @@ export function LinkTab({ onClose }: LinkTabProps) {
         />
       )}
 
+      {/* Blocked site warning */}
+      {isBlockedSite && !isLoading && !data && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+          <div className="space-y-2">
+            <p className="text-sm text-foreground">
+              This site may block automatic extraction. For best results:
+            </p>
+            <OpenInAzyahButton url={url} className="w-full" />
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <div className="text-center py-4">
@@ -134,6 +165,14 @@ export function LinkTab({ onClose }: LinkTabProps) {
           >
             Try again
           </Button>
+        </div>
+      )}
+
+      {/* Low results suggestion */}
+      {showSuggestion && (
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center space-y-2">
+          <p className="text-sm text-muted-foreground">{data.suggestion}</p>
+          <OpenInAzyahButton url={url} />
         </div>
       )}
 

@@ -1,58 +1,28 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { 
+  ProductContext, 
+  DealsFromContextResponse,
+  VisualMatch,
+  ShoppingResult,
+  PriceStats 
+} from '@/types/ProductContext';
 
-interface ExtractedProduct {
-  title: string | null;
-  image: string | null;
-  brand: string | null;
-}
-
-interface ShoppingResult {
-  title: string;
-  link: string;
-  thumbnail: string;
-  source: string;
-  price: string;
-  extracted_price: number | null;
-  rating?: number;
-  reviews?: number;
-  position: number;
-}
-
-interface PriceStats {
-  low: number | null;
-  median: number | null;
-  high: number | null;
-  valid_count: number;
-}
-
-interface DealsFromUrlResult {
-  success: boolean;
-  input_url: string;
-  extracted_product: ExtractedProduct;
-  shopping_results: ShoppingResult[];
-  price_stats: PriceStats;
-  deals_found: number;
-  error?: string;
-  suggestion?: string;
-  cached?: boolean;
-}
-
-export function useDealsFromUrl() {
+export function useDealsFromContext() {
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<DealsFromUrlResult | null>(null);
+  const [data, setData] = useState<DealsFromContextResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const searchFromUrl = useCallback(async (url: string) => {
+  const searchFromContext = useCallback(async (context: ProductContext) => {
     setIsLoading(true);
     setError(null);
     setData(null);
 
     try {
       const { data: response, error: fnError } = await supabase.functions.invoke(
-        'deals-from-url',
+        'deals-from-context',
         {
-          body: { url },
+          body: { context },
         }
       );
 
@@ -69,7 +39,7 @@ export function useDealsFromUrl() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
-      console.error('useDealsFromUrl error:', err);
+      console.error('useDealsFromContext error:', err);
       return null;
     } finally {
       setIsLoading(false);
@@ -83,10 +53,13 @@ export function useDealsFromUrl() {
   }, []);
 
   return {
-    searchFromUrl,
+    searchFromContext,
     data,
     isLoading,
     error,
     reset,
   };
 }
+
+// Re-export types for convenience
+export type { ProductContext, DealsFromContextResponse, VisualMatch, ShoppingResult, PriceStats };
