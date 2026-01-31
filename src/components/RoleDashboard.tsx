@@ -38,6 +38,8 @@ import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 import { StyleLinkCardCompact } from '@/components/dashboard/StyleLinkCardCompact';
 import { DealsCard } from '@/components/deals/DealsCard';
 import { DealsDrawer } from '@/components/deals/DealsDrawer';
+import { useClipboardLinkDetector } from '@/hooks/useClipboardLinkDetector';
+import { ClipboardLinkPrompt } from '@/components/deals/ClipboardLinkPrompt';
 
 interface UserProfile {
   id: string;
@@ -103,6 +105,23 @@ const RoleDashboard: React.FC = () => {
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
   const [dealsDrawerOpen, setDealsDrawerOpen] = useState(false);
+  const [dealsInitialUrl, setDealsInitialUrl] = useState<string | null>(null);
+  
+  // Clipboard link detection for "copy URL in Safari → open Azyah" flow
+  const { detectedUrl, clearDetectedUrl } = useClipboardLinkDetector();
+
+  // Handle navigation state for deep links (openDeals, productUrl)
+  useEffect(() => {
+    const state = location.state as { openDeals?: boolean; productUrl?: string } | null;
+    if (state?.openDeals) {
+      setDealsDrawerOpen(true);
+      if (state.productUrl) {
+        setDealsInitialUrl(state.productUrl);
+      }
+      // Clear navigation state properly using React Router v6
+      navigate('/dashboard', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   // Load saved category selection on component mount
   useEffect(() => {
@@ -704,10 +723,30 @@ const RoleDashboard: React.FC = () => {
           onDismiss={handleDismissDiscoverTutorial} 
         />
         
+        {/* Clipboard Link Prompt - appears when URL detected in clipboard */}
+        {detectedUrl && (
+          <ClipboardLinkPrompt
+            url={detectedUrl}
+            onAccept={() => {
+              setDealsInitialUrl(detectedUrl);
+              setDealsDrawerOpen(true);
+              clearDetectedUrl();
+            }}
+            onDismiss={clearDetectedUrl}
+          />
+        )}
+        
         {/* Deals Drawer */}
         <DealsDrawer
           open={dealsDrawerOpen}
-          onOpenChange={setDealsDrawerOpen}
+          onOpenChange={(open) => {
+            setDealsDrawerOpen(open);
+            // Clear initialUrl when drawer closes
+            if (!open) {
+              setDealsInitialUrl(null);
+            }
+          }}
+          initialUrl={dealsInitialUrl}
         />
       </div>
     </ErrorBoundary>;

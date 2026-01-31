@@ -14,13 +14,21 @@ import type { ProductContext } from '@/types/ProductContext';
 
 interface LinkTabProps {
   onClose?: () => void;
+  initialUrl?: string | null;
 }
 
 // Sites that commonly block server-side requests
 const BLOCKED_SITES = ['asos.com', 'zara.com', 'nike.com', 'hm.com', 'uniqlo.com'];
 
-export function LinkTab({ onClose }: LinkTabProps) {
-  const [url, setUrl] = useState('');
+export function LinkTab({ onClose, initialUrl }: LinkTabProps) {
+  const [url, setUrl] = useState(initialUrl || '');
+  
+  // Update URL when initialUrl changes (from deep link)
+  useEffect(() => {
+    if (initialUrl && initialUrl !== url) {
+      setUrl(initialUrl);
+    }
+  }, [initialUrl]);
   
   // URL paste flow (fallback)
   const { 
