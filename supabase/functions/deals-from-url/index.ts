@@ -9,6 +9,7 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const CACHE_TTL_MS = 30 * 60 * 1000;
+const MIN_RESULTS_FLOOR = 10;
 
 interface ShoppingResult {
   title: string;
@@ -20,6 +21,15 @@ interface ShoppingResult {
   rating?: number;
   reviews?: number;
   position: number;
+}
+
+interface PipelineLog {
+  input_has_image: boolean;
+  query_pack_count: number;
+  raw_results_count: number;
+  after_dedupe_count: number;
+  final_returned_count: number;
+  used_fallback_queries: boolean;
 }
 
 interface DealsResponse {
@@ -38,9 +48,39 @@ interface DealsResponse {
     valid_count: number;
   };
   deals_found: number;
+  pipeline_log?: PipelineLog;
   cached?: boolean;
   error?: string;
+  suggestion?: string;
 }
+
+// Color vocabulary for modest fashion
+const COLOR_WORDS = [
+  'grey', 'gray', 'stone', 'beige', 'black', 'white', 'navy', 'blue', 
+  'cream', 'camel', 'brown', 'green', 'pink', 'red', 'burgundy', 'maroon',
+  'olive', 'khaki', 'nude', 'blush', 'coral', 'teal', 'emerald', 'gold',
+  'silver', 'charcoal', 'sand', 'ivory', 'taupe', 'sage', 'rust', 'mustard'
+];
+
+// Category vocabulary for modest fashion
+const CATEGORY_WORDS = [
+  'abaya', 'kaftan', 'caftan', 'dress', 'outer', 'jacket', 'kimono',
+  'jalabiya', 'jilbab', 'thobe', 'bisht', 'cardigan', 'coat', 'blazer',
+  'modest', 'maxi', 'midi', 'gown', 'cape', 'poncho', 'tunic'
+];
+
+// Silhouette vocabulary
+const SILHOUETTE_WORDS = [
+  'open', 'open-front', 'kimono', 'butterfly', 'wide sleeve', 'bell sleeve',
+  'loose', 'fitted', 'flowy', 'wrap', 'belted', 'a-line', 'straight',
+  'oversized', 'relaxed', 'slim', 'tailored', 'draped', 'layered'
+];
+
+// Fabric vocabulary
+const FABRIC_WORDS = [
+  'satin', 'chiffon', 'linen', 'cotton', 'silk', 'crepe', 'georgette',
+  'velvet', 'jersey', 'knit', 'denim', 'lace', 'embroidered', 'sequin'
+];
 
 function hashKey(input: string): string {
   let hash = 0;
@@ -52,7 +92,6 @@ function hashKey(input: string): string {
   return `url_${Math.abs(hash).toString(36)}`;
 }
 
-// Normalize link to handle // or www. prefixes
 function normalizeLink(link: string | undefined | null): string {
   if (!link) return '';
   let normalized = link.trim();
@@ -64,29 +103,24 @@ function normalizeLink(link: string | undefined | null): string {
   return normalized;
 }
 
-// Extract numeric price from string like "AED 599.00" or "$49.99"
 function extractNumericPrice(priceStr: string | undefined | null): number | null {
   if (!priceStr) return null;
   const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
   return match ? parseFloat(match[0]) : null;
 }
 
-// Robust dedup key that handles empty links
 function dedupKey(result: any): string {
   const link = normalizeLink(result.link);
   const productId = (result.product_id || '').trim();
   
-  // Priority 1: Valid URL link
   if (link && link.startsWith('http')) {
     return `link:${link}`;
   }
   
-  // Priority 2: Product ID
   if (productId) {
     return `pid:${productId}`;
   }
   
-  // Priority 3: Composite key (source + normalized price + title prefix)
   const source = (result.source || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
   const price = result.extracted_price ?? extractNumericPrice(result.price) ?? 0;
   const title = (result.title || '')
@@ -99,7 +133,6 @@ function dedupKey(result: any): string {
   return `mix:${source}|${price}|${title}`;
 }
 
-// Merge all shopping-related arrays from SerpApi response
 function mergeShoppingArrays(data: any): any[] {
   return [
     ...(data.shopping_results || []),
@@ -107,6 +140,102 @@ function mergeShoppingArrays(data: any): any[] {
     ...(data.sponsored_shopping_results || []),
     ...(data.related_shopping_results || []),
   ];
+}
+
+// Extract descriptive terms from visual match titles
+function extractDescriptors(titles: string[]): {
+  colors: string[];
+  categories: string[];
+  silhouettes: string[];
+  fabrics: string[];
+} {
+  const allText = titles.join(' ').toLowerCase();
+  
+  const colors = COLOR_WORDS.filter(c => allText.includes(c));
+  const categories = CATEGORY_WORDS.filter(c => allText.includes(c));
+  const silhouettes = SILHOUETTE_WORDS.filter(s => allText.includes(s.toLowerCase()));
+  const fabrics = FABRIC_WORDS.filter(f => allText.includes(f));
+  
+  return { colors, categories, silhouettes, fabrics };
+}
+
+// Build descriptive query pack with category/color/silhouette locking
+function buildQueryPack(
+  visualMatchTitles: string[],
+  urlBrand: string | null,
+  urlProductHint: string | null
+): string[] {
+  const queries: string[] = [];
+  const { colors, categories, silhouettes, fabrics } = extractDescriptors(visualMatchTitles);
+  
+  // Use first matches as defaults
+  const primaryColor = colors[0] || '';
+  const primaryCategory = categories[0] || '';
+  const primarySilhouette = silhouettes[0] || '';
+  const primaryFabric = fabrics[0] || '';
+  
+  // If we have category + color, create locked queries
+  if (primaryCategory && primaryColor) {
+    // Core locked query
+    queries.push(`${primaryColor} ${primaryCategory}`.trim());
+    
+    // Add silhouette variant
+    if (primarySilhouette) {
+      queries.push(`${primaryColor} ${primarySilhouette} ${primaryCategory}`.trim());
+    }
+    
+    // Add fabric variant
+    if (primaryFabric) {
+      queries.push(`${primaryFabric} ${primaryCategory} ${primaryColor}`.trim());
+    }
+  }
+  
+  // Add brand-specific query only if confident
+  if (urlBrand && primaryCategory) {
+    queries.push(`${urlBrand} ${primaryCategory}`.trim());
+  }
+  
+  // Use raw visual match titles (first 3 only)
+  for (const title of visualMatchTitles.slice(0, 3)) {
+    if (title && !queries.includes(title)) {
+      queries.push(title);
+    }
+  }
+  
+  // URL-derived hint as fallback
+  if (urlProductHint && queries.length < 3) {
+    queries.push(urlProductHint);
+  }
+  
+  // Dedupe and limit
+  const uniqueQueries = [...new Set(queries)].filter(q => q.length > 3);
+  return uniqueQueries.slice(0, 10);
+}
+
+// Build broader "style pack" queries when results are low
+function buildStylePackQueries(
+  categories: string[],
+  colors: string[],
+  silhouettes: string[]
+): string[] {
+  const queries: string[] = [];
+  const category = categories[0] || 'modest dress';
+  
+  // Category + color
+  for (const color of colors.slice(0, 2)) {
+    queries.push(`${color} ${category}`);
+  }
+  
+  // Category + silhouette
+  for (const silhouette of silhouettes.slice(0, 2)) {
+    queries.push(`${silhouette} ${category}`);
+  }
+  
+  // Generic fallbacks
+  queries.push(`${category} UAE`);
+  queries.push(`modest ${category}`);
+  
+  return [...new Set(queries)].slice(0, 4);
 }
 
 async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
@@ -156,36 +285,68 @@ async function setCache(supabase: any, key: string, payload: any): Promise<void>
     .upsert({ key, payload, expires_at: expiresAt }, { onConflict: 'key' });
 }
 
-function extractMetadata(html: string): { title: string | null; image: string | null; brand: string | null } {
-  let title: string | null = null;
-  let image: string | null = null;
-  let brand: string | null = null;
+// Extract brand from URL hostname
+function extractBrandFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.replace('www.', '').toLowerCase();
+    
+    if (hostname.includes('asos')) return 'ASOS';
+    if (hostname.includes('nike')) return 'Nike';
+    if (hostname.includes('zara')) return 'Zara';
+    if (hostname.includes('hm.com') || hostname.includes('h&m')) return 'H&M';
+    if (hostname.includes('amazon')) return 'Amazon';
+    if (hostname.includes('shein')) return 'Shein';
+    if (hostname.includes('namshi')) return 'Namshi';
+    if (hostname.includes('noon')) return 'Noon';
+    if (hostname.includes('ounass')) return 'Ounass';
+    if (hostname.includes('farfetch')) return 'Farfetch';
+    if (hostname.includes('ssense')) return 'SSENSE';
+    if (hostname.includes('matchesfashion')) return 'MATCHES';
+    
+    // Capitalize first letter of domain
+    const domain = hostname.split('.')[0];
+    return domain.charAt(0).toUpperCase() + domain.slice(1);
+  } catch {
+    return '';
+  }
+}
 
-  const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
-  if (ogTitleMatch) {
-    title = ogTitleMatch[1];
-  } else {
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) {
-      title = titleMatch[1];
+// Extract product hint from URL path
+function extractProductHintFromUrl(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    
+    // Find the most product-like path segment
+    const productSegment = pathParts.find(part => 
+      part.includes('-') && 
+      part.length > 10 && 
+      !part.startsWith('prd') && 
+      !/^\d+$/.test(part)
+    ) || pathParts[pathParts.length - 1];
+    
+    if (productSegment) {
+      let cleanQuery = productSegment
+        .replace(/[-_]/g, ' ')
+        .replace(/\b(prd|colourwayid|colorwayid|sku|id|clid)\b/gi, '')
+        .replace(/\d{6,}/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      // Remove brand prefixes
+      cleanQuery = cleanQuery.replace(/^asos\s*(design)?\s*/i, '');
+      cleanQuery = cleanQuery.replace(/^nike\s*/i, '');
+      cleanQuery = cleanQuery.replace(/^zara\s*/i, '');
+      
+      if (cleanQuery.length > 5) {
+        return cleanQuery;
+      }
     }
+  } catch {
+    // Ignore URL parsing errors
   }
-
-  const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-  if (ogImageMatch) {
-    image = ogImageMatch[1];
-  }
-
-  const ogSiteMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i);
-  if (ogSiteMatch) {
-    brand = ogSiteMatch[1];
-  }
-
-  if (title) {
-    title = title.replace(/\s*[\|\-–—]\s*[^|\-–—]+$/, '').trim();
-  }
-
-  return { title, image, brand };
+  return null;
 }
 
 serve(async (req) => {
@@ -250,146 +411,85 @@ serve(async (req) => {
 
     console.log(`[deals-from-url] Processing URL for user ${user.id}: ${url}`);
 
-    let extractedProduct = { title: null as string | null, image: null as string | null, brand: null as string | null };
+    // Initialize pipeline logging
+    const pipelineLog: PipelineLog = {
+      input_has_image: false,
+      query_pack_count: 0,
+      raw_results_count: 0,
+      after_dedupe_count: 0,
+      final_returned_count: 0,
+      used_fallback_queries: false,
+    };
+
+    // Extract brand and product hint from URL (NO server-side scraping)
+    const urlBrand = extractBrandFromUrl(url);
+    const urlProductHint = extractProductHintFromUrl(url);
     
-    try {
-      const pageResponse = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' },
-      });
-      
-      if (pageResponse.ok) {
-        const html = await pageResponse.text();
-        extractedProduct = extractMetadata(html);
-        console.log(`[deals-from-url] Extracted: title="${extractedProduct.title}", image="${extractedProduct.image?.substring(0, 50)}..."`);
-      }
-    } catch (err) {
-      console.warn('[deals-from-url] Failed to fetch product page:', err);
-    }
+    let extractedProduct = { 
+      title: urlProductHint, 
+      image: null as string | null, 
+      brand: urlBrand || null 
+    };
 
     const allShoppingResults: ShoppingResult[] = [];
     const seenKeys = new Set<string>();
-    let rawResultCount = 0;
+    const visualMatchTitles: string[] = [];
 
-    // Run BOTH Lens and text searches in parallel for maximum coverage
+    // Step 1: Try Google Lens on the URL directly (treats URL as image source)
+    // This works when URL contains og:image or redirects to an image
+    console.log(`[deals-from-url] Running Google Lens on URL...`);
+    
+    try {
+      const lensParams = new URLSearchParams({
+        engine: 'google_lens',
+        url: url,
+        api_key: SERPAPI_KEY,
+        gl: 'ae',
+        hl: 'en',
+      });
 
-    // Track all queries we'll run
-    const shoppingQueries: string[] = [];
+      const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
+      const lensData = await lensResponse.json();
 
-    // Use Google Lens if we have an og:image
-    if (extractedProduct.image) {
-      console.log(`[deals-from-url] Running Google Lens on og:image...`);
-      
-      try {
-        const lensParams = new URLSearchParams({
-          engine: 'google_lens',
-          url: extractedProduct.image,
-          api_key: SERPAPI_KEY,
-          gl: 'ae',
-          hl: 'en',
-        });
+      if (!lensData.error) {
+        // Extract og:image if returned by Lens
+        if (lensData.image_source?.url) {
+          extractedProduct.image = lensData.image_source.url;
+          pipelineLog.input_has_image = true;
+        }
 
-        const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
-        const lensData = await lensResponse.json();
+        const visualMatches = (lensData.visual_matches || [])
+          .slice(0, 8)
+          .filter((match: any) => {
+            const source = (match.source || '').toLowerCase();
+            return !source.includes('pinterest') && !source.includes('instagram');
+          });
 
-        if (!lensData.error) {
-          const visualMatches = (lensData.visual_matches || [])
-            .slice(0, 5) // Increased from 3 to 5
-            .filter((match: any) => {
-              const source = (match.source || '').toLowerCase();
-              return !source.includes('pinterest') && !source.includes('instagram');
-            });
+        console.log(`[deals-from-url] Lens found ${visualMatches.length} visual matches`);
 
-          console.log(`[deals-from-url] Lens found ${visualMatches.length} visual matches`);
-
-          // Add visual match titles to our shopping queries
-          for (const match of visualMatches) {
-            if (match.title) {
-              shoppingQueries.push(match.title);
-            }
+        for (const match of visualMatches) {
+          if (match.title) {
+            visualMatchTitles.push(match.title);
           }
         }
-      } catch (err) {
-        console.warn('[deals-from-url] Lens API error:', err);
-      }
-    }
-
-    // ALWAYS add text-based search query (not conditional on Lens results)
-    if (extractedProduct.title) {
-      let textQuery = extractedProduct.title;
-      if (extractedProduct.brand && !textQuery.toLowerCase().includes(extractedProduct.brand.toLowerCase())) {
-        textQuery = `${extractedProduct.brand} ${textQuery}`;
-      }
-      shoppingQueries.push(textQuery);
-      
-      // Add a simplified query (brand + category terms only)
-      const words = extractedProduct.title.split(/\s+/).filter((w: string) => w.length > 3).slice(0, 3);
-      if (words.length >= 2 && extractedProduct.brand) {
-        shoppingQueries.push(`${extractedProduct.brand} ${words.join(' ')}`);
-      }
-    }
-    
-    // ALWAYS add URL-derived fallback queries (even if we got title from HTML)
-    // This handles cases where page fetch fails or title is not extracted
-    try {
-      const urlObj = new URL(url);
-      const hostname = urlObj.hostname.replace('www.', '');
-      const pathParts = urlObj.pathname.split('/').filter(Boolean);
-      
-      // Extract brand from hostname (e.g., "asos.com" -> "ASOS", "nike.com" -> "Nike")
-      let urlBrand = '';
-      if (hostname.includes('asos')) urlBrand = 'ASOS';
-      else if (hostname.includes('nike')) urlBrand = 'Nike';
-      else if (hostname.includes('zara')) urlBrand = 'Zara';
-      else if (hostname.includes('hm.com') || hostname.includes('h&m')) urlBrand = 'H&M';
-      else if (hostname.includes('amazon')) urlBrand = 'Amazon';
-      else if (hostname.includes('shein')) urlBrand = 'Shein';
-      else if (hostname.includes('namshi')) urlBrand = 'Namshi';
-      else if (hostname.includes('noon')) urlBrand = 'Noon';
-      else urlBrand = hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-      
-      // Find the most product-like path segment (usually contains hyphens and is descriptive)
-      const productSegment = pathParts.find(part => 
-        part.includes('-') && 
-        part.length > 10 && 
-        !part.startsWith('prd') && 
-        !/^\d+$/.test(part)
-      ) || pathParts[pathParts.length - 1];
-      
-      if (productSegment) {
-        // Clean up the segment: "asos-design-relaxed-camp-collar-shirt..." -> "relaxed camp collar shirt"
-        let cleanQuery = productSegment
-          .replace(/[-_]/g, ' ')
-          .replace(/\b(prd|colourwayid|colorwayid|sku|id)\b/gi, '')
-          .replace(/\d{6,}/g, '') // Remove long product IDs
-          .replace(/\s+/g, ' ')
-          .trim();
         
-        // Remove brand prefix if present in URL path
-        cleanQuery = cleanQuery.replace(/^asos\s*(design)?\s*/i, '');
-        cleanQuery = cleanQuery.replace(/^nike\s*/i, '');
-        cleanQuery = cleanQuery.replace(/^zara\s*/i, '');
-        
-        if (cleanQuery.length > 5) {
-          // Add brand + cleaned query
-          const fullQuery = `${urlBrand} ${cleanQuery}`.trim();
-          shoppingQueries.push(fullQuery);
-          console.log(`[deals-from-url] URL-derived query: "${fullQuery}"`);
-          
-          // Also add a shorter version with key terms
-          const keyTerms = cleanQuery.split(' ').filter((w: string) => w.length > 3).slice(0, 4);
-          if (keyTerms.length >= 2) {
-            shoppingQueries.push(`${urlBrand} ${keyTerms.join(' ')}`);
-          }
+        // Use knowledge graph for product title if available
+        if (lensData.knowledge_graph?.title) {
+          extractedProduct.title = lensData.knowledge_graph.title;
         }
       }
     } catch (err) {
-      console.warn('[deals-from-url] URL parse error:', err);
+      console.warn('[deals-from-url] Lens API error:', err);
     }
 
-    console.log(`[deals-from-url] Running ${shoppingQueries.length} shopping queries`);
+    // Step 2: Build descriptive query pack with category/color/silhouette locking
+    const shoppingQueries = buildQueryPack(visualMatchTitles, urlBrand, urlProductHint);
+    pipelineLog.query_pack_count = shoppingQueries.length;
+    
+    console.log(`[deals-from-url] Query pack (${shoppingQueries.length}): ${shoppingQueries.slice(0, 3).join(' | ')}...`);
 
-    // Run all shopping queries
-    for (const query of shoppingQueries.slice(0, 6)) { // Limit to 6 queries max
+    // Step 3: Run shopping searches
+    for (const query of shoppingQueries.slice(0, 6)) {
       if (!query) continue;
 
       const shoppingParams = new URLSearchParams({
@@ -405,9 +505,8 @@ serve(async (req) => {
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
 
-        // Merge ALL shopping arrays from response
         const allResults = mergeShoppingArrays(shoppingData);
-        rawResultCount += allResults.length;
+        pipelineLog.raw_results_count += allResults.length;
 
         for (const result of allResults.slice(0, 15)) {
           const key = dedupKey(result);
@@ -431,24 +530,69 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[deals-from-url] Pipeline: raw_total=${rawResultCount}, after_dedupe=${allShoppingResults.length}`);
+    pipelineLog.after_dedupe_count = allShoppingResults.length;
 
-    // Only return error if we have ZERO results AND no valid queries were run
-    if (allShoppingResults.length === 0 && shoppingQueries.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Could not extract product information from URL',
-          input_url: url,
-          extracted_product: extractedProduct,
-          shopping_results: [],
-          price_stats: { low: null, median: null, high: null, valid_count: 0 },
-          deals_found: 0,
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Step 4: Result floor strategy - if below minimum, run broader style pack
+    if (allShoppingResults.length < MIN_RESULTS_FLOOR && visualMatchTitles.length > 0) {
+      console.log(`[deals-from-url] Below result floor (${allShoppingResults.length}), running style pack...`);
+      pipelineLog.used_fallback_queries = true;
+      
+      const { colors, categories, silhouettes } = extractDescriptors(visualMatchTitles);
+      const stylePackQueries = buildStylePackQueries(categories, colors, silhouettes);
+      
+      for (const query of stylePackQueries) {
+        const shoppingParams = new URLSearchParams({
+          engine: 'google_shopping',
+          q: query,
+          api_key: SERPAPI_KEY,
+          gl: 'ae',
+          hl: 'en',
+          location: 'United Arab Emirates',
+        });
+
+        try {
+          const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
+          const shoppingData = await shoppingResponse.json();
+
+          const allResults = mergeShoppingArrays(shoppingData);
+          pipelineLog.raw_results_count += allResults.length;
+
+          for (const result of allResults.slice(0, 10)) {
+            const key = dedupKey(result);
+            if (!key || seenKeys.has(key)) continue;
+            seenKeys.add(key);
+
+            allShoppingResults.push({
+              title: result.title || '',
+              link: normalizeLink(result.link),
+              thumbnail: result.thumbnail || '',
+              source: result.source || '',
+              price: result.price || '',
+              extracted_price: result.extracted_price ?? extractNumericPrice(result.price),
+              rating: result.rating || undefined,
+              reviews: result.reviews || undefined,
+              position: allShoppingResults.length + 1,
+            });
+          }
+        } catch (err) {
+          console.warn(`[deals-from-url] Style pack search error:`, err);
+        }
+      }
     }
 
+    pipelineLog.final_returned_count = allShoppingResults.length;
+    
+    console.log(`[deals-from-url] Pipeline: input_has_image=${pipelineLog.input_has_image}, query_pack=${pipelineLog.query_pack_count}, raw=${pipelineLog.raw_results_count}, dedupe=${pipelineLog.after_dedupe_count}, final=${pipelineLog.final_returned_count}`);
+
+    // Build suggestion for better results
+    let suggestion: string | undefined;
+    if (allShoppingResults.length === 0) {
+      suggestion = 'For best results, try uploading a photo of the product instead.';
+    } else if (allShoppingResults.length < 5) {
+      suggestion = 'For more results, try the Photo tab with a product image.';
+    }
+
+    // Step 5: Compute price statistics
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
@@ -473,6 +617,7 @@ serve(async (req) => {
       }
     }
 
+    // Sort by price (will be replaced by visual similarity in future)
     allShoppingResults.sort((a, b) => {
       if (a.extracted_price === null) return 1;
       if (b.extracted_price === null) return -1;
@@ -486,6 +631,8 @@ serve(async (req) => {
       shopping_results: allShoppingResults,
       price_stats: priceStats,
       deals_found: allShoppingResults.length,
+      pipeline_log: pipelineLog,
+      suggestion,
     };
 
     // Cache the response
@@ -504,9 +651,12 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
+        input_url: '',
+        extracted_product: { title: null, image: null, brand: null },
         shopping_results: [],
         price_stats: { low: null, median: null, high: null, valid_count: 0 },
         deals_found: 0,
+        suggestion: 'For best results, try uploading a photo of the product instead.',
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -23,6 +23,3 @@ verify_jwt = true
 
 [functions.deals-from-url]
 verify_jwt = true
-
-[functions.deals-search]
-verify_jwt = true
