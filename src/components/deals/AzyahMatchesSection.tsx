@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Store, ChevronRight, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useEmblaCarousel from 'embla-carousel-react';
-import { upgradeAsosImageUrl } from '@/utils/asosImageUtils';
+import { displaySrc } from '@/lib/displaySrc';
 
 interface CatalogMatch {
   id: string;
@@ -30,16 +30,14 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
   const [emblaRef] = useEmblaCarousel({ 
     align: 'start',
     containScroll: 'trimSnaps',
-    dragFree: true
+    dragFree: false,
+    skipSnaps: false,
   });
 
-  // Get display image URL with ASOS handling
+  // Get display image URL using centralized displaySrc helper
   const getDisplayImageUrl = useCallback((url: string | null | undefined): string => {
     if (!url) return '/placeholder.svg';
-    if (url.includes('asos-media.com')) {
-      return upgradeAsosImageUrl(url, 400);
-    }
-    return url;
+    return displaySrc(url);
   }, []);
 
   const formatPrice = useCallback((cents: number, currency: string) => {
@@ -178,7 +176,12 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
             </span>
           </div>
           <button
-            onClick={handleExpandToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleExpandToggle();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
           >
             Show less
@@ -207,7 +210,12 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
         </div>
         {hasMore && (
           <button
-            onClick={handleExpandToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleExpandToggle();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
           >
             View more
@@ -216,7 +224,12 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
         )}
       </div>
 
-      <div className="overflow-hidden" ref={emblaRef}>
+      <div 
+        className="overflow-hidden touch-pan-x" 
+        ref={emblaRef}
+        style={{ touchAction: 'pan-x' }}
+        data-vaul-no-drag
+      >
         <div className="flex gap-2">
           {displayMatches.map((match) => (
             <ProductCard key={match.id} match={match} compact />
