@@ -63,12 +63,15 @@ export function LinkTab({ onClose }: LinkTabProps) {
     }
   }, [url]);
 
-  // Check if URL is from a commonly blocked site
+  // Check if URL is from a commonly blocked site (precise domain matching)
   const isBlockedSite = useMemo(() => {
     if (!isValidUrl) return false;
     try {
       const hostname = new URL(url.trim()).hostname.toLowerCase();
-      return BLOCKED_SITES.some(site => hostname.includes(site.replace('.com', '')));
+      // Match exact domain or subdomain (e.g., www.asos.com, m.zara.com)
+      return BLOCKED_SITES.some(site => 
+        hostname === site || hostname.endsWith('.' + site)
+      );
     } catch {
       return false;
     }
