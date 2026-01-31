@@ -1,135 +1,118 @@
 # Phia-Style "Find Better Deals" Implementation Status
 
-## Phase 2 Audit Summary (Accurate as of latest review)
+## Phase 2.1 Status: WebView Extractor Plugin Scaffold Complete
 
-| Area | Status | Details |
-|------|--------|---------|
+### ✅ What's Done
+
+| Component | Status | Details |
+|-----------|--------|---------|
 | **ProductContext Schema** | ✅ DONE | `src/types/ProductContext.ts` with full typing |
-| **deals-from-context Endpoint** | ✅ DONE | JWT verified, rate limiting, caching, no scraping |
+| **deals-from-context Endpoint** | ✅ DONE | JWT, rate limiting, caching, Lens integration |
 | **Visual Heuristic Rerank** | ✅ DONE | 0.4 color + 0.4 category + 0.2 source quality |
 | **Dedupe + Merge Arrays** | ✅ DONE | link → product_id → composite fallback |
-| **Blocked-site Detection** | ✅ FIXED | Precise domain matching (hostname === site \|\| endsWith) |
-| **WebView Extraction** | ❌ NOT WORKING | Uses @capacitor/browser (cannot inject JS) |
-| **Open in Azyah Flow** | ❌ NOT WORKING | Opens system browser, extraction script never runs |
-| **Extensions** | ❌ NOT STARTED | Chrome/Safari extensions not implemented |
+| **Blocked-site Detection** | ✅ FIXED | Precise domain matching |
+| **Plugin TypeScript API** | ✅ DONE | `plugins/azyah-webview-extractor/` scaffold |
+| **OpenInAzyahButton Wiring** | ✅ DONE | Calls plugin + routes to onContextExtracted |
+| **LinkTab Context Flow** | ✅ DONE | onContextExtracted → searchFromContext() |
+| **Native iOS/Android Code** | ❌ PENDING | Requires local Xcode/Android Studio |
 
 ---
 
-## What's Actually Complete
+## Plugin Architecture
 
-### ✅ Approved Components
-
-1. **ProductContext Type** (`src/types/ProductContext.ts`)
-   - Full schema with page_url, extracted_from enum, optional fields
-   - Response types for deals-from-context
-
-2. **deals-from-context Edge Function** (`supabase/functions/deals-from-context/index.ts`)
-   - Accepts ProductContext payload
-   - JWT authentication via `supabase.auth.getUser(token)`
-   - Rate limiting: 10 req/min/user via `deals_rate_limit` table
-   - Caching: 30-min TTL via `deals_cache` table
-   - No server-side HTML scraping
-   - Visual heuristic reranking applied
-
-3. **Visual Heuristic Reranking** (all edge functions)
-   - `computeSimilarityScore()` with weighted scoring
-   - Sort by similarity first, price as tiebreaker
-   - `pipeline_log.visual_rerank_applied` flag
-
-4. **Dedupe Robustness**
-   - `dedupKey()` uses link → product_id → composite key
-   - `mergeShoppingArrays()` combines shopping, inline, sponsored, related
-   - Empty links don't collapse results
-
-5. **Blocked-site Detection** (`src/components/deals/LinkTab.tsx`)
-   - Fixed: Uses precise domain matching
-   - `hostname === site || hostname.endsWith('.' + site)`
-
----
-
-## What's NOT Working (Phase 2 Incomplete)
-
-### ❌ WebView Extraction (Critical Gap)
-
-**Problem:** `OpenInAzyahButton.tsx` uses `@capacitor/browser`
-
-```typescript
-// Current implementation - DOES NOT WORK FOR EXTRACTION
-await Browser.open({
-  url,
-  presentationStyle: 'popover',
-  toolbarColor: '#1f2937',
-});
+```
+plugins/
+└── azyah-webview-extractor/
+    ├── package.json              # Capacitor v7 plugin config
+    ├── tsconfig.json             # TypeScript config
+    ├── src/
+    │   ├── definitions.ts        # Plugin API types
+    │   ├── index.ts              # Plugin registration
+    │   └── web.ts                # Web fallback (opens URL in tab)
+    ├── ios/
+    │   └── ios-implementation.ts # Implementation guide (Swift code needed)
+    └── android/
+        └── android-implementation.ts # Implementation guide (Java code needed)
 ```
 
-**Why it fails:**
-- `@capacitor/browser` opens SFSafariViewController (iOS) or Chrome Custom Tabs (Android)
-- These are system browsers that **cannot run JavaScript injection**
-- The extraction script in `webview-extractor.ts` is never executed
-- ProductContext is never captured from the browsing session
+---
 
-**Required fix:** Replace with a WebView plugin that supports `evaluateJavaScript()`:
-- Option 1: `@nicholasleblanc/capacitor-webview` or similar
-- Option 2: Custom native plugin using WKWebView (iOS) / Android WebView
-- Must support: open URL → inject JS → receive response → close
+## TypeScript Wiring Complete
 
-### ❌ Extraction Bridge Not Connected
+### OpenInAzyahButton.tsx
+- ✅ Registers `AzyahWebViewExtractor` plugin via Capacitor
+- ✅ Calls `openAndExtract({ url, script, timeoutMs })`
+- ✅ Parses result and builds `ProductContext`
+- ✅ Calls `onContextExtracted(context)` on success
+- ✅ Falls back to `onExtractionFailed()` on error
+- ✅ Shows status states (idle/extracting/success/failed)
 
-Even if WebView worked, the flow is not wired:
-1. App opens WebView ❓
-2. App injects extraction script ❓ (script exists but never runs)
-3. Extractor returns ProductContext ❓
-4. App calls `deals-from-context` ❓
-5. User sees improved results ❓
+### LinkTab.tsx
+- ✅ Uses both `useDealsFromUrl` (fallback) and `useDealsFromContext` (preferred)
+- ✅ `handleContextExtracted` calls `searchFromContext(context)`
+- ✅ `handleExtractionFailed` falls back to URL paste flow
+- ✅ Shows "Enhanced search" indicator when using context mode
+- ✅ OpenInAzyahButton wired with both handlers
 
 ---
 
-## Phase Completion Criteria
+## Native Implementation Required
 
-### Phase 2 Approval Rule
+**The TypeScript side is complete. Native code must be written in Xcode/Android Studio after exporting to GitHub.**
 
-**Phase 2 is complete ONLY when this works:**
+### iOS (WKWebView)
+File: `plugins/azyah-webview-extractor/ios/Plugin/`
 
-> On iPhone + Android:
-> 1. Open a Zara/ASOS/Nike product page
-> 2. Tap "Open in Azyah"
-> 3. It returns title + main_image_url + price (ProductContext)
-> 4. App calls deals-from-context with that context
-> 5. Deals are clearly more similar than URL paste fallback
+```swift
+// Required implementation:
+// 1. Present modal UIViewController with WKWebView
+// 2. Set navigationDelegate to detect didFinish
+// 3. Call evaluateJavaScript(script) when page loads
+// 4. Return JSON result via call.resolve()
+// 5. Handle timeout + "Done" button
+```
 
-**Current status:** Cannot do this. Phase 2 is NOT complete.
+### Android (WebView)
+File: `plugins/azyah-webview-extractor/android/src/main/java/com/azyah/webviewextractor/`
+
+```java
+// Required implementation:
+// 1. Open Activity with android.webkit.WebView
+// 2. Enable JavaScript: settings.setJavaScriptEnabled(true)
+// 3. Override onPageFinished() in WebViewClient
+// 4. Call evaluateJavascript(script, callback)
+// 5. Return result via ActivityResult
+```
 
 ---
 
-## Remaining Work
+## Next Steps (For Local Development)
 
-### P0 — Real WebView Extraction
+1. **Export to GitHub** via "Export to Github" button
+2. **Clone locally** and run `npm install`
+3. **Write native code**:
+   - iOS: Create Swift files in `plugins/azyah-webview-extractor/ios/Plugin/`
+   - Android: Create Java files in `plugins/azyah-webview-extractor/android/src/`
+4. **Build plugin**: `cd plugins/azyah-webview-extractor && npm run build`
+5. **Sync native projects**: `npx cap sync ios && npx cap sync android`
+6. **Test on device**:
+   - Run `npx cap run ios` or `npx cap run android`
+   - Open ASOS/Zara/Nike product page
+   - Tap "Open in Azyah"
+   - Verify ProductContext is extracted
+   - Verify deals-from-context returns better results
 
-1. Replace `@capacitor/browser` with WebView plugin supporting JS injection
-2. Implement extraction bridge:
-   ```typescript
-   // Pseudocode for what's needed
-   const result = await WebView.evaluateJavaScript(EXTRACTION_SCRIPT);
-   const context = parseExtractionResult(result);
-   onContextExtracted?.(context);
-   ```
-3. Wire `onContextExtracted` to call `useDealsFromContext.searchFromContext()`
+---
 
-### P1 — Manual Test Matrix
+## Verification Checklist
 
-Verify with actual API calls:
-- Photo: abaya → 10+ similar results
-- Photo: sneakers → 10+ results
-- URL: Amazon → works via Lens
-- URL: Shopify → works via Lens
-- URL: ASOS via WebView extraction → ProductContext captured, better results
-- URL: Nike via WebView extraction → ProductContext captured, better results
-
-### Phase 3 (Future)
-
-- Chrome Extension (Manifest V3)
-- Safari Web Extension
-- Extension extraction parity with WebView
+| Test | Expected | Actual |
+|------|----------|--------|
+| ASOS product → Open in Azyah | Returns title + main_image_url | Pending |
+| Zara product → Open in Azyah | Returns title + main_image_url | Pending |
+| Nike product → Open in Azyah | Returns title + main_image_url | Pending |
+| Context mode → deals-from-context | Uses Lens with extracted image | Pending |
+| Results quality | More similar than URL paste | Pending |
 
 ---
 
@@ -137,9 +120,30 @@ Verify with actual API calls:
 
 | File | Status | Purpose |
 |------|--------|---------|
+| `plugins/azyah-webview-extractor/package.json` | ✅ Created | Plugin npm config |
+| `plugins/azyah-webview-extractor/src/definitions.ts` | ✅ Created | TypeScript API |
+| `plugins/azyah-webview-extractor/src/index.ts` | ✅ Created | Plugin registration |
+| `plugins/azyah-webview-extractor/src/web.ts` | ✅ Created | Web fallback |
+| `src/types/webview-extractor-plugin.ts` | ✅ Created | Local type definitions |
+| `src/components/deals/OpenInAzyahButton.tsx` | ✅ Updated | Uses plugin, wires callbacks |
+| `src/components/deals/LinkTab.tsx` | ✅ Updated | Context flow, catalog matching |
 | `src/types/ProductContext.ts` | ✅ Done | Type definitions |
-| `supabase/functions/deals-from-context/index.ts` | ✅ Done | Backend endpoint |
 | `src/hooks/useDealsFromContext.ts` | ✅ Done | Frontend hook |
-| `src/lib/webview-extractor.ts` | ⚠️ Exists but unused | Extraction script |
-| `src/components/deals/OpenInAzyahButton.tsx` | ❌ Broken | Uses wrong WebView |
-| `src/components/deals/LinkTab.tsx` | ✅ Fixed | Blocked-site detection |
+| `src/lib/webview-extractor.ts` | ✅ Done | EXTRACTION_SCRIPT |
+| `supabase/functions/deals-from-context/index.ts` | ✅ Done | Backend endpoint |
+
+---
+
+## Phase 2.1 Approval Rule
+
+**Phase 2.1 is complete when:**
+
+> On iPhone + Android (after native code is written):
+> 1. Open a Zara/ASOS/Nike product page
+> 2. Tap "Open in Azyah"
+> 3. WebView opens (NOT Safari/Chrome)
+> 4. ProductContext is extracted (title + main_image_url)
+> 5. deals-from-context is called with the context
+> 6. Results are clearly more similar than URL paste fallback
+
+**Current status:** TypeScript wiring complete. Native implementation pending.
