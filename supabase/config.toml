@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.deals-from-image]
 verify_jwt = true
 
+[functions.detect-objects]
+verify_jwt = true
+
 [functions.deals-from-url]
 verify_jwt = true
 
