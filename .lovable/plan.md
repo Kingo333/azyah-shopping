@@ -1,74 +1,283 @@
-# Phia-Style "Find Better Deals" System Audit
 
-## Status: ✅ Phase 1 Complete (2026-01-31)
+
+# Phia-Style "Find Better Deals" Verification Audit
+
+## Executive Summary
+
+| Area | Status | Details |
+|------|--------|---------|
+| **Search Mode Removed** | ✅ PASS | No SearchTab, no useDealsSearch, no deals-search function |
+| **No Server Scraping** | ✅ PASS | Server-side fetch removed from deals-from-url |
+| **Link Works Phia-style** | ❌ FAIL | No in-session extraction (extensions/WebView) implemented |
+| **Photo/Link Parity** | ⚠️ PARTIAL | Both return results, but Link lacks image extraction capability |
+| **ProductContext Schema** | ❌ FAIL | Not implemented - no unified schema exists |
+| **WebView Extraction** | ❌ FAIL | Not implemented |
+| **Extension Extraction** | ❌ FAIL | Not implemented |
+| **Result Floor** | ✅ PASS | Style pack fallback triggers at <10 results |
+| **Dedupe Robustness** | ✅ PASS | Uses link → product_id → composite key strategy |
+| **Similarity Relevance** | ⚠️ PARTIAL | Query pack uses color/category locking but no visual rerank |
+| **Price Verdict** | ✅ PASS | Requires 5+ prices, computes p25/p50/p75 |
+| **Card Hierarchy** | ✅ PASS | Brand/Source + Price primary, Title secondary |
+| **Pipeline Logging** | ✅ PASS | All counters present in response |
+| **Rate Limiting** | ✅ PASS | 10 req/min/user implemented |
+| **Caching** | ✅ PASS | 30-minute cache with hash keys |
 
 ---
 
-## Approved Changes Implemented
+## Section 1: Hard Requirements
 
-### 1. ✅ Remove Search Mode Completely
+### 1.1 Search Mode Removed
 
-**Files Deleted:**
-- `src/components/deals/SearchTab.tsx`
-- `src/hooks/useDealsSearch.ts`
-- `supabase/functions/deals-search/index.ts`
+| Check | Result |
+|-------|--------|
+| SearchTab.tsx exists? | ❌ NO (deleted) |
+| useDealsSearch.ts exists? | ❌ NO (deleted) |
+| deals-search function exists? | ❌ NO (deleted) |
+| DealsDrawer has only Photo/Link? | ✅ YES (grid-cols-2) |
 
-**Files Updated:**
-- `src/components/deals/DealsDrawer.tsx` - Now shows only Photo | Link tabs (2 columns)
-- `supabase/config.toml` - Removed `deals-search` function config
+**Status: ✅ PASS**
 
 ---
 
-### 2. ✅ Eliminate Server-Side Scraping
+### 1.2 No Server-Side Scraping
 
-**Before (deals-from-url):**
+| Check | Result |
+|-------|--------|
+| `deals-from-url` fetches product pages? | ❌ NO |
+| HTML parsing (DOMParser/regex)? | ❌ NO |
+| Uses Google Lens on URL directly | ✅ YES (line 451) |
+| Uses URL path parsing only | ✅ YES (extractBrandFromUrl, extractProductHintFromUrl) |
+
+**Code verification (deals-from-url lines 424-433):**
 ```typescript
-// REMOVED: This was actively scraping external sites
-const pageResponse = await fetch(url, {
-  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' },
+// Extract brand and product hint from URL (NO server-side scraping)
+const urlBrand = extractBrandFromUrl(url);
+const urlProductHint = extractProductHintFromUrl(url);
+
+let extractedProduct = { 
+  title: urlProductHint, 
+  image: null as string | null, 
+  brand: urlBrand || null 
+};
+```
+
+**Note:** The `extract-link-metadata` function still scrapes URLs but is NOT used by deals flows.
+
+**Status: ✅ PASS**
+
+---
+
+### 1.3 Link Works Phia-Style (In-Session Extraction)
+
+| Check | Result |
+|-------|--------|
+| Mobile WebView extractor? | ❌ NOT IMPLEMENTED |
+| Chrome extension? | ❌ NOT IMPLEMENTED |
+| Safari Web Extension? | ❌ NOT IMPLEMENTED |
+| `deals-from-context` endpoint? | ❌ NOT IMPLEMENTED |
+| ProductContext schema defined? | ❌ NOT IMPLEMENTED |
+| "Open in Azyah" prompt? | ❌ NOT IMPLEMENTED |
+
+**Current Link behavior:**
+1. User pastes URL
+2. Server runs Google Lens directly on the URL (works when URL contains og:image)
+3. Falls back to URL path parsing for product hints
+4. Shows `suggestion: "For best results, try uploading a photo instead."` when results are low
+
+**Gap:** Link mode does NOT use in-session extraction. It relies on Google Lens being able to detect an image from the URL, which often fails on blocked sites (ASOS, Zara).
+
+**Status: ❌ FAIL**
+
+---
+
+### 1.4 Photo and Link Share Same Pipeline
+
+| Check | Result |
+|-------|--------|
+| Photo returns multiple results? | ✅ YES |
+| Link returns multiple results? | ✅ YES (when Lens succeeds) |
+| Both use query pack generation? | ✅ YES |
+| Both use result floor strategy? | ✅ YES |
+| Both compute price verdict? | ✅ YES |
+
+**Gap:** Link cannot extract `main_image_url` from blocked sites, limiting similarity quality.
+
+**Status: ⚠️ PARTIAL PASS**
+
+---
+
+## Section 2: ProductContext Contract
+
+### 2.1 ProductContext Schema
+
+**Expected schema:**
+```typescript
+type ProductContext = {
+  page_url: string
+  title?: string
+  brand?: string
+  price?: number
+  currency?: string
+  main_image_url?: string
+  image_urls?: string[]
+  category_hint?: string
+  extracted_from: "chrome_ext" | "safari_ext" | "azyah_webview" | "photo_upload"
+}
+```
+
+**Current state:** No ProductContext type exists. Backend uses ad-hoc structures:
+- `deals-from-image` accepts: `{ imageUrl: string }`
+- `deals-from-url` accepts: `{ url: string }`
+
+**Status: ❌ FAIL**
+
+---
+
+### 2.2 WebView Extraction Quality
+
+**Status: ❌ NOT IMPLEMENTED**
+
+No in-app WebView with JS injection exists. The existing `@capacitor/browser` is not used for product extraction.
+
+---
+
+### 2.3 Extension Extraction Quality
+
+**Status: ❌ NOT IMPLEMENTED**
+
+No Chrome/Safari extension code exists in the repository.
+
+---
+
+## Section 3: Results Quality
+
+### 3.1 Result Floor
+
+| Check | Result |
+|-------|--------|
+| Multiple query sources? | ✅ YES (visual matches + query pack) |
+| Fallback broadening at <10? | ✅ YES (buildStylePackQueries) |
+| Pipeline logs show counters? | ✅ YES |
+
+**Code verification (deals-from-image lines 454-457):**
+```typescript
+if (allShoppingResults.length < MIN_RESULTS_FLOOR && visualMatchTitles.length > 0) {
+  console.log(`[deals-from-image] Below result floor (${allShoppingResults.length}), running style pack...`);
+  pipelineLog.used_fallback_queries = true;
+  // ... runs broader queries
+}
+```
+
+**Status: ✅ PASS**
+
+---
+
+### 3.2 Dedupe Robustness
+
+| Check | Result |
+|-------|--------|
+| Uses valid HTTP link? | ✅ YES |
+| Falls back to product_id? | ✅ YES |
+| Falls back to composite key? | ✅ YES (source + price + title) |
+
+**Code verification (lines 114-134):**
+```typescript
+function dedupKey(result: any): string {
+  const link = normalizeLink(result.link);
+  const productId = (result.product_id || '').trim();
+  
+  if (link && link.startsWith('http')) {
+    return `link:${link}`;
+  }
+  
+  if (productId) {
+    return `pid:${productId}`;
+  }
+  
+  // Composite fallback
+  return `mix:${source}|${price}|${title}`;
+}
+```
+
+**Status: ✅ PASS**
+
+---
+
+### 3.3 Similarity Relevance
+
+| Check | Result |
+|-------|--------|
+| Category locking? | ✅ YES (CATEGORY_WORDS vocabulary) |
+| Color family locking? | ✅ YES (COLOR_WORDS vocabulary) |
+| Silhouette keywords? | ✅ YES (SILHOUETTE_WORDS vocabulary) |
+| Visual re-ranking (embeddings)? | ❌ NOT IMPLEMENTED |
+| Heuristic re-ranking? | ❌ NOT IMPLEMENTED |
+
+**Current sorting:** Price-only (lowest first)
+
+**Code (line 531-536):**
+```typescript
+// Sort by price (will be replaced by visual similarity ranking in Phase 2)
+allShoppingResults.sort((a, b) => {
+  if (a.extracted_price === null) return 1;
+  if (b.extracted_price === null) return -1;
+  return a.extracted_price - b.extracted_price;
 });
-const html = await pageResponse.text();
-extractedProduct = extractMetadata(html);
 ```
 
-**After:**
-- Uses Google Lens directly on URL to detect og:image
-- Extracts brand/product hints from URL path (no fetch)
-- Provides `suggestion` field when results are low: "For best results, try uploading a photo of the product instead."
+**Status: ⚠️ PARTIAL PASS** (query pack is good, but no visual rerank)
 
 ---
 
-### 3. ✅ Improved Query Pack Generation (Category/Color/Silhouette Locking)
+## Section 4: Price Verdict
 
-**New vocabulary constants:**
-```typescript
-const COLOR_WORDS = ['grey', 'gray', 'stone', 'beige', 'black', 'white', ...];
-const CATEGORY_WORDS = ['abaya', 'kaftan', 'dress', 'kimono', 'modest', ...];
-const SILHOUETTE_WORDS = ['open', 'kimono', 'butterfly', 'wide sleeve', ...];
-const FABRIC_WORDS = ['satin', 'chiffon', 'linen', 'cotton', 'silk', ...];
-```
+| Check | Result |
+|-------|--------|
+| Requires 5+ valid prices? | ✅ YES (line 518) |
+| Uses extracted_price numbers? | ✅ YES |
+| Ignores null/invalid prices? | ✅ YES |
+| Computes low/typical/high correctly? | ✅ YES (p25/p50/p75) |
+| Handles insufficient data gracefully? | ✅ YES (shows "need 5+ to show range") |
 
-**Query pack strategy:**
-1. Extract color/category/silhouette/fabric from visual match titles
-2. Generate locked queries: `{color} {category}`, `{color} {silhouette} {category}`
-3. Include fabric variants: `{fabric} {category} {color}`
-4. Fallback to raw visual match titles (cleaned)
-5. Limit to 10 unique queries
+**Status: ✅ PASS**
 
 ---
 
-### 4. ✅ Result Floor Strategy
+## Section 5: UI/UX
 
-If results < 10 after initial queries:
-1. Run broader "style pack" queries (drop brand, keep category+color+silhouette)
-2. Add generic fallbacks like `{category} UAE`, `modest {category}`
-3. Continue deduplicating to prevent repeats
+### 5.1 Card Hierarchy
+
+**DealResultCard.tsx structure:**
+- Line 77-78: Source (Brand) - PRIMARY, `text-xs font-medium`
+- Line 81-83: Price - PRIMARY, `text-lg font-bold`
+- Line 89-91: Title - SECONDARY, `text-[11px] text-muted-foreground/80`
+- Lines 44-71: Thumbnail on left (w-16 h-16)
+- Lines 103-114: External open button on right
+
+**Status: ✅ PASS**
 
 ---
 
-### 5. ✅ Pipeline Logging Counters
+### 5.2 Photo/Link Flow Parity
 
-Both `deals-from-image` and `deals-from-url` now return:
+| Element | PhotoTab | LinkTab |
+|---------|----------|---------|
+| ScanPanel preview | ✅ | ✅ |
+| "X deals found" | ✅ | ✅ |
+| PriceVerdict bar | ✅ | ✅ |
+| AzyahMatchesSection | ✅ | ✅ |
+| DealResultCard list | ✅ | ✅ |
+| "Try another" button | ❌ (no reset button) | ✅ |
+
+**Status: ✅ PASS** (minor: Photo could add reset button)
+
+---
+
+## Section 6: Logging & Observability
+
+### 6.1 Pipeline Counters
+
+**PipelineLog interface (both functions):**
 ```typescript
 interface PipelineLog {
   input_has_image: boolean;
@@ -80,91 +289,147 @@ interface PipelineLog {
 }
 ```
 
-Console logs now show:
+**Console log format:**
 ```
 [deals-from-image] Pipeline: input_has_image=true, query_pack=8, raw=127, dedupe=45, final=45
 ```
 
----
-
-## Future Phases (Not Yet Implemented)
-
-### Phase 2: Visual Re-ranking (Correct Approach)
-
-**NOT using text embeddings for images!**
-
-Correct implementation options:
-1. **CLIP-style image embeddings** via OpenAI Vision or Hugging Face
-2. **Heuristic rerank** (interim):
-   - Dominant color similarity
-   - Aspect ratio matching
-   - "Person-wearing vs flat-lay" detection
-   - Category constraint filtering
-
-### Phase 3: In-App WebView Extractor (Mobile)
-
-Flow:
-1. User pastes URL → shows "Open in Azyah" prompt
-2. Opens in-app WebView
-3. Injects JS extractor (JSON-LD → OG → DOM fallback)
-4. Builds `ProductContext` and calls `deals-from-context`
-
-### Phase 4: Browser Extensions (Separate Project)
-
-- Chrome Extension (Manifest V3)
-- Safari Web Extension (Xcode wrapper)
-- Both share extraction logic and call unified backend
+**Status: ✅ PASS**
 
 ---
 
-## Architecture Diagram
+## Section 7: Security & Cost Guards
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    PHIA-STYLE "FIND BETTER DEALS" (v2)                          │
-├─────────────────────────────┬───────────────────────────────────────────────────┤
-│         PhotoTab            │              LinkTab                              │
-│    (Image upload)           │   (URL → Google Lens direct)                      │
-├─────────────────────────────┴───────────────────────────────────────────────────┤
-│                           Edge Functions                                        │
-│      deals-from-image       │       deals-from-url                              │
-│  (Google Lens + Query Pack) │  (NO scraping, Lens on URL)                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                    Query Pack Generation                                        │
-│   • Color locking (grey, stone, beige...)                                       │
-│   • Category locking (abaya, kaftan, dress...)                                  │
-│   • Silhouette variants (open, kimono, butterfly...)                            │
-│   • Result floor (min 10, fallback to style pack)                               │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                    SerpApi (Google Lens + Shopping)                             │
-│   • gl=ae, hl=en, location=UAE                                                  │
-│   • Merge all shopping arrays                                                   │
-│   • Robust dedup (link → product_id → composite)                                │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
+| Check | Result |
+|-------|--------|
+| Per-user rate limit? | ✅ YES (10 req/min) |
+| Cache prevents repeated API calls? | ✅ YES (30 min TTL) |
+| Cache uses hash keys? | ✅ YES |
+
+**Status: ✅ PASS**
 
 ---
 
-## Testing Checklist
+## Section 8: Test Matrix (Cannot Execute - Need Manual Testing)
 
-- [ ] Photo tab: Upload grey abaya → get 10+ results, mostly similar silhouette/color
-- [ ] Link tab: Paste ASOS URL → get results without server scraping errors
-- [ ] Price verdict shows Low/Typical/High when ≥5 valid prices
-- [ ] Pipeline logs visible in edge function logs
-- [ ] No "Search" tab visible in UI
+Tests require actual API calls. Recommend manual verification:
+
+| Test | Expected | Manual Check Required |
+|------|----------|----------------------|
+| Photo: abaya on model | 10+ results, similar silhouette | ⬜ |
+| Photo: sneakers on white | 10+ results | ⬜ |
+| Photo: handbag product shot | 10+ results | ⬜ |
+| Link: ASOS product page | Results via Lens (may fail) | ⬜ |
+| Link: Amazon product page | Results via Lens (should work) | ⬜ |
 
 ---
 
-## Previous Fix: Similar on Azyah Section
+## Issues Summary
 
-### Issues Fixed (Earlier Session)
+### P0 - Critical (Blocking Phia Parity)
 
-| Issue | Fix Applied |
-|-------|-------------|
-| View More needs 2 taps | Added `stopPropagation()` + `onPointerDown` on buttons |
-| Carousel stutters | Removed `dragFree: true`, added `touch-action: pan-x` |
-| ASOS images placeholder | Updated `isAsosUrl` regex, use `displaySrc()` |
+| Issue | File | Line | Description |
+|-------|------|------|-------------|
+| No in-session extraction | N/A | N/A | Link mode cannot extract from blocked sites |
+| No ProductContext schema | N/A | N/A | No unified interface for extensions/WebView |
+| No deals-from-context endpoint | N/A | N/A | Backend doesn't accept ProductContext |
 
-### Files Modified
-- `src/components/deals/AzyahMatchesSection.tsx`
-- `src/lib/urlGuards.ts`
+### P1 - High (Quality Gap)
+
+| Issue | File | Line | Description |
+|-------|------|------|-------------|
+| No visual re-ranking | deals-from-image | 531-536 | Results sorted by price, not similarity |
+| Link lacks image extraction | deals-from-url | 457-458 | Only works if Lens detects og:image from URL |
+
+### P2 - Medium (Polish)
+
+| Issue | File | Line | Description |
+|-------|------|------|-------------|
+| PhotoTab no reset in results | PhotoTab.tsx | - | Missing "Try another" button after results |
+| Carousel still has minor gesture issues | AzyahMatchesSection | 30-35 | May conflict with drawer in some edge cases |
+
+---
+
+## Fix Recommendations
+
+### P0 Fixes Required
+
+1. **Create `deals-from-context` Edge Function**
+   - Accept standardized ProductContext payload
+   - Use main_image_url for Lens if provided
+   - Fall back to query-based search if no image
+
+2. **Implement In-App WebView Extractor (Mobile)**
+   - Create `OpenInAzyahButton` component in LinkTab
+   - Use Capacitor Browser or custom WebView
+   - Inject JS to extract JSON-LD → OG → DOM
+   - Return ProductContext to `deals-from-context`
+
+3. **Define ProductContext Type**
+   - Create `src/types/ProductContext.ts`
+   - Use in all deals hooks and edge functions
+
+### P1 Fixes Required
+
+1. **Add Visual Re-ranking (Heuristic First)**
+   - Extract dominant color from input image
+   - Filter results by color similarity
+   - Sort by combined score (color match + price)
+
+2. **Improve Link Image Extraction**
+   - If Lens returns no image, prompt user to paste image URL or upload
+
+---
+
+## Definition of Done Checklist
+
+### Phase 1 (Current - MOSTLY COMPLETE)
+
+- [x] Search mode fully removed
+- [x] Server-side scraping eliminated
+- [x] Query pack with category/color/silhouette locking
+- [x] Result floor strategy (min 10)
+- [x] Pipeline logging counters
+- [x] Rate limiting + caching
+- [x] Card hierarchy (brand + price primary)
+- [x] Price verdict with 5+ results guard
+
+### Phase 2 (NOT STARTED)
+
+- [ ] ProductContext schema defined
+- [ ] `deals-from-context` endpoint created
+- [ ] In-app WebView extractor (mobile)
+- [ ] Visual re-ranking (heuristic or embeddings)
+
+### Phase 3 (NOT STARTED)
+
+- [ ] Chrome Extension (Manifest V3)
+- [ ] Safari Web Extension
+- [ ] Extension extraction parity with WebView
+
+---
+
+## Final Verdict
+
+**Phase 1 Implementation: ✅ COMPLETE**
+
+The system has successfully:
+- Removed Search mode entirely
+- Eliminated server-side scraping
+- Implemented query pack with descriptor locking
+- Added result floor strategy
+- Maintained proper UI hierarchy
+
+**Phia-Style Parity: ❌ NOT ACHIEVED**
+
+Critical gaps remain:
+- No in-session extraction (extensions/WebView)
+- No ProductContext standardization
+- No visual re-ranking
+- Link mode limited without client-side extraction
+
+**Recommendation:** Proceed to Phase 2 implementation focusing on:
+1. In-app WebView extractor (highest ROI for mobile users)
+2. Visual heuristic re-ranking
+3. ProductContext standardization
+
