@@ -42,10 +42,11 @@ workflows:
           npm run build
           echo "✓ Vite build complete → dist/"
 
-      - name: Sync Capacitor iOS
+      - name: Sync Capacitor (iOS + Android)
         script: |
           npx cap sync ios
-          echo "✓ Capacitor synced to ios/"
+          npx cap sync android || true
+          echo "✓ Capacitor synced to ios/ and android/"
 
       - name: Install CocoaPods
         script: |
