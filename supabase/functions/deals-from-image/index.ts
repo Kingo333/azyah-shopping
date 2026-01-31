@@ -28,6 +28,7 @@ interface ShoppingResult {
   rating?: number;
   reviews?: number;
   position: number;
+  similarity_score?: number;
 }
 
 interface PipelineLog {
@@ -37,6 +38,8 @@ interface PipelineLog {
   after_dedupe_count: number;
   final_returned_count: number;
   used_fallback_queries: boolean;
+  brands_detected?: string[];
+  patterns_detected?: string[];
 }
 
 interface DealsResponse {
@@ -61,14 +64,16 @@ const COLOR_WORDS = [
   'grey', 'gray', 'stone', 'beige', 'black', 'white', 'navy', 'blue', 
   'cream', 'camel', 'brown', 'green', 'pink', 'red', 'burgundy', 'maroon',
   'olive', 'khaki', 'nude', 'blush', 'coral', 'teal', 'emerald', 'gold',
-  'silver', 'charcoal', 'sand', 'ivory', 'taupe', 'sage', 'rust', 'mustard'
+  'silver', 'charcoal', 'sand', 'ivory', 'taupe', 'sage', 'rust', 'mustard',
+  'multicolor', 'multi-color', 'multicolored', 'multi'
 ];
 
 // Category vocabulary for modest fashion
 const CATEGORY_WORDS = [
   'abaya', 'kaftan', 'caftan', 'dress', 'outer', 'jacket', 'kimono',
   'jalabiya', 'jilbab', 'thobe', 'bisht', 'cardigan', 'coat', 'blazer',
-  'modest', 'maxi', 'midi', 'gown', 'cape', 'poncho', 'tunic'
+  'modest', 'maxi', 'midi', 'gown', 'cape', 'poncho', 'tunic',
+  'robe', 'wrap', 'duster', 'overcoat', 'trench'
 ];
 
 // Silhouette vocabulary
@@ -82,6 +87,71 @@ const SILHOUETTE_WORDS = [
 const FABRIC_WORDS = [
   'satin', 'chiffon', 'linen', 'cotton', 'silk', 'crepe', 'georgette',
   'velvet', 'jersey', 'knit', 'denim', 'lace', 'embroidered', 'sequin'
+];
+
+// NEW: Pattern vocabulary for print/texture identification
+const PATTERN_WORDS = [
+  // Prints
+  'printed', 'print', 'floral', 'paisley', 'abstract', 'geometric',
+  'animal', 'leopard', 'zebra', 'snake', 'polka', 'dot', 'striped',
+  'stripe', 'plaid', 'check', 'gingham', 'tartan', 'houndstooth',
+  'tie-dye', 'marble', 'tropical', 'botanical', 'damask', 'toile',
+  'ikat', 'aztec', 'tribal', 'ethnic', 'batik', 'chinoiserie',
+  
+  // Surface treatments
+  'embroidered', 'embroidery', 'sequin', 'beaded', 'crystal',
+  'applique', 'patchwork', 'quilted', 'textured', 'ribbed',
+  
+  // Transparency/texture
+  'lace', 'mesh', 'sheer', 'see-through', 'crochet', 'knit',
+  
+  // Color effects
+  'gradient', 'ombre', 'color-block', 'two-tone', 'contrast',
+  'colorful', 'vibrant', 'bold'
+];
+
+// NEW: Trim vocabulary for border/edge details
+const TRIM_WORDS = [
+  'border', 'trim', 'edging', 'piping', 'contrast trim',
+  'fringe', 'tassel', 'ruffle', 'pleated', 'scalloped',
+  'lace trim', 'embroidered border', 'gold trim', 'silver trim',
+  'beaded edge', 'sequin border'
+];
+
+// NEW: Brand vocabulary (100+ fashion brands) for soft detection
+const BRAND_PATTERNS = [
+  // Luxury
+  'zimmermann', 'etro', 'gucci', 'prada', 'versace', 'dolce gabbana',
+  'valentino', 'fendi', 'burberry', 'chloe', 'loewe', 'dior', 'chanel',
+  'louis vuitton', 'balenciaga', 'givenchy', 'bottega veneta', 'hermes',
+  
+  // Contemporary luxury
+  'net-a-porter', 'matchesfashion', 'ssense', 'mytheresa',
+  'rixo', 'ganni', 'staud', 'self-portrait', 'zimmerman', 'johanna ortiz',
+  
+  // Premium
+  'reiss', 'karen millen', 'hobbs', 'ted baker', 'massimo dutti',
+  'cos', 'arket', 'other stories', 'jcrew', 'j.crew', 'banana republic',
+  
+  // Fast fashion
+  'zara', 'mango', 'hm', 'h&m', 'uniqlo', 'asos', 'topshop', 'river island',
+  'pull bear', 'bershka', 'stradivarius', 'reserved', 'primark', 'boohoo',
+  'pretty little thing', 'plt', 'missguided', 'nasty gal', 'fashion nova',
+  
+  // Sports/Athletic
+  'nike', 'adidas', 'puma', 'reebok', 'new balance', 'under armour',
+  'lululemon', 'alo yoga', 'athleta', 'fabletics', 'sweaty betty',
+  
+  // Middle East focused
+  'namshi', 'ounass', 'farfetch', 'modanisa', 'shukr', 'inayah',
+  'aab', 'haute hijab', 'bokitta', 'noon', 'sivvi',
+  
+  // US/UK retailers
+  'nordstrom', 'revolve', 'anthropologie', 'free people', 'urban outfitters',
+  'bloomingdales', 'saks', 'neiman marcus', 'selfridges', 'harrods',
+  
+  // Value/Discount
+  'shein', 'romwe', 'amazon', 'target', 'walmart', 'tjmaxx', 'marshalls'
 ];
 
 function hashKey(input: string): string {
@@ -144,12 +214,14 @@ function mergeShoppingArrays(data: any): any[] {
   ];
 }
 
-// Extract descriptive terms from visual match titles
+// Extract descriptive terms from visual match titles (enhanced with patterns/trims)
 function extractDescriptors(titles: string[]): {
   colors: string[];
   categories: string[];
   silhouettes: string[];
   fabrics: string[];
+  patterns: string[];
+  trims: string[];
 } {
   const allText = titles.join(' ').toLowerCase();
   
@@ -157,19 +229,63 @@ function extractDescriptors(titles: string[]): {
   const categories = CATEGORY_WORDS.filter(c => allText.includes(c));
   const silhouettes = SILHOUETTE_WORDS.filter(s => allText.includes(s.toLowerCase()));
   const fabrics = FABRIC_WORDS.filter(f => allText.includes(f));
+  const patterns = PATTERN_WORDS.filter(p => allText.includes(p));
+  const trims = TRIM_WORDS.filter(t => allText.includes(t.toLowerCase()));
   
-  return { colors, categories, silhouettes, fabrics };
+  return { colors, categories, silhouettes, fabrics, patterns, trims };
 }
 
-// Build descriptive query pack with category/color/silhouette locking
+// NEW: Extract brand hints from visual match titles with confidence scoring
+function extractBrandHints(titles: string[]): { brand: string; confidence: number }[] {
+  const allText = titles.join(' ').toLowerCase();
+  const matches: Map<string, number> = new Map();
+  
+  for (const brand of BRAND_PATTERNS) {
+    // Count occurrences across all titles
+    let count = 0;
+    for (const title of titles) {
+      if (title.toLowerCase().includes(brand)) {
+        count++;
+      }
+    }
+    if (count > 0) {
+      matches.set(brand, count);
+    }
+  }
+  
+  return Array.from(matches.entries())
+    .map(([brand, count]) => ({
+      brand,
+      // Confidence: 0.9 for 3+ mentions, 0.6 for 2, 0.3 for 1
+      confidence: count >= 3 ? 0.9 : count >= 2 ? 0.6 : 0.3
+    }))
+    .sort((a, b) => b.confidence - a.confidence);
+}
+
+// Build descriptive query pack with category/color/silhouette/pattern locking
 function buildQueryPack(visualMatchTitles: string[]): string[] {
   const queries: string[] = [];
-  const { colors, categories, silhouettes, fabrics } = extractDescriptors(visualMatchTitles);
+  const { colors, categories, silhouettes, fabrics, patterns, trims } = extractDescriptors(visualMatchTitles);
   
   const primaryColor = colors[0] || '';
   const primaryCategory = categories[0] || '';
   const primarySilhouette = silhouettes[0] || '';
   const primaryFabric = fabrics[0] || '';
+  const primaryPattern = patterns[0] || '';
+  const primaryTrim = trims[0] || '';
+  
+  // NEW: Pattern-first queries (highest priority for printed items)
+  if (primaryPattern && primaryCategory) {
+    queries.push(`${primaryPattern} ${primaryCategory}`);
+    if (primaryColor) {
+      queries.push(`${primaryColor} ${primaryPattern} ${primaryCategory}`);
+    }
+  }
+  
+  // NEW: Trim-based queries
+  if (primaryTrim && primaryCategory) {
+    queries.push(`${primaryCategory} with ${primaryTrim}`);
+  }
   
   // Core locked queries (category + color)
   if (primaryCategory && primaryColor) {
@@ -207,17 +323,23 @@ function buildQueryPack(visualMatchTitles: string[]): string[] {
   
   // Dedupe and limit
   const uniqueQueries = [...new Set(queries)].filter(q => q.length > 3);
-  return uniqueQueries.slice(0, 10);
+  return uniqueQueries.slice(0, 12); // Increased from 10 to accommodate pattern queries
 }
 
 // Build broader "style pack" queries when results are low
 function buildStylePackQueries(
   categories: string[],
   colors: string[],
-  silhouettes: string[]
+  silhouettes: string[],
+  patterns: string[]
 ): string[] {
   const queries: string[] = [];
   const category = categories[0] || 'modest dress';
+  
+  // Pattern + category (NEW)
+  for (const pattern of patterns.slice(0, 2)) {
+    queries.push(`${pattern} ${category}`);
+  }
   
   // Category + color
   for (const color of colors.slice(0, 2)) {
@@ -233,7 +355,7 @@ function buildStylePackQueries(
   queries.push(`${category} UAE`);
   queries.push(`modest ${category}`);
   
-  return [...new Set(queries)].slice(0, 4);
+  return [...new Set(queries)].slice(0, 5);
 }
 
 async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
@@ -353,6 +475,8 @@ serve(async (req) => {
       after_dedupe_count: 0,
       final_returned_count: 0,
       used_fallback_queries: false,
+      brands_detected: [],
+      patterns_detected: [],
     };
 
     // Step 1: Call Google Lens
@@ -396,8 +520,28 @@ serve(async (req) => {
       visualMatchTitles.unshift(lensData.knowledge_graph.title);
     }
 
-    // Step 2: Build descriptive query pack with category/color/silhouette locking
+    // NEW: Extract brand hints from visual matches
+    const detectedBrands = extractBrandHints(visualMatchTitles);
+    pipelineLog.brands_detected = detectedBrands.slice(0, 3).map(b => b.brand);
+    
+    // NEW: Extract pattern descriptors
+    const { patterns: detectedPatterns } = extractDescriptors(visualMatchTitles);
+    pipelineLog.patterns_detected = detectedPatterns.slice(0, 5);
+    
+    console.log(`[deals-from-image] Detected brands: ${pipelineLog.brands_detected?.join(', ') || 'none'}`);
+    console.log(`[deals-from-image] Detected patterns: ${pipelineLog.patterns_detected?.join(', ') || 'none'}`);
+
+    // Step 2: Build descriptive query pack with category/color/silhouette/pattern locking
     const searchQueries = buildQueryPack(visualMatchTitles);
+    
+    // NEW: Add brand-specific query if high confidence brand detected
+    if (detectedBrands.length > 0 && detectedBrands[0].confidence >= 0.6) {
+      const brandQuery = `${detectedBrands[0].brand} ${extractDescriptors(visualMatchTitles).categories[0] || 'fashion'}`;
+      if (!searchQueries.includes(brandQuery)) {
+        searchQueries.unshift(brandQuery); // Prioritize brand query
+      }
+    }
+    
     pipelineLog.query_pack_count = searchQueries.length;
     
     console.log(`[deals-from-image] Query pack (${searchQueries.length}): ${searchQueries.slice(0, 3).join(' | ')}...`);
@@ -406,7 +550,7 @@ serve(async (req) => {
     const seenKeys = new Set<string>();
 
     // Step 3: Run shopping searches
-    for (const query of searchQueries.slice(0, 6)) {
+    for (const query of searchQueries.slice(0, 8)) {
       if (!query) continue;
 
       const shoppingParams = new URLSearchParams({
@@ -456,8 +600,8 @@ serve(async (req) => {
       console.log(`[deals-from-image] Below result floor (${allShoppingResults.length}), running style pack...`);
       pipelineLog.used_fallback_queries = true;
       
-      const { colors, categories, silhouettes } = extractDescriptors(visualMatchTitles);
-      const stylePackQueries = buildStylePackQueries(categories, colors, silhouettes);
+      const { colors, categories, silhouettes, patterns } = extractDescriptors(visualMatchTitles);
+      const stylePackQueries = buildStylePackQueries(categories, colors, silhouettes, patterns);
       
       for (const query of stylePackQueries) {
         const shoppingParams = new URLSearchParams({
@@ -528,60 +672,90 @@ serve(async (req) => {
       }
     }
 
-    // Step 6: Visual heuristic re-ranking
-    const { colors: inputColors, categories: inputCategories } = extractDescriptors(visualMatchTitles);
+    // Step 6: Enhanced visual heuristic re-ranking with patterns and brands
+    const { 
+      colors: inputColors, 
+      categories: inputCategories, 
+      patterns: inputPatterns,
+      trims: inputTrims 
+    } = extractDescriptors(visualMatchTitles);
     
-    if (inputColors.length > 0 || inputCategories.length > 0) {
-      // Compute similarity scores based on color and category matching
+    if (inputColors.length > 0 || inputCategories.length > 0 || inputPatterns.length > 0) {
+      // Compute similarity scores with NEW weighting scheme
       for (const result of allShoppingResults) {
         let score = 0;
         const resultTitle = (result.title || '').toLowerCase();
         const resultSource = (result.source || '').toLowerCase();
         
-        // Color matching (0.4 weight)
-        for (const color of inputColors) {
-          if (resultTitle.includes(color)) {
-            score += 0.4;
+        // NEW: Pattern matching (0.25 weight - highest priority for prints)
+        for (const pattern of inputPatterns) {
+          if (resultTitle.includes(pattern)) {
+            score += 0.25;
             break;
           }
         }
         
-        // Category matching (0.4 weight)
+        // Category matching (0.20 weight - reduced from 0.4)
         for (const category of inputCategories) {
           if (resultTitle.includes(category)) {
-            score += 0.4;
+            score += 0.20;
             break;
           }
         }
         
-        // Source quality bonus (0.2 weight)
+        // Color matching (0.15 weight - reduced from 0.4)
+        for (const color of inputColors) {
+          if (resultTitle.includes(color)) {
+            score += 0.15;
+            break;
+          }
+        }
+        
+        // NEW: Trim matching (0.10 weight)
+        for (const trim of inputTrims) {
+          if (resultTitle.includes(trim.toLowerCase())) {
+            score += 0.10;
+            break;
+          }
+        }
+        
+        // NEW: Brand matching (0.05-0.12 soft bonus)
+        if (detectedBrands.length > 0) {
+          const topBrand = detectedBrands[0];
+          if (resultTitle.includes(topBrand.brand) || resultSource.includes(topBrand.brand)) {
+            // Soft bonus: max 0.12 for high-confidence brand
+            score += topBrand.confidence * 0.12;
+          }
+        }
+        
+        // Source quality bonus (0.05 weight - reduced from 0.2)
         const premiumSources = ['namshi', 'ounass', 'farfetch', 'asos', 'zara', 'nike'];
         const goodSources = ['noon', 'amazon', 'shein'];
         
         for (const src of premiumSources) {
           if (resultSource.includes(src)) {
-            score += 0.2;
+            score += 0.05;
             break;
           }
         }
-        if (score < 0.2) {
+        if (score < 0.05) {
           for (const src of goodSources) {
             if (resultSource.includes(src)) {
-              score += 0.1;
+              score += 0.03;
               break;
             }
           }
         }
         
-        (result as any).similarity_score = Math.min(score, 1);
+        result.similarity_score = Math.min(score, 1);
       }
       
       // Sort by similarity score first, then by price
       allShoppingResults.sort((a, b) => {
-        const scoreA = (a as any).similarity_score ?? 0;
-        const scoreB = (b as any).similarity_score ?? 0;
+        const scoreA = a.similarity_score ?? 0;
+        const scoreB = b.similarity_score ?? 0;
         
-        if (Math.abs(scoreA - scoreB) > 0.1) {
+        if (Math.abs(scoreA - scoreB) > 0.08) {
           return scoreB - scoreA; // Higher similarity first
         }
         
@@ -591,7 +765,7 @@ serve(async (req) => {
         return a.extracted_price - b.extracted_price;
       });
       
-      console.log(`[deals-from-image] Applied visual rerank: colors=[${inputColors.slice(0, 2).join(',')}], categories=[${inputCategories.slice(0, 2).join(',')}]`);
+      console.log(`[deals-from-image] Applied enhanced rerank: patterns=[${inputPatterns.slice(0, 2).join(',')}], colors=[${inputColors.slice(0, 2).join(',')}], categories=[${inputCategories.slice(0, 2).join(',')}]`);
     } else {
       // Fallback to price-only sort
       allShoppingResults.sort((a, b) => {
