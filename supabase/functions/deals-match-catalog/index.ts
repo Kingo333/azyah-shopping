@@ -196,7 +196,30 @@ serve(async (req) => {
 
       // Lowered threshold from 0.1 to 0.05
       if (score >= 0.05) {
-        const mediaUrl = product.media_urls?.[0] || '';
+        // Safely extract first media URL (handle JSON array stored as string)
+        const mediaUrl = (() => {
+          const raw = product.media_urls;
+          if (!raw) return '';
+          
+          if (Array.isArray(raw)) {
+            return raw[0] || '';
+          }
+          
+          if (typeof raw === 'string') {
+            const s = raw.trim();
+            if (s.startsWith('[')) {
+              try {
+                const parsed = JSON.parse(s);
+                if (Array.isArray(parsed)) return parsed[0] || '';
+              } catch {
+                console.log('[deals-match-catalog] Failed to parse media_urls JSON:', product.id);
+              }
+            }
+            return s; // Plain URL string
+          }
+          
+          return '';
+        })();
 
         scoredProducts.push({
           id: product.id,

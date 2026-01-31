@@ -35,9 +35,29 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
   });
 
   // Get display image URL using centralized displaySrc helper
+  // Handles malformed URLs (JSON array stored as string)
   const getDisplayImageUrl = useCallback((url: string | null | undefined): string => {
     if (!url) return '/placeholder.svg';
-    return displaySrc(url);
+    
+    // Clean up JSON array strings that may have been passed incorrectly
+    let cleanUrl = url.trim();
+    if (cleanUrl.startsWith('[') || cleanUrl.startsWith('"[')) {
+      try {
+        // Handle double-encoded or single-encoded JSON
+        const decoded = cleanUrl.startsWith('"') ? JSON.parse(cleanUrl) : cleanUrl;
+        const parsed = typeof decoded === 'string' && decoded.startsWith('[') 
+          ? JSON.parse(decoded) 
+          : decoded;
+        cleanUrl = Array.isArray(parsed) ? (parsed[0] || '') : cleanUrl;
+      } catch {
+        console.warn('[AzyahMatches] Failed to parse media_url:', url.substring(0, 50));
+        return '/placeholder.svg';
+      }
+    }
+    
+    if (!cleanUrl || cleanUrl.length < 5) return '/placeholder.svg';
+    
+    return displaySrc(cleanUrl);
   }, []);
 
   const formatPrice = useCallback((cents: number, currency: string) => {
@@ -123,8 +143,10 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
             src={imageUrl}
             alt={match.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.svg';
+              console.warn('[AzyahMatches] Image load failed:', match.media_url?.substring(0, 80));
+              (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
             }}
           />
         </div>
