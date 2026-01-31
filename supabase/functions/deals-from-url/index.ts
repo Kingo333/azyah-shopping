@@ -617,11 +617,82 @@ serve(async (req) => {
       }
     }
 
-    // Sort by price (will be replaced by visual similarity in future)
-    allShoppingResults.sort((a, b) => {
-      if (a.extracted_price === null) return 1;
-      if (b.extracted_price === null) return -1;
-      return a.extracted_price - b.extracted_price;
+    // Step 6: Visual heuristic re-ranking
+    const { colors: inputColors, categories: inputCategories } = extractDescriptors(visualMatchTitles);
+    
+    if (inputColors.length > 0 || inputCategories.length > 0) {
+      // Compute similarity scores based on color and category matching
+      for (const result of allShoppingResults) {
+        let score = 0;
+        const resultTitle = (result.title || '').toLowerCase();
+        const resultSource = (result.source || '').toLowerCase();
+        
+        // Color matching (0.4 weight)
+        for (const color of inputColors) {
+          if (resultTitle.includes(color)) {
+            score += 0.4;
+            break;
+          }
+        }
+        
+        // Category matching (0.4 weight)
+        for (const category of inputCategories) {
+          if (resultTitle.includes(category)) {
+            score += 0.4;
+            break;
+          }
+        }
+        
+        // Source quality bonus (0.2 weight)
+        const premiumSources = ['namshi', 'ounass', 'farfetch', 'asos', 'zara', 'nike'];
+        const goodSources = ['noon', 'amazon', 'shein'];
+        
+        for (const src of premiumSources) {
+          if (resultSource.includes(src)) {
+            score += 0.2;
+            break;
+          }
+        }
+        if (score < 0.2) {
+          for (const src of goodSources) {
+            if (resultSource.includes(src)) {
+              score += 0.1;
+              break;
+            }
+          }
+        }
+        
+        (result as any).similarity_score = Math.min(score, 1);
+      }
+      
+      // Sort by similarity score first, then by price
+      allShoppingResults.sort((a, b) => {
+        const scoreA = (a as any).similarity_score ?? 0;
+        const scoreB = (b as any).similarity_score ?? 0;
+        
+        if (Math.abs(scoreA - scoreB) > 0.1) {
+          return scoreB - scoreA; // Higher similarity first
+        }
+        
+        // Same similarity tier - sort by price
+        if (a.extracted_price === null) return 1;
+        if (b.extracted_price === null) return -1;
+        return a.extracted_price - b.extracted_price;
+      });
+      
+      console.log(`[deals-from-url] Applied visual rerank: colors=[${inputColors.slice(0, 2).join(',')}], categories=[${inputCategories.slice(0, 2).join(',')}]`);
+    } else {
+      // Fallback to price-only sort
+      allShoppingResults.sort((a, b) => {
+        if (a.extracted_price === null) return 1;
+        if (b.extracted_price === null) return -1;
+        return a.extracted_price - b.extracted_price;
+      });
+    }
+    
+    // Update positions after sorting
+    allShoppingResults.forEach((result, index) => {
+      result.position = index + 1;
     });
 
     const response: DealsResponse = {

@@ -11,7 +11,22 @@ const RATE_LIMIT_MAX_REQUESTS = 10;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MIN_RESULTS_FLOOR = 10;
 
-interface LensVisualMatch {
+// ProductContext interface (matches src/types/ProductContext.ts)
+interface ProductContext {
+  page_url: string;
+  extracted_from: 'chrome_ext' | 'safari_ext' | 'azyah_webview' | 'photo_upload' | 'url_paste';
+  title?: string;
+  brand?: string;
+  price?: number;
+  currency?: string;
+  main_image_url?: string;
+  image_urls?: string[];
+  category_hint?: string;
+  availability?: string;
+  extraction_confidence?: 'high' | 'medium' | 'low';
+}
+
+interface VisualMatch {
   title: string;
   link: string;
   thumbnail: string;
@@ -28,6 +43,7 @@ interface ShoppingResult {
   rating?: number;
   reviews?: number;
   position: number;
+  similarity_score?: number;
 }
 
 interface PipelineLog {
@@ -37,23 +53,7 @@ interface PipelineLog {
   after_dedupe_count: number;
   final_returned_count: number;
   used_fallback_queries: boolean;
-}
-
-interface DealsResponse {
-  success: boolean;
-  input_image: string;
-  visual_matches: LensVisualMatch[];
-  shopping_results: ShoppingResult[];
-  price_stats: {
-    low: number | null;
-    median: number | null;
-    high: number | null;
-    valid_count: number;
-  };
-  deals_found: number;
-  pipeline_log?: PipelineLog;
-  cached?: boolean;
-  error?: string;
+  visual_rerank_applied: boolean;
 }
 
 // Color vocabulary for modest fashion
@@ -91,7 +91,7 @@ function hashKey(input: string): string {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  return `img_${Math.abs(hash).toString(36)}`;
+  return `ctx_${Math.abs(hash).toString(36)}`;
 }
 
 function normalizeLink(link: string | undefined | null): string {
@@ -144,7 +144,6 @@ function mergeShoppingArrays(data: any): any[] {
   ];
 }
 
-// Extract descriptive terms from visual match titles
 function extractDescriptors(titles: string[]): {
   colors: string[];
   categories: string[];
@@ -161,13 +160,19 @@ function extractDescriptors(titles: string[]): {
   return { colors, categories, silhouettes, fabrics };
 }
 
-// Build descriptive query pack with category/color/silhouette locking
-function buildQueryPack(visualMatchTitles: string[]): string[] {
+function buildQueryPack(
+  context: ProductContext,
+  visualMatchTitles: string[]
+): string[] {
   const queries: string[] = [];
-  const { colors, categories, silhouettes, fabrics } = extractDescriptors(visualMatchTitles);
   
+  // Combine context title with visual match titles
+  const allTitles = [...(context.title ? [context.title] : []), ...visualMatchTitles];
+  const { colors, categories, silhouettes, fabrics } = extractDescriptors(allTitles);
+  
+  // Use context hints if available
   const primaryColor = colors[0] || '';
-  const primaryCategory = categories[0] || '';
+  const primaryCategory = context.category_hint || categories[0] || '';
   const primarySilhouette = silhouettes[0] || '';
   const primaryFabric = fabrics[0] || '';
   
@@ -175,42 +180,45 @@ function buildQueryPack(visualMatchTitles: string[]): string[] {
   if (primaryCategory && primaryColor) {
     queries.push(`${primaryColor} ${primaryCategory}`.trim());
     
-    // Silhouette variant
     if (primarySilhouette) {
       queries.push(`${primaryColor} ${primarySilhouette} ${primaryCategory}`.trim());
     }
     
-    // Fabric variant
     if (primaryFabric) {
       queries.push(`${primaryFabric} ${primaryCategory} ${primaryColor}`.trim());
     }
-    
-    // Second color variant
-    if (colors[1]) {
-      queries.push(`${colors[1]} ${primaryCategory}`.trim());
+  }
+  
+  // Brand-specific query (only if high confidence)
+  if (context.brand && primaryCategory && context.extraction_confidence === 'high') {
+    queries.push(`${context.brand} ${primaryCategory}`.trim());
+  }
+  
+  // Context title as query
+  if (context.title) {
+    const cleanTitle = context.title
+      .replace(/\s*[-|]\s*[^-|]+$/, '')
+      .replace(/\b(free shipping|sale|discount|off)\b/gi, '')
+      .trim();
+    if (cleanTitle.length > 5 && !queries.includes(cleanTitle)) {
+      queries.push(cleanTitle);
     }
   }
   
-  // Use raw visual match titles (first 4)
-  for (const title of visualMatchTitles.slice(0, 4)) {
-    if (title && !queries.includes(title)) {
-      // Clean up noisy titles
-      const cleanTitle = title
-        .replace(/\s*[-|]\s*[^-|]+$/, '') // Remove trailing brand/site
-        .replace(/\b(free shipping|sale|discount|off)\b/gi, '')
-        .trim();
-      if (cleanTitle.length > 5) {
-        queries.push(cleanTitle);
-      }
+  // Visual match titles (cleaned)
+  for (const title of visualMatchTitles.slice(0, 3)) {
+    const cleanTitle = title
+      .replace(/\s*[-|]\s*[^-|]+$/, '')
+      .replace(/\b(free shipping|sale|discount|off)\b/gi, '')
+      .trim();
+    if (cleanTitle.length > 5 && !queries.includes(cleanTitle)) {
+      queries.push(cleanTitle);
     }
   }
   
-  // Dedupe and limit
-  const uniqueQueries = [...new Set(queries)].filter(q => q.length > 3);
-  return uniqueQueries.slice(0, 10);
+  return [...new Set(queries)].filter(q => q.length > 3).slice(0, 10);
 }
 
-// Build broader "style pack" queries when results are low
 function buildStylePackQueries(
   categories: string[],
   colors: string[],
@@ -219,21 +227,66 @@ function buildStylePackQueries(
   const queries: string[] = [];
   const category = categories[0] || 'modest dress';
   
-  // Category + color
   for (const color of colors.slice(0, 2)) {
     queries.push(`${color} ${category}`);
   }
   
-  // Category + silhouette
   for (const silhouette of silhouettes.slice(0, 2)) {
     queries.push(`${silhouette} ${category}`);
   }
   
-  // Generic fallbacks
   queries.push(`${category} UAE`);
   queries.push(`modest ${category}`);
   
   return [...new Set(queries)].slice(0, 4);
+}
+
+// Visual heuristic re-ranking based on color and category matching
+function computeSimilarityScore(
+  result: any,
+  inputColors: string[],
+  inputCategories: string[]
+): number {
+  let score = 0;
+  const resultTitle = (result.title || '').toLowerCase();
+  const resultSource = (result.source || '').toLowerCase();
+  
+  // Color matching (0.4 weight)
+  for (const color of inputColors) {
+    if (resultTitle.includes(color)) {
+      score += 0.4;
+      break;
+    }
+  }
+  
+  // Category matching (0.4 weight)
+  for (const category of inputCategories) {
+    if (resultTitle.includes(category)) {
+      score += 0.4;
+      break;
+    }
+  }
+  
+  // Source quality bonus (0.2 weight) - prefer known fashion retailers
+  const premiumSources = ['namshi', 'ounass', 'farfetch', 'asos', 'zara', 'nike'];
+  const goodSources = ['noon', 'amazon', 'shein'];
+  
+  for (const src of premiumSources) {
+    if (resultSource.includes(src)) {
+      score += 0.2;
+      break;
+    }
+  }
+  if (score < 0.2) {
+    for (const src of goodSources) {
+      if (resultSource.includes(src)) {
+        score += 0.1;
+        break;
+      }
+    }
+  }
+  
+  return Math.min(score, 1);
 }
 
 async function checkRateLimit(supabase: any, userId: string): Promise<boolean> {
@@ -323,87 +376,104 @@ serve(async (req) => {
       );
     }
 
-    const { imageUrl } = await req.json();
+    const { context } = await req.json() as { context: ProductContext };
 
-    if (!imageUrl) {
+    if (!context?.page_url) {
       return new Response(
-        JSON.stringify({ success: false, error: 'imageUrl is required' }),
+        JSON.stringify({ success: false, error: 'ProductContext with page_url is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check cache
-    const cacheKey = hashKey(imageUrl);
+    // Build cache key from context
+    const cacheInput = JSON.stringify({
+      url: context.page_url,
+      image: context.main_image_url,
+      title: context.title,
+    });
+    const cacheKey = hashKey(cacheInput);
+    
     const cached = await getCache(supabase, cacheKey);
     if (cached) {
-      console.log(`[deals-from-image] Cache hit`);
+      console.log(`[deals-from-context] Cache hit`);
       return new Response(
         JSON.stringify({ ...cached, cached: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[deals-from-image] Processing image for user ${user.id}: ${imageUrl.substring(0, 100)}...`);
+    console.log(`[deals-from-context] Processing context for user ${user.id}:`, {
+      page_url: context.page_url,
+      extracted_from: context.extracted_from,
+      has_image: !!context.main_image_url,
+      has_title: !!context.title,
+    });
 
-    // Initialize pipeline logging
     const pipelineLog: PipelineLog = {
-      input_has_image: true,
+      input_has_image: !!context.main_image_url,
       query_pack_count: 0,
       raw_results_count: 0,
       after_dedupe_count: 0,
       final_returned_count: 0,
       used_fallback_queries: false,
+      visual_rerank_applied: false,
     };
-
-    // Step 1: Call Google Lens
-    const lensParams = new URLSearchParams({
-      engine: 'google_lens',
-      url: imageUrl,
-      api_key: SERPAPI_KEY,
-      gl: 'ae',
-      hl: 'en',
-    });
-
-    console.log('[deals-from-image] Calling Google Lens API...');
-    const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
-    const lensData = await lensResponse.json();
-
-    if (lensData.error) {
-      console.error('[deals-from-image] Lens API error:', lensData.error);
-      throw new Error(`Lens API error: ${lensData.error}`);
-    }
-
-    const visualMatches: LensVisualMatch[] = (lensData.visual_matches || [])
-      .slice(0, 10)
-      .filter((match: any) => {
-        const source = (match.source || '').toLowerCase();
-        return !source.includes('pinterest') && !source.includes('instagram');
-      })
-      .map((match: any) => ({
-        title: match.title || '',
-        link: normalizeLink(match.link),
-        thumbnail: match.thumbnail || '',
-        source: match.source || '',
-      }));
-
-    console.log(`[deals-from-image] Found ${visualMatches.length} visual matches`);
-
-    // Extract titles for query pack building
-    const visualMatchTitles = visualMatches.map(m => m.title).filter(Boolean);
-    
-    // Add knowledge graph title if available
-    if (lensData.knowledge_graph?.title) {
-      visualMatchTitles.unshift(lensData.knowledge_graph.title);
-    }
-
-    // Step 2: Build descriptive query pack with category/color/silhouette locking
-    const searchQueries = buildQueryPack(visualMatchTitles);
-    pipelineLog.query_pack_count = searchQueries.length;
-    
-    console.log(`[deals-from-image] Query pack (${searchQueries.length}): ${searchQueries.slice(0, 3).join(' | ')}...`);
 
     const allShoppingResults: ShoppingResult[] = [];
     const seenKeys = new Set<string>();
+    const visualMatches: VisualMatch[] = [];
+    const visualMatchTitles: string[] = [];
+
+    // Step 1: If we have an image, run Google Lens
+    const imageToSearch = context.main_image_url || (context.image_urls?.[0]);
+    
+    if (imageToSearch) {
+      console.log(`[deals-from-context] Running Lens on image...`);
+      
+      try {
+        const lensParams = new URLSearchParams({
+          engine: 'google_lens',
+          url: imageToSearch,
+          api_key: SERPAPI_KEY,
+          gl: 'ae',
+          hl: 'en',
+        });
+
+        const lensResponse = await fetch(`https://serpapi.com/search?${lensParams.toString()}`);
+        const lensData = await lensResponse.json();
+
+        if (!lensData.error) {
+          const matches = (lensData.visual_matches || [])
+            .slice(0, 10)
+            .filter((match: any) => {
+              const source = (match.source || '').toLowerCase();
+              return !source.includes('pinterest') && !source.includes('instagram');
+            });
+
+          for (const match of matches) {
+            visualMatches.push({
+              title: match.title || '',
+              link: normalizeLink(match.link),
+              thumbnail: match.thumbnail || '',
+              source: match.source || '',
+            });
+            if (match.title) {
+              visualMatchTitles.push(match.title);
+            }
+          }
+
+          console.log(`[deals-from-context] Lens found ${visualMatches.length} visual matches`);
+        }
+      } catch (err) {
+        console.warn('[deals-from-context] Lens error:', err);
+      }
+    }
+
+    // Step 2: Build query pack
+    const searchQueries = buildQueryPack(context, visualMatchTitles);
+    pipelineLog.query_pack_count = searchQueries.length;
+    
+    console.log(`[deals-from-context] Query pack (${searchQueries.length}): ${searchQueries.slice(0, 3).join(' | ')}...`);
 
     // Step 3: Run shopping searches
     for (const query of searchQueries.slice(0, 6)) {
@@ -418,8 +488,6 @@ serve(async (req) => {
         location: 'United Arab Emirates',
       });
 
-      console.log(`[deals-from-image] Searching shopping: "${query.substring(0, 50)}..."`);
-      
       try {
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
@@ -445,18 +513,19 @@ serve(async (req) => {
           });
         }
       } catch (err) {
-        console.error(`[deals-from-image] Shopping search error for query "${query}":`, err);
+        console.warn(`[deals-from-context] Shopping search error:`, err);
       }
     }
 
     pipelineLog.after_dedupe_count = allShoppingResults.length;
 
-    // Step 4: Result floor strategy - if below minimum, run broader style pack
-    if (allShoppingResults.length < MIN_RESULTS_FLOOR && visualMatchTitles.length > 0) {
-      console.log(`[deals-from-image] Below result floor (${allShoppingResults.length}), running style pack...`);
+    // Step 4: Result floor strategy
+    if (allShoppingResults.length < MIN_RESULTS_FLOOR) {
+      console.log(`[deals-from-context] Below result floor (${allShoppingResults.length}), running style pack...`);
       pipelineLog.used_fallback_queries = true;
       
-      const { colors, categories, silhouettes } = extractDescriptors(visualMatchTitles);
+      const allTitles = [...(context.title ? [context.title] : []), ...visualMatchTitles];
+      const { colors, categories, silhouettes } = extractDescriptors(allTitles);
       const stylePackQueries = buildStylePackQueries(categories, colors, silhouettes);
       
       for (const query of stylePackQueries) {
@@ -494,16 +563,58 @@ serve(async (req) => {
             });
           }
         } catch (err) {
-          console.warn(`[deals-from-image] Style pack search error:`, err);
+          console.warn(`[deals-from-context] Style pack error:`, err);
         }
       }
     }
 
+    // Step 5: Visual heuristic re-ranking
+    const allTitles = [...(context.title ? [context.title] : []), ...visualMatchTitles];
+    const { colors: inputColors, categories: inputCategories } = extractDescriptors(allTitles);
+    
+    if (inputColors.length > 0 || inputCategories.length > 0) {
+      pipelineLog.visual_rerank_applied = true;
+      
+      // Compute similarity scores
+      for (const result of allShoppingResults) {
+        result.similarity_score = computeSimilarityScore(result, inputColors, inputCategories);
+      }
+      
+      // Sort by similarity score first, then by price
+      allShoppingResults.sort((a, b) => {
+        const scoreA = a.similarity_score ?? 0;
+        const scoreB = b.similarity_score ?? 0;
+        
+        if (Math.abs(scoreA - scoreB) > 0.1) {
+          return scoreB - scoreA; // Higher similarity first
+        }
+        
+        // Same similarity tier - sort by price
+        if (a.extracted_price === null) return 1;
+        if (b.extracted_price === null) return -1;
+        return a.extracted_price - b.extracted_price;
+      });
+      
+      console.log(`[deals-from-context] Applied visual rerank: colors=[${inputColors.slice(0, 2).join(',')}], categories=[${inputCategories.slice(0, 2).join(',')}]`);
+    } else {
+      // Fallback to price-only sort
+      allShoppingResults.sort((a, b) => {
+        if (a.extracted_price === null) return 1;
+        if (b.extracted_price === null) return -1;
+        return a.extracted_price - b.extracted_price;
+      });
+    }
+
+    // Update positions after sorting
+    allShoppingResults.forEach((result, index) => {
+      result.position = index + 1;
+    });
+
     pipelineLog.final_returned_count = allShoppingResults.length;
 
-    console.log(`[deals-from-image] Pipeline: input_has_image=${pipelineLog.input_has_image}, query_pack=${pipelineLog.query_pack_count}, raw=${pipelineLog.raw_results_count}, dedupe=${pipelineLog.after_dedupe_count}, final=${pipelineLog.final_returned_count}`);
+    console.log(`[deals-from-context] Pipeline: input_has_image=${pipelineLog.input_has_image}, query_pack=${pipelineLog.query_pack_count}, raw=${pipelineLog.raw_results_count}, dedupe=${pipelineLog.after_dedupe_count}, final=${pipelineLog.final_returned_count}, rerank=${pipelineLog.visual_rerank_applied}`);
 
-    // Step 5: Compute price statistics
+    // Compute price stats
     const validPrices = allShoppingResults
       .map(r => r.extracted_price)
       .filter((p): p is number => p !== null && p > 0);
@@ -528,98 +639,28 @@ serve(async (req) => {
       }
     }
 
-    // Step 6: Visual heuristic re-ranking
-    const { colors: inputColors, categories: inputCategories } = extractDescriptors(visualMatchTitles);
-    
-    if (inputColors.length > 0 || inputCategories.length > 0) {
-      // Compute similarity scores based on color and category matching
-      for (const result of allShoppingResults) {
-        let score = 0;
-        const resultTitle = (result.title || '').toLowerCase();
-        const resultSource = (result.source || '').toLowerCase();
-        
-        // Color matching (0.4 weight)
-        for (const color of inputColors) {
-          if (resultTitle.includes(color)) {
-            score += 0.4;
-            break;
-          }
-        }
-        
-        // Category matching (0.4 weight)
-        for (const category of inputCategories) {
-          if (resultTitle.includes(category)) {
-            score += 0.4;
-            break;
-          }
-        }
-        
-        // Source quality bonus (0.2 weight)
-        const premiumSources = ['namshi', 'ounass', 'farfetch', 'asos', 'zara', 'nike'];
-        const goodSources = ['noon', 'amazon', 'shein'];
-        
-        for (const src of premiumSources) {
-          if (resultSource.includes(src)) {
-            score += 0.2;
-            break;
-          }
-        }
-        if (score < 0.2) {
-          for (const src of goodSources) {
-            if (resultSource.includes(src)) {
-              score += 0.1;
-              break;
-            }
-          }
-        }
-        
-        (result as any).similarity_score = Math.min(score, 1);
-      }
-      
-      // Sort by similarity score first, then by price
-      allShoppingResults.sort((a, b) => {
-        const scoreA = (a as any).similarity_score ?? 0;
-        const scoreB = (b as any).similarity_score ?? 0;
-        
-        if (Math.abs(scoreA - scoreB) > 0.1) {
-          return scoreB - scoreA; // Higher similarity first
-        }
-        
-        // Same similarity tier - sort by price
-        if (a.extracted_price === null) return 1;
-        if (b.extracted_price === null) return -1;
-        return a.extracted_price - b.extracted_price;
-      });
-      
-      console.log(`[deals-from-image] Applied visual rerank: colors=[${inputColors.slice(0, 2).join(',')}], categories=[${inputCategories.slice(0, 2).join(',')}]`);
-    } else {
-      // Fallback to price-only sort
-      allShoppingResults.sort((a, b) => {
-        if (a.extracted_price === null) return 1;
-        if (b.extracted_price === null) return -1;
-        return a.extracted_price - b.extracted_price;
-      });
+    // Build suggestion
+    let suggestion: string | undefined;
+    if (allShoppingResults.length === 0) {
+      suggestion = 'Try using "Open in Azyah" for better product extraction.';
+    } else if (allShoppingResults.length < 5 && !context.main_image_url) {
+      suggestion = 'For more results, try the Photo tab with a product image.';
     }
-    
-    // Update positions after sorting
-    allShoppingResults.forEach((result, index) => {
-      result.position = index + 1;
-    });
 
-    const response: DealsResponse = {
+    const response = {
       success: true,
-      input_image: imageUrl,
+      input_context: context,
       visual_matches: visualMatches,
       shopping_results: allShoppingResults,
       price_stats: priceStats,
       deals_found: allShoppingResults.length,
       pipeline_log: pipelineLog,
+      suggestion,
     };
 
-    // Cache the response
     await setCache(supabase, cacheKey, response);
 
-    console.log(`[deals-from-image] Success: ${allShoppingResults.length} deals found`);
+    console.log(`[deals-from-context] Success: ${allShoppingResults.length} deals found`);
 
     return new Response(
       JSON.stringify(response),
@@ -627,11 +668,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[deals-from-image] Error:', error);
+    console.error('[deals-from-context] Error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
+        input_context: {},
         visual_matches: [],
         shopping_results: [],
         price_stats: { low: null, median: null, high: null, valid_count: 0 },

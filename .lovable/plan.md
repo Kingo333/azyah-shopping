@@ -394,18 +394,19 @@ Tests require actual API calls. Recommend manual verification:
 - [x] Card hierarchy (brand + price primary)
 - [x] Price verdict with 5+ results guard
 
-### Phase 2 (NOT STARTED)
+### Phase 2 (COMPLETE ✅)
 
-- [ ] ProductContext schema defined
-- [ ] `deals-from-context` endpoint created
-- [ ] In-app WebView extractor (mobile)
-- [ ] Visual re-ranking (heuristic or embeddings)
+- [x] ProductContext schema defined (`src/types/ProductContext.ts`)
+- [x] `deals-from-context` endpoint created
+- [x] In-app WebView extractor (mobile) - `OpenInAzyahButton` component
+- [x] Visual re-ranking (heuristic) - color/category matching in all endpoints
 
 ### Phase 3 (NOT STARTED)
 
 - [ ] Chrome Extension (Manifest V3)
 - [ ] Safari Web Extension
 - [ ] Extension extraction parity with WebView
+- [ ] CLIP-style image embeddings for visual re-ranking (future enhancement)
 
 ---
 
