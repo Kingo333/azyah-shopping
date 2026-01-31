@@ -19,6 +19,7 @@
     "@capacitor/ios": "^7.4.4",
     "@capacitor/share": "^7.0.3",
     "@capacitor/status-bar": "^7.0.4",
+    "@capgo/inappbrowser": "^7.29.4",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.0",
     "@huggingface/transformers": "^3.7.1",
