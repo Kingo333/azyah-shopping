@@ -6,23 +6,20 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Camera, Link2, Search, Tag } from 'lucide-react';
+import { Camera, Link2, Tag } from 'lucide-react';
 import { PhotoTab } from './PhotoTab';
 import { LinkTab } from './LinkTab';
-import { SearchTab } from './SearchTab';
 
 interface DealsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialTab?: 'photo' | 'link' | 'search';
-  initialQuery?: string;
+  initialTab?: 'photo' | 'link';
 }
 
 export function DealsDrawer({ 
   open, 
   onOpenChange, 
-  initialTab = 'photo',
-  initialQuery = '' 
+  initialTab = 'photo'
 }: DealsDrawerProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -54,9 +51,9 @@ export function DealsDrawer({
         </DrawerHeader>
 
         <div className="px-4 pb-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            {/* Glass segmented control tabs */}
-            <TabsList className="w-full grid grid-cols-3 mb-4 bg-black/5 dark:bg-white/10 p-1.5 rounded-full h-auto">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photo' | 'link')} className="w-full">
+            {/* Glass segmented control tabs - now 2 columns */}
+            <TabsList className="w-full grid grid-cols-2 mb-4 bg-black/5 dark:bg-white/10 p-1.5 rounded-full h-auto">
               <TabsTrigger 
                 value="photo" 
                 className="
@@ -87,21 +84,6 @@ export function DealsDrawer({
                 <Link2 className="h-3.5 w-3.5" />
                 Link
               </TabsTrigger>
-              <TabsTrigger 
-                value="search" 
-                className="
-                  gap-1.5 text-xs py-2 rounded-full font-medium
-                  transition-all duration-200
-                  data-[state=inactive]:text-muted-foreground/70
-                  data-[state=active]:bg-white/90 dark:data-[state=active]:bg-white/20
-                  data-[state=active]:text-foreground
-                  data-[state=active]:shadow-md
-                  data-[state=active]:border data-[state=active]:border-white/30
-                "
-              >
-                <Search className="h-3.5 w-3.5" />
-                Search
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="photo" className="mt-0">
@@ -110,10 +92,6 @@ export function DealsDrawer({
 
             <TabsContent value="link" className="mt-0">
               <LinkTab onClose={handleClose} />
-            </TabsContent>
-
-            <TabsContent value="search" className="mt-0">
-              <SearchTab onClose={handleClose} initialQuery={initialQuery} />
             </TabsContent>
           </Tabs>
         </div>

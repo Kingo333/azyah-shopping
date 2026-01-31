@@ -1,222 +1,170 @@
+# Phia-Style "Find Better Deals" System Audit
 
-
-# Fix Plan: Similar on Azyah Section Issues
-
-## Issues Identified
-
-| Issue | Root Cause |
-|-------|------------|
-| View More needs 2 taps | Event propagation conflict: the carousel's Embla drag handlers intercept the first tap on the "View more" button |
-| Carousel jumps/stutters | `dragFree: true` combined with Vaul drawer touch handling creates conflicting gesture recognition |
-| ASOS images show placeholder | The `media_url` field from `deals-match-catalog` is not processed through `displaySrc()` or the ASOS URL guard fails on edge cases |
+## Status: ✅ Phase 1 Complete (2026-01-31)
 
 ---
 
-## Technical Analysis
+## Approved Changes Implemented
 
-### Problem 1: Double-Tap on View More
+### 1. ✅ Remove Search Mode Completely
 
-The current code:
-```tsx
-// Line 30-34: Embla carousel initialized at component level
-const [emblaRef] = useEmblaCarousel({ 
-  align: 'start',
-  containScroll: 'trimSnaps',
-  dragFree: true
+**Files Deleted:**
+- `src/components/deals/SearchTab.tsx`
+- `src/hooks/useDealsSearch.ts`
+- `supabase/functions/deals-search/index.ts`
+
+**Files Updated:**
+- `src/components/deals/DealsDrawer.tsx` - Now shows only Photo | Link tabs (2 columns)
+- `supabase/config.toml` - Removed `deals-search` function config
+
+---
+
+### 2. ✅ Eliminate Server-Side Scraping
+
+**Before (deals-from-url):**
+```typescript
+// REMOVED: This was actively scraping external sites
+const pageResponse = await fetch(url, {
+  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' },
 });
-
-// Line 210: Button inside the carousel's DOM ancestor
-<button onClick={handleExpandToggle}>View more</button>
+const html = await pageResponse.text();
+extractedProduct = extractMetadata(html);
 ```
 
-The Embla carousel captures touch/mouse events for drag detection. When tapping "View more", the first tap is consumed by Embla's drag initialization, and only the second tap actually fires the click event.
+**After:**
+- Uses Google Lens directly on URL to detect og:image
+- Extracts brand/product hints from URL path (no fetch)
+- Provides `suggestion` field when results are low: "For best results, try uploading a photo of the product instead."
 
-### Problem 2: Carousel Jitter
+---
 
-Two issues combine:
-1. `dragFree: true` allows momentum scrolling which fights with the Vaul drawer's swipe-to-close gesture
-2. The component re-renders on `expanded` state change, potentially resetting Embla's internal position
+### 3. ✅ Improved Query Pack Generation (Category/Color/Silhouette Locking)
 
-### Problem 3: ASOS Placeholder Images
-
-The edge function returns `media_url` as a raw database value (line 199 in `deals-match-catalog`):
-```ts
-const mediaUrl = product.media_urls?.[0] || '';
+**New vocabulary constants:**
+```typescript
+const COLOR_WORDS = ['grey', 'gray', 'stone', 'beige', 'black', 'white', ...];
+const CATEGORY_WORDS = ['abaya', 'kaftan', 'dress', 'kimono', 'modest', ...];
+const SILHOUETTE_WORDS = ['open', 'kimono', 'butterfly', 'wide sleeve', ...];
+const FABRIC_WORDS = ['satin', 'chiffon', 'linen', 'cotton', 'silk', ...];
 ```
 
-But the component's `getDisplayImageUrl` only handles URLs containing `asos-media.com`:
-```tsx
-if (url.includes('asos-media.com')) {
-  return upgradeAsosImageUrl(url, 400);
+**Query pack strategy:**
+1. Extract color/category/silhouette/fabric from visual match titles
+2. Generate locked queries: `{color} {category}`, `{color} {silhouette} {category}`
+3. Include fabric variants: `{fabric} {category} {color}`
+4. Fallback to raw visual match titles (cleaned)
+5. Limit to 10 unique queries
+
+---
+
+### 4. ✅ Result Floor Strategy
+
+If results < 10 after initial queries:
+1. Run broader "style pack" queries (drop brand, keep category+color+silhouette)
+2. Add generic fallbacks like `{category} UAE`, `modest {category}`
+3. Continue deduplicating to prevent repeats
+
+---
+
+### 5. ✅ Pipeline Logging Counters
+
+Both `deals-from-image` and `deals-from-url` now return:
+```typescript
+interface PipelineLog {
+  input_has_image: boolean;
+  query_pack_count: number;
+  raw_results_count: number;
+  after_dedupe_count: number;
+  final_returned_count: number;
+  used_fallback_queries: boolean;
 }
 ```
 
-If the stored URL is malformed, missing the protocol, or uses a different ASOS CDN subdomain, the guard fails and the raw URL is used - which may not load.
-
----
-
-## Solution
-
-### Fix 1: Prevent Tap Interception on Buttons
-
-Move the "View more" button **outside** the Embla container and add explicit event handling to stop propagation:
-
-```tsx
-// Move header with View more button outside the emblaRef container
-<div className="space-y-3">
-  <div className="flex items-center justify-between px-1">
-    {/* Header stays here */}
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setExpanded(true);
-      }}
-    >
-      View more
-    </button>
-  </div>
-
-  {/* Carousel container - separate from header */}
-  <div className="overflow-hidden" ref={emblaRef}>
-    <div className="flex gap-2">
-      {displayMatches.map(...)}
-    </div>
-  </div>
-</div>
+Console logs now show:
 ```
-
-This ensures the button click is never captured by Embla's gesture handlers.
-
-### Fix 2: Stabilize Carousel Scrolling
-
-1. Remove `dragFree: true` (causes momentum conflicts with drawer)
-2. Add `watchDrag: false` when inside a drawer to prevent gesture conflicts
-3. Add CSS `touch-action: pan-x` to the carousel to hint browser about gesture intent
-
-```tsx
-const [emblaRef] = useEmblaCarousel({ 
-  align: 'start',
-  containScroll: 'trimSnaps',
-  dragFree: false,  // Changed: prevent momentum scroll conflicts
-  skipSnaps: false,
-});
-```
-
-Add to carousel container:
-```tsx
-<div 
-  className="overflow-hidden touch-pan-x" 
-  ref={emblaRef}
-  style={{ touchAction: 'pan-x' }}
->
-```
-
-### Fix 3: Fix ASOS Image URL Handling
-
-Update `getDisplayImageUrl` to handle more ASOS URL variants and use the centralized `displaySrc` helper:
-
-```tsx
-import { displaySrc } from '@/lib/displaySrc';
-
-const getDisplayImageUrl = useCallback((url: string | null | undefined): string => {
-  if (!url) return '/placeholder.svg';
-  
-  // Use centralized displaySrc which handles all URL types
-  return displaySrc(url);
-}, []);
-```
-
-Also update the ASOS URL guard in `src/lib/urlGuards.ts` to catch more patterns:
-
-```ts
-export const isAsosUrl = (u: string): boolean =>
-  /asos-media\.com|asos\.com.*\/products\//i.test(u);
+[deals-from-image] Pipeline: input_has_image=true, query_pack=8, raw=127, dedupe=45, final=45
 ```
 
 ---
 
-## Files to Modify
+## Future Phases (Not Yet Implemented)
 
-| File | Changes |
-|------|---------|
-| `src/components/deals/AzyahMatchesSection.tsx` | Fix button placement, remove `dragFree`, add `touch-action`, use `displaySrc` for images |
-| `src/lib/urlGuards.ts` | Expand ASOS URL detection regex |
+### Phase 2: Visual Re-ranking (Correct Approach)
+
+**NOT using text embeddings for images!**
+
+Correct implementation options:
+1. **CLIP-style image embeddings** via OpenAI Vision or Hugging Face
+2. **Heuristic rerank** (interim):
+   - Dominant color similarity
+   - Aspect ratio matching
+   - "Person-wearing vs flat-lay" detection
+   - Category constraint filtering
+
+### Phase 3: In-App WebView Extractor (Mobile)
+
+Flow:
+1. User pastes URL → shows "Open in Azyah" prompt
+2. Opens in-app WebView
+3. Injects JS extractor (JSON-LD → OG → DOM fallback)
+4. Builds `ProductContext` and calls `deals-from-context`
+
+### Phase 4: Browser Extensions (Separate Project)
+
+- Chrome Extension (Manifest V3)
+- Safari Web Extension (Xcode wrapper)
+- Both share extraction logic and call unified backend
 
 ---
 
-## Implementation Details
+## Architecture Diagram
 
-### AzyahMatchesSection.tsx Changes
-
-1. **Header/button placement**: Keep header with "View more" button as a sibling to (not inside) the carousel container
-
-2. **Carousel configuration**:
-   ```tsx
-   const [emblaRef] = useEmblaCarousel({ 
-     align: 'start',
-     containScroll: 'trimSnaps',
-     dragFree: false,
-     skipSnaps: false,
-   });
-   ```
-
-3. **Touch handling on carousel**:
-   ```tsx
-   <div 
-     className="overflow-hidden" 
-     ref={emblaRef}
-     style={{ touchAction: 'pan-x' }}
-   >
-   ```
-
-4. **Image URL handling**:
-   ```tsx
-   import { displaySrc } from '@/lib/displaySrc';
-
-   // Replace custom getDisplayImageUrl with centralized helper
-   const imageUrl = displaySrc(match.media_url);
-   ```
-
-5. **Button event handling**:
-   ```tsx
-   <button
-     onClick={(e) => {
-       e.stopPropagation();
-       setExpanded(prev => !prev);
-     }}
-     onPointerDown={(e) => e.stopPropagation()}
-     className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
-   >
-     View more
-     <ChevronRight className="h-3 w-3" />
-   </button>
-   ```
-
-### urlGuards.ts Changes
-
-Expand the ASOS detection to handle edge cases:
-
-```ts
-export const isAsosUrl = (u: string): boolean =>
-  /images\.asos-media\.com|asos-media\.com|\.asos\.com/i.test(u);
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    PHIA-STYLE "FIND BETTER DEALS" (v2)                          │
+├─────────────────────────────┬───────────────────────────────────────────────────┤
+│         PhotoTab            │              LinkTab                              │
+│    (Image upload)           │   (URL → Google Lens direct)                      │
+├─────────────────────────────┴───────────────────────────────────────────────────┤
+│                           Edge Functions                                        │
+│      deals-from-image       │       deals-from-url                              │
+│  (Google Lens + Query Pack) │  (NO scraping, Lens on URL)                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                    Query Pack Generation                                        │
+│   • Color locking (grey, stone, beige...)                                       │
+│   • Category locking (abaya, kaftan, dress...)                                  │
+│   • Silhouette variants (open, kimono, butterfly...)                            │
+│   • Result floor (min 10, fallback to style pack)                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                    SerpApi (Google Lens + Shopping)                             │
+│   • gl=ae, hl=en, location=UAE                                                  │
+│   • Merge all shopping arrays                                                   │
+│   • Robust dedup (link → product_id → composite)                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Expected Results
+## Testing Checklist
 
-| Issue | Before | After |
-|-------|--------|-------|
-| View more tap | Needs 2 taps | Single tap works |
-| Carousel scroll | Stutters, conflicts with drawer | Smooth horizontal scroll |
-| ASOS images | Shows placeholder | Product images load |
+- [ ] Photo tab: Upload grey abaya → get 10+ results, mostly similar silhouette/color
+- [ ] Link tab: Paste ASOS URL → get results without server scraping errors
+- [ ] Price verdict shows Low/Typical/High when ≥5 valid prices
+- [ ] Pipeline logs visible in edge function logs
+- [ ] No "Search" tab visible in UI
 
 ---
 
-## Technical Notes
+## Previous Fix: Similar on Azyah Section
 
-- The `touch-action: pan-x` CSS property tells the browser to only handle horizontal panning on this element, preventing conflict with the drawer's vertical swipe gesture
-- Using `displaySrc()` ensures all image URL types (ASOS, Supabase, relative paths) are processed consistently
-- The `onPointerDown` stopPropagation prevents Embla from interpreting button taps as potential drag starts
+### Issues Fixed (Earlier Session)
 
+| Issue | Fix Applied |
+|-------|-------------|
+| View More needs 2 taps | Added `stopPropagation()` + `onPointerDown` on buttons |
+| Carousel stutters | Removed `dragFree: true`, added `touch-action: pan-x` |
+| ASOS images placeholder | Updated `isAsosUrl` regex, use `displaySrc()` |
+
+### Files Modified
+- `src/components/deals/AzyahMatchesSection.tsx`
+- `src/lib/urlGuards.ts`
