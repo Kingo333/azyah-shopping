@@ -1,162 +1,515 @@
-# Azyah "Find Better Deals" – Phia-Parity Implementation Plan
 
-## Current Status: Phase 2.1 + Link Intake Complete ✅
 
-### What Changed (This Session)
+# Image Search Enhancement Plan: Google Lens-Level Accuracy
 
-1. **WebView Extraction via @capgo/inappbrowser** - COMPLETE ✅
-2. **Cold Start Deep Link Handling** - COMPLETE ✅
-3. **Clipboard Link Detection Fallback** - COMPLETE ✅
-4. **Universal URL Acceptance** - COMPLETE ✅ (no domain allowlist)
+## Executive Summary
 
----
+This plan enhances the "Find Deals from Photo" feature to match Google Lens/Pinterest accuracy by adding:
 
-## Implementation Summary
+1. **Layer 0**: Smart Select crop UI (Google Lens-style region selection)
+2. **Layer 0.5**: AI Overview attribute extraction (structured hints before Lens)
+3. **Layer B**: Multi-crop visual search (parallel Lens queries)
+4. **Layer C**: Soft brand detection (bonus scoring, not hard matching)
+5. **Layer D**: Enhanced pattern/print vocabulary
+6. **Layer E**: Visual rerank using thumbnail embeddings (the "secret sauce")
 
-### 1. WebView Extraction (`OpenInAzyahButton.tsx`)
-- Uses `@capgo/inappbrowser` for real WKWebView/WebView
-- Listeners registered BEFORE `openWebView()` (race-condition safe)
-- Guards prevent multiple injections/results
-- 15-second timeout with cleanup
-
-### 2. Deep Link Handler (`useDeepLinkHandler.ts`)
-- **Cold start**: `App.getLaunchUrl()` called on mount
-- **Warm start**: `appUrlOpen` listener for URLs while app is running
-- **Product URL detection**: Accepts ANY valid http/https URL (no domain allowlist)
-- **Safe decoding**: Handles multiple URL encoding levels
-- **Routing**: Product URLs → `/dashboard` with `{ openDeals: true, productUrl }`
-
-### 3. Clipboard Fallback (`useClipboardLinkDetector.ts`)
-- Checks clipboard on app mount (cold start) and on app resume (warm start)
-- Detects any http/https URL
-- Only prompts once per URL (prevents re-prompting)
-- User must accept before opening Deals (no auto-open)
-
-### 4. Dashboard Integration (`RoleDashboard.tsx`)
-- Handles `location.state.openDeals` from deep links
-- Shows `ClipboardLinkPrompt` when URL detected in clipboard
-- Passes `initialUrl` to `DealsDrawer` → `LinkTab`
-- Clears state properly using `navigate('/dashboard', { replace: true, state: {} })`
+**No background removal (bg-remove)** - replaced by user-controlled cropping which is more reliable and matches how Google Lens actually works.
 
 ---
 
-## Technical Flow
+## Current Architecture Problems
 
-### Flow A: Deep Link (Cold/Warm Start)
-```
-User opens azyah://open?url=https://asos.com/product/123
-    ↓
-useDeepLinkHandler parses URL
-    ↓
-Detects product URL (any http/https)
-    ↓
-navigate('/dashboard', { state: { openDeals: true, productUrl } })
-    ↓
-RoleDashboard reads location.state
-    ↓
-Opens DealsDrawer with initialUrl
-    ↓
-LinkTab pre-filled with URL
+Based on code review:
+
+| Issue | Impact | Evidence |
+|-------|--------|----------|
+| Raw images sent to Lens | Model + background confuses Lens → "generic abaya" results | `PhotoTab.tsx` line 75: `searchFromImage(signedData.signedUrl)` |
+| No crop UI | User can't isolate the garment | No cropping component exists |
+| Text-only reranking | Color/category matching ignores visual similarity | `deals-from-image/index.ts` lines 531-602 |
+| No brand detection | Brand signals in Lens titles discarded | Only category/color extracted |
+| No pattern vocabulary | "printed", "paisley", "border" not extracted | Current vocab lacks pattern terms |
+
+---
+
+## Implementation Plan
+
+### Layer 0: Smart Select Crop UI (Frontend)
+
+**Goal**: Let user select the exact garment region before search, like Google Lens does.
+
+**New Component**: `src/components/deals/ImageCropSelector.tsx`
+
+Features:
+- Draggable/resizable crop box over uploaded image
+- Quick presets: "Garment", "Pattern/Detail", "Full Image"
+- Auto-suggested default crop: center 70% of image
+- Generates 1-3 crop URLs for backend
+
+```text
+User Flow:
+1. Upload photo
+2. Crop selector appears with auto-suggested box
+3. User can adjust or use presets
+4. "Search" triggers upload of selected crops
+5. Backend runs Lens on each crop
 ```
 
-### Flow B: Clipboard Fallback (Safari Copy → Open App)
-```
-User copies product URL in Safari
-    ↓
-Opens Azyah app
-    ↓
-useClipboardLinkDetector reads clipboard
-    ↓
-Detects http/https URL → shows ClipboardLinkPrompt
-    ↓
-User taps "Find Deals"
-    ↓
-DealsDrawer opens with URL → searches for deals
+**Files to Create**:
+- `src/components/deals/ImageCropSelector.tsx` - Interactive crop UI
+- `src/utils/imageCropUtils.ts` - Canvas crop helpers
+
+**Files to Modify**:
+- `src/components/deals/PhotoTab.tsx` - Add crop step between upload and search
+- `src/hooks/useDealsFromImage.ts` - Accept `imageUrls[]` array
+
+### Layer 0.5: AI Overview Attribute Extraction
+
+**Goal**: Before calling Lens, run Gemini vision on the cropped image to extract structured attributes.
+
+This mimics Google's "AI Overview" panel that shows: "Looks like: printed open abaya with border trim"
+
+**New Edge Function**: `supabase/functions/analyze-product-image/index.ts`
+
+Inputs:
+- `imageUrl`: The cropped garment image
+
+Outputs (structured JSON):
+```json
+{
+  "category": "open abaya",
+  "subcategory": "kimono style",
+  "color_primary": "beige",
+  "color_secondary": "multicolor border",
+  "pattern": "printed paisley border",
+  "fabric_hint": "flowing/chiffon-like",
+  "silhouette": "open front, wide sleeves",
+  "brand_guess": null,
+  "confidence": 0.85
+}
 ```
 
-### Flow C: In-App WebView Extraction
+Uses existing `LOVABLE_API_KEY` + Gemini (same pattern as `auto-tag` function).
+
+**Integration**:
+- Called before Lens queries
+- Attributes used to build smarter query pack
+- Shown in UI: "Looks like: {color} {pattern} {category}"
+
+### Layer B: Multi-Crop Visual Search (Backend)
+
+**Modify**: `supabase/functions/deals-from-image/index.ts`
+
+**Changes**:
+
+1. Accept array of image URLs:
+```typescript
+interface DealsFromImageInput {
+  imageUrl?: string;           // Legacy single image
+  imageUrls?: {
+    url: string;
+    cropType: 'full' | 'garment' | 'pattern';
+  }[];
+  aiAttributes?: AttributeHints;
+}
 ```
-User pastes URL → taps "Open in Azyah"
-    ↓
-InAppBrowser.openWebView() → real WKWebView
-    ↓
-Script extracts JSON-LD/OG/DOM
-    ↓
-window.mobileApp.postMessage(result)
-    ↓
-onContextExtracted → deals-from-context with main_image_url
-    ↓
-Google Lens + visual rerank → 10+ results
+
+2. Run parallel Lens calls (max 3):
+```typescript
+const lensPromises = imageUrls.map(({ url, cropType }) => 
+  callLensApi(url).then(results => ({ results, cropType }))
+);
+const allLensResults = await Promise.all(lensPromises);
+```
+
+3. Weighted merge:
+```text
+Pattern crop matches → weight 1.5
+Garment crop matches → weight 1.2
+Full image matches → weight 1.0
+```
+
+4. Dedupe across all crops
+
+### Layer C: Brand Detection (Soft Bonus)
+
+**Modify**: `supabase/functions/deals-from-image/index.ts`
+
+Add brand vocabulary (100+ fashion brands):
+```typescript
+const BRAND_PATTERNS = [
+  'zimmermann', 'etro', 'gucci', 'prada', 'zara', 'mango', 'hm',
+  'uniqlo', 'asos', 'namshi', 'ounass', 'farfetch', 'net-a-porter',
+  'massimo dutti', 'cos', 'arket', 'other stories', 'reiss',
+  'karen millen', 'hobbs', 'anthropologie', 'free people',
+  // ... 80+ more
+];
+```
+
+Brand detection from Lens titles:
+```typescript
+function extractBrandHints(titles: string[]): { brand: string; confidence: number }[] {
+  const matches: Map<string, number> = new Map();
+  
+  for (const title of titles) {
+    const lower = title.toLowerCase();
+    for (const brand of BRAND_PATTERNS) {
+      if (lower.includes(brand)) {
+        matches.set(brand, (matches.get(brand) || 0) + 1);
+      }
+    }
+  }
+  
+  return Array.from(matches.entries())
+    .map(([brand, count]) => ({
+      brand,
+      confidence: count >= 3 ? 0.9 : count >= 2 ? 0.6 : 0.3
+    }))
+    .sort((a, b) => b.confidence - a.confidence);
+}
+```
+
+**Soft bonus in reranking** (NOT hard matching):
+```typescript
+// Brand bonus: 0.05-0.12 (very soft - doesn't dominate)
+if (detectedBrands.length > 0) {
+  const topBrand = detectedBrands[0];
+  if (resultTitle.includes(topBrand.brand)) {
+    score += topBrand.confidence * 0.12; // Max 0.12 for high-confidence brand
+  }
+}
+```
+
+### Layer D: Pattern/Print Vocabulary
+
+**Modify**: `supabase/functions/deals-from-image/index.ts`
+
+Add comprehensive pattern vocabulary:
+```typescript
+const PATTERN_WORDS = [
+  // Prints
+  'printed', 'print', 'floral', 'paisley', 'abstract', 'geometric',
+  'animal', 'leopard', 'zebra', 'snake', 'polka', 'dot', 'striped',
+  'stripe', 'plaid', 'check', 'gingham', 'tartan', 'houndstooth',
+  'tie-dye', 'marble', 'tropical', 'botanical',
+  
+  // Surface treatments
+  'embroidered', 'embroidery', 'sequin', 'beaded', 'crystal',
+  'applique', 'patchwork', 'quilted', 'textured', 'ribbed',
+  
+  // Transparency/texture
+  'lace', 'mesh', 'sheer', 'see-through', 'crochet', 'knit',
+  
+  // Color effects
+  'gradient', 'ombre', 'color-block', 'two-tone', 'contrast'
+];
+
+const TRIM_WORDS = [
+  'border', 'trim', 'edging', 'piping', 'contrast trim',
+  'fringe', 'tassel', 'ruffle', 'pleated', 'scalloped'
+];
+```
+
+Update `extractDescriptors` to include patterns:
+```typescript
+function extractDescriptors(titles: string[]): ExtractedDescriptors {
+  const allText = titles.join(' ').toLowerCase();
+  
+  return {
+    colors: COLOR_WORDS.filter(c => allText.includes(c)),
+    categories: CATEGORY_WORDS.filter(c => allText.includes(c)),
+    silhouettes: SILHOUETTE_WORDS.filter(s => allText.includes(s)),
+    fabrics: FABRIC_WORDS.filter(f => allText.includes(f)),
+    patterns: PATTERN_WORDS.filter(p => allText.includes(p)),      // NEW
+    trims: TRIM_WORDS.filter(t => allText.includes(t)),             // NEW
+  };
+}
+```
+
+Update query pack building to include patterns:
+```typescript
+if (patterns.length > 0) {
+  queries.push(`${patterns[0]} ${primaryCategory}`);
+  if (primaryColor) {
+    queries.push(`${primaryColor} ${patterns[0]} ${primaryCategory}`);
+  }
+}
+
+if (trims.length > 0) {
+  queries.push(`${primaryCategory} with ${trims[0]}`);
+}
+```
+
+### Layer E: Visual Rerank Using Thumbnail Embeddings
+
+**Goal**: After getting shopping results, compute actual visual similarity between the query image and result thumbnails.
+
+This is the "near-duplicate-ish" behavior that makes Google/Pinterest so accurate.
+
+**New Edge Function**: `supabase/functions/visual-rerank/index.ts`
+
+Uses OpenAI CLIP embeddings (or Gemini vision) to compute visual similarity:
+
+```typescript
+interface VisualRerankInput {
+  queryImageUrl: string;
+  results: Array<{
+    id: string;
+    thumbnailUrl: string;
+    currentScore: number;
+  }>;
+}
+
+interface VisualRerankOutput {
+  results: Array<{
+    id: string;
+    visualSimilarity: number;  // 0-1
+    combinedScore: number;     // weighted blend
+  }>;
+}
+```
+
+Implementation approach:
+```typescript
+// Option A: Use OpenAI embeddings (requires OpenAI API)
+async function computeVisualSimilarity(imageA: string, imageB: string): Promise<number> {
+  // Use OpenAI CLIP or vision model to compare images
+  // Return cosine similarity 0-1
+}
+
+// Option B: Use Gemini to compare images (already have LOVABLE_API_KEY)
+async function compareImagesWithGemini(
+  queryImage: string, 
+  thumbnails: string[]
+): Promise<number[]> {
+  // Batch comparison: "Rate similarity 0-10 for each thumbnail vs query"
+  // Convert to 0-1 scores
+}
+```
+
+Integration in `deals-from-image`:
+```typescript
+// After text reranking, run visual rerank on top 30 results
+if (allShoppingResults.length >= 10) {
+  const topResults = allShoppingResults.slice(0, 30);
+  
+  const visualScores = await visualRerank({
+    queryImageUrl: primaryCropUrl,
+    results: topResults.map(r => ({
+      id: r.link,
+      thumbnailUrl: r.thumbnail,
+      currentScore: r.similarity_score ?? 0
+    }))
+  });
+  
+  // Blend: 60% text score + 40% visual score
+  for (const result of topResults) {
+    const vs = visualScores.find(v => v.id === result.link);
+    if (vs) {
+      result.similarity_score = result.similarity_score * 0.6 + vs.visualSimilarity * 0.4;
+    }
+  }
+  
+  // Re-sort
+  allShoppingResults.sort((a, b) => (b.similarity_score ?? 0) - (a.similarity_score ?? 0));
+}
 ```
 
 ---
 
-## Files Modified
+## Updated Scoring Weights
 
-| File | Change |
-|------|--------|
-| `src/hooks/useDeepLinkHandler.ts` | Cold start + universal URL detection |
-| `src/hooks/useClipboardLinkDetector.ts` | NEW - clipboard fallback |
-| `src/components/deals/ClipboardLinkPrompt.tsx` | NEW - prompt UI |
-| `src/components/deals/LinkTab.tsx` | Accept `initialUrl` prop |
-| `src/components/deals/DealsDrawer.tsx` | Pass `initialUrl` to LinkTab |
-| `src/components/RoleDashboard.tsx` | Handle openDeals state + clipboard |
-| `package.json` | Added `@capacitor/clipboard` |
+**Current weights** (text-only):
+- Color match: 0.4
+- Category match: 0.4
+- Source quality: 0.2
 
----
-
-## What Works Now (No Xcode Required)
-
-✅ **"Open in Azyah" button** - Real WebView extraction on ASOS/Zara/Nike
-✅ **Deep links** - `azyah://open?url=...` works for cold + warm start
-✅ **Clipboard detection** - Copy URL in Safari → open Azyah → prompt appears
-✅ **URL paste fallback** - Still works as secondary option
-
-## What Does NOT Work Yet (Needs Xcode)
-
-❌ **Safari Share Sheet** - "Share → Azyah" requires iOS Share Extension target
-❌ **Safari AA Extension** - "AA → Manage Extensions" requires Safari Web Extension
+**New weights** (visual + text):
+- Pattern match: 0.25 (NEW - highest priority for prints)
+- Category match: 0.20 (reduced)
+- Color match: 0.15 (reduced)
+- Visual similarity: 0.25 (NEW - from embedding comparison)
+- Brand bonus: 0.05-0.12 (soft, confidence-weighted)
+- Source quality: 0.05 (reduced)
 
 ---
 
-## Verification Checklist
+## File Changes Summary
 
-### Deep Link Tests
-- [ ] Cold start: `azyah://open?url=https://asos.com/product` → Deals opens with URL
-- [ ] Warm start: Same URL while app is running → Deals opens
-- [ ] Encoded URL: `azyah://open?url=https%3A%2F%2Fasos.com` → decodes correctly
+### New Files
 
-### Clipboard Tests
-- [ ] Copy ASOS URL in Safari → open Azyah → prompt appears
-- [ ] Tap "Find Deals" → Deals drawer opens with URL prefilled
-- [ ] Tap "Dismiss" → prompt disappears, doesn't re-prompt
-- [ ] Copy same URL again → doesn't re-prompt (already seen)
+| File | Purpose |
+|------|---------|
+| `src/components/deals/ImageCropSelector.tsx` | Interactive crop UI with presets |
+| `src/utils/imageCropUtils.ts` | Canvas crop and multi-region generation |
+| `supabase/functions/analyze-product-image/index.ts` | AI attribute extraction (Gemini) |
+| `supabase/functions/visual-rerank/index.ts` | Thumbnail embedding comparison |
 
-### WebView Extraction Tests
-- [ ] Zara URL → extraction returns title + image
-- [ ] ASOS URL → extraction returns title + image
-- [ ] Nike URL → extraction returns title + image
-- [ ] 15s timeout fires if extraction fails
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/components/deals/PhotoTab.tsx` | Add crop step, show "Looks like:" hint, send multiple crops |
+| `src/hooks/useDealsFromImage.ts` | Accept `imageUrls[]` and `aiAttributes` |
+| `supabase/functions/deals-from-image/index.ts` | Multi-crop Lens, brand detection, pattern vocab, call visual-rerank |
 
 ---
 
-## Next Steps (When Xcode Available)
+## Implementation Phases
 
-### Phase 2.2: Safari Share Extension
-1. Add iOS Share Extension target in Xcode
-2. Handle incoming URLs in extension
-3. Pass to main app via app groups or URL scheme
+### Phase 1: Quick Wins (4-6 hours)
 
-### Phase 2.3: Safari Web Extension
-1. Add Safari Web Extension target
-2. Enable "AA → Manage Extensions" toggle
-3. Same extraction logic (JSON-LD → OG → DOM)
+**Backend vocabulary expansion + brand detection**:
+1. Add `PATTERN_WORDS` and `TRIM_WORDS` to `deals-from-image`
+2. Add `BRAND_PATTERNS` (100+ brands)
+3. Extract patterns/brands from Lens titles
+4. Use in query pack building
+5. Add soft brand bonus to scoring (0.05-0.12)
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Button | `OpenInAzyahButton.tsx` | Opens WebView, injects script, handles result |
-| Script | `webview-extractor.ts` | JSON-LD → OG → DOM extraction logic |
-| Parser | `parseExtractionResult()` | Validates and types extraction result |
-| Hook | `useDealsFromContext.ts` | Calls `deals-from-context` edge function |
-| Backend | `deals-from-context/index.ts` | Lens + query pack + visual rerank |
-| UI | `LinkTab.tsx` | Orchestrates extraction → search → display |
+**Expected impact**: 20-30% improvement for patterned items
+
+### Phase 2: Smart Crop UI (8-10 hours)
+
+1. Create `ImageCropSelector.tsx` component
+2. Add canvas crop utilities
+3. Update `PhotoTab.tsx` to show crop step
+4. Update hook to send multiple crop URLs
+5. Update backend to accept `imageUrls[]`
+
+**Expected impact**: 40-50% improvement for model shots
+
+### Phase 3: AI Overview Attributes (4-6 hours)
+
+1. Create `analyze-product-image` edge function
+2. Call before/parallel to Lens
+3. Show "Looks like: {description}" in UI
+4. Use attributes to enhance query pack
+
+**Expected impact**: 15-20% improvement + better UX
+
+### Phase 4: Visual Rerank (8-12 hours)
+
+1. Create `visual-rerank` edge function
+2. Use Gemini vision for batch comparison
+3. Call after text reranking on top 30 results
+4. Blend scores: 60% text + 40% visual
+5. Re-sort results
+
+**Expected impact**: 30-40% improvement for exact/near-duplicate detection
+
+---
+
+## Technical Details
+
+### Crop Selector Interaction
+
+```text
+┌─────────────────────────────────────┐
+│  [Image with draggable crop box]    │
+│                                     │
+│    ┌─────────────────┐             │
+│    │  Garment area   │             │
+│    │                 │             │
+│    └─────────────────┘             │
+│                                     │
+├─────────────────────────────────────┤
+│  Presets: [Garment] [Pattern] [Full]│
+│                                     │
+│  "Looks like: beige printed abaya"  │
+│                                     │
+│  [Cancel]            [Search Deals] │
+└─────────────────────────────────────┘
+```
+
+### Multi-Crop Pipeline Flow
+
+```text
+User uploads photo
+       ↓
+[Crop Selector UI] → User selects/adjusts crop(s)
+       ↓
+[Upload cropped regions to Storage]
+       ↓
+[Call analyze-product-image] → "Looks like: printed open abaya"
+       ↓
+[Call deals-from-image with imageUrls[]]
+       ↓
+[Parallel Lens calls on each crop]
+       ↓
+[Weighted merge + dedupe]
+       ↓
+[Build query pack with patterns/brands]
+       ↓
+[Shopping searches]
+       ↓
+[Text reranking (pattern + category + color)]
+       ↓
+[Visual reranking on top 30 thumbnails]
+       ↓
+[Final sorted results]
+```
+
+### Visual Rerank with Gemini
+
+Using existing `LOVABLE_API_KEY` + Gemini vision for batch comparison:
+
+```typescript
+const prompt = `
+You are comparing a query garment image to shopping result thumbnails.
+
+Query image: [IMAGE 1 - the garment the user is searching for]
+
+Rate each thumbnail's visual similarity to the query (0-10):
+- 10 = Exact same item or near-identical
+- 7-9 = Very similar (same style, similar pattern/color)
+- 4-6 = Somewhat similar (same category, different details)
+- 1-3 = Not very similar (different style)
+- 0 = Completely different
+
+Thumbnails to rate:
+[IMAGE 2] [IMAGE 3] [IMAGE 4] ...
+
+Return JSON: {"scores": [8, 6, 3, ...]}
+`;
+```
+
+This is cost-effective (single API call for batch) and leverages Gemini's strong vision capabilities.
+
+---
+
+## Success Metrics
+
+After implementation, test with the same problematic images:
+
+| Metric | Before | Target |
+|--------|--------|--------|
+| Pattern preservation | "generic abaya" results | Top 5 match the print style |
+| Brand detection | None | Brand appears in pipeline_log if detectable |
+| Visual match quality | 30% relevant | 70%+ relevant in top 10 |
+| "Looks like" accuracy | N/A | Matches user's perception |
+
+### Test Cases
+
+1. **Printed abaya with border** → Should find similar prints, not solid colors
+2. **Zimmermann floral dress** → Should detect brand hint, find similar florals
+3. **Nike sneakers** → Should find same model or very similar styles
+4. **Plain black blazer** → Should work with current logic (simpler case)
+
+---
+
+## Dependencies
+
+- **LOVABLE_API_KEY**: Already configured ✓
+- **SERPAPI_API_KEY**: Already configured ✓
+- **No new external dependencies** - uses existing AI gateway
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation |
+|------|------------|
+| Gemini vision API costs | Batch calls, only run on user-selected crops |
+| Visual rerank latency | Only on top 30 results, can be made optional |
+| Crop UI complexity | Simple presets work for 80% of cases |
+| Brand misdetection | Soft bonus only, doesn't override visual match |
+
