@@ -1453,6 +1453,51 @@ export type Database = {
         }
         Relationships: []
       }
+      deals_search_runs: {
+        Row: {
+          created_at: string | null
+          exact_match_found: boolean | null
+          id: string
+          input_image_url: string | null
+          market: string | null
+          page_url: string | null
+          pipeline_timing_ms: Json | null
+          query_hint: string | null
+          results_count: number | null
+          source: string
+          user_id: string
+          ximilar_tags: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          exact_match_found?: boolean | null
+          id?: string
+          input_image_url?: string | null
+          market?: string | null
+          page_url?: string | null
+          pipeline_timing_ms?: Json | null
+          query_hint?: string | null
+          results_count?: number | null
+          source: string
+          user_id: string
+          ximilar_tags?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          exact_match_found?: boolean | null
+          id?: string
+          input_image_url?: string | null
+          market?: string | null
+          page_url?: string | null
+          pipeline_timing_ms?: Json | null
+          query_hint?: string | null
+          results_count?: number | null
+          source?: string
+          user_id?: string
+          ximilar_tags?: Json | null
+        }
+        Relationships: []
+      }
       default_wardrobe_items: {
         Row: {
           brand: string | null

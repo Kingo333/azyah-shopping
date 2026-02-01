@@ -1,5 +1,96 @@
 /* Azyah Side Panel Styles */
 
+/* Ximilar Tags */
+.ximilar-tags {
+  padding: 10px 12px;
+  background: #f8f4ff;
+  border-radius: 8px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.ximilar-tags-header {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag-pill.category {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.tag-pill.color {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.tag-pill.pattern {
+  background: #fce7f3;
+  color: #db2777;
+}
+
+.tag-pill.mode {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/* Exact Match Styles */
+.deal-card.exact {
+  border: 2px solid #22c55e;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.exact-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.deal-card.exact-domain {
+  border-left: 3px solid #22c55e;
+}
+
+/* Sub-scores */
+.sub-scores {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sub-score {
+  font-size: 10px;
+  color: #888;
+}
+
+/* Screenshot button */
+.btn-small {
+  padding: 10px 12px !important;
+  flex: 0 !important;
+  width: auto !important;
+}
+
 * {
   margin: 0;
   padding: 0;
