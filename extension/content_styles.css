@@ -1,0 +1,123 @@
+/* Azyah Extension Content Styles */
+
+/* Floating Button */
+#azyah-floating-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: azyah-slide-in 0.3s ease-out;
+}
+
+#azyah-floating-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#azyah-floating-btn:active {
+  transform: translateY(0);
+}
+
+#azyah-floating-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+@keyframes azyah-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Image Selector Overlay */
+#azyah-image-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483646;
+  
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  
+  animation: azyah-fade-in 0.2s ease;
+}
+
+.azyah-selector-header {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.azyah-selector-header button {
+  padding: 8px 16px;
+  background: #f1f1f1;
+  color: #666;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.azyah-selector-header button:hover {
+  background: #e0e0e0;
+}
+
+/* Selectable Images */
+.azyah-selectable-image {
+  outline: 3px dashed transparent !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.azyah-selectable-image:hover {
+  outline: 3px dashed #8B5CF6 !important;
+  outline-offset: 4px !important;
+  transform: scale(1.02) !important;
+}
+
+@keyframes azyah-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
