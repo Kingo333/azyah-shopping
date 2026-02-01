@@ -1,6 +1,7 @@
 /**
  * Azyah Service Worker
  * Handles API communication and side panel management
+ * Now uses unified deals endpoint with Ximilar tagging
  */
 
 const SUPABASE_URL = 'https://klwolsopucgswhtdlsps.supabase.co';
@@ -27,8 +28,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
   
+  // NEW: Unified search endpoint
+  if (message.type === 'SEARCH_UNIFIED') {
+    searchDealsUnified(message.payload).then(result => {
+      sendResponse(result);
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
+  }
+  
+  // Legacy: Keep for backwards compatibility
   if (message.type === 'SEARCH_DEALS') {
-    searchDeals(message.context).then(result => {
+    // Convert to unified format
+    const unifiedPayload = {
+      source: 'chrome_extension',
+      market: 'AE',
+      page_url: message.context?.page_url,
+      title_hint: message.context?.title,
+      price_hint: message.context?.price,
+      currency_hint: message.context?.currency,
+      image_url: message.context?.main_image_url,
+    };
+    
+    searchDealsUnified(unifiedPayload).then(result => {
       sendResponse(result);
     }).catch(error => {
       sendResponse({ success: false, error: error.message });
@@ -60,6 +83,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     sendResponse({ success: true });
   }
+  
+  // Screenshot capture for blocked images
+  if (message.type === 'CAPTURE_SCREENSHOT') {
+    captureScreenshot(sender.tab.id).then(result => {
+      sendResponse(result);
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
+  }
 });
 
 // Get authentication status
@@ -77,8 +110,8 @@ async function getAuthStatus() {
   }
 }
 
-// Search deals via Supabase edge function
-async function searchDeals(context) {
+// NEW: Unified search endpoint with Ximilar + SerpApi
+async function searchDealsUnified(payload) {
   const { authToken } = await chrome.storage.local.get(['authToken']);
   
   if (!authToken) {
@@ -90,14 +123,21 @@ async function searchDeals(context) {
   }
   
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/deals-from-context`, {
+    console.log('[Azyah SW] Calling deals-unified:', {
+      source: payload.source,
+      market: payload.market,
+      has_image: !!payload.image_url || !!payload.image_base64,
+      has_title: !!payload.title_hint,
+    });
+    
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/deals-unified`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY
       },
-      body: JSON.stringify({ context })
+      body: JSON.stringify(payload)
     });
     
     if (response.status === 401) {
@@ -118,10 +158,20 @@ async function searchDeals(context) {
     }
     
     const data = await response.json();
+    
+    // Log debug info for tuning
+    if (data.debug) {
+      console.log('[Azyah SW] Pipeline debug:', {
+        ximilar: data.debug.ximilar?.tags_summary,
+        timing: data.debug.timing_ms?.total + 'ms',
+        filters: data.debug.filters,
+      });
+    }
+    
     return data;
     
   } catch (error) {
-    console.error('[Azyah SW] Search error:', error);
+    console.error('[Azyah SW] Unified search error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -155,6 +205,17 @@ async function matchCatalog(queryTitle, category, priceCents) {
     
   } catch (error) {
     console.error('[Azyah SW] Catalog match error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Capture screenshot for blocked images
+async function captureScreenshot(tabId) {
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 85 });
+    return { success: true, dataUrl };
+  } catch (error) {
+    console.error('[Azyah SW] Screenshot capture error:', error);
     return { success: false, error: error.message };
   }
 }
