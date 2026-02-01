@@ -1,301 +1,402 @@
 
-# Comprehensive Audit: "Find Better Deals" Photo Search Implementation Status
+# Browser Extension Implementation Plan — "Find Better Deals" (Phia-Style)
 
-## Overview
+## Executive Summary
 
-After a detailed code review of all relevant files, here is the complete status of each recommended fix:
-
----
-
-## Phase 1 (Must-Do) - Status Check
-
-### ✅ 1. Upload Image First
-**Status: DONE**
-- **File:** `src/components/deals/PhotoTab.tsx` (lines 88-110)
-- User uploads image, crop is applied, then uploaded to Supabase Storage
-- Signed URL (15 min expiry) is created and used for search
-- **Evidence:** Lines 91-106 show the full upload → signed URL flow
-
-### ❌ 2. detect-objects Uses {bucket, path} → Downloads Bytes → inline_data
-**Status: NOT DONE - CRITICAL BUG**
-- **File:** `supabase/functions/detect-objects/index.ts` (line 60)
-- Backend still expects `imageUrl` (URL string), not `{bucket, path}`
-- Line 113-114: Still uses `image_url: { url: imageUrl }` format
-- **File:** `src/utils/objectDetection.ts` (line 28)
-- Frontend still passes `imageUrl` (blob URL) to the edge function
-- **Evidence:** Edge function logs show error:
-  ```
-  Invalid URL format: blob:https://id-preview--fdc5efa8...
-  ```
-- **Result:** Detection fails silently, falls back to heuristics
-
-### ⚠️ 3. deals-match-catalog Fallback Sanitization
-**Status: PARTIALLY DONE**
-- **File:** `supabase/functions/deals-match-catalog/index.ts`
-- Lines 199-222: Main path sanitization is DONE
-- **Line 273: Fallback path still uses raw array access!**
-  ```typescript
-  media_url: p.media_urls?.[0] || '',  // NOT SANITIZED
-  ```
-- **Required:** Apply same parsing logic to fallback path
-
-### ⚠️ 4. Fix Brand Images: Store storage_path, Sign on Render
-**Status: NOT VERIFIED**
-- Database stores `media_urls` as JSONB array
-- No evidence of bucket path vs signed URL strategy
-- ASOS/external URLs work; internal brand uploads need verification
+Build a Chrome extension (MV3) that provides a Phia-like shopping experience: when a user is on any product page, they can click a button to extract the product image and find visually similar deals using the existing Supabase backend infrastructure.
 
 ---
 
-## Phase 2 (Quality Jump) - Status Check
+## Part 1: Audit of Existing Assets
 
-### ✅ 5. Candidate Pool = Lens Visual Matches + Shopping Results
-**Status: DONE**
-- **File:** `supabase/functions/deals-from-image/index.ts` (lines 492-520)
-- Multi-crop Lens calls are implemented
-- Pattern crops get 1.5x weight, garment crops get 1.2x
-- Visual matches are merged with shopping results
+### Assets We Will Reuse
 
-### ❌ 6. Visual Similarity Primary Ranking (0.8 visual / 0.2 text)
-**Status: NOT DONE**
-- **File:** `supabase/functions/visual-rerank/index.ts` (line 183)
-- Current weights: **60% text / 40% visual**
-  ```typescript
-  const combinedScore = (result.currentScore * 0.6) + (visualSimilarity * 0.4);
-  ```
-- **Required:** Change to 20% text / 80% visual
+| Asset | Purpose | Status |
+|-------|---------|--------|
+| `deals-from-image` | Takes an image URL → returns shopping deals with visual reranking | ✅ Ready (accepts signed HTTPS URLs) |
+| `deals-from-context` | Takes ProductContext payload → runs Lens + shopping search | ✅ Ready (used by WebView flow) |
+| `visual-rerank` | Reranks results with granular sub-scores (pattern/silhouette/color) | ✅ Ready (pattern mode implemented) |
+| `detect-objects` | Auto-detects product ROI with Gemini Vision | ✅ Ready (accepts bucket/path or HTTPS URL) |
+| `deals-match-catalog` | Finds "Similar on Azyah" catalog matches | ✅ Ready |
+| `ProductContext` interface | Standardized extraction payload schema | ✅ Ready (`src/types/ProductContext.ts`) |
+| `webview-extractor.ts` | JavaScript extraction logic (JSON-LD → OG → DOM) | ✅ Reusable for extension |
 
-### ⚠️ 7. Use Large Images for Rerank
-**Status: NOT DONE**
-- **File:** `supabase/functions/deals-from-image/index.ts` (lines 830-832)
-- Still uses `r.thumbnail` which are often tiny (80px)
-  ```typescript
-  thumbnailUrl: r.thumbnail,  // Should prefer larger image
-  ```
-- SerpAPI often returns both `thumbnail` and `image` (larger)
-- **Required:** Prefer `r.image` over `r.thumbnail` when available
+### Gaps Requiring Backend Changes
 
-### ⚠️ 8. Dual-Query Embedding (ROI + Detail Crop)
-**Status: PARTIALLY DONE**
-- **File:** `src/components/deals/PhotoTab.tsx` (line 82)
-- Only sends primary (garment) crop:
-  ```typescript
-  const primaryCrop = crops.find(c => c.type === 'garment') || crops[0];
-  ```
-- **File:** `src/components/deals/ImageCropSelector.tsx` (lines 194-198)
-- Only returns one crop:
-  ```typescript
-  onConfirm([{ type: 'garment', rect: cropRect }]);
-  ```
-- **Required:** Generate and send pattern detail crop alongside garment
+| Gap | Problem | Solution |
+|-----|---------|----------|
+| Image URL download | Extension sends page image URLs that may be blocked from Lens | Backend downloads image server-side and uploads to Storage |
+| Authentication | Extensions need API key auth, not JWT | Add API key auth mode to edge functions |
+| CORS for extension | Extension calls from `chrome-extension://` origin | Already handled with `Access-Control-Allow-Origin: *` |
 
 ---
 
-## Carousel/Image Glitch Fix - Status Check
+## Part 2: Extension Architecture
 
-### ⚠️ Similar on Azyah Carousel
-**Status: NOT FIXED**
-- **File:** `src/components/deals/AzyahMatchesSection.tsx`
-- Still uses Embla carousel which can cause flicker
-- **Recommendation:** Replace with simple CSS scroll-snap grid
+### 2.1 File Structure
 
----
-
-## Summary Table
-
-| Fix | Status | Priority | Files to Change |
-|-----|--------|----------|-----------------|
-| 1. Upload first | ✅ DONE | P0 | - |
-| 2. detect-objects uses bytes/inline_data | ❌ NOT DONE | P0 | `detect-objects/index.ts`, `objectDetection.ts`, `PhotoTab.tsx` |
-| 3. Fallback path sanitization | ⚠️ PARTIAL | P0 | `deals-match-catalog/index.ts` line 273 |
-| 4. Brand image storage strategy | ❓ UNVERIFIED | P1 | Database/frontend |
-| 5. Candidate pool merging | ✅ DONE | P1 | - |
-| 6. Visual-first ranking (0.8/0.2) | ❌ NOT DONE | P1 | `visual-rerank/index.ts` line 183 |
-| 7. Use large images for rerank | ❌ NOT DONE | P1 | `deals-from-image/index.ts` line 832 |
-| 8. Dual-query embedding | ⚠️ PARTIAL | P1 | `PhotoTab.tsx`, `ImageCropSelector.tsx` |
-| Carousel glitches | ⚠️ NOT FIXED | P1 | `AzyahMatchesSection.tsx` |
-
----
-
-## Implementation Plan
-
-### Phase 1 - Critical Detection Fix (Must Do First)
-
-**1.1 Update `detect-objects` to use inline_data (not URL)**
-
-```
-File: supabase/functions/detect-objects/index.ts
-
-Changes:
-- Accept {bucket, path} instead of imageUrl
-- Use service role to download image bytes from Supabase Storage
-- Convert to base64
-- Send to Gemini as inline_data instead of image_url
+```text
+extension/
+├── manifest.json           # MV3 manifest
+├── service_worker.js       # Background script (API calls)
+├── content_script.js       # Injected into product pages
+├── sidepanel.html          # Side panel UI
+├── sidepanel.js            # Side panel logic
+├── styles.css              # Side panel styles
+├── icons/
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+└── lib/
+    └── extractor.js        # Product extraction (from webview-extractor.ts)
 ```
 
-**1.2 Update Frontend to Upload First, Then Detect**
+### 2.2 Manifest Configuration (MV3)
 
-```
-File: src/components/deals/PhotoTab.tsx
-
-Changes:
-- Upload full image immediately after file drop
-- Get bucket + path reference
-- Pass {bucket, path} to ImageCropSelector
-
-File: src/components/deals/ImageCropSelector.tsx
-
-Changes:
-- Accept storagePath prop instead of imageUrl
-- Pass {bucket, path} to detectProductRegions()
-
-File: src/utils/objectDetection.ts
-
-Changes:
-- Accept {bucket, path} instead of imageUrl
-- Pass to edge function
+```text
+- Permissions: activeTab, scripting, storage, sidePanel
+- Host permissions: <all_urls> (for image extraction)
+- Content scripts: Inject on all product pages
+- Side panel: Primary UI (Chrome 116+)
 ```
 
-**1.3 Fix Fallback Sanitization**
+### 2.3 Data Flow
 
-```
-File: supabase/functions/deals-match-catalog/index.ts
-
-Change line 273:
-FROM: media_url: p.media_urls?.[0] || '',
-TO: Apply the same firstMediaUrl() logic from lines 200-222
-```
-
-### Phase 2 - Quality Improvements
-
-**2.1 Increase Visual Weight**
-
-```
-File: supabase/functions/visual-rerank/index.ts
-
-Change line 183:
-FROM: const combinedScore = (result.currentScore * 0.6) + (visualSimilarity * 0.4);
-TO:   const combinedScore = (result.currentScore * 0.2) + (visualSimilarity * 0.8);
-```
-
-**2.2 Use Larger Images for Rerank**
-
-```
-File: supabase/functions/deals-from-image/index.ts
-
-Change lines 831-832:
-FROM: thumbnailUrl: r.thumbnail,
-TO:   thumbnailUrl: r.image || r.thumbnail,  // Prefer larger image
-```
-
-**2.3 Replace Carousel with CSS Scroll**
-
-```
-File: src/components/deals/AzyahMatchesSection.tsx
-
-Changes:
-- Remove Embla carousel dependency
-- Use simple CSS scroll-snap container
-- Add fixed dimensions to prevent layout shift
-```
-
-**2.4 Dual Crop Generation**
-
-```
-File: src/components/deals/ImageCropSelector.tsx
-
-Changes:
-- Generate pattern crop (inner 40% of garment box) automatically
-- Return both crops in onConfirm()
-
-File: src/components/deals/PhotoTab.tsx
-
-Changes:
-- Upload both crops
-- Pass both to searchFromImages()
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EXTENSION FLOW                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. User visits product page                                                │
+│     ↓                                                                       │
+│  2. Content script extracts product info:                                   │
+│     • JSON-LD Product schema (highest priority)                             │
+│     • OpenGraph meta tags                                                   │
+│     • DOM fallback (title, price, main image)                               │
+│     ↓                                                                       │
+│  3. User clicks "Find Better Deals" button                                  │
+│     ↓                                                                       │
+│  4. Side panel opens showing extracted product preview                      │
+│     ↓                                                                       │
+│  5. Service worker sends to backend:                                        │
+│     POST /deals-from-context                                                │
+│     {                                                                       │
+│       "context": {                                                          │
+│         "page_url": "https://...",                                          │
+│         "extracted_from": "chrome_ext",                                     │
+│         "main_image_url": "https://...",                                    │
+│         "title": "...",                                                     │
+│         "price": 99.99,                                                     │
+│         "category_hint": "dress"                                            │
+│       }                                                                     │
+│     }                                                                       │
+│     ↓                                                                       │
+│  6. Backend:                                                                │
+│     a) Downloads image server-side (avoids CORS/hotlinking)                 │
+│     b) Stores in deals-uploads bucket                                       │
+│     c) Runs Google Lens with signed URL                                     │
+│     d) Runs shopping search with query pack                                 │
+│     e) Runs visual rerank with pattern mode                                 │
+│     f) Runs deals-match-catalog                                             │
+│     ↓                                                                       │
+│  7. Side panel displays results:                                            │
+│     • Price verdict                                                         │
+│     • Best match (highlighted)                                              │
+│     • Similar deals list                                                    │
+│     • Similar on Azyah section                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Technical Details
+## Part 3: Implementation Details
 
-### detect-objects Inline Data Implementation
+### Phase 1: Core Extension (MVP)
 
-```typescript
-// detect-objects/index.ts - NEW IMPLEMENTATION
-const { bucket, path, tapPoint } = await req.json();
+#### 3.1 Content Script — Product Extraction
 
-// Download bytes using service role
-const { data: fileData, error: downloadError } = await supabase
-  .storage
-  .from(bucket)
-  .download(path);
+Reuse the extraction logic from `src/lib/webview-extractor.ts`:
 
-if (downloadError) throw new Error(`Download failed: ${downloadError.message}`);
+**Priority order:**
+1. **JSON-LD Product** — Parse `<script type="application/ld+json">` for `@type: "Product"`
+2. **OpenGraph** — `og:title`, `og:image`, `og:site_name`
+3. **DOM fallback** — Common selectors for title, price, main image
 
-// Convert to base64
-const arrayBuffer = await fileData.arrayBuffer();
-const base64 = btoa(
-  new Uint8Array(arrayBuffer).reduce((data, byte) => 
-    data + String.fromCharCode(byte), ''
-  )
-);
+**Output:**
+```text
+{
+  pageUrl: string,
+  title: string | null,
+  priceText: string | null,
+  currencyGuess: string | null,
+  imageUrl: string | null,
+  allCandidateImages: string[],
+  extractionConfidence: 'high' | 'medium' | 'low'
+}
+```
 
-// Send to Gemini with inline_data
-const geminiPayload = {
-  model: 'google/gemini-2.5-flash',
-  messages: [{
-    role: 'user',
-    content: [
-      { 
-        type: 'image', 
-        source: { 
-          type: 'base64', 
-          media_type: 'image/jpeg', 
-          data: base64 
-        }
-      },
-      { type: 'text', text: DETECTION_PROMPT }
+#### 3.2 Service Worker — API Communication
+
+**Authentication strategy:**
+- For authenticated users: Use Supabase access token from storage
+- For guest users: Prompt to sign in (link to Azyah app)
+
+**API calls:**
+1. `deals-from-context` — Primary endpoint for extension flow
+2. `deals-match-catalog` — Catalog similarity (separate call for async)
+
+#### 3.3 Side Panel UI
+
+**Layout:**
+```text
+┌────────────────────────────────────────┐
+│  🔍 Find Better Deals                  │
+├────────────────────────────────────────┤
+│  [Product Image]  │ Title              │
+│                   │ Price: AED 299     │
+│                   │ Source: ASOS       │
+├────────────────────────────────────────┤
+│  [Search Deals]  [Select Image ▼]      │
+├────────────────────────────────────────┤
+│  💰 Price Verdict                      │
+│  ├─ Low: AED 150                       │
+│  ├─ Median: AED 280                    │
+│  └─ High: AED 450                      │
+├────────────────────────────────────────┤
+│  ⭐ Best Match                         │
+│  └─ [Card: Image | Title | Price]      │
+├────────────────────────────────────────┤
+│  📦 Similar Deals                      │
+│  ├─ [Card 1]                           │
+│  ├─ [Card 2]                           │
+│  └─ [Card 3]                           │
+├────────────────────────────────────────┤
+│  🏷️ Similar on Azyah                   │
+│  └─ [Horizontal scroll cards]          │
+└────────────────────────────────────────┘
+```
+
+**States:**
+- `idle` — Waiting for user action
+- `extracting` — Running extraction
+- `searching` — Calling API
+- `results` — Showing deals
+- `error` — Show error with retry option
+
+#### 3.4 Image Selection Mode
+
+When auto-detection fails or user wants a different image:
+
+1. User clicks "Select Image" button
+2. Content script overlays page with selector mode
+3. All `<img>` elements get highlight-on-hover
+4. User clicks desired image
+5. Overlay closes, side panel updates with new image
+
+---
+
+### Phase 2: Backend Changes
+
+#### 3.5 Add Image Download Helper to `deals-from-context`
+
+**New logic in `deals-from-context`:**
+
+```text
+if (context.main_image_url && context.main_image_url.startsWith('https://')) {
+  // Download image server-side to avoid hotlinking blocks
+  const imageBlob = await fetch(context.main_image_url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' }
+  });
+  
+  // Upload to deals-uploads bucket
+  const path = `ext/${userId}/${uuid}.jpg`;
+  await supabase.storage.from('deals-uploads').upload(path, imageBlob);
+  
+  // Generate signed URL for Lens
+  const signedUrl = await supabase.storage.from('deals-uploads').createSignedUrl(path, 900);
+  
+  // Use signed URL for Lens search
+  lensSearchUrl = signedUrl;
+}
+```
+
+#### 3.6 Add Debug Fields to Response
+
+```text
+{
+  "success": true,
+  "debug": {
+    "used_image_url": "https://...(signed URL)",
+    "image_downloaded": true,
+    "roi_used": false,
+    "visual_rerank_applied": true,
+    "pattern_mode": true,
+    "filtered_count": 5,
+    "top_scores": [
+      { "link": "...", "textScore": 0.32, "visual": 0.78, "final": 0.69 }
     ]
-  }]
-};
+  }
+}
 ```
 
-### Visual Weight Change Rationale
+---
 
-The current 60/40 text/visual split causes:
-- Generic category matches to rank higher than visual matches
-- "abaya" text match beats "same pattern abaya" visual match
-- Patterns and prints are poorly represented
+### Phase 3: Quality & Polish
 
-The 20/80 text/visual split will:
-- Prioritize actual visual similarity
-- Keep text hints as tie-breakers only
-- Better match user expectations from Google Lens
+#### 3.7 Screenshot Fallback
+
+When image URL extraction fails:
+
+1. User clicks "Capture Screenshot"
+2. Extension captures visible tab region
+3. User draws selection box on screenshot
+4. Cropped image is converted to base64
+5. Upload to `deals-uploads` bucket
+6. Proceed with normal search flow
+
+#### 3.8 Rate Limiting & Caching
+
+Reuse existing infrastructure:
+- `deals_rate_limit` table — 10 req/min/user
+- `deals_cache` table — 30-minute cache
+
+#### 3.9 Error Handling
+
+| Scenario | User Message |
+|----------|--------------|
+| No product detected | "Couldn't detect a product. Try selecting an image manually." |
+| Image blocked | "This site blocks image access. Try using screenshot capture." |
+| Rate limited | "You've searched a lot! Try again in 1 minute." |
+| API error | "Something went wrong. Please try again." |
+| Not logged in | "Sign in to Azyah to find deals." |
 
 ---
 
-## Definition of Done
+## Part 4: Files to Create/Modify
 
-| Requirement | Current | After Fix |
-|-------------|---------|-----------|
-| Auto-detect objects on upload | ❌ Heuristics only | ✅ ML detection via Gemini |
-| Detection works on iOS Safari | ❌ Blob URLs fail | ✅ Uses storage bytes |
-| Tap to switch between objects | ⚠️ Works on fallback only | ✅ Works on real detections |
-| Visual rerank prioritized | ❌ 40% visual | ✅ 80% visual |
-| Pattern similarity matches | ❌ Text-dominated | ✅ Visual-dominated |
-| Similar on Azyah images load | ⚠️ Mostly | ✅ All paths sanitized |
-| No carousel glitches | ❌ Flicker on load | ✅ CSS scroll-snap |
+### New Files (Extension)
+
+| File | Description |
+|------|-------------|
+| `extension/manifest.json` | Chrome MV3 manifest |
+| `extension/service_worker.js` | Background script for API calls |
+| `extension/content_script.js` | Product extraction + image selector |
+| `extension/sidepanel.html` | Side panel HTML |
+| `extension/sidepanel.js` | Side panel JavaScript |
+| `extension/styles.css` | Side panel styling |
+| `extension/lib/extractor.js` | Extraction logic (ported from TS) |
+| `extension/icons/*` | Extension icons |
+
+### Modified Files (Backend)
+
+| File | Changes |
+|------|---------|
+| `supabase/functions/deals-from-context/index.ts` | Add server-side image download |
+| `supabase/config.toml` | (no changes needed — JWT verification already configured) |
 
 ---
 
-## Files to Modify
+## Part 5: Technical Details
 
-1. `supabase/functions/detect-objects/index.ts` - Major rewrite for inline_data
-2. `src/utils/objectDetection.ts` - Accept bucket/path
-3. `src/components/deals/PhotoTab.tsx` - Upload before crop, pass storage path
-4. `src/components/deals/ImageCropSelector.tsx` - Accept storage path, dual crop
-5. `supabase/functions/deals-match-catalog/index.ts` - Fix line 273
-6. `supabase/functions/visual-rerank/index.ts` - Change line 183
-7. `supabase/functions/deals-from-image/index.ts` - Prefer larger images
-8. `src/components/deals/AzyahMatchesSection.tsx` - Replace carousel with CSS scroll
+### 5.1 Content Script Injection
+
+```text
+// manifest.json content_scripts section
+"content_scripts": [{
+  "matches": ["<all_urls>"],
+  "js": ["content_script.js"],
+  "run_at": "document_idle"
+}]
+```
+
+### 5.2 Side Panel Registration
+
+```text
+// manifest.json side_panel section
+"side_panel": {
+  "default_path": "sidepanel.html"
+}
+```
+
+### 5.3 Service Worker Message Handling
+
+```text
+// Messages from content script → service worker
+- EXTRACT_PRODUCT: { tabId } → Run extraction
+- SEARCH_DEALS: { context } → Call backend
+- GET_AUTH_STATUS: {} → Check if user is logged in
+
+// Messages from side panel → service worker
+- SEARCH_DEALS: { context } → Call backend
+- SELECT_IMAGE: { tabId } → Activate image selector mode
+- CAPTURE_SCREENSHOT: { tabId } → Start screenshot capture
+```
+
+### 5.4 API Call Structure
+
+```text
+POST https://klwolsopucgswhtdlsps.supabase.co/functions/v1/deals-from-context
+Headers:
+  Authorization: Bearer <user_access_token>
+  Content-Type: application/json
+
+Body:
+{
+  "context": {
+    "page_url": "https://www.asos.com/product/...",
+    "extracted_from": "chrome_ext",
+    "title": "ASOS DESIGN midi dress in black",
+    "brand": "ASOS",
+    "price": 45.00,
+    "currency": "USD",
+    "main_image_url": "https://images.asos-media.com/...",
+    "category_hint": "dress",
+    "extraction_confidence": "high"
+  }
+}
+```
+
+---
+
+## Part 6: Definition of Done
+
+| Requirement | Acceptance Criteria |
+|-------------|---------------------|
+| Button appears | Floating button visible on product pages (configurable sites) |
+| Product extraction | Correctly extracts title, image, price from JSON-LD/OG/DOM |
+| Search works | Returns visually similar deals (pattern/color matching) |
+| Results display | Side panel shows price verdict, best match, deals list |
+| Similar on Azyah | Shows catalog matches when available |
+| Image selector | User can manually select any image on page |
+| Screenshot fallback | Works when image URLs are blocked |
+| Authentication | Prompts sign-in for unauthenticated users |
+| Error handling | Graceful fallbacks with actionable messages |
+
+---
+
+## Part 7: Implementation Order
+
+**Phase 1 (Core MVP) — Estimated: 1-2 days**
+1. Create extension folder structure and manifest
+2. Port extraction logic from webview-extractor.ts
+3. Build content script with extraction + floating button
+4. Build side panel UI (static mockup first)
+5. Implement service worker API calls
+6. Connect all pieces end-to-end
+
+**Phase 2 (Backend Support) — Estimated: 1 day**
+1. Add server-side image download to deals-from-context
+2. Add debug fields to response
+3. Test with various retailer sites
+
+**Phase 3 (Polish) — Estimated: 1-2 days**
+1. Implement image selector mode
+2. Implement screenshot capture fallback
+3. Add loading states and error handling
+4. Style refinements
+5. Cross-browser testing
+
+**Phase 4 (Safari Port) — Future**
+1. Convert to Safari Web Extension
+2. Submit to App Store
