@@ -812,12 +812,14 @@ serve(async (req) => {
       result.position = index + 1;
     });
 
-    // Step 7: Visual rerank using thumbnail embeddings (via Gemini)
+    // Step 7: Visual rerank using thumbnail embeddings (via Gemini) with pattern mode
+    const isPatternMode = inputPatterns.length > 0;
+    
     if (allShoppingResults.length >= 10) {
-      console.log('[deals-from-image] Running visual rerank on top 30 results...');
+      console.log(`[deals-from-image] Running visual rerank on top 25 results, patternMode=${isPatternMode}...`);
       
       try {
-        const topResults = allShoppingResults.slice(0, 30);
+        const topResults = allShoppingResults.slice(0, 25);
         const validThumbnails = topResults.filter(r => 
           r.thumbnail && r.thumbnail.startsWith('http')
         );
@@ -831,6 +833,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               queryImageUrl: primaryImageUrl,
+              isPatternMode,
               results: validThumbnails.map(r => ({
                 id: r.link,
                 thumbnailUrl: r.thumbnail,
@@ -842,14 +845,21 @@ serve(async (req) => {
           if (rerankResponse.ok) {
             const rerankData = await rerankResponse.json();
             if (rerankData.success && rerankData.results) {
+              let filteredCount = 0;
+              
               for (const vr of rerankData.results) {
                 const result = allShoppingResults.find(r => r.link === vr.id);
                 if (result) {
                   result.similarity_score = vr.combinedScore;
+                  
+                  // Track filtered items (they have combinedScore = 0)
+                  if (vr.filtered) {
+                    filteredCount++;
+                  }
                 }
               }
               
-              // Re-sort by combined score
+              // Re-sort by combined score (filtered items sink to bottom with score 0)
               allShoppingResults.sort((a, b) => 
                 (b.similarity_score ?? 0) - (a.similarity_score ?? 0)
               );
@@ -860,7 +870,9 @@ serve(async (req) => {
               });
               
               pipelineLog.visual_rerank_applied = true;
-              console.log('[deals-from-image] Visual rerank applied successfully');
+              pipelineLog.pattern_mode = isPatternMode;
+              pipelineLog.visual_filtered_count = filteredCount;
+              console.log(`[deals-from-image] Visual rerank applied: ${filteredCount} filtered, mode=${isPatternMode ? 'pattern' : 'normal'}`);
             }
           } else {
             console.warn('[deals-from-image] Visual rerank returned non-OK status:', rerankResponse.status);

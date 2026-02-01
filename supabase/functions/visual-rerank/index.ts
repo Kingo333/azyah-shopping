@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface RerankInput {
   queryImageUrl: string;
+  isPatternMode: boolean;
   results: Array<{
     id: string;
     thumbnailUrl: string;
@@ -15,15 +16,53 @@ interface RerankInput {
   }>;
 }
 
+interface SubScores {
+  overall: number;
+  pattern: number;
+  silhouette: number;
+  color: number;
+}
+
+interface RerankResult {
+  id: string;
+  visualSimilarity: number;
+  combinedScore: number;
+  subScores?: SubScores;
+  filtered?: boolean;
+}
+
 interface RerankOutput {
   success: boolean;
-  results: Array<{
-    id: string;
-    visualSimilarity: number;
-    combinedScore: number;
-  }>;
+  results: RerankResult[];
+  isPatternMode: boolean;
+  thresholdsApplied: {
+    minVisual: number;
+    minPattern: number;
+  };
   error?: string;
 }
+
+// Thresholds for filtering
+const THRESHOLDS = {
+  pattern: {
+    minVisual: 0.45,      // Hard floor for overall visual similarity in pattern mode
+    minPattern: 0.50,     // Hard floor for pattern sub-score specifically
+    textWeight: 0.10,     // Reduce text influence in pattern mode
+    visualWeight: 0.90,   // Visual dominates
+    patternSubWeight: 0.55,  // Pattern sub-score weight within visual
+    colorSubWeight: 0.25,    // Color sub-score weight
+    silhouetteSubWeight: 0.20, // Silhouette matters less for pattern
+  },
+  normal: {
+    minVisual: 0.35,      // More lenient floor for non-pattern
+    minPattern: 0,        // No pattern gate
+    textWeight: 0.25,     // Text matters more
+    visualWeight: 0.75,
+    patternSubWeight: 0.25,
+    colorSubWeight: 0.35,
+    silhouetteSubWeight: 0.40,
+  }
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -58,6 +97,8 @@ serve(async (req) => {
     }
 
     const input: RerankInput = await req.json();
+    const isPatternMode = input.isPatternMode ?? false;
+    const thresholds = isPatternMode ? THRESHOLDS.pattern : THRESHOLDS.normal;
 
     if (!input.queryImageUrl || !input.results?.length) {
       return new Response(
@@ -66,10 +107,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[visual-rerank] Reranking ${input.results.length} results for user ${user.id}`);
+    console.log(`[visual-rerank] Reranking ${input.results.length} results for user ${user.id}, patternMode=${isPatternMode}`);
 
-    // Limit to 30 thumbnails max for cost efficiency
-    const resultsToRank = input.results.slice(0, 30);
+    // Limit to 25 thumbnails max for cost efficiency
+    const resultsToRank = input.results.slice(0, 25);
     
     // Filter out invalid thumbnail URLs
     const validResults = resultsToRank.filter(r => 
@@ -86,35 +127,57 @@ serve(async (req) => {
             id: r.id,
             visualSimilarity: 0,
             combinedScore: r.currentScore,
-          }))
+            filtered: false,
+          })),
+          isPatternMode,
+          thresholdsApplied: { minVisual: thresholds.minVisual, minPattern: thresholds.minPattern },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build batch comparison prompt
-    const thumbnailList = validResults.map((r, i) => `[THUMBNAIL ${i + 1}]`).join(' ');
-    
-    // Build image content array for the message
-    const imageContent: any[] = [
+    // Build image content array for Gemini with granular sub-score prompt
+    const imageContent: unknown[] = [
       {
         type: 'text',
         text: `You are comparing a query garment image to ${validResults.length} shopping result thumbnails.
 
 QUERY IMAGE: The first image is the garment the user is searching for.
+THUMBNAILS: The following ${validResults.length} images are shopping result thumbnails (numbered 1 to ${validResults.length}).
 
-THUMBNAILS: The following ${validResults.length} images are shopping result thumbnails.
+For EACH thumbnail, provide THREE separate scores (0-10 scale):
 
-Rate each thumbnail's visual similarity to the query (0-10 scale):
-- 10 = Exact same item or near-identical (same brand, style, pattern)
-- 7-9 = Very similar (same style, similar pattern/color, could be the same product)
-- 4-6 = Somewhat similar (same category, different details or colors)
-- 1-3 = Not very similar (different style, only shares category)
-- 0 = Completely different item
+1. PATTERN score: How similar is the print/pattern/texture?
+   - 10 = Identical pattern (same print, embroidery, or surface design)
+   - 7-9 = Very similar pattern (same style of print, similar motifs)
+   - 4-6 = Related pattern category (both floral, both geometric, etc.)
+   - 1-3 = Different pattern entirely
+   - 0 = No pattern similarity (one is solid, one is printed)
 
-Consider: silhouette, pattern/print, color, style, and overall visual appearance.
+2. SILHOUETTE score: How similar is the shape/cut/style?
+   - 10 = Identical silhouette (same neckline, length, sleeve style)
+   - 7-9 = Very similar shape (minor differences in hem or collar)
+   - 4-6 = Same category, different style (both dresses but different cuts)
+   - 1-3 = Different silhouette (A-line vs fitted)
+   - 0 = Completely different garment type
 
-Return ONLY a JSON object with scores array: {"scores": [8, 6, 3, ...]}`
+3. COLOR score: How similar is the color/palette?
+   - 10 = Exact same colors
+   - 7-9 = Very similar palette (same base color, slight shade difference)
+   - 4-6 = Related colors (both pastels, both earth tones)
+   - 1-3 = Different colors
+   - 0 = Opposite/contrasting colors
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "scores": [
+    {"pattern": 8, "silhouette": 7, "color": 9},
+    {"pattern": 3, "silhouette": 8, "color": 7},
+    ...
+  ]
+}
+
+The scores array must have exactly ${validResults.length} objects, one for each thumbnail in order.`
       },
       {
         type: 'image_url',
@@ -122,7 +185,7 @@ Return ONLY a JSON object with scores array: {"scores": [8, 6, 3, ...]}`
       }
     ];
 
-    // Add thumbnail images (limit to avoid token limits)
+    // Add thumbnail images (limit to 20 to avoid token limits)
     for (const result of validResults.slice(0, 20)) {
       imageContent.push({
         type: 'image_url',
@@ -157,40 +220,88 @@ Return ONLY a JSON object with scores array: {"scores": [8, 6, 3, ...]}`
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '{"scores":[]}';
     
-    let scores: number[] = [];
+    let rawScores: Array<{ pattern?: number; silhouette?: number; color?: number }> = [];
     try {
       const parsed = JSON.parse(content);
-      scores = parsed.scores || [];
+      rawScores = parsed.scores || [];
     } catch (e) {
       console.error('[visual-rerank] Failed to parse AI response:', content);
-      // Extract numbers from the response as fallback
+      // Fallback: try to extract any numbers as overall scores
       const matches = content.match(/\d+/g);
       if (matches) {
-        scores = matches.map((m: string) => parseInt(m, 10)).filter((n: number) => n >= 0 && n <= 10);
+        const nums = matches.map((m: string) => parseInt(m, 10)).filter((n: number) => n >= 0 && n <= 10);
+        // Group into triplets if possible
+        for (let i = 0; i < nums.length; i += 3) {
+          rawScores.push({
+            pattern: nums[i] ?? 5,
+            silhouette: nums[i + 1] ?? 5,
+            color: nums[i + 2] ?? 5,
+          });
+        }
       }
     }
 
-    console.log(`[visual-rerank] Got ${scores.length} similarity scores`);
+    console.log(`[visual-rerank] Got ${rawScores.length} sub-score sets, patternMode=${isPatternMode}`);
 
-    // Map scores back to results (with fallback for missing scores)
+    // Map scores back to results with two-stage filtering + dynamic scoring
     const output: RerankOutput = {
       success: true,
-      results: input.results.map((result, index) => {
-        const rawScore = scores[index] ?? 5; // Default to 5 if missing
-        const visualSimilarity = Math.min(1, Math.max(0, rawScore / 10)); // Normalize to 0-1
-        
-        // Blend: 20% text score + 80% visual score (visual-first ranking)
-        const combinedScore = (result.currentScore * 0.2) + (visualSimilarity * 0.8);
-        
-        return {
-          id: result.id,
-          visualSimilarity,
-          combinedScore,
-        };
-      })
+      results: [],
+      isPatternMode,
+      thresholdsApplied: { minVisual: thresholds.minVisual, minPattern: thresholds.minPattern },
     };
 
-    console.log(`[visual-rerank] Success: reranked ${output.results.length} results`);
+    for (let index = 0; index < input.results.length; index++) {
+      const result = input.results[index];
+      const raw = rawScores[index] ?? { pattern: 5, silhouette: 5, color: 5 };
+      
+      // Normalize sub-scores to 0-1
+      const patternScore = Math.min(1, Math.max(0, (raw.pattern ?? 5) / 10));
+      const silhouetteScore = Math.min(1, Math.max(0, (raw.silhouette ?? 5) / 10));
+      const colorScore = Math.min(1, Math.max(0, (raw.color ?? 5) / 10));
+      
+      // Compute weighted visual similarity based on mode
+      const visualSimilarity = 
+        (patternScore * thresholds.patternSubWeight) +
+        (colorScore * thresholds.colorSubWeight) +
+        (silhouetteScore * thresholds.silhouetteSubWeight);
+      
+      // Stage 1: Hard thresholds (filter bad matches)
+      let filtered = false;
+      
+      // Overall visual threshold
+      if (visualSimilarity < thresholds.minVisual) {
+        filtered = true;
+      }
+      
+      // Pattern-specific gate (only in pattern mode)
+      if (isPatternMode && patternScore < thresholds.minPattern) {
+        filtered = true;
+      }
+      
+      // Stage 2: Compute combined score with dynamic weights
+      const combinedScore = filtered 
+        ? 0 // Filtered items get 0 to sink to bottom
+        : (result.currentScore * thresholds.textWeight) + (visualSimilarity * thresholds.visualWeight);
+      
+      output.results.push({
+        id: result.id,
+        visualSimilarity,
+        combinedScore,
+        subScores: {
+          overall: visualSimilarity,
+          pattern: patternScore,
+          silhouette: silhouetteScore,
+          color: colorScore,
+        },
+        filtered,
+      });
+    }
+
+    // Log summary
+    const filteredCount = output.results.filter(r => r.filtered).length;
+    const passedCount = output.results.length - filteredCount;
+    console.log(`[visual-rerank] Success: ${passedCount} passed, ${filteredCount} filtered (mode=${isPatternMode ? 'pattern' : 'normal'})`);
 
     return new Response(
       JSON.stringify(output),
@@ -203,6 +314,8 @@ Return ONLY a JSON object with scores array: {"scores": [8, 6, 3, ...]}`
       JSON.stringify({
         success: false,
         results: [],
+        isPatternMode: false,
+        thresholdsApplied: { minVisual: 0.35, minPattern: 0 },
         error: error instanceof Error ? error.message : 'Unknown error'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
