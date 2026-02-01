@@ -1,5 +1,6 @@
 /**
  * Azyah Side Panel Logic
+ * Updated to use unified deals endpoint with Ximilar tags display
  */
 
 // State
@@ -20,9 +21,16 @@ const elements = {
   previewPrice: document.getElementById('preview-price'),
   previewSource: document.getElementById('preview-source'),
   
+  // Ximilar tags display
+  ximilarTags: document.getElementById('ximilar-tags'),
+  
   priceLow: document.getElementById('price-low'),
   priceMedian: document.getElementById('price-median'),
   priceHigh: document.getElementById('price-high'),
+  
+  // Exact match section
+  exactMatchSection: document.getElementById('exact-match-section'),
+  exactMatch: document.getElementById('exact-match'),
   
   bestMatchSection: document.getElementById('best-match-section'),
   bestMatch: document.getElementById('best-match'),
@@ -115,6 +123,12 @@ function showProductPreview(context) {
   
   elements.previewSource.textContent = context.brand || extractDomain(context.page_url);
   
+  // Clear previous Ximilar tags
+  if (elements.ximilarTags) {
+    elements.ximilarTags.innerHTML = '';
+    elements.ximilarTags.classList.add('hidden');
+  }
+  
   showState('preview');
 }
 
@@ -128,7 +142,7 @@ function extractDomain(url) {
   }
 }
 
-// Search for deals
+// Search for deals using unified endpoint
 async function searchDeals() {
   if (!currentExtraction?.context) {
     showError('No product detected', 'Please try extracting from the page again.');
@@ -138,9 +152,20 @@ async function searchDeals() {
   showState('loading');
   
   try {
+    // Build unified payload
+    const payload = {
+      source: 'chrome_extension',
+      market: 'AE', // TODO: Detect user's market
+      page_url: currentExtraction.context.page_url,
+      title_hint: currentExtraction.context.title,
+      price_hint: currentExtraction.context.price,
+      currency_hint: currentExtraction.context.currency,
+      image_url: currentExtraction.context.main_image_url,
+    };
+    
     const result = await sendMessage({
-      type: 'SEARCH_DEALS',
-      context: currentExtraction.context
+      type: 'SEARCH_UNIFIED',
+      payload
     });
     
     if (!result.success) {
@@ -165,8 +190,13 @@ async function searchDeals() {
   }
 }
 
-// Display results
+// Display results with Ximilar tags
 function displayResults(result) {
+  // Display Ximilar tags if available
+  if (result.ximilar_tags && elements.ximilarTags) {
+    displayXimilarTags(result.ximilar_tags);
+  }
+  
   // Price verdict
   if (result.price_stats?.valid_count >= 5) {
     elements.priceLow.textContent = formatPrice(result.price_stats.low);
@@ -176,6 +206,14 @@ function displayResults(result) {
     elements.priceLow.textContent = '-';
     elements.priceMedian.textContent = '-';
     elements.priceHigh.textContent = '-';
+  }
+  
+  // Exact match (NEW)
+  if (result.exact_match?.found && elements.exactMatchSection) {
+    elements.exactMatch.innerHTML = createExactMatchCard(result.exact_match);
+    elements.exactMatchSection.classList.remove('hidden');
+  } else if (elements.exactMatchSection) {
+    elements.exactMatchSection.classList.add('hidden');
   }
   
   // Best match (first result with highest similarity)
@@ -200,6 +238,43 @@ function displayResults(result) {
   }
   
   showState('results');
+}
+
+// Display Ximilar tags
+function displayXimilarTags(tags) {
+  if (!elements.ximilarTags) return;
+  
+  const tagPills = [];
+  
+  // Category
+  if (tags.subcategory || tags.primary_category) {
+    tagPills.push(`<span class="tag-pill category">${tags.subcategory || tags.primary_category}</span>`);
+  }
+  
+  // Colors
+  if (tags.colors?.length > 0) {
+    for (const color of tags.colors.slice(0, 2)) {
+      tagPills.push(`<span class="tag-pill color">${color}</span>`);
+    }
+  }
+  
+  // Patterns
+  if (tags.patterns?.length > 0) {
+    tagPills.push(`<span class="tag-pill pattern">${tags.patterns[0]}</span>`);
+  }
+  
+  // Pattern mode indicator
+  if (tags.is_pattern_mode) {
+    tagPills.push(`<span class="tag-pill mode">🎨 Pattern Mode</span>`);
+  }
+  
+  if (tagPills.length > 0) {
+    elements.ximilarTags.innerHTML = `
+      <div class="ximilar-tags-header">Detected attributes:</div>
+      <div class="tag-pills">${tagPills.join('')}</div>
+    `;
+    elements.ximilarTags.classList.remove('hidden');
+  }
 }
 
 // Search catalog
@@ -235,14 +310,43 @@ function displayCatalogMatches(matches) {
   elements.azyahSection.classList.remove('hidden');
 }
 
+// Create exact match card (NEW)
+function createExactMatchCard(match) {
+  return `
+    <a href="${match.link}" target="_blank" class="deal-card exact">
+      <div class="deal-image">
+        ${match.thumbnail ? `<img src="${match.thumbnail}" alt="${match.title}" onerror="this.style.display='none'">` : ''}
+      </div>
+      <div class="deal-info">
+        <span class="exact-badge">✓ Original Found</span>
+        <p class="deal-source">${match.source || 'Original Source'}</p>
+        <p class="deal-title">${truncate(match.title, 50)}</p>
+      </div>
+    </a>
+  `;
+}
+
 // Create deal card HTML
 function createDealCard(deal, isBest = false) {
   const price = deal.price || (deal.extracted_price ? `AED ${deal.extracted_price}` : 'See price');
   const source = deal.source || extractDomain(deal.link);
   const similarity = deal.similarity_score ? Math.round(deal.similarity_score * 100) : null;
   
+  // Show sub-scores if available
+  let subScoreHtml = '';
+  if (deal.sub_scores && isBest) {
+    const pattern = Math.round(deal.sub_scores.pattern * 100);
+    const color = Math.round(deal.sub_scores.color * 100);
+    subScoreHtml = `
+      <div class="sub-scores">
+        <span class="sub-score">🎨 ${pattern}%</span>
+        <span class="sub-score">🌈 ${color}%</span>
+      </div>
+    `;
+  }
+  
   return `
-    <a href="${deal.link}" target="_blank" class="deal-card ${isBest ? 'best' : ''}">
+    <a href="${deal.link}" target="_blank" class="deal-card ${isBest ? 'best' : ''} ${deal.is_exact_match ? 'exact-domain' : ''}">
       <div class="deal-image">
         <img src="${deal.thumbnail}" alt="${deal.title}" onerror="this.style.display='none'">
       </div>
@@ -251,6 +355,7 @@ function createDealCard(deal, isBest = false) {
         <p class="deal-title">${truncate(deal.title, 50)}</p>
         <p class="deal-price">${price}</p>
         ${similarity ? `<span class="similarity-badge">${similarity}% match</span>` : ''}
+        ${subScoreHtml}
       </div>
     </a>
   `;
@@ -261,6 +366,45 @@ function showError(title, message) {
   elements.errorTitle.textContent = title;
   elements.errorMessage.textContent = message;
   showState('error');
+}
+
+// Screenshot capture fallback
+async function captureAndSearch() {
+  showState('loading');
+  
+  try {
+    const result = await sendMessage({ type: 'CAPTURE_SCREENSHOT' });
+    
+    if (!result.success) {
+      showError('Screenshot Failed', result.error || 'Could not capture screenshot');
+      return;
+    }
+    
+    // Search with base64 image
+    const payload = {
+      source: 'chrome_extension',
+      market: 'AE',
+      page_url: currentExtraction?.context?.page_url,
+      title_hint: currentExtraction?.context?.title,
+      image_base64: result.dataUrl,
+    };
+    
+    const searchResult = await sendMessage({
+      type: 'SEARCH_UNIFIED',
+      payload
+    });
+    
+    if (!searchResult.success) {
+      showError('Search Failed', searchResult.error || 'Unable to find deals.');
+      return;
+    }
+    
+    currentResults = searchResult;
+    displayResults(searchResult);
+    
+  } catch (error) {
+    showError('Error', error.message);
+  }
 }
 
 // Utility functions
@@ -326,6 +470,9 @@ document.getElementById('select-image-btn')?.addEventListener('click', async () 
     console.error('[Azyah Panel] Select image error:', error);
   }
 });
+
+// Screenshot fallback button
+document.getElementById('screenshot-btn')?.addEventListener('click', captureAndSearch);
 
 document.getElementById('retry-btn')?.addEventListener('click', () => {
   if (currentExtraction?.success) {
