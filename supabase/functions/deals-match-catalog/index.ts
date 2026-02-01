@@ -265,16 +265,43 @@ serve(async (req) => {
         });
       }
 
-      matches = fallbackProducts.slice(0, Math.min(limit, 8)).map(p => ({
-        id: p.id,
-        title: p.title,
-        price_cents: p.price_cents,
-        currency: p.currency || 'AED',
-        media_url: p.media_urls?.[0] || '',
-        category_slug: p.category_slug,
-        brand_name: (p.brands as any)?.name || null,
-        match_score: 0.01, // Indicate this is a fallback match
-      }));
+      matches = fallbackProducts.slice(0, Math.min(limit, 8)).map(p => {
+        // Safely extract first media URL (same as main path)
+        const mediaUrl = (() => {
+          const raw = p.media_urls;
+          if (!raw) return '';
+          
+          if (Array.isArray(raw)) {
+            return raw[0] || '';
+          }
+          
+          if (typeof raw === 'string') {
+            const s = raw.trim();
+            if (s.startsWith('[')) {
+              try {
+                const parsed = JSON.parse(s);
+                if (Array.isArray(parsed)) return parsed[0] || '';
+              } catch {
+                console.log('[deals-match-catalog] Failed to parse fallback media_urls JSON:', p.id);
+              }
+            }
+            return s;
+          }
+          
+          return '';
+        })();
+        
+        return {
+          id: p.id,
+          title: p.title,
+          price_cents: p.price_cents,
+          currency: p.currency || 'AED',
+          media_url: mediaUrl,
+          category_slug: p.category_slug,
+          brand_name: (p.brands as any)?.name || null,
+          match_score: 0.01, // Indicate this is a fallback match
+        };
+      });
     }
 
     console.log(`[deals-match-catalog] Found ${matches.length} matches (scored: ${scoredProducts.length}, top score: ${matches[0]?.match_score.toFixed(2) || 0})`);

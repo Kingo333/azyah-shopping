@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, ChevronRight, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import useEmblaCarousel from 'embla-carousel-react';
 import { displaySrc } from '@/lib/displaySrc';
 
 interface CatalogMatch {
@@ -27,12 +26,6 @@ interface AzyahMatchesSectionProps {
 export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatchesSectionProps) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
-  const [emblaRef] = useEmblaCarousel({ 
-    align: 'start',
-    containScroll: 'trimSnaps',
-    dragFree: false,
-    skipSnaps: false,
-  });
 
   // Get display image URL using centralized displaySrc helper
   // Handles malformed URLs (JSON array stored as string)
@@ -87,7 +80,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     return match.affiliate_url || match.external_url || null;
   }, []);
 
-  // Show 6 products in carousel, 8 in expanded grid
+  // Show 6 products in scroll, 8 in expanded grid
   const displayMatches = expanded ? matches.slice(0, 8) : matches.slice(0, 6);
   const hasMore = matches.length > 6;
 
@@ -114,7 +107,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     return null;
   }
 
-  // Carousel card component
+  // Product card component
   const ProductCard = ({ match, compact = false }: { match: CatalogMatch; compact?: boolean }) => {
     const externalLink = getExternalLink(match);
     const imageUrl = getDisplayImageUrl(match.media_url);
@@ -219,7 +212,7 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
     );
   }
 
-  // Carousel view (default - 6 cards, 3 visible at a time)
+  // Horizontal scroll view (default - CSS scroll-snap, no Embla)
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between px-1">
@@ -246,17 +239,22 @@ export function AzyahMatchesSection({ matches, isLoading, className }: AzyahMatc
         )}
       </div>
 
+      {/* CSS scroll-snap container (replaces Embla carousel for stability) */}
       <div 
-        className="overflow-hidden touch-pan-x" 
-        ref={emblaRef}
-        style={{ touchAction: 'pan-x' }}
+        className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+        style={{ 
+          touchAction: 'pan-x',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
         data-vaul-no-drag
       >
-        <div className="flex gap-2">
-          {displayMatches.map((match) => (
-            <ProductCard key={match.id} match={match} compact />
-          ))}
-        </div>
+        {displayMatches.map((match) => (
+          <div key={match.id} className="snap-start">
+            <ProductCard match={match} compact />
+          </div>
+        ))}
       </div>
     </div>
   );

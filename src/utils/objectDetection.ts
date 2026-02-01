@@ -16,30 +16,54 @@ export interface DetectedBox {
   description?: string;
 }
 
+export interface StoragePath {
+  bucket: string;
+  path: string;
+}
+
 /**
  * Detect objects in an image using Gemini vision (backend).
  * Returns actual bounding boxes around detected items.
+ * 
+ * @param source - Either a StoragePath (bucket + path) or a URL string
  */
-export async function detectProductRegions(imageUrl: string): Promise<DetectedBox[]> {
+export async function detectProductRegions(source: StoragePath | string): Promise<DetectedBox[]> {
   try {
     console.log('[detectProductRegions] Calling backend detection...');
     
+    // Prepare request body based on source type
+    let body: Record<string, string>;
+    
+    if (typeof source === 'object' && 'bucket' in source) {
+      // NEW: Pass bucket and path for reliable detection
+      body = { bucket: source.bucket, path: source.path };
+      console.log(`[detectProductRegions] Using storage path: ${source.bucket}/${source.path}`);
+    } else {
+      // Legacy: URL-based detection (will fail for blob URLs)
+      if (source.startsWith('blob:')) {
+        console.warn('[detectProductRegions] Blob URLs not supported, using fallback');
+        return getFallbackBoxes(source);
+      }
+      body = { imageUrl: source };
+      console.log(`[detectProductRegions] Using URL: ${source.substring(0, 80)}...`);
+    }
+    
     const { data, error } = await supabase.functions.invoke('detect-objects', {
-      body: { imageUrl },
+      body,
     });
 
     if (error) {
       console.error('[detectProductRegions] Backend error:', error);
-      return getFallbackBoxes(imageUrl);
+      return getFallbackBoxes(typeof source === 'string' ? source : '');
     }
 
     if (!data?.success || !data?.objects?.length) {
       console.warn('[detectProductRegions] No objects detected, using fallback');
-      return getFallbackBoxes(imageUrl);
+      return getFallbackBoxes(typeof source === 'string' ? source : '');
     }
 
     // Convert backend response to DetectedBox format
-    const boxes: DetectedBox[] = data.objects.map((obj: any, idx: number) => ({
+    const boxes: DetectedBox[] = data.objects.map((obj: any) => ({
       x: obj.box.x,
       y: obj.box.y,
       width: obj.box.width,
@@ -59,7 +83,7 @@ export async function detectProductRegions(imageUrl: string): Promise<DetectedBo
 
   } catch (err) {
     console.error('[detectProductRegions] Error:', err);
-    return getFallbackBoxes(imageUrl);
+    return getFallbackBoxes(typeof source === 'string' ? source : '');
   }
 }
 
@@ -69,6 +93,19 @@ export async function detectProductRegions(imageUrl: string): Promise<DetectedBo
  */
 async function getFallbackBoxes(imageUrl: string): Promise<DetectedBox[]> {
   return new Promise((resolve) => {
+    // If no URL provided, return default
+    if (!imageUrl) {
+      resolve([{
+        x: 0.10,
+        y: 0.10,
+        width: 0.80,
+        height: 0.80,
+        label: 'product',
+        score: 0.5,
+      }]);
+      return;
+    }
+    
     const img = new Image();
     img.crossOrigin = 'anonymous';
     

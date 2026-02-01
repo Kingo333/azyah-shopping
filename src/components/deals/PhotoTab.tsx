@@ -12,6 +12,7 @@ import { ScanPanel } from './ScanPanel';
 import { AzyahMatchesSection } from './AzyahMatchesSection';
 import { ImageCropSelector } from './ImageCropSelector';
 import { cropImage, CropRect } from '@/utils/imageCropUtils';
+import { StoragePath } from '@/utils/objectDetection';
 import { cn } from '@/lib/utils';
 
 interface PhotoTabProps {
@@ -28,6 +29,9 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // NEW: Storage path for ML detection
+  const [storagePath, setStoragePath] = useState<StoragePath | null>(null);
   
   const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
   const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
@@ -50,7 +54,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     }
   }, [data, matchCatalog]);
 
-  // Handle file drop - show crop selector instead of immediate upload
+  // Handle file drop - upload FIRST for ML detection, then show crop selector
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file || !user) return;
@@ -60,11 +64,51 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     reset();
     resetCatalog();
     setOriginalFile(file);
+    setIsUploading(true);
     
     // Create preview URL for crop selector
     const preview = URL.createObjectURL(file);
     setPreviewUrl(preview);
-    setPhotoState('crop');
+
+    try {
+      // Upload FULL image immediately for ML detection
+      const fileName = `${user.id}/${Date.now()}_full.jpg`;
+      
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from('deals-uploads')
+        .upload(fileName, file, {
+          contentType: file.type || 'image/jpeg',
+          cacheControl: '600',
+          upsert: true,
+        });
+
+      if (uploadErr) {
+        throw uploadErr;
+      }
+
+      // Store storage path for ML detection (bucket + path)
+      setStoragePath({ bucket: 'deals-uploads', path: fileName });
+      
+      // Now show the crop selector (detection will use storage path)
+      setPhotoState('crop');
+
+      // Schedule cleanup after 15 min
+      setTimeout(async () => {
+        try {
+          await supabase.storage.from('deals-uploads').remove([fileName]);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }, 900000);
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      // Still show crop selector with fallback heuristic detection
+      setPhotoState('crop');
+    } finally {
+      setIsUploading(false);
+    }
   }, [user, reset, resetCatalog]);
 
   // Handle crop confirmation - upload cropped image and search
@@ -85,7 +129,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       const croppedBlob = await cropImage(originalFile, primaryCrop.rect);
       
       // Create unique filename
-      const fileName = `${user.id}/${Date.now()}.jpg`;
+      const fileName = `${user.id}/${Date.now()}_crop.jpg`;
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadErr } = await supabase.storage
@@ -140,6 +184,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     }
     setPreviewUrl(null);
     setOriginalFile(null);
+    setStoragePath(null);
     setPhotoState('upload');
   }, [previewUrl]);
 
@@ -161,6 +206,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     }
     setPreviewUrl(null);
     setOriginalFile(null);
+    setStoragePath(null);
     setUploadedImageUrl(null);
     setUploadError(null);
     setPhotoState('upload');
@@ -233,6 +279,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       <div className="space-y-4">
         <ImageCropSelector
           imageUrl={previewUrl}
+          storagePath={storagePath || undefined}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
           isProcessing={isUploading}
