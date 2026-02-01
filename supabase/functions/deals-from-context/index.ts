@@ -26,6 +26,16 @@ interface ProductContext {
   extraction_confidence?: 'high' | 'medium' | 'low';
 }
 
+interface DebugInfo {
+  used_image_url: string | null;
+  image_downloaded: boolean;
+  original_image_url: string | null;
+  roi_used: boolean;
+  visual_rerank_applied: boolean;
+  pattern_mode: boolean;
+  filtered_count: number;
+}
+
 interface VisualMatch {
   title: string;
   link: string;
@@ -409,6 +419,17 @@ serve(async (req) => {
       has_title: !!context.title,
     });
 
+    // Initialize debug info
+    const debugInfo: DebugInfo = {
+      used_image_url: null,
+      image_downloaded: false,
+      original_image_url: context.main_image_url || null,
+      roi_used: false,
+      visual_rerank_applied: false,
+      pattern_mode: false,
+      filtered_count: 0,
+    };
+
     const pipelineLog: PipelineLog = {
       input_has_image: !!context.main_image_url,
       query_pack_count: 0,
@@ -424,11 +445,72 @@ serve(async (req) => {
     const visualMatches: VisualMatch[] = [];
     const visualMatchTitles: string[] = [];
 
-    // Step 1: If we have an image, run Google Lens
-    const imageToSearch = context.main_image_url || (context.image_urls?.[0]);
+    // Step 0: For extension sources, download external image server-side to avoid hotlinking blocks
+    let imageToSearch = context.main_image_url || (context.image_urls?.[0]);
     
+    if (imageToSearch && (context.extracted_from === 'chrome_ext' || context.extracted_from === 'safari_ext')) {
+      // Check if image is from an external domain (not our own storage)
+      const isExternalImage = imageToSearch.startsWith('https://') && 
+        !imageToSearch.includes('supabase.co') && 
+        !imageToSearch.includes('lovable.app');
+      
+      if (isExternalImage) {
+        console.log(`[deals-from-context] Downloading external image for extension...`);
+        
+        try {
+          const imageResponse = await fetch(imageToSearch, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0; +https://azyah.com)',
+              'Accept': 'image/*',
+            }
+          });
+          
+          if (imageResponse.ok) {
+            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+            const imageBlob = await imageResponse.blob();
+            
+            // Only process if it's actually an image and not too large (8MB max)
+            if (contentType.startsWith('image/') && imageBlob.size < 8 * 1024 * 1024) {
+              const imageBuffer = await imageBlob.arrayBuffer();
+              const ext = contentType.includes('png') ? 'png' : 'jpg';
+              const imagePath = `ext/${user.id}/${crypto.randomUUID()}.${ext}`;
+              
+              // Upload to deals-uploads bucket
+              const { error: uploadError } = await supabase.storage
+                .from('deals-uploads')
+                .upload(imagePath, imageBuffer, {
+                  contentType,
+                  upsert: false,
+                });
+              
+              if (!uploadError) {
+                // Generate signed URL for Lens (15 min expiry)
+                const { data: signedUrlData } = await supabase.storage
+                  .from('deals-uploads')
+                  .createSignedUrl(imagePath, 900);
+                
+                if (signedUrlData?.signedUrl) {
+                  imageToSearch = signedUrlData.signedUrl;
+                  debugInfo.image_downloaded = true;
+                  debugInfo.used_image_url = imageToSearch;
+                  console.log(`[deals-from-context] Image downloaded and stored successfully`);
+                }
+              } else {
+                console.warn(`[deals-from-context] Image upload failed:`, uploadError);
+              }
+            }
+          }
+        } catch (imgErr) {
+          console.warn(`[deals-from-context] Image download failed:`, imgErr);
+          // Continue with original URL as fallback
+        }
+      }
+    }
+
+    // Step 1: If we have an image, run Google Lens
     if (imageToSearch) {
       console.log(`[deals-from-context] Running Lens on image...`);
+      debugInfo.used_image_url = debugInfo.used_image_url || imageToSearch;
       
       try {
         const lensParams = new URLSearchParams({
@@ -655,6 +737,7 @@ serve(async (req) => {
       price_stats: priceStats,
       deals_found: allShoppingResults.length,
       pipeline_log: pipelineLog,
+      debug: debugInfo,
       suggestion,
     };
 
