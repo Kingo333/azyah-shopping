@@ -59,9 +59,12 @@
         <p id="preview-price" class="preview-price">Price</p>
         <p id="preview-source" class="preview-source">Source</p>
       </div>
+      <!-- Ximilar Tags (NEW) -->
+      <div id="ximilar-tags" class="ximilar-tags hidden"></div>
       <div class="preview-actions">
         <button id="search-btn" class="btn-primary">Search Deals</button>
         <button id="select-image-btn" class="btn-secondary">Select Image</button>
+        <button id="screenshot-btn" class="btn-secondary btn-small" title="Capture screenshot if image blocked">📷</button>
       </div>
     </div>
     
@@ -90,6 +93,12 @@
             <span>High</span>
           </div>
         </div>
+      </section>
+      
+      <!-- Exact Match (NEW) -->
+      <section id="exact-match-section" class="result-section hidden">
+        <h4>✓ Original Found</h4>
+        <div id="exact-match" class="deal-card exact-match"></div>
       </section>
       
       <!-- Best Match -->
