@@ -609,7 +609,8 @@ serve(async (req) => {
           allShoppingResults.push({
             title: result.title || '',
             link: normalizeLink(result.link),
-            thumbnail: result.thumbnail || '',
+            // Prefer larger image over thumbnail for better visual reranking
+            thumbnail: result.image || result.thumbnail || '',
             source: result.source || '',
             price: result.price || '',
             extracted_price: result.extracted_price ?? extractNumericPrice(result.price),
@@ -658,7 +659,8 @@ serve(async (req) => {
             allShoppingResults.push({
               title: result.title || '',
               link: normalizeLink(result.link),
-              thumbnail: result.thumbnail || '',
+              // Prefer larger image over thumbnail for better visual reranking
+              thumbnail: result.image || result.thumbnail || '',
               source: result.source || '',
               price: result.price || '',
               extracted_price: result.extracted_price ?? extractNumericPrice(result.price),

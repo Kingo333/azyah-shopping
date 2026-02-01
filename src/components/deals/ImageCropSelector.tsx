@@ -9,6 +9,7 @@ import {
 } from '@/utils/imageCropUtils';
 import {
   DetectedBox,
+  StoragePath,
   detectProductRegions,
   findBoxAtPoint,
   boxToCropRect,
@@ -17,6 +18,8 @@ import {
 
 interface ImageCropSelectorProps {
   imageUrl: string;
+  // NEW: Optional storage path for reliable ML detection
+  storagePath?: StoragePath;
   onConfirm: (crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[]) => void;
   onCancel: () => void;
   isProcessing?: boolean;
@@ -24,6 +27,7 @@ interface ImageCropSelectorProps {
 
 export function ImageCropSelector({
   imageUrl,
+  storagePath,
   onConfirm,
   onCancel,
   isProcessing = false,
@@ -72,10 +76,12 @@ export function ImageCropSelector({
         });
       }
       
-      // Run auto-detection
+      // Run auto-detection - prefer storage path over URL
       setIsDetecting(true);
       try {
-        const boxes = await detectProductRegions(imageUrl);
+        // Use storage path if available (reliable), otherwise fall back to URL
+        const source = storagePath || imageUrl;
+        const boxes = await detectProductRegions(source);
         setCandidateBoxes(boxes);
         setSelectedBoxIndex(0); // Select first (best) box
       } catch (err) {
@@ -88,7 +94,7 @@ export function ImageCropSelector({
       }
       setIsDetecting(false);
     };
-  }, [imageUrl]);
+  }, [imageUrl, storagePath]);
 
   // Handle tap on image - switch to box at tap point
   const handleImageTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -190,11 +196,25 @@ export function ImageCropSelector({
     setManualRect(newRect);
   }, [isResizing, dragStart, displayDimensions, initialRect]);
 
-  // Handle confirm
+  // Handle confirm - generate both garment and pattern crops
   const handleConfirm = useCallback(() => {
-    onConfirm([
+    const crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[] = [
       { type: 'garment', rect: cropRect },
-    ]);
+    ];
+    
+    // Generate pattern crop (inner 40% of garment box) for better pattern matching
+    const patternRect: CropRect = {
+      x: cropRect.x + cropRect.width * 0.3,
+      y: cropRect.y + cropRect.height * 0.3,
+      width: cropRect.width * 0.4,
+      height: cropRect.height * 0.4,
+    };
+    
+    // Clamp pattern crop to image bounds
+    const clampedPatternRect = clampCropRect(patternRect);
+    crops.push({ type: 'pattern', rect: clampedPatternRect });
+    
+    onConfirm(crops);
   }, [cropRect, onConfirm]);
 
   // Calculate pixel positions for overlays

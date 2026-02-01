@@ -179,8 +179,8 @@ Return ONLY a JSON object with scores array: {"scores": [8, 6, 3, ...]}`
         const rawScore = scores[index] ?? 5; // Default to 5 if missing
         const visualSimilarity = Math.min(1, Math.max(0, rawScore / 10)); // Normalize to 0-1
         
-        // Blend: 60% text score + 40% visual score
-        const combinedScore = (result.currentScore * 0.6) + (visualSimilarity * 0.4);
+        // Blend: 20% text score + 80% visual score (visual-first ranking)
+        const combinedScore = (result.currentScore * 0.2) + (visualSimilarity * 0.8);
         
         return {
           id: result.id,

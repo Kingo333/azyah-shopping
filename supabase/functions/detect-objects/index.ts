@@ -57,33 +57,66 @@ serve(async (req) => {
       );
     }
 
-    const { imageUrl } = await req.json();
+    // Accept either bucket/path OR imageUrl (for backward compatibility)
+    const { bucket, path, imageUrl } = await req.json();
 
-    if (!imageUrl) {
+    // Determine image source
+    let base64Data: string | null = null;
+    let mimeType = 'image/jpeg';
+
+    if (bucket && path) {
+      // NEW: Download bytes from Supabase Storage using service role
+      console.log(`[detect-objects] Downloading from storage: ${bucket}/${path}`);
+      
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from(bucket)
+        .download(path);
+
+      if (downloadError || !fileData) {
+        console.error('[detect-objects] Storage download failed:', downloadError);
+        throw new Error(`Failed to download image: ${downloadError?.message || 'Unknown error'}`);
+      }
+
+      // Convert blob to base64
+      const arrayBuffer = await fileData.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      base64Data = btoa(binary);
+      
+      // Detect mime type from path
+      if (path.toLowerCase().endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (path.toLowerCase().endsWith('.webp')) {
+        mimeType = 'image/webp';
+      }
+      
+      console.log(`[detect-objects] Downloaded ${uint8Array.length} bytes, mime: ${mimeType}`);
+    } else if (imageUrl) {
+      // FALLBACK: Use URL (only for signed URLs, not blob URLs)
+      if (imageUrl.startsWith('blob:')) {
+        console.error('[detect-objects] Blob URLs are not supported');
+        throw new Error('Blob URLs are not supported. Please pass bucket and path instead.');
+      }
+      
+      console.log(`[detect-objects] Using URL: ${imageUrl.substring(0, 80)}...`);
+    } else {
       return new Response(
-        JSON.stringify({ success: false, error: 'imageUrl is required', objects: [], primary_index: 0 }),
+        JSON.stringify({ success: false, error: 'Either bucket/path or imageUrl is required', objects: [], primary_index: 0 }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log(`[detect-objects] Detecting objects for user ${user.id}`);
 
-    // Use Gemini Vision to detect objects
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Analyze this image and identify all distinct fashion items/products.
+    // Build Gemini message content
+    const messageContent: any[] = [
+      {
+        type: 'text',
+        text: `Analyze this image and identify all distinct fashion items/products.
 
 For EACH visible item (garment, bag, shoes, jewelry, accessory), provide:
 1. label: one of "garment", "bag", "footwear", "accessory", "jewelry", "person"
@@ -108,12 +141,37 @@ Return ONLY valid JSON:
 }
 
 primary_index = the index of the most important/prominent item to search for.`
-              },
-              {
-                type: 'image_url',
-                image_url: { url: imageUrl }
-              }
-            ]
+      }
+    ];
+
+    // Add image content - prefer inline_data over URL
+    if (base64Data) {
+      messageContent.push({
+        type: 'image_url',
+        image_url: { 
+          url: `data:${mimeType};base64,${base64Data}` 
+        }
+      });
+    } else {
+      messageContent.push({
+        type: 'image_url',
+        image_url: { url: imageUrl }
+      });
+    }
+
+    // Use Gemini Vision to detect objects
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: messageContent
           }
         ],
         response_format: { type: 'json_object' }
