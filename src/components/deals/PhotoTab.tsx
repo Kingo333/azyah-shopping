@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, Loader2, ImageIcon } from 'lucide-react';
-import { useDealsFromImage } from '@/hooks/useDealsFromImage';
+import { useDealsUnified } from '@/hooks/useDealsUnified';
 import { useDealsMatchCatalog } from '@/hooks/useDealsMatchCatalog';
 import { PriceVerdict } from './PriceVerdict';
 import { DealResultCard } from './DealResultCard';
 import { ScanPanel } from './ScanPanel';
 import { AzyahMatchesSection } from './AzyahMatchesSection';
 import { ImageCropSelector } from './ImageCropSelector';
+import { XimilarTagsDisplay } from './XimilarTagsDisplay';
+import { ExactMatchCard } from './ExactMatchCard';
 import { cropImage, CropRect } from '@/utils/imageCropUtils';
 import { StoragePath } from '@/utils/objectDetection';
 import { cn } from '@/lib/utils';
@@ -33,7 +35,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
   // NEW: Storage path for ML detection
   const [storagePath, setStoragePath] = useState<StoragePath | null>(null);
   
-  const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
+  const { searchUnified, data, isLoading, error, reset } = useDealsUnified();
   const { matchCatalog, data: catalogData, isLoading: catalogLoading, reset: resetCatalog } = useDealsMatchCatalog();
 
   // Cleanup preview URL on unmount
@@ -155,8 +157,12 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
 
       setUploadedImageUrl(signedData.signedUrl);
 
-      // Start searching
-      await searchFromImage(signedData.signedUrl);
+      // Start searching with unified pipeline (includes Ximilar)
+      await searchUnified({
+        source: 'app_upload',
+        market: 'AE',
+        image_url: signedData.signedUrl,
+      });
       setPhotoState('results');
 
       // Schedule cleanup after 15 min
@@ -175,7 +181,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
     } finally {
       setIsUploading(false);
     }
-  }, [user, originalFile, searchFromImage]);
+  }, [user, originalFile, searchUnified]);
 
   // Handle cancel crop - go back to upload
   const handleCropCancel = useCallback(() => {
@@ -331,6 +337,22 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       {/* Results */}
       {data && !isLoading && photoState === 'results' && (
         <div className="space-y-4">
+          {/* Ximilar Tags Display */}
+          {data.ximilar_tags && (
+            <XimilarTagsDisplay
+              primary_category={data.ximilar_tags.primary_category}
+              subcategory={data.ximilar_tags.subcategory}
+              colors={data.ximilar_tags.colors}
+              patterns={data.ximilar_tags.patterns}
+              is_pattern_mode={data.ximilar_tags.is_pattern_mode}
+            />
+          )}
+
+          {/* Exact Match Card (Original Item Found) */}
+          {data.exact_match && (
+            <ExactMatchCard result={data.exact_match} />
+          )}
+
           {/* Price Verdict */}
           <PriceVerdict
             low={data.price_stats.low}
