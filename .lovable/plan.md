@@ -1,132 +1,305 @@
-# Deals Pipeline: Priority-Group Ranking (Color → Type → Pattern → Silhouette)
 
-## Status: ✅ IMPLEMENTED
 
-Last Updated: 2026-02-02
-
----
+# UI Enhancement Plan: Extension + Drawer with 30 Results
 
 ## Summary
 
-The deals-unified pipeline now uses strict priority-group ranking to ensure top 10 results respect detected color, item type, and pattern—in that order—without relying on titles and without burning API calls.
+This plan addresses three key improvements:
+1. **Update extension logo/colors** to match Azyah brand (maroon `#7A143E` instead of purple `#8B5CF6`)
+2. **Redesign extension UI** with Phia-style glassmorphism (frosted glass, clean cards)
+3. **Increase result limit to 30** for both app drawer and extension
+4. **Improve app drawer UI** with consistent premium aesthetics
 
 ---
 
-## Key Changes Implemented
+## Part 1: Extension Logo & Brand Colors
 
-### 1. Priority-Group Ranking (Group A → B → C → D)
+### Current State
+- Extension uses purple gradient (`#8B5CF6` → `#7C3AED`)
+- SVG icons show purple circle with white search icon
+- Header: `linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)`
 
-**Ranking Priority Order:**
-1. **Color** (highest priority) - `colorSubScore >= 0.55`
-2. **Item Type** - `typePass = titleMatch || silhouetteSubScore >= 0.50`
-3. **Pattern/Design** - `patternSubScore >= 0.50` (only for patterned items)
-4. **Silhouette** (fallback tie-breaker)
+### Azyah Brand Colors (from intro carousel)
+- **Primary Maroon**: `#7A143E` (HSL 343 75% 32%) - used in logo, CTAs
+- **Logo**: `/marketing/azyah-logo.png` - the stylized "A" logo
 
-**Groups:**
-- **Group A**: color_pass + type_pass + pattern_pass (if required) → Best Matches
-- **Group B**: color_pass + type_pass, but pattern unconfirmed
-- **Group C**: color_pass only, type uncertain
-- **Group D**: Everything else → More Results
+### Changes Required
 
-**Sort Logic:**
+**Files to modify:**
+
+1. **`extension/icons/icon16.svg`, `icon48.svg`, `icon128.svg`**
+   - Replace purple fill `#8B5CF6` with maroon `#7A143E`
+   - Alternatively, use the Azyah "A" letter design if we want exact logo match
+
+2. **`extension/styles.css`** - Update all purple references:
+   ```css
+   /* BEFORE */
+   .panel-header {
+     background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+   }
+   .btn-primary {
+     background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+   }
+   .preview-price { color: #8B5CF6; }
+   .price-median { color: #8B5CF6; }
+   
+   /* AFTER */
+   .panel-header {
+     background: linear-gradient(135deg, #7A143E 0%, #5C1030 100%);
+   }
+   .btn-primary {
+     background: linear-gradient(135deg, #7A143E 0%, #5C1030 100%);
+   }
+   .preview-price { color: #7A143E; }
+   .price-median { color: #7A143E; }
+   ```
+
+3. **`extension/sidepanel.html`** - Add Azyah logo image:
+   ```html
+   <!-- Replace SVG search icon with Azyah logo -->
+   <header class="panel-header">
+     <div class="logo">
+       <img src="https://azyah-shopping.lovable.app/marketing/azyah-logo.png" alt="Azyah" width="24" height="24">
+       <span>Find Better Deals</span>
+     </div>
+   </header>
+   ```
+
+---
+
+## Part 2: Extension UI Redesign (Phia-Style Glassmorphism)
+
+### Design Reference (from Phia screenshots)
+- Clean white/frosted backgrounds with subtle shadows
+- "This price is typical" status line with gradient bar
+- Compact filter pills (New | Used | Size)
+- Card-based results with thumbnail on left, price prominent
+- Minimal chrome, maximum content
+
+### New Extension Structure
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ HEADER (sticky, frosted glass)                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [A logo] Find Better Deals               [⚙️ Settings]     │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ PRODUCT PREVIEW (frosted card)                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [thumb] BRAND                                               │ │
+│ │         AED 299                        [🔍 Search Deals]   │ │
+│ │         Product title...                                   │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ DETECTED TAGS (small pills)                                     │
+│ [Abaya] [Purple] [Brown] [Printed] [✨ Pattern Mode]           │
+├─────────────────────────────────────────────────────────────────┤
+│ PRICE VERDICT (gradient bar)                                    │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ This price is: typical                                     │ │
+│ │ ═══════════════●═══════════════════                        │ │
+│ │ AED 120      AED 250         AED 450                       │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ BEST MATCH (highlighted card)                                   │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [Best ✓] [thumb] Source  AED 180                    [→]   │ │
+│ │                  Title...                                  │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│ SIMILAR DEALS (29 more cards, scrollable)                       │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [thumb] Source  AED 200                            [→]     │ │
+│ │         Title...                                           │ │
+│ ├─────────────────────────────────────────────────────────────┤ │
+│ │ [thumb] Source  AED 220                            [→]     │ │
+│ │         Title...                                           │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│ ... (scroll for more)                                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
-1. Sort by group: A first, D last
-2. Within same group: sort by final_score DESC
-```
 
-### 2. Cheap Pre-Filters (NO LLM calls)
+### CSS Changes (`extension/styles.css`)
 
-- **Color Family Bucketing**: Maps detected colors to families (purple_family, gold_family, etc.)
-- **Cheap Color Check**: Uses title to bucket as 'likely', 'unknown', or 'unlikely'
-- **Cheap Type Detection**: Detects item type (long/top/bottom/accessory) from category
+**A) Glassmorphism Base**
+```css
+body {
+  background: rgba(248, 249, 250, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
 
-### 3. Non-Reranked Items Handling
+.panel-container {
+  background: transparent;
+}
 
-Per audit tweak: Items that weren't reranked get `color_pass = false` automatically and are pushed below reranked candidates.
-
-### 4. ROI Overlay Cleanup
-
-Removed rendering of non-selected bounding boxes in `ImageCropSelector.tsx`. Only the active selection box is now visible.
-
-### 5. Enhanced Telemetry
-
-New debug metrics:
-- `returned_top10_color_pass_n` - Target: >= 7
-- `returned_top10_type_pass_n` - Target: >= 6
-- `returned_top10_pattern_pass_n` - For patterned items
-- `top10_has_unreranked_n` - Target: 0 or 1
-- `group_a_count`, `group_b_count`, `group_c_count`, `group_d_count`
-- `cheap_color_likely_n`, `cheap_color_unlikely_n`, `cheap_type_matched_n`
-
----
-
-## Acceptance Criteria
-
-| Requirement | Target | Verification |
-|-------------|--------|--------------|
-| Top 10 respects detected color | `returned_top10_color_pass_n >= 7` | Check debug response |
-| Top 10 respects item type | `returned_top10_type_pass_n >= 6` | Check debug response |
-| No unreranked in top 10 | `top10_has_unreranked_n <= 1` | Check debug response |
-| Pattern required when detected | `returned_top10_pattern_pass_n >= 5` | For patterned items |
-| UI shows only selected box | No floating markers | Visual check |
-
----
-
-## Files Modified
-
-| File | Changes |
-|------|---------|
-| `supabase/functions/deals-unified/index.ts` | Priority-group ranking, cheap filters, enhanced debug |
-| `src/components/deals/ImageCropSelector.tsx` | Removed other box markers |
-| `src/components/deals/PhotoTab.tsx` | Passes description_hint |
-| `src/hooks/useDealsUnified.ts` | Added description_hint param |
-
----
-
-## Test Matrix
-
-| Test Case | Expected Outcome |
-|-----------|------------------|
-| Purple/brown garment | Top 10 dominated by purple/brown (Group A) |
-| Plain black dress | Top 10 stays black/charcoal |
-| Patterned abaya | Pattern mode triggers, Group A requires pattern_pass |
-| Screenshot with cluttered background | Only main garment box shown |
-
----
-
-## Future Improvements (Not Yet Implemented)
-
-1. **Multi-Market Expansion**: Query AE + US + UK when color-pass candidates < 5
-2. **Ximilar 403 Lockout**: 24-hour skip after plan limit error (system_flags table)
-3. **Adaptive Rerank Budget**: 25 default → extend to 40 if needed
-4. **Server-side Thumbnail Color Analysis**: HSV histogram for true cheap color filtering
-
----
-
-## Debug Payload Example
-
-```json
-{
-  "counts": {
-    "group_a_count": 12,
-    "group_b_count": 5,
-    "group_c_count": 8,
-    "group_d_count": 15,
-    "returned_top10_color_pass_n": 8,
-    "returned_top10_type_pass_n": 7,
-    "top10_has_unreranked_n": 0
-  }
+.panel-header {
+  background: rgba(122, 20, 62, 0.95);  /* Maroon with transparency */
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 ```
 
+**B) Frosted Cards**
+```css
+.deal-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+}
+
+.deal-card:hover {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+```
+
+**C) Price Verdict Bar (Phia-style)**
+```css
+.price-verdict {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.price-bar-visual {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    #22c55e 0%,      /* Low - green */
+    #fbbf24 50%,     /* Median - amber */
+    #ef4444 100%     /* High - red */
+  );
+}
+```
+
+**D) Remove Emojis, Use Icons**
+Replace emoji section headers with clean text:
+- `💰 Price Comparison` → `Price Comparison`
+- `📦 Similar Deals` → `Similar Deals`
+- `✓ Original Found` → Keep checkmark icon
+
 ---
 
-## Previous Plan: Wire Dashboard Photo Upload to deals-unified
+## Part 3: Increase Result Limit to 30
 
-✅ **COMPLETED** - The dashboard photo upload now uses the deals-unified pipeline with Ximilar fashion tagging.
+### Current Limits
+- **App (PhotoTab)**: `slice(0, 15)` at line 380
+- **Extension (sidepanel.js)**: `slice(1, 15)` at line 233
 
-See implementation in:
-- `src/hooks/useDealsUnified.ts`
-- `src/components/deals/PhotoTab.tsx`
-- `src/components/deals/XimilarTagsDisplay.tsx`
-- `src/components/deals/ExactMatchCard.tsx`
+### Changes Required
+
+**File: `src/components/deals/PhotoTab.tsx`**
+```typescript
+// Line 380: Change from 15 to 30
+{data.shopping_results.slice(0, 30).map((result, index) => (
+```
+
+**File: `extension/sidepanel.js`**
+```javascript
+// Line 233: Change from 15 to 30
+const otherDeals = sortedResults.slice(1, 30);
+```
+
+**File: `supabase/functions/deals-unified/index.ts`**
+- Backend already returns up to 40 results (rerank limit)
+- No backend changes needed for 30 results
+
+---
+
+## Part 4: App Drawer UI Improvements
+
+### Current State (DealsDrawer.tsx)
+Already has good glassmorphism:
+- `bg-white/85 backdrop-blur-2xl`
+- `rounded-t-[28px]`
+- Frosted tab pills
+
+### Enhancements
+
+**A) Update header icon to match Azyah brand**
+
+**File: `src/components/deals/DealsDrawer.tsx`**
+```tsx
+// Line 52-55: Replace Tag icon with Azyah logo
+<div className="flex items-center justify-center gap-2">
+  <img 
+    src="/marketing/azyah-logo.png" 
+    alt="Azyah" 
+    className="w-7 h-7 object-contain"
+  />
+  <DrawerTitle className="font-serif text-lg" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+    Find Better Deals
+  </DrawerTitle>
+</div>
+```
+
+**B) Update PhotoTab result limit**
+
+Already covered in Part 3.
+
+**C) Consistent card styling**
+
+DealResultCard already has excellent glassmorphism - no changes needed.
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `extension/icons/icon16.svg` | Change fill from `#8B5CF6` to `#7A143E` |
+| `extension/icons/icon48.svg` | Change fill from `#8B5CF6` to `#7A143E` |
+| `extension/icons/icon128.svg` | Change fill from `#8B5CF6` to `#7A143E` |
+| `extension/sidepanel.html` | Add Azyah logo image in header |
+| `extension/styles.css` | Glassmorphism overhaul + maroon brand colors |
+| `extension/sidepanel.js` | Change `slice(1, 15)` to `slice(1, 30)` |
+| `src/components/deals/DealsDrawer.tsx` | Replace Tag icon with Azyah logo |
+| `src/components/deals/PhotoTab.tsx` | Change `slice(0, 15)` to `slice(0, 30)` |
+
+---
+
+## Visual Before/After
+
+### Extension Header
+```text
+BEFORE:                              AFTER:
+┌──────────────────────────┐        ┌──────────────────────────┐
+│ 🔍 Find Better Deals     │        │ [A] Find Better Deals    │
+│ (purple gradient)        │        │ (maroon gradient + glass)│
+└──────────────────────────┘        └──────────────────────────┘
+```
+
+### Extension Cards
+```text
+BEFORE:                              AFTER:
+┌──────────────────────────┐        ┌──────────────────────────┐
+│ Solid gray background    │        │ Frosted glass            │
+│ No blur effect           │        │ backdrop-blur: 12px      │
+│ 1px solid border         │        │ Soft shadow + glow       │
+└──────────────────────────┘        └──────────────────────────┘
+```
+
+### Result Count
+```text
+BEFORE: 15 deals shown              AFTER: 30 deals shown
+```
+
+---
+
+## Technical Notes
+
+1. **Logo Loading**: Using absolute URL for extension (`https://azyah-shopping.lovable.app/marketing/azyah-logo.png`) since extension can't access local files from web resources easily
+
+2. **Glassmorphism Browser Support**: `backdrop-filter` works in Chrome 76+ which covers all extension users
+
+3. **No Backend Changes**: Result limit increase is frontend-only since backend already returns 30+ candidates
+
+4. **Performance**: 30 cards is still lightweight - no virtualization needed for this count
+
