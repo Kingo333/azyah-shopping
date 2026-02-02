@@ -1,402 +1,342 @@
 
-# Browser Extension Implementation Plan — "Find Better Deals" (Phia-Style)
 
-## Executive Summary
+# Wire Dashboard Photo Upload to `deals-unified` with Ximilar
 
-Build a Chrome extension (MV3) that provides a Phia-like shopping experience: when a user is on any product page, they can click a button to extract the product image and find visually similar deals using the existing Supabase backend infrastructure.
+## Summary
 
----
-
-## Part 1: Audit of Existing Assets
-
-### Assets We Will Reuse
-
-| Asset | Purpose | Status |
-|-------|---------|--------|
-| `deals-from-image` | Takes an image URL → returns shopping deals with visual reranking | ✅ Ready (accepts signed HTTPS URLs) |
-| `deals-from-context` | Takes ProductContext payload → runs Lens + shopping search | ✅ Ready (used by WebView flow) |
-| `visual-rerank` | Reranks results with granular sub-scores (pattern/silhouette/color) | ✅ Ready (pattern mode implemented) |
-| `detect-objects` | Auto-detects product ROI with Gemini Vision | ✅ Ready (accepts bucket/path or HTTPS URL) |
-| `deals-match-catalog` | Finds "Similar on Azyah" catalog matches | ✅ Ready |
-| `ProductContext` interface | Standardized extraction payload schema | ✅ Ready (`src/types/ProductContext.ts`) |
-| `webview-extractor.ts` | JavaScript extraction logic (JSON-LD → OG → DOM) | ✅ Reusable for extension |
-
-### Gaps Requiring Backend Changes
-
-| Gap | Problem | Solution |
-|-----|---------|----------|
-| Image URL download | Extension sends page image URLs that may be blocked from Lens | Backend downloads image server-side and uploads to Storage |
-| Authentication | Extensions need API key auth, not JWT | Add API key auth mode to edge functions |
-| CORS for extension | Extension calls from `chrome-extension://` origin | Already handled with `Access-Control-Allow-Origin: *` |
+The dashboard photo upload (`PhotoTab.tsx`) currently calls the legacy `deals-from-image` endpoint, which uses text-based heuristics for color/pattern detection. This plan wires it to use the new `deals-unified` pipeline with Ximilar fashion tagging for significantly better color and pattern accuracy.
 
 ---
 
-## Part 2: Extension Architecture
+## Current State vs Target State
 
-### 2.1 File Structure
-
-```text
-extension/
-├── manifest.json           # MV3 manifest
-├── service_worker.js       # Background script (API calls)
-├── content_script.js       # Injected into product pages
-├── sidepanel.html          # Side panel UI
-├── sidepanel.js            # Side panel logic
-├── styles.css              # Side panel styles
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── lib/
-    └── extractor.js        # Product extraction (from webview-extractor.ts)
-```
-
-### 2.2 Manifest Configuration (MV3)
-
-```text
-- Permissions: activeTab, scripting, storage, sidePanel
-- Host permissions: <all_urls> (for image extraction)
-- Content scripts: Inject on all product pages
-- Side panel: Primary UI (Chrome 116+)
-```
-
-### 2.3 Data Flow
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ EXTENSION FLOW                                                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1. User visits product page                                                │
-│     ↓                                                                       │
-│  2. Content script extracts product info:                                   │
-│     • JSON-LD Product schema (highest priority)                             │
-│     • OpenGraph meta tags                                                   │
-│     • DOM fallback (title, price, main image)                               │
-│     ↓                                                                       │
-│  3. User clicks "Find Better Deals" button                                  │
-│     ↓                                                                       │
-│  4. Side panel opens showing extracted product preview                      │
-│     ↓                                                                       │
-│  5. Service worker sends to backend:                                        │
-│     POST /deals-from-context                                                │
-│     {                                                                       │
-│       "context": {                                                          │
-│         "page_url": "https://...",                                          │
-│         "extracted_from": "chrome_ext",                                     │
-│         "main_image_url": "https://...",                                    │
-│         "title": "...",                                                     │
-│         "price": 99.99,                                                     │
-│         "category_hint": "dress"                                            │
-│       }                                                                     │
-│     }                                                                       │
-│     ↓                                                                       │
-│  6. Backend:                                                                │
-│     a) Downloads image server-side (avoids CORS/hotlinking)                 │
-│     b) Stores in deals-uploads bucket                                       │
-│     c) Runs Google Lens with signed URL                                     │
-│     d) Runs shopping search with query pack                                 │
-│     e) Runs visual rerank with pattern mode                                 │
-│     f) Runs deals-match-catalog                                             │
-│     ↓                                                                       │
-│  7. Side panel displays results:                                            │
-│     • Price verdict                                                         │
-│     • Best match (highlighted)                                              │
-│     • Similar deals list                                                    │
-│     • Similar on Azyah section                                              │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+| Aspect | Current (deals-from-image) | Target (deals-unified) |
+|--------|---------------------------|------------------------|
+| Color detection | Keyword matching from Lens titles | Ximilar dominant color extraction |
+| Pattern detection | Keyword heuristics | Ximilar pattern/design classification |
+| Category | Text matching | Ximilar fashion category API |
+| Exact match | Not attempted | Google Lens `exact_matches` first |
+| Chip looping | Not implemented | Top 2 Lens chips explored |
+| Response | `shopping_results[]` only | `exact_match` + `shopping_results[]` + `ximilar_tags` |
 
 ---
 
-## Part 3: Implementation Details
+## Implementation Steps
 
-### Phase 1: Core Extension (MVP)
+### Step 1: Create New Hook `useDealsUnified`
 
-#### 3.1 Content Script — Product Extraction
+Create a new hook that matches the `deals-unified` API contract:
 
-Reuse the extraction logic from `src/lib/webview-extractor.ts`:
+**File:** `src/hooks/useDealsUnified.ts`
 
-**Priority order:**
-1. **JSON-LD Product** — Parse `<script type="application/ld+json">` for `@type: "Product"`
-2. **OpenGraph** — `og:title`, `og:image`, `og:site_name`
-3. **DOM fallback** — Common selectors for title, price, main image
-
-**Output:**
 ```text
+Input interface:
 {
-  pageUrl: string,
-  title: string | null,
-  priceText: string | null,
-  currencyGuess: string | null,
-  imageUrl: string | null,
-  allCandidateImages: string[],
-  extractionConfidence: 'high' | 'medium' | 'low'
+  source: 'app_upload'
+  market: 'AE' | 'US' | 'UK'
+  image_url: string (signed Supabase URL)
+}
+
+Output interface:
+{
+  success: boolean
+  exact_match?: { link, title, source, thumbnail, price }
+  shopping_results: ShoppingResult[]
+  visual_matches: VisualMatch[]
+  price_stats: PriceStats
+  deals_found: number
+  ximilar_tags?: {
+    primary_category: string
+    subcategory: string
+    colors: string[]
+    patterns: string[]
+    is_pattern_mode: boolean
+  }
+  debug?: DebugInfo
 }
 ```
 
-#### 3.2 Service Worker — API Communication
+Key differences from `useDealsFromImage`:
+- Uses `source: 'app_upload'` instead of just `imageUrl`
+- Returns `ximilar_tags` for UI display
+- Returns `exact_match` separately from `shopping_results`
 
-**Authentication strategy:**
-- For authenticated users: Use Supabase access token from storage
-- For guest users: Prompt to sign in (link to Azyah app)
+### Step 2: Update `PhotoTab.tsx`
 
-**API calls:**
-1. `deals-from-context` — Primary endpoint for extension flow
-2. `deals-match-catalog` — Catalog similarity (separate call for async)
+Replace the `useDealsFromImage` hook with `useDealsUnified`:
 
-#### 3.3 Side Panel UI
-
-**Layout:**
 ```text
-┌────────────────────────────────────────┐
-│  🔍 Find Better Deals                  │
-├────────────────────────────────────────┤
-│  [Product Image]  │ Title              │
-│                   │ Price: AED 299     │
-│                   │ Source: ASOS       │
-├────────────────────────────────────────┤
-│  [Search Deals]  [Select Image ▼]      │
-├────────────────────────────────────────┤
-│  💰 Price Verdict                      │
-│  ├─ Low: AED 150                       │
-│  ├─ Median: AED 280                    │
-│  └─ High: AED 450                      │
-├────────────────────────────────────────┤
-│  ⭐ Best Match                         │
-│  └─ [Card: Image | Title | Price]      │
-├────────────────────────────────────────┤
-│  📦 Similar Deals                      │
-│  ├─ [Card 1]                           │
-│  ├─ [Card 2]                           │
-│  └─ [Card 3]                           │
-├────────────────────────────────────────┤
-│  🏷️ Similar on Azyah                   │
-│  └─ [Horizontal scroll cards]          │
-└────────────────────────────────────────┘
+Current flow:
+  handleCropConfirm → upload crop → searchFromImage(signedUrl)
+
+New flow:
+  handleCropConfirm → upload crop → searchUnified({ 
+    source: 'app_upload',
+    market: 'AE',
+    image_url: signedUrl 
+  })
 ```
 
-**States:**
-- `idle` — Waiting for user action
-- `extracting` — Running extraction
-- `searching` — Calling API
-- `results` — Showing deals
-- `error` — Show error with retry option
+Changes required:
+1. Import `useDealsUnified` instead of `useDealsFromImage`
+2. Update function call in `handleCropConfirm`
+3. Update data consumption to handle new response shape
 
-#### 3.4 Image Selection Mode
+### Step 3: Add Ximilar Tags Display Component
 
-When auto-detection fails or user wants a different image:
+Create a reusable component to show detected fashion attributes:
 
-1. User clicks "Select Image" button
-2. Content script overlays page with selector mode
-3. All `<img>` elements get highlight-on-hover
-4. User clicks desired image
-5. Overlay closes, side panel updates with new image
-
----
-
-### Phase 2: Backend Changes
-
-#### 3.5 Add Image Download Helper to `deals-from-context`
-
-**New logic in `deals-from-context`:**
+**File:** `src/components/deals/XimilarTagsDisplay.tsx`
 
 ```text
-if (context.main_image_url && context.main_image_url.startsWith('https://')) {
-  // Download image server-side to avoid hotlinking blocks
-  const imageBlob = await fetch(context.main_image_url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AzyahBot/1.0)' }
-  });
-  
-  // Upload to deals-uploads bucket
-  const path = `ext/${userId}/${uuid}.jpg`;
-  await supabase.storage.from('deals-uploads').upload(path, imageBlob);
-  
-  // Generate signed URL for Lens
-  const signedUrl = await supabase.storage.from('deals-uploads').createSignedUrl(path, 900);
-  
-  // Use signed URL for Lens search
-  lensSearchUrl = signedUrl;
-}
-```
-
-#### 3.6 Add Debug Fields to Response
-
-```text
+Props:
 {
-  "success": true,
-  "debug": {
-    "used_image_url": "https://...(signed URL)",
-    "image_downloaded": true,
-    "roi_used": false,
-    "visual_rerank_applied": true,
-    "pattern_mode": true,
-    "filtered_count": 5,
-    "top_scores": [
-      { "link": "...", "textScore": 0.32, "visual": 0.78, "final": 0.69 }
-    ]
+  category?: string
+  subcategory?: string
+  colors?: string[]
+  patterns?: string[]
+  isPatternMode?: boolean
+}
+
+Renders:
+┌────────────────────────────────────────────┐
+│ 🏷️ Detected: Dress                        │
+│ [Black] [Gold] [Printed]                   │
+└────────────────────────────────────────────┘
+```
+
+Visual design:
+- Small pills/chips for colors and patterns
+- Color pills have colored dot indicator
+- Pattern mode shows "✨ Pattern Mode" badge
+
+### Step 4: Add "Exact Match" Section
+
+When `exact_match` is returned, show it prominently before alternatives:
+
+**Update:** `PhotoTab.tsx` results section
+
+```text
+{data.exact_match && (
+  <ExactMatchCard 
+    result={data.exact_match}
+    onOpen={...}
+  />
+)}
+```
+
+Design:
+- Gold/highlighted border
+- "Original Item Found" badge
+- Shown above the regular results list
+
+### Step 5: Update DealResultCard for Sub-Scores (Optional Enhancement)
+
+If `sub_scores` are present, show visual match quality:
+
+```text
+Props addition:
+{
+  sub_scores?: {
+    pattern: number
+    silhouette: number
+    color: number
   }
 }
+
+Renders tiny bar or percentage next to each result
 ```
 
----
+### Step 6: Remove Separate Catalog Match Call
 
-### Phase 3: Quality & Polish
+Currently `PhotoTab` makes a separate `matchCatalog()` call after receiving results. The `deals-unified` endpoint already handles this internally (or we can add it).
 
-#### 3.7 Screenshot Fallback
-
-When image URL extraction fails:
-
-1. User clicks "Capture Screenshot"
-2. Extension captures visible tab region
-3. User draws selection box on screenshot
-4. Cropped image is converted to base64
-5. Upload to `deals-uploads` bucket
-6. Proceed with normal search flow
-
-#### 3.8 Rate Limiting & Caching
-
-Reuse existing infrastructure:
-- `deals_rate_limit` table — 10 req/min/user
-- `deals_cache` table — 30-minute cache
-
-#### 3.9 Error Handling
-
-| Scenario | User Message |
-|----------|--------------|
-| No product detected | "Couldn't detect a product. Try selecting an image manually." |
-| Image blocked | "This site blocks image access. Try using screenshot capture." |
-| Rate limited | "You've searched a lot! Try again in 1 minute." |
-| API error | "Something went wrong. Please try again." |
-| Not logged in | "Sign in to Azyah to find deals." |
+Check if `deals-unified` returns Azyah catalog matches, otherwise keep the existing flow.
 
 ---
 
-## Part 4: Files to Create/Modify
+## Files to Create
 
-### New Files (Extension)
+| File | Purpose |
+|------|---------|
+| `src/hooks/useDealsUnified.ts` | Hook to call `deals-unified` endpoint |
+| `src/components/deals/XimilarTagsDisplay.tsx` | Display detected fashion attributes |
+| `src/components/deals/ExactMatchCard.tsx` | Highlighted card for exact match |
 
-| File | Description |
-|------|-------------|
-| `extension/manifest.json` | Chrome MV3 manifest |
-| `extension/service_worker.js` | Background script for API calls |
-| `extension/content_script.js` | Product extraction + image selector |
-| `extension/sidepanel.html` | Side panel HTML |
-| `extension/sidepanel.js` | Side panel JavaScript |
-| `extension/styles.css` | Side panel styling |
-| `extension/lib/extractor.js` | Extraction logic (ported from TS) |
-| `extension/icons/*` | Extension icons |
-
-### Modified Files (Backend)
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/deals-from-context/index.ts` | Add server-side image download |
-| `supabase/config.toml` | (no changes needed — JWT verification already configured) |
+| `src/components/deals/PhotoTab.tsx` | Replace hook, update data flow, add Ximilar tags display |
+| `src/components/deals/DealResultCard.tsx` | (Optional) Add sub-scores display |
 
 ---
 
-## Part 5: Technical Details
+## Type Definitions
 
-### 5.1 Content Script Injection
-
-```text
-// manifest.json content_scripts section
-"content_scripts": [{
-  "matches": ["<all_urls>"],
-  "js": ["content_script.js"],
-  "run_at": "document_idle"
-}]
-```
-
-### 5.2 Side Panel Registration
+Add to existing types or create new file:
 
 ```text
-// manifest.json side_panel section
-"side_panel": {
-  "default_path": "sidepanel.html"
+interface UnifiedDealsResult {
+  success: boolean;
+  exact_match?: ExactMatch;
+  shopping_results: ShoppingResult[];
+  visual_matches: VisualMatch[];
+  price_stats: PriceStats;
+  deals_found: number;
+  ximilar_tags?: XimilarTagsResponse;
+  debug?: DebugInfo;
 }
-```
 
-### 5.3 Service Worker Message Handling
+interface XimilarTagsResponse {
+  primary_category?: string;
+  subcategory?: string;
+  colors?: string[];
+  patterns?: string[];
+  is_pattern_mode?: boolean;
+}
 
-```text
-// Messages from content script → service worker
-- EXTRACT_PRODUCT: { tabId } → Run extraction
-- SEARCH_DEALS: { context } → Call backend
-- GET_AUTH_STATUS: {} → Check if user is logged in
-
-// Messages from side panel → service worker
-- SEARCH_DEALS: { context } → Call backend
-- SELECT_IMAGE: { tabId } → Activate image selector mode
-- CAPTURE_SCREENSHOT: { tabId } → Start screenshot capture
-```
-
-### 5.4 API Call Structure
-
-```text
-POST https://klwolsopucgswhtdlsps.supabase.co/functions/v1/deals-from-context
-Headers:
-  Authorization: Bearer <user_access_token>
-  Content-Type: application/json
-
-Body:
-{
-  "context": {
-    "page_url": "https://www.asos.com/product/...",
-    "extracted_from": "chrome_ext",
-    "title": "ASOS DESIGN midi dress in black",
-    "brand": "ASOS",
-    "price": 45.00,
-    "currency": "USD",
-    "main_image_url": "https://images.asos-media.com/...",
-    "category_hint": "dress",
-    "extraction_confidence": "high"
-  }
+interface ExactMatch {
+  link: string;
+  title: string;
+  source: string;
+  thumbnail?: string;
+  price?: string;
+  confidence?: number;
 }
 ```
 
 ---
 
-## Part 6: Definition of Done
+## Data Flow Diagram
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                    PHOTO UPLOAD FLOW                         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  User drops image                                            │
+│       ↓                                                      │
+│  Upload to deals-uploads bucket                              │
+│       ↓                                                      │
+│  Show crop selector (detect-objects for ROI)                 │
+│       ↓                                                      │
+│  User confirms crop                                          │
+│       ↓                                                      │
+│  Upload cropped image → get signed URL                       │
+│       ↓                                                      │
+│  Call deals-unified:                                         │
+│  {                                                           │
+│    source: "app_upload",                                     │
+│    market: "AE",                                             │
+│    image_url: signedUrl                                      │
+│  }                                                           │
+│       ↓                                                      │
+│  ┌─────────────────────────────────────┐                     │
+│  │  deals-unified backend:             │                     │
+│  │  1. Ximilar tagging                 │                     │
+│  │  2. Google Lens exact + visual      │                     │
+│  │  3. Chip looping (max 2)            │                     │
+│  │  4. Google Shopping with hints      │                     │
+│  │  5. Visual rerank (Gemini)          │                     │
+│  │  6. Soft filtering + scoring        │                     │
+│  └─────────────────────────────────────┘                     │
+│       ↓                                                      │
+│  Response:                                                   │
+│  {                                                           │
+│    exact_match: {...},                                       │
+│    shopping_results: [...],                                  │
+│    ximilar_tags: {                                           │
+│      category: "dress",                                      │
+│      colors: ["black", "gold"],                              │
+│      patterns: ["printed"]                                   │
+│    },                                                        │
+│    price_stats: {...}                                        │
+│  }                                                           │
+│       ↓                                                      │
+│  UI renders:                                                 │
+│  - Ximilar tags (color/pattern pills)                        │
+│  - Exact match card (if found)                               │
+│  - Price verdict                                             │
+│  - Ranked results                                            │
+│  - Similar on Azyah                                          │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Backward Compatibility
+
+- Keep `useDealsFromImage` hook for any other components that might use it
+- The new hook is additive, not a replacement
+- `deals-from-image` endpoint remains functional as fallback
+
+---
+
+## Technical Details
+
+### Hook Implementation Pattern
+
+The new hook follows the same pattern as existing hooks:
+
+```text
+export function useDealsUnified() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<UnifiedDealsResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const searchUnified = useCallback(async (params: {
+    source: 'app_upload';
+    market?: 'AE' | 'US' | 'UK';
+    image_url: string;
+  }) => {
+    setIsLoading(true);
+    // ... call supabase.functions.invoke('deals-unified', { body: params })
+  }, []);
+
+  const reset = useCallback(() => { ... }, []);
+
+  return { searchUnified, data, isLoading, error, reset };
+}
+```
+
+### PhotoTab Changes Summary
+
+```text
+- import { useDealsFromImage } from '@/hooks/useDealsFromImage';
++ import { useDealsUnified } from '@/hooks/useDealsUnified';
+
+- const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
++ const { searchUnified, data, isLoading, error, reset } = useDealsUnified();
+
+// In handleCropConfirm:
+- await searchFromImage(signedData.signedUrl);
++ await searchUnified({ 
++   source: 'app_upload',
++   market: 'AE',
++   image_url: signedData.signedUrl 
++ });
+
+// In results section, add:
++ {data?.ximilar_tags && (
++   <XimilarTagsDisplay {...data.ximilar_tags} />
++ )}
++ {data?.exact_match && (
++   <ExactMatchCard result={data.exact_match} />
++ )}
+```
+
+---
+
+## Definition of Done
 
 | Requirement | Acceptance Criteria |
 |-------------|---------------------|
-| Button appears | Floating button visible on product pages (configurable sites) |
-| Product extraction | Correctly extracts title, image, price from JSON-LD/OG/DOM |
-| Search works | Returns visually similar deals (pattern/color matching) |
-| Results display | Side panel shows price verdict, best match, deals list |
-| Similar on Azyah | Shows catalog matches when available |
-| Image selector | User can manually select any image on page |
-| Screenshot fallback | Works when image URLs are blocked |
-| Authentication | Prompts sign-in for unauthenticated users |
-| Error handling | Graceful fallbacks with actionable messages |
+| Hook created | `useDealsUnified` calls `deals-unified` endpoint correctly |
+| PhotoTab updated | Uses new hook, shows results from unified pipeline |
+| Ximilar tags shown | Color/pattern pills visible when tags detected |
+| Exact match displayed | Gold-highlighted card when original found |
+| Pattern mode works | Pattern garments show better pattern-matched results |
+| No regressions | Existing features (crop selector, price verdict, catalog match) still work |
 
----
-
-## Part 7: Implementation Order
-
-**Phase 1 (Core MVP) — Estimated: 1-2 days**
-1. Create extension folder structure and manifest
-2. Port extraction logic from webview-extractor.ts
-3. Build content script with extraction + floating button
-4. Build side panel UI (static mockup first)
-5. Implement service worker API calls
-6. Connect all pieces end-to-end
-
-**Phase 2 (Backend Support) — Estimated: 1 day**
-1. Add server-side image download to deals-from-context
-2. Add debug fields to response
-3. Test with various retailer sites
-
-**Phase 3 (Polish) — Estimated: 1-2 days**
-1. Implement image selector mode
-2. Implement screenshot capture fallback
-3. Add loading states and error handling
-4. Style refinements
-5. Cross-browser testing
-
-**Phase 4 (Safari Port) — Future**
-1. Convert to Safari Web Extension
-2. Submit to App Store
