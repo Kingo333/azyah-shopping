@@ -20,7 +20,11 @@ interface ImageCropSelectorProps {
   imageUrl: string;
   // NEW: Optional storage path for reliable ML detection
   storagePath?: StoragePath;
-  onConfirm: (crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[]) => void;
+  // Updated: Pass description from detected box for color/pattern hints
+  onConfirm: (
+    crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[],
+    description?: string
+  ) => void;
   onCancel: () => void;
   isProcessing?: boolean;
 }
@@ -196,7 +200,7 @@ export function ImageCropSelector({
     setManualRect(newRect);
   }, [isResizing, dragStart, displayDimensions, initialRect]);
 
-  // Handle confirm - generate both garment and pattern crops
+  // Handle confirm - generate both garment and pattern crops + pass description
   const handleConfirm = useCallback(() => {
     const crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[] = [
       { type: 'garment', rect: cropRect },
@@ -214,8 +218,10 @@ export function ImageCropSelector({
     const clampedPatternRect = clampCropRect(patternRect);
     crops.push({ type: 'pattern', rect: clampedPatternRect });
     
-    onConfirm(crops);
-  }, [cropRect, onConfirm]);
+    // Pass the detected description for color/pattern hints (from Gemini detection)
+    const description = candidateBoxes[selectedBoxIndex]?.description;
+    onConfirm(crops, description);
+  }, [cropRect, onConfirm, candidateBoxes, selectedBoxIndex]);
 
   // Calculate pixel positions for overlays
   const cropPixels = cropRectToPixels(cropRect, displayDimensions.width, displayDimensions.height);

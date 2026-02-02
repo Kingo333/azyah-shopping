@@ -115,7 +115,8 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
 
   // Handle crop confirmation - upload cropped image and search
   const handleCropConfirm = useCallback(async (
-    crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[]
+    crops: { type: 'garment' | 'pattern' | 'full'; rect: CropRect }[],
+    description?: string  // NEW: Detected description from Gemini (e.g., "long purple and brown abaya")
   ) => {
     if (!originalFile || !user) return;
 
@@ -158,10 +159,12 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       setUploadedImageUrl(signedData.signedUrl);
 
       // Start searching with unified pipeline (includes Ximilar)
+      // Pass description_hint from ROI detection for better color/pattern hints
       await searchUnified({
         source: 'app_upload',
         market: 'AE',
         image_url: signedData.signedUrl,
+        description_hint: description,  // NEW: Forward detected description
       });
       setPhotoState('results');
 
