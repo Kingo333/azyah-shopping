@@ -230,7 +230,7 @@ function displayResults(result) {
   }
   
   // Other deals
-  const otherDeals = sortedResults.slice(1, 10);
+  const otherDeals = sortedResults.slice(1, 15);
   if (otherDeals.length > 0) {
     elements.dealsList.innerHTML = otherDeals.map(deal => createDealCard(deal)).join('');
   } else {

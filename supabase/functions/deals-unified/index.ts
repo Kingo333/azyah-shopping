@@ -115,6 +115,16 @@ interface DebugInfo {
     filtered_count: number;
     min_thresholds_used: { visual: number; pattern: number };
   };
+  // Stage-by-stage candidate counts for debugging "why only 10 results"
+  counts: {
+    lens_visual_in: number;
+    lens_visual_after_domain_filter: number;
+    shopping_raw_in: number;
+    after_dedupe: number;
+    with_valid_thumbnail: number;
+    after_rerank: number;
+    final_returned: number;
+  };
   filters: {
     before_filter: number;
     dropped_by_category_gate: number;
@@ -122,7 +132,7 @@ interface DebugInfo {
     dropped_by_visual_threshold: number;
     after_filter: number;
   };
-  top5_scores: Array<{ url: string; visual: number; tag_agree: number; final: number }>;
+  top5_scores: Array<{ url: string; visual: number; color: number; tag_agree: number; final: number }>;
   timing_ms: {
     image_normalize: number;
     ximilar: number;
@@ -652,6 +662,7 @@ serve(async (req) => {
     },
     serpapi: { lens_ran: false, exact_count: 0, visual_count: 0, chips_used: 0, shopping_queries: [], shopping_result_count: 0, market: 'AE' },
     rerank: { sent_count: 0, scored_count: 0, filtered_count: 0, min_thresholds_used: { visual: 0.40, pattern: 0.50 } },
+    counts: { lens_visual_in: 0, lens_visual_after_domain_filter: 0, shopping_raw_in: 0, after_dedupe: 0, with_valid_thumbnail: 0, after_rerank: 0, final_returned: 0 },
     filters: { before_filter: 0, dropped_by_category_gate: 0, dropped_by_color_gate: 0, dropped_by_visual_threshold: 0, after_filter: 0 },
     top5_scores: [],
     timing_ms: { image_normalize: 0, ximilar: 0, lens: 0, chips: 0, shopping: 0, rerank: 0, total: 0 },
@@ -1125,6 +1136,8 @@ serve(async (req) => {
 
     debug.timing_ms.shopping = Date.now() - shoppingStart;
     debug.filters.before_filter = allShoppingResults.length;
+    debug.counts.shopping_raw_in = debug.serpapi.shopping_result_count;
+    debug.counts.after_dedupe = allShoppingResults.length;
 
     // ============ STAGE 4: Visual Rerank ============
     const rerankStart = Date.now();
@@ -1135,15 +1148,20 @@ serve(async (req) => {
     const minPatternThreshold = isPatternMode ? 0.50 : 0;
     debug.rerank.min_thresholds_used = { visual: minVisualThreshold, pattern: minPatternThreshold };
 
+    // Track valid thumbnails for debugging
+    const validThumbnailResults = allShoppingResults.filter(r => r.thumbnail && r.thumbnail.startsWith('http'));
+    debug.counts.with_valid_thumbnail = validThumbnailResults.length;
+
     if (allShoppingResults.length >= 5 && LOVABLE_API_KEY) {
-      console.log(`[deals-unified] ${traceId} Running visual rerank on ${Math.min(allShoppingResults.length, 30)} results, patternMode=${isPatternMode}...`);
+      // Increase rerank coverage to 40 (was 30) to have more candidates after filtering
+      const RERANK_LIMIT = 40;
+      console.log(`[deals-unified] ${traceId} Running visual rerank on ${Math.min(validThumbnailResults.length, RERANK_LIMIT)} results, patternMode=${isPatternMode}...`);
       
       try {
-        const topResults = allShoppingResults.slice(0, 30);
-        const validThumbnails = topResults.filter(r => r.thumbnail && r.thumbnail.startsWith('http'));
-        debug.rerank.sent_count = validThumbnails.length;
+        const topResults = validThumbnailResults.slice(0, RERANK_LIMIT);
+        debug.rerank.sent_count = topResults.length;
 
-        if (validThumbnails.length >= 5) {
+        if (topResults.length >= 5) {
           const rerankResponse = await fetch(`${supabaseUrl}/functions/v1/visual-rerank`, {
             method: 'POST',
             headers: {
@@ -1153,7 +1171,7 @@ serve(async (req) => {
             body: JSON.stringify({
               queryImageUrl: signedImageUrl,
               isPatternMode,
-              results: validThumbnails.map(r => ({
+              results: topResults.map(r => ({
                 id: r.link,
                 thumbnailUrl: r.thumbnail,
                 currentScore: 0.5,
@@ -1178,6 +1196,7 @@ serve(async (req) => {
                   }
                 }
               }
+              debug.counts.after_rerank = rerankData.results.length;
             }
           }
         }
@@ -1214,20 +1233,36 @@ serve(async (req) => {
         }
       }
       
-      // Color match (SOFT gate per user's tweak - use visual color score when available)
+      // Color match: VISUAL-FIRST per audit (image-based color score is primary)
+      // Title match is now a BONUS, not primary
       if (ximilarColors.length > 0) {
-        const primaryColor = ximilarColors[0];
         const titleHasColor = ximilarColors.some(c => resultTitle.includes(c));
         
-        if (titleHasColor) {
-          tagAgreement += isPatternMode ? 0.25 : 0.35;
+        // PRIMARY: Use visual color sub-score from rerank
+        if (colorSubScore >= 0.60) {
+          // High color match from image comparison - strong boost
+          tagAgreement += isPatternMode ? 0.30 : 0.40;
         } else if (colorSubScore >= 0.45) {
-          // Trust visual color score even if title doesn't mention it
-          tagAgreement += isPatternMode ? 0.15 : 0.25;
-        } else if (colorSubScore < 0.35 && !titleHasColor) {
-          // Penalize but don't hard-drop
+          // Medium color match - moderate boost
+          tagAgreement += isPatternMode ? 0.20 : 0.30;
+          // Title confirmation gives extra bonus
+          if (titleHasColor) {
+            tagAgreement += 0.10;
+          }
+        } else if (colorSubScore >= 0.30) {
+          // Low-medium color match - only if title confirms
+          if (titleHasColor) {
+            tagAgreement += isPatternMode ? 0.15 : 0.20;
+          }
+        } else if (colorSubScore > 0 && colorSubScore < 0.25) {
+          // Very low color match - apply penalty (stronger than before: was -0.10)
           debug.filters.dropped_by_color_gate++;
-          tagAgreement -= 0.10;
+          tagAgreement -= 0.25;
+          penalized = true;
+        } else if (!titleHasColor && colorSubScore === 0) {
+          // No visual score and no title match - light penalty
+          debug.filters.dropped_by_color_gate++;
+          tagAgreement -= 0.15;
           penalized = true;
         }
       }
@@ -1307,13 +1342,17 @@ serve(async (req) => {
       }
     }
 
-    // ============ Top 5 scores for debug ============
+    // ============ Top 5 scores for debug (including color sub-score separately) ============
     debug.top5_scores = allShoppingResults.slice(0, 5).map(r => ({
       url: r.link.substring(0, 60),
       visual: r.sub_scores ? (r.sub_scores.pattern + r.sub_scores.silhouette + r.sub_scores.color) / 3 : 0,
+      color: r.sub_scores?.color ?? 0,
       tag_agree: r.tag_agreement ?? 0,
       final: r.similarity_score ?? 0,
     }));
+    
+    // Set final count
+    debug.counts.final_returned = Math.min(allShoppingResults.length, 30);
 
     debug.timing_ms.total = Date.now() - startTime;
 
