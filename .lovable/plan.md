@@ -1,342 +1,132 @@
+# Deals Pipeline: Priority-Group Ranking (Color → Type → Pattern → Silhouette)
 
+## Status: ✅ IMPLEMENTED
 
-# Wire Dashboard Photo Upload to `deals-unified` with Ximilar
+Last Updated: 2026-02-02
+
+---
 
 ## Summary
 
-The dashboard photo upload (`PhotoTab.tsx`) currently calls the legacy `deals-from-image` endpoint, which uses text-based heuristics for color/pattern detection. This plan wires it to use the new `deals-unified` pipeline with Ximilar fashion tagging for significantly better color and pattern accuracy.
+The deals-unified pipeline now uses strict priority-group ranking to ensure top 10 results respect detected color, item type, and pattern—in that order—without relying on titles and without burning API calls.
 
 ---
 
-## Current State vs Target State
+## Key Changes Implemented
 
-| Aspect | Current (deals-from-image) | Target (deals-unified) |
-|--------|---------------------------|------------------------|
-| Color detection | Keyword matching from Lens titles | Ximilar dominant color extraction |
-| Pattern detection | Keyword heuristics | Ximilar pattern/design classification |
-| Category | Text matching | Ximilar fashion category API |
-| Exact match | Not attempted | Google Lens `exact_matches` first |
-| Chip looping | Not implemented | Top 2 Lens chips explored |
-| Response | `shopping_results[]` only | `exact_match` + `shopping_results[]` + `ximilar_tags` |
+### 1. Priority-Group Ranking (Group A → B → C → D)
+
+**Ranking Priority Order:**
+1. **Color** (highest priority) - `colorSubScore >= 0.55`
+2. **Item Type** - `typePass = titleMatch || silhouetteSubScore >= 0.50`
+3. **Pattern/Design** - `patternSubScore >= 0.50` (only for patterned items)
+4. **Silhouette** (fallback tie-breaker)
+
+**Groups:**
+- **Group A**: color_pass + type_pass + pattern_pass (if required) → Best Matches
+- **Group B**: color_pass + type_pass, but pattern unconfirmed
+- **Group C**: color_pass only, type uncertain
+- **Group D**: Everything else → More Results
+
+**Sort Logic:**
+```
+1. Sort by group: A first, D last
+2. Within same group: sort by final_score DESC
+```
+
+### 2. Cheap Pre-Filters (NO LLM calls)
+
+- **Color Family Bucketing**: Maps detected colors to families (purple_family, gold_family, etc.)
+- **Cheap Color Check**: Uses title to bucket as 'likely', 'unknown', or 'unlikely'
+- **Cheap Type Detection**: Detects item type (long/top/bottom/accessory) from category
+
+### 3. Non-Reranked Items Handling
+
+Per audit tweak: Items that weren't reranked get `color_pass = false` automatically and are pushed below reranked candidates.
+
+### 4. ROI Overlay Cleanup
+
+Removed rendering of non-selected bounding boxes in `ImageCropSelector.tsx`. Only the active selection box is now visible.
+
+### 5. Enhanced Telemetry
+
+New debug metrics:
+- `returned_top10_color_pass_n` - Target: >= 7
+- `returned_top10_type_pass_n` - Target: >= 6
+- `returned_top10_pattern_pass_n` - For patterned items
+- `top10_has_unreranked_n` - Target: 0 or 1
+- `group_a_count`, `group_b_count`, `group_c_count`, `group_d_count`
+- `cheap_color_likely_n`, `cheap_color_unlikely_n`, `cheap_type_matched_n`
 
 ---
 
-## Implementation Steps
+## Acceptance Criteria
 
-### Step 1: Create New Hook `useDealsUnified`
-
-Create a new hook that matches the `deals-unified` API contract:
-
-**File:** `src/hooks/useDealsUnified.ts`
-
-```text
-Input interface:
-{
-  source: 'app_upload'
-  market: 'AE' | 'US' | 'UK'
-  image_url: string (signed Supabase URL)
-}
-
-Output interface:
-{
-  success: boolean
-  exact_match?: { link, title, source, thumbnail, price }
-  shopping_results: ShoppingResult[]
-  visual_matches: VisualMatch[]
-  price_stats: PriceStats
-  deals_found: number
-  ximilar_tags?: {
-    primary_category: string
-    subcategory: string
-    colors: string[]
-    patterns: string[]
-    is_pattern_mode: boolean
-  }
-  debug?: DebugInfo
-}
-```
-
-Key differences from `useDealsFromImage`:
-- Uses `source: 'app_upload'` instead of just `imageUrl`
-- Returns `ximilar_tags` for UI display
-- Returns `exact_match` separately from `shopping_results`
-
-### Step 2: Update `PhotoTab.tsx`
-
-Replace the `useDealsFromImage` hook with `useDealsUnified`:
-
-```text
-Current flow:
-  handleCropConfirm → upload crop → searchFromImage(signedUrl)
-
-New flow:
-  handleCropConfirm → upload crop → searchUnified({ 
-    source: 'app_upload',
-    market: 'AE',
-    image_url: signedUrl 
-  })
-```
-
-Changes required:
-1. Import `useDealsUnified` instead of `useDealsFromImage`
-2. Update function call in `handleCropConfirm`
-3. Update data consumption to handle new response shape
-
-### Step 3: Add Ximilar Tags Display Component
-
-Create a reusable component to show detected fashion attributes:
-
-**File:** `src/components/deals/XimilarTagsDisplay.tsx`
-
-```text
-Props:
-{
-  category?: string
-  subcategory?: string
-  colors?: string[]
-  patterns?: string[]
-  isPatternMode?: boolean
-}
-
-Renders:
-┌────────────────────────────────────────────┐
-│ 🏷️ Detected: Dress                        │
-│ [Black] [Gold] [Printed]                   │
-└────────────────────────────────────────────┘
-```
-
-Visual design:
-- Small pills/chips for colors and patterns
-- Color pills have colored dot indicator
-- Pattern mode shows "✨ Pattern Mode" badge
-
-### Step 4: Add "Exact Match" Section
-
-When `exact_match` is returned, show it prominently before alternatives:
-
-**Update:** `PhotoTab.tsx` results section
-
-```text
-{data.exact_match && (
-  <ExactMatchCard 
-    result={data.exact_match}
-    onOpen={...}
-  />
-)}
-```
-
-Design:
-- Gold/highlighted border
-- "Original Item Found" badge
-- Shown above the regular results list
-
-### Step 5: Update DealResultCard for Sub-Scores (Optional Enhancement)
-
-If `sub_scores` are present, show visual match quality:
-
-```text
-Props addition:
-{
-  sub_scores?: {
-    pattern: number
-    silhouette: number
-    color: number
-  }
-}
-
-Renders tiny bar or percentage next to each result
-```
-
-### Step 6: Remove Separate Catalog Match Call
-
-Currently `PhotoTab` makes a separate `matchCatalog()` call after receiving results. The `deals-unified` endpoint already handles this internally (or we can add it).
-
-Check if `deals-unified` returns Azyah catalog matches, otherwise keep the existing flow.
+| Requirement | Target | Verification |
+|-------------|--------|--------------|
+| Top 10 respects detected color | `returned_top10_color_pass_n >= 7` | Check debug response |
+| Top 10 respects item type | `returned_top10_type_pass_n >= 6` | Check debug response |
+| No unreranked in top 10 | `top10_has_unreranked_n <= 1` | Check debug response |
+| Pattern required when detected | `returned_top10_pattern_pass_n >= 5` | For patterned items |
+| UI shows only selected box | No floating markers | Visual check |
 
 ---
 
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useDealsUnified.ts` | Hook to call `deals-unified` endpoint |
-| `src/components/deals/XimilarTagsDisplay.tsx` | Display detected fashion attributes |
-| `src/components/deals/ExactMatchCard.tsx` | Highlighted card for exact match |
-
-## Files to Modify
+## Files Modified
 
 | File | Changes |
 |------|---------|
-| `src/components/deals/PhotoTab.tsx` | Replace hook, update data flow, add Ximilar tags display |
-| `src/components/deals/DealResultCard.tsx` | (Optional) Add sub-scores display |
+| `supabase/functions/deals-unified/index.ts` | Priority-group ranking, cheap filters, enhanced debug |
+| `src/components/deals/ImageCropSelector.tsx` | Removed other box markers |
+| `src/components/deals/PhotoTab.tsx` | Passes description_hint |
+| `src/hooks/useDealsUnified.ts` | Added description_hint param |
 
 ---
 
-## Type Definitions
+## Test Matrix
 
-Add to existing types or create new file:
-
-```text
-interface UnifiedDealsResult {
-  success: boolean;
-  exact_match?: ExactMatch;
-  shopping_results: ShoppingResult[];
-  visual_matches: VisualMatch[];
-  price_stats: PriceStats;
-  deals_found: number;
-  ximilar_tags?: XimilarTagsResponse;
-  debug?: DebugInfo;
-}
-
-interface XimilarTagsResponse {
-  primary_category?: string;
-  subcategory?: string;
-  colors?: string[];
-  patterns?: string[];
-  is_pattern_mode?: boolean;
-}
-
-interface ExactMatch {
-  link: string;
-  title: string;
-  source: string;
-  thumbnail?: string;
-  price?: string;
-  confidence?: number;
-}
-```
+| Test Case | Expected Outcome |
+|-----------|------------------|
+| Purple/brown garment | Top 10 dominated by purple/brown (Group A) |
+| Plain black dress | Top 10 stays black/charcoal |
+| Patterned abaya | Pattern mode triggers, Group A requires pattern_pass |
+| Screenshot with cluttered background | Only main garment box shown |
 
 ---
 
-## Data Flow Diagram
+## Future Improvements (Not Yet Implemented)
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│                    PHOTO UPLOAD FLOW                         │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  User drops image                                            │
-│       ↓                                                      │
-│  Upload to deals-uploads bucket                              │
-│       ↓                                                      │
-│  Show crop selector (detect-objects for ROI)                 │
-│       ↓                                                      │
-│  User confirms crop                                          │
-│       ↓                                                      │
-│  Upload cropped image → get signed URL                       │
-│       ↓                                                      │
-│  Call deals-unified:                                         │
-│  {                                                           │
-│    source: "app_upload",                                     │
-│    market: "AE",                                             │
-│    image_url: signedUrl                                      │
-│  }                                                           │
-│       ↓                                                      │
-│  ┌─────────────────────────────────────┐                     │
-│  │  deals-unified backend:             │                     │
-│  │  1. Ximilar tagging                 │                     │
-│  │  2. Google Lens exact + visual      │                     │
-│  │  3. Chip looping (max 2)            │                     │
-│  │  4. Google Shopping with hints      │                     │
-│  │  5. Visual rerank (Gemini)          │                     │
-│  │  6. Soft filtering + scoring        │                     │
-│  └─────────────────────────────────────┘                     │
-│       ↓                                                      │
-│  Response:                                                   │
-│  {                                                           │
-│    exact_match: {...},                                       │
-│    shopping_results: [...],                                  │
-│    ximilar_tags: {                                           │
-│      category: "dress",                                      │
-│      colors: ["black", "gold"],                              │
-│      patterns: ["printed"]                                   │
-│    },                                                        │
-│    price_stats: {...}                                        │
-│  }                                                           │
-│       ↓                                                      │
-│  UI renders:                                                 │
-│  - Ximilar tags (color/pattern pills)                        │
-│  - Exact match card (if found)                               │
-│  - Price verdict                                             │
-│  - Ranked results                                            │
-│  - Similar on Azyah                                          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+1. **Multi-Market Expansion**: Query AE + US + UK when color-pass candidates < 5
+2. **Ximilar 403 Lockout**: 24-hour skip after plan limit error (system_flags table)
+3. **Adaptive Rerank Budget**: 25 default → extend to 40 if needed
+4. **Server-side Thumbnail Color Analysis**: HSV histogram for true cheap color filtering
 
 ---
 
-## Backward Compatibility
+## Debug Payload Example
 
-- Keep `useDealsFromImage` hook for any other components that might use it
-- The new hook is additive, not a replacement
-- `deals-from-image` endpoint remains functional as fallback
-
----
-
-## Technical Details
-
-### Hook Implementation Pattern
-
-The new hook follows the same pattern as existing hooks:
-
-```text
-export function useDealsUnified() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<UnifiedDealsResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const searchUnified = useCallback(async (params: {
-    source: 'app_upload';
-    market?: 'AE' | 'US' | 'UK';
-    image_url: string;
-  }) => {
-    setIsLoading(true);
-    // ... call supabase.functions.invoke('deals-unified', { body: params })
-  }, []);
-
-  const reset = useCallback(() => { ... }, []);
-
-  return { searchUnified, data, isLoading, error, reset };
+```json
+{
+  "counts": {
+    "group_a_count": 12,
+    "group_b_count": 5,
+    "group_c_count": 8,
+    "group_d_count": 15,
+    "returned_top10_color_pass_n": 8,
+    "returned_top10_type_pass_n": 7,
+    "top10_has_unreranked_n": 0
+  }
 }
 ```
 
-### PhotoTab Changes Summary
-
-```text
-- import { useDealsFromImage } from '@/hooks/useDealsFromImage';
-+ import { useDealsUnified } from '@/hooks/useDealsUnified';
-
-- const { searchFromImage, data, isLoading, error, reset } = useDealsFromImage();
-+ const { searchUnified, data, isLoading, error, reset } = useDealsUnified();
-
-// In handleCropConfirm:
-- await searchFromImage(signedData.signedUrl);
-+ await searchUnified({ 
-+   source: 'app_upload',
-+   market: 'AE',
-+   image_url: signedData.signedUrl 
-+ });
-
-// In results section, add:
-+ {data?.ximilar_tags && (
-+   <XimilarTagsDisplay {...data.ximilar_tags} />
-+ )}
-+ {data?.exact_match && (
-+   <ExactMatchCard result={data.exact_match} />
-+ )}
-```
-
 ---
 
-## Definition of Done
+## Previous Plan: Wire Dashboard Photo Upload to deals-unified
 
-| Requirement | Acceptance Criteria |
-|-------------|---------------------|
-| Hook created | `useDealsUnified` calls `deals-unified` endpoint correctly |
-| PhotoTab updated | Uses new hook, shows results from unified pipeline |
-| Ximilar tags shown | Color/pattern pills visible when tags detected |
-| Exact match displayed | Gold-highlighted card when original found |
-| Pattern mode works | Pattern garments show better pattern-matched results |
-| No regressions | Existing features (crop selector, price verdict, catalog match) still work |
+✅ **COMPLETED** - The dashboard photo upload now uses the deals-unified pipeline with Ximilar fashion tagging.
 
+See implementation in:
+- `src/hooks/useDealsUnified.ts`
+- `src/components/deals/PhotoTab.tsx`
+- `src/components/deals/XimilarTagsDisplay.tsx`
+- `src/components/deals/ExactMatchCard.tsx`
