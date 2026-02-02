@@ -1,96 +1,19 @@
-/* Azyah Side Panel Styles */
+/* Azyah Side Panel Styles - Glassmorphism Edition */
 
-/* Ximilar Tags */
-.ximilar-tags {
-  padding: 10px 12px;
-  background: #f8f4ff;
-  border-radius: 8px;
-  margin-top: 12px;
-  margin-bottom: 4px;
+/* ==============================
+   CSS Variables
+   ============================== */
+:root {
+  --maroon-primary: #7A143E;
+  --maroon-dark: #5C1030;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
-.ximilar-tags-header {
-  font-size: 10px;
-  color: #888;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.tag-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag-pill {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.tag-pill.category {
-  background: #ede9fe;
-  color: #7c3aed;
-}
-
-.tag-pill.color {
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.tag-pill.pattern {
-  background: #fce7f3;
-  color: #db2777;
-}
-
-.tag-pill.mode {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-/* Exact Match Styles */
-.deal-card.exact {
-  border: 2px solid #22c55e;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-}
-
-.exact-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: #dcfce7;
-  color: #16a34a;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.deal-card.exact-domain {
-  border-left: 3px solid #22c55e;
-}
-
-/* Sub-scores */
-.sub-scores {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.sub-score {
-  font-size: 10px;
-  color: #888;
-}
-
-/* Screenshot button */
-.btn-small {
-  padding: 10px 12px !important;
-  flex: 0 !important;
-  width: auto !important;
-}
-
+/* ==============================
+   Base Styles
+   ============================== */
 * {
   margin: 0;
   padding: 0;
@@ -99,7 +22,9 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  background: #f8f9fa;
+  background: rgba(248, 249, 250, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   color: #1a1a1a;
   font-size: 14px;
   line-height: 1.5;
@@ -109,16 +34,26 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
-/* Header */
+.hidden {
+  display: none !important;
+}
+
+/* ==============================
+   Header
+   ============================== */
 .panel-header {
   position: sticky;
   top: 0;
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, var(--maroon-primary) 0%, var(--maroon-dark) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
   padding: 16px 20px;
   z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logo {
@@ -129,7 +64,14 @@ body {
   font-weight: 600;
 }
 
-/* State containers */
+.logo-img {
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* ==============================
+   State Containers
+   ============================== */
 .state-container {
   flex: 1;
   display: flex;
@@ -138,11 +80,7 @@ body {
   padding: 40px 20px;
 }
 
-.hidden {
-  display: none !important;
-}
-
-/* Empty state */
+/* Empty State */
 .empty-state {
   text-align: center;
   max-width: 280px;
@@ -170,16 +108,18 @@ body {
   color: #dc2626;
 }
 
-/* Buttons */
+/* ==============================
+   Buttons
+   ============================== */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, var(--maroon-primary) 0%, var(--maroon-dark) 100%);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -187,11 +127,12 @@ body {
   text-decoration: none;
   width: 100%;
   margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(122, 20, 62, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(122, 20, 62, 0.4);
 }
 
 .btn-secondary {
@@ -199,10 +140,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  background: #f1f1f1;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #666;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -211,24 +154,36 @@ body {
 }
 
 .btn-secondary:hover {
-  background: #e5e5e5;
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Product Preview */
+.btn-small {
+  padding: 10px 12px !important;
+  flex: 0 !important;
+  width: auto !important;
+}
+
+/* ==============================
+   Product Preview
+   ============================== */
 .product-preview {
   padding: 20px;
-  background: white;
-  border-bottom: 1px solid #eee;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .preview-image-container {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: rgba(248, 249, 250, 0.8);
+  border-radius: 16px;
   overflow: hidden;
   margin-bottom: 16px;
+  box-shadow: var(--glass-shadow);
 }
 
 .preview-image-container img {
@@ -245,12 +200,18 @@ body {
   height: 32px;
   background: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+.change-image-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .preview-info {
@@ -270,7 +231,7 @@ body {
 .preview-price {
   font-size: 18px;
   font-weight: 700;
-  color: #8B5CF6;
+  color: var(--maroon-primary);
   margin-bottom: 4px;
 }
 
@@ -290,7 +251,9 @@ body {
   margin-bottom: 0;
 }
 
-/* Loading */
+/* ==============================
+   Loading
+   ============================== */
 .loading-container {
   text-align: center;
 }
@@ -298,8 +261,8 @@ body {
 .loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e5e5e5;
-  border-top-color: #8B5CF6;
+  border: 4px solid rgba(122, 20, 62, 0.2);
+  border-top-color: var(--maroon-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
@@ -309,7 +272,9 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Results */
+/* ==============================
+   Results Container
+   ============================== */
 .results-container {
   flex: 1;
   padding-bottom: 20px;
@@ -317,26 +282,45 @@ body {
 
 .result-section {
   padding: 16px 20px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   margin-bottom: 8px;
+  border: 1px solid var(--glass-border);
 }
 
 .result-section h4 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
   color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Price Verdict */
+/* ==============================
+   Price Verdict
+   ============================== */
 .price-verdict {
-  background: linear-gradient(135deg, #f8f4ff 0%, #faf5ff 100%);
+  background: linear-gradient(135deg, rgba(248, 244, 255, 0.8) 0%, rgba(250, 245, 255, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  margin: 8px 12px;
 }
 
 .price-bar {
-  background: white;
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   padding: 16px;
+}
+
+.price-bar-visual {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #22c55e 0%, #fbbf24 50%, #ef4444 100%);
+  margin-bottom: 12px;
 }
 
 .price-range {
@@ -348,7 +332,7 @@ body {
 }
 
 .price-low { color: #22c55e; }
-.price-median { color: #8B5CF6; }
+.price-median { color: var(--maroon-primary); }
 .price-high { color: #f97316; }
 
 .price-labels {
@@ -358,41 +342,58 @@ body {
   color: #888;
 }
 
-/* Deal Cards */
+/* ==============================
+   Deal Cards
+   ============================== */
 .deals-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .deal-card {
   display: flex;
   gap: 12px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 12px;
+  padding: 14px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
   text-decoration: none;
   color: inherit;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--glass-shadow);
 }
 
 .deal-card:hover {
-  background: #f0f0f0;
-  transform: translateX(2px);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .deal-card.best {
-  background: linear-gradient(135deg, #f8f4ff 0%, #fef3c7 100%);
-  border: 2px solid #8B5CF6;
+  background: linear-gradient(135deg, rgba(248, 244, 255, 0.9) 0%, rgba(254, 243, 199, 0.9) 100%);
+  border: 2px solid var(--maroon-primary);
+}
+
+.deal-card.exact {
+  border: 2px solid #22c55e;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.9) 0%, rgba(220, 252, 231, 0.9) 100%);
+}
+
+.deal-card.exact-domain {
+  border-left: 3px solid #22c55e;
 }
 
 .deal-image {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
-  background: white;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .deal-image img {
@@ -412,6 +413,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .deal-title {
@@ -422,23 +424,35 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  color: #444;
 }
 
 .deal-price {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  color: #8B5CF6;
+  color: var(--maroon-primary);
 }
 
 .similarity-badge {
   display: inline-block;
   margin-top: 6px;
-  padding: 2px 8px;
-  background: #dcfce7;
+  padding: 3px 8px;
+  background: rgba(34, 197, 94, 0.15);
   color: #16a34a;
   border-radius: 99px;
   font-size: 11px;
   font-weight: 600;
+}
+
+.exact-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .no-results {
@@ -447,7 +461,78 @@ body {
   padding: 20px;
 }
 
-/* Azyah Catalog Section */
+/* Sub-scores */
+.sub-scores {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sub-score {
+  font-size: 10px;
+  color: #888;
+}
+
+/* ==============================
+   Ximilar Tags
+   ============================== */
+.ximilar-tags {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(248, 244, 255, 0.8) 0%, rgba(240, 245, 255, 0.8) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 12px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  border: 1px solid var(--glass-border);
+}
+
+.ximilar-tags-header {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag-pill.category {
+  background: rgba(122, 20, 62, 0.1);
+  color: var(--maroon-primary);
+}
+
+.tag-pill.color {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.tag-pill.pattern {
+  background: rgba(219, 39, 119, 0.1);
+  color: #db2777;
+}
+
+.tag-pill.mode {
+  background: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+}
+
+/* ==============================
+   Azyah Catalog Section
+   ============================== */
 .azyah-scroll {
   display: flex;
   gap: 12px;
@@ -462,7 +547,7 @@ body {
 }
 
 .azyah-scroll::-webkit-scrollbar-thumb {
-  background: #ddd;
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 2px;
 }
 
@@ -476,8 +561,9 @@ body {
   width: 120px;
   height: 120px;
   object-fit: cover;
-  border-radius: 10px;
-  background: #f0f0f0;
+  border-radius: 12px;
+  background: rgba(240, 240, 240, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .azyah-card-info {
@@ -497,5 +583,5 @@ body {
 .azyah-card-price {
   font-size: 13px;
   font-weight: 600;
-  color: #8B5CF6;
+  color: var(--maroon-primary);
 }

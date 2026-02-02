@@ -229,8 +229,8 @@ function displayResults(result) {
     elements.bestMatchSection.classList.add('hidden');
   }
   
-  // Other deals
-  const otherDeals = sortedResults.slice(1, 15);
+  // Other deals (show up to 30)
+  const otherDeals = sortedResults.slice(1, 30);
   if (otherDeals.length > 0) {
     elements.dealsList.innerHTML = otherDeals.map(deal => createDealCard(deal)).join('');
   } else {
