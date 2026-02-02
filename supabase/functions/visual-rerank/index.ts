@@ -58,9 +58,9 @@ const THRESHOLDS = {
     minPattern: 0,        // No pattern gate
     textWeight: 0.25,     // Text matters more
     visualWeight: 0.75,
-    patternSubWeight: 0.25,
-    colorSubWeight: 0.35,
-    silhouetteSubWeight: 0.40,
+    patternSubWeight: 0.20,   // Reduced from 0.25
+    colorSubWeight: 0.50,     // Increased from 0.35 - COLOR IS PRIMARY
+    silhouetteSubWeight: 0.30, // Reduced from 0.40
   }
 };
 
