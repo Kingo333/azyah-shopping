@@ -3,12 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const RATE_LIMIT_WINDOW_MS = 60000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_VERSION = 'v2'; // Bump when Ximilar integration changes
 const MIN_RESULTS_FLOOR = 10;
 const MAX_CHIP_LOOPS = 2;
 
@@ -23,6 +24,7 @@ interface UnifiedInput {
   currency_hint?: string;
   image_url?: string;
   image_base64?: string;
+  require_ximilar?: boolean; // Strict mode: fail if Ximilar fails
 }
 
 interface XimilarTags {
@@ -34,6 +36,24 @@ interface XimilarTags {
   style_tags: string[];
   roi_box: { x: number; y: number; width: number; height: number } | null;
   is_pattern_mode: boolean;
+}
+
+interface XimilarDebug {
+  called: boolean;
+  ok: boolean;
+  status: number | null;
+  request_id: string | null;
+  error_text: string | null;
+  latency_ms: number;
+  objects_detected: number;
+  primary_object_reason: string | null;
+  primary_object_area: number | null;
+  primary_object_prob: number | null;
+  tags_summary: string;
+  roi_box_present: boolean;
+  is_pattern_mode: boolean;
+  failed: boolean;
+  fallback_used: boolean;
 }
 
 interface ShoppingResult {
@@ -57,6 +77,21 @@ interface ShoppingResult {
 }
 
 interface DebugInfo {
+  trace_id: string;
+  entry: {
+    source: string;
+    has_image_url: boolean;
+    has_image_base64: boolean;
+    has_page_url: boolean;
+    has_title_hint: boolean;
+    has_ximilar_key: boolean;
+    require_ximilar: boolean;
+  };
+  cache: {
+    hit: boolean;
+    version: string;
+    key: string | null;
+  };
   image_normalize: {
     downloaded: boolean;
     uploaded_path: string | null;
@@ -64,16 +99,7 @@ interface DebugInfo {
     content_type: string | null;
     bytes: number | null;
   };
-  ximilar: {
-    called: boolean;
-    latency_ms: number;
-    objects_detected: number;
-    tags_summary: string;
-    roi_box_present: boolean;
-    is_pattern_mode: boolean;
-    failed?: boolean;
-    fallback_used?: boolean;
-  };
+  ximilar: XimilarDebug;
   serpapi: {
     lens_ran: boolean;
     exact_count: number;
@@ -155,6 +181,10 @@ const SIMILAR_COLORS: Record<string, string[]> = {
 
 // ============ Helper Functions ============
 
+function generateTraceId(): string {
+  return `trace_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
 function hashKey(input: string): string {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -162,7 +192,7 @@ function hashKey(input: string): string {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  return `unified_${Math.abs(hash).toString(36)}`;
+  return `unified_${CACHE_VERSION}_${Math.abs(hash).toString(36)}`;
 }
 
 function normalizeLink(link: string | undefined | null): string {
@@ -362,7 +392,27 @@ async function setCache(supabase: any, key: string, payload: any): Promise<void>
 
 // ============ Ximilar Integration ============
 
-async function callXimilar(imageUrl: string, apiKey: string): Promise<XimilarTags | null> {
+interface XimilarCallResult {
+  tags: XimilarTags | null;
+  debug: Partial<XimilarDebug>;
+}
+
+async function callXimilar(imageUrl: string, apiKey: string): Promise<XimilarCallResult> {
+  const debugInfo: Partial<XimilarDebug> = {
+    called: true,
+    ok: false,
+    status: null,
+    request_id: null,
+    error_text: null,
+    latency_ms: 0,
+    objects_detected: 0,
+    primary_object_reason: null,
+    primary_object_area: null,
+    primary_object_prob: null,
+  };
+
+  const startTime = Date.now();
+
   try {
     // Try detect_tags_all first (multi-item detection)
     const response = await fetch('https://api.ximilar.com/tagging/fashion/v2/detect_tags_all', {
@@ -376,18 +426,27 @@ async function callXimilar(imageUrl: string, apiKey: string): Promise<XimilarTag
       }),
     });
 
+    debugInfo.latency_ms = Date.now() - startTime;
+    debugInfo.status = response.status;
+
     if (!response.ok) {
-      console.warn(`[deals-unified] Ximilar API error: ${response.status}`);
-      return null;
+      const errorText = await response.text();
+      debugInfo.error_text = errorText.substring(0, 200);
+      console.warn(`[deals-unified] Ximilar API error: ${response.status} - ${debugInfo.error_text}`);
+      return { tags: null, debug: debugInfo };
     }
 
     const data = await response.json();
+    debugInfo.ok = true;
+    debugInfo.request_id = data._status?.request_id || null;
+    
     const record = data.records?.[0];
     
     if (!record?._objects?.length) {
       // Fallback to detect_tags (single item)
       console.log('[deals-unified] Ximilar detect_tags_all returned no objects, trying detect_tags...');
       
+      const fallbackStart = Date.now();
       const fallbackResponse = await fetch('https://api.ximilar.com/tagging/fashion/v2/detect_tags', {
         method: 'POST',
         headers: {
@@ -399,33 +458,94 @@ async function callXimilar(imageUrl: string, apiKey: string): Promise<XimilarTag
         }),
       });
       
-      if (!fallbackResponse.ok) return null;
+      debugInfo.latency_ms += Date.now() - fallbackStart;
+      
+      if (!fallbackResponse.ok) {
+        debugInfo.error_text = `Fallback failed: ${fallbackResponse.status}`;
+        return { tags: null, debug: debugInfo };
+      }
       
       const fallbackData = await fallbackResponse.json();
-      return parseXimilarResponse(fallbackData.records?.[0]);
+      debugInfo.request_id = fallbackData._status?.request_id || debugInfo.request_id;
+      
+      const result = parseXimilarResponse(fallbackData.records?.[0], false, debugInfo);
+      return { tags: result, debug: debugInfo };
     }
 
-    return parseXimilarResponse(record, true);
+    // Select primary object: largest area OR highest probability
+    const objects = record._objects;
+    debugInfo.objects_detected = objects.length;
+    
+    const primaryObject = selectPrimaryObject(objects, debugInfo);
+    
+    const result = parseXimilarResponse({ ...record, _selectedObject: primaryObject }, true, debugInfo);
+    return { tags: result, debug: debugInfo };
+    
   } catch (err) {
+    debugInfo.latency_ms = Date.now() - startTime;
+    debugInfo.error_text = err instanceof Error ? err.message : String(err);
     console.error('[deals-unified] Ximilar error:', err);
-    return null;
+    return { tags: null, debug: debugInfo };
   }
 }
 
-function parseXimilarResponse(record: any, isAllMode = false): XimilarTags | null {
+// Select primary object by largest area and/or highest probability
+function selectPrimaryObject(objects: any[], debugInfo: Partial<XimilarDebug>): any {
+  if (!objects || objects.length === 0) return null;
+  if (objects.length === 1) {
+    debugInfo.primary_object_reason = 'only_object';
+    return objects[0];
+  }
+
+  // Prefer clothing items over accessories/bags if present
+  const clothingCategories = ['clothing', 'dress', 'top', 'pants', 'skirt', 'jacket', 'coat', 'shirt', 'blouse'];
+  
+  // Calculate area and prob for each object
+  const scored = objects.map((obj, index) => {
+    const bbox = obj._bounding_box || {};
+    const area = (bbox.width || 0) * (bbox.height || 0);
+    const prob = obj._prob || obj.prob || 0;
+    
+    // Check if it's a clothing item
+    const topCategory = obj._tags?.['Top Category']?.[0]?.name?.toLowerCase() || '';
+    const category = obj._tags?.['Category']?.[0]?.name?.toLowerCase() || '';
+    const isClothing = clothingCategories.some(c => topCategory.includes(c) || category.includes(c));
+    
+    return { obj, index, area, prob, isClothing };
+  });
+
+  // Sort by: clothing first, then by area * prob
+  scored.sort((a, b) => {
+    if (a.isClothing && !b.isClothing) return -1;
+    if (!a.isClothing && b.isClothing) return 1;
+    return (b.area * b.prob) - (a.area * a.prob);
+  });
+
+  const selected = scored[0];
+  debugInfo.primary_object_reason = selected.isClothing 
+    ? `clothing_item_area_${selected.area.toFixed(2)}`
+    : `largest_area_prob_${selected.area.toFixed(2)}_${selected.prob.toFixed(2)}`;
+  debugInfo.primary_object_area = selected.area;
+  debugInfo.primary_object_prob = selected.prob;
+
+  return selected.obj;
+}
+
+function parseXimilarResponse(record: any, isAllMode: boolean, debugInfo: Partial<XimilarDebug>): XimilarTags | null {
   if (!record) return null;
   
   try {
-    // For detect_tags_all, get the largest/first object
-    const object = isAllMode ? record._objects?.[0] : record;
+    // For detect_tags_all, use the selected object
+    const object = isAllMode ? (record._selectedObject || record._objects?.[0]) : record;
     const tags = object?._tags || record?._tags || {};
+    const tagsMap = object?._tags_map || record?._tags_map || {};
     
-    // Extract category
-    const categoryTag = tags['Category']?.[0] || tags['Top Category']?.[0];
-    const subcategoryTag = tags['Subcategory']?.[0] || tags['Best Category']?.[0];
+    // Extract category - check multiple possible keys
+    const categoryTag = tags['Category']?.[0] || tags['Top Category']?.[0] || tagsMap['Category']?.[0];
+    const subcategoryTag = tags['Subcategory']?.[0] || tags['Best Category']?.[0] || tagsMap['Subcategory']?.[0];
     
-    // Extract colors (dominant color)
-    const colorTags = tags['Dominant Color'] || tags['Color'] || [];
+    // Extract colors - check multiple possible keys (Color, Dominant Color)
+    const colorTags = tags['Dominant Color'] || tags['Color'] || tagsMap['Color'] || [];
     const colors = colorTags
       .filter((c: any) => c.prob >= 0.1)
       .slice(0, 3)
@@ -434,22 +554,22 @@ function parseXimilarResponse(record: any, isAllMode = false): XimilarTags | nul
         probability: c.prob || 0,
       }));
     
-    // Extract patterns
-    const patternTags = tags['Pattern'] || tags['Design'] || tags['Print'] || [];
+    // Extract patterns - check Design, Pattern, Print
+    const patternTags = tags['Pattern'] || tags['Design'] || tags['Print'] || tagsMap['Design'] || [];
     const patterns = patternTags
-      .filter((p: any) => p.prob >= 0.3)
+      .filter((p: any) => p.prob >= 0.3 && p.name?.toLowerCase() !== 'solid')
       .map((p: any) => p.name?.toLowerCase() || '')
       .filter(Boolean);
     
     // Extract materials
-    const materialTags = tags['Material'] || tags['Fabric'] || [];
+    const materialTags = tags['Material'] || tags['Fabric'] || tagsMap['Material'] || [];
     const materials = materialTags
       .filter((m: any) => m.prob >= 0.3)
       .map((m: any) => m.name?.toLowerCase() || '')
       .filter(Boolean);
     
     // Extract style
-    const styleTags = tags['Style'] || tags['Occasion'] || [];
+    const styleTags = tags['Style'] || tags['Occasion'] || tagsMap['Style'] || [];
     const styles = styleTags
       .filter((s: any) => s.prob >= 0.3)
       .map((s: any) => s.name?.toLowerCase() || '')
@@ -464,9 +584,8 @@ function parseXimilarResponse(record: any, isAllMode = false): XimilarTags | nul
       height: bbox.height || 1,
     } : null;
     
-    // Determine pattern mode
-    const is_pattern_mode = patterns.length > 0 || 
-      (tags['Design']?.some((d: any) => d.name?.toLowerCase() !== 'solid' && d.prob >= 0.5));
+    // Determine pattern mode - has non-solid pattern with decent confidence
+    const is_pattern_mode = patterns.length > 0;
     
     return {
       primary_category: categoryTag?.name?.toLowerCase() || null,
@@ -480,6 +599,7 @@ function parseXimilarResponse(record: any, isAllMode = false): XimilarTags | nul
     };
   } catch (err) {
     console.error('[deals-unified] Ximilar parse error:', err);
+    debugInfo.error_text = `Parse error: ${err instanceof Error ? err.message : String(err)}`;
     return null;
   }
 }
@@ -487,17 +607,83 @@ function parseXimilarResponse(record: any, isAllMode = false): XimilarTags | nul
 // ============ Main Handler ============
 
 serve(async (req) => {
+  // Generate trace_id immediately for all requests
+  const traceId = generateTraceId();
+  const startTime = Date.now();
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const startTime = Date.now();
+  // Initialize debug with trace_id at the very top
+  const debug: DebugInfo = {
+    trace_id: traceId,
+    entry: {
+      source: 'unknown',
+      has_image_url: false,
+      has_image_base64: false,
+      has_page_url: false,
+      has_title_hint: false,
+      has_ximilar_key: false,
+      require_ximilar: false,
+    },
+    cache: {
+      hit: false,
+      version: CACHE_VERSION,
+      key: null,
+    },
+    image_normalize: { downloaded: false, uploaded_path: null, signed: false, content_type: null, bytes: null },
+    ximilar: { 
+      called: false, 
+      ok: false,
+      status: null,
+      request_id: null,
+      error_text: null,
+      latency_ms: 0, 
+      objects_detected: 0, 
+      primary_object_reason: null,
+      primary_object_area: null,
+      primary_object_prob: null,
+      tags_summary: '', 
+      roi_box_present: false, 
+      is_pattern_mode: false,
+      failed: false,
+      fallback_used: false,
+    },
+    serpapi: { lens_ran: false, exact_count: 0, visual_count: 0, chips_used: 0, shopping_queries: [], shopping_result_count: 0, market: 'AE' },
+    rerank: { sent_count: 0, scored_count: 0, filtered_count: 0, min_thresholds_used: { visual: 0.40, pattern: 0.50 } },
+    filters: { before_filter: 0, dropped_by_category_gate: 0, dropped_by_color_gate: 0, dropped_by_visual_threshold: 0, after_filter: 0 },
+    top5_scores: [],
+    timing_ms: { image_normalize: 0, ximilar: 0, lens: 0, chips: 0, shopping: 0, rerank: 0, total: 0 },
+  };
 
   try {
+    // Parse input FIRST to populate entry debug
+    let input: UnifiedInput;
+    try {
+      input = await req.json();
+    } catch {
+      input = { source: 'app_upload', market: 'AE' };
+    }
+
     // Get API keys
     const SERPAPI_KEY = Deno.env.get('SERPAPI_API_KEY');
     const XIMILAR_KEY = Deno.env.get('XIMILAR_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+    // Populate entry debug immediately
+    debug.entry = {
+      source: input.source || 'unknown',
+      has_image_url: !!input.image_url,
+      has_image_base64: !!input.image_base64,
+      has_page_url: !!input.page_url,
+      has_title_hint: !!input.title_hint,
+      has_ximilar_key: !!XIMILAR_KEY,
+      require_ximilar: !!input.require_ximilar,
+    };
+
+    // Log entry IMMEDIATELY before any early returns
+    console.log(`[deals-unified] ENTRY trace_id=${traceId} source=${input.source} has_image_url=${!!input.image_url} has_image_base64=${!!input.image_base64} has_page_url=${!!input.page_url} has_ximilar_key=${!!XIMILAR_KEY}`);
     
     if (!SERPAPI_KEY) {
       throw new Error('SERPAPI_API_KEY not configured');
@@ -506,8 +692,9 @@ serve(async (req) => {
     // Auth check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.log(`[deals-unified] ${traceId} AUTH_FAIL: No Authorization header`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Authorization required' }),
+        JSON.stringify({ success: false, error: 'Authorization required', debug: { trace_id: traceId } }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -519,8 +706,9 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
+      console.log(`[deals-unified] ${traceId} AUTH_FAIL: Invalid token`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid token' }),
+        JSON.stringify({ success: false, error: 'Invalid token', debug: { trace_id: traceId } }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -528,29 +716,18 @@ serve(async (req) => {
     // Rate limit
     const allowed = await checkRateLimit(supabase, user.id);
     if (!allowed) {
+      console.log(`[deals-unified] ${traceId} RATE_LIMIT user=${user.id}`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.' }),
+        JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a minute.', debug: { trace_id: traceId } }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Parse input
-    const input: UnifiedInput = await req.json();
     const market = input.market || 'AE';
     const marketParams = getMarketParams(market);
+    debug.serpapi.market = market;
 
-    console.log(`[deals-unified] Starting search for user ${user.id}, source=${input.source}, market=${market}`);
-
-    // Initialize debug info
-    const debug: DebugInfo = {
-      image_normalize: { downloaded: false, uploaded_path: null, signed: false, content_type: null, bytes: null },
-      ximilar: { called: false, latency_ms: 0, objects_detected: 0, tags_summary: '', roi_box_present: false, is_pattern_mode: false },
-      serpapi: { lens_ran: false, exact_count: 0, visual_count: 0, chips_used: 0, shopping_queries: [], shopping_result_count: 0, market },
-      rerank: { sent_count: 0, scored_count: 0, filtered_count: 0, min_thresholds_used: { visual: 0.40, pattern: 0.50 } },
-      filters: { before_filter: 0, dropped_by_category_gate: 0, dropped_by_color_gate: 0, dropped_by_visual_threshold: 0, after_filter: 0 },
-      top5_scores: [],
-      timing_ms: { image_normalize: 0, ximilar: 0, lens: 0, chips: 0, shopping: 0, rerank: 0, total: 0 },
-    };
+    console.log(`[deals-unified] ${traceId} PROCESSING user=${user.id} source=${input.source} market=${market}`);
 
     // ============ STAGE 1: Image Normalization ============
     const normalizeStart = Date.now();
@@ -558,7 +735,7 @@ serve(async (req) => {
 
     if (input.image_base64) {
       // Upload base64 to storage
-      console.log('[deals-unified] Uploading base64 image...');
+      console.log(`[deals-unified] ${traceId} Uploading base64 image...`);
       const base64Data = input.image_base64.replace(/^data:image\/\w+;base64,/, '');
       const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const imagePath = `unified/${user.id}/${crypto.randomUUID()}.jpg`;
@@ -595,7 +772,7 @@ serve(async (req) => {
         debug.image_normalize.signed = true;
       } else {
         // Download external image
-        console.log('[deals-unified] Downloading external image...');
+        console.log(`[deals-unified] ${traceId} Downloading external image...`);
         try {
           const imageResponse = await fetch(input.image_url, {
             headers: {
@@ -636,7 +813,7 @@ serve(async (req) => {
             }
           }
         } catch (err) {
-          console.warn('[deals-unified] Image download failed:', err);
+          console.warn(`[deals-unified] ${traceId} Image download failed:`, err);
           // Fall back to original URL
           signedImageUrl = input.image_url;
         }
@@ -646,19 +823,33 @@ serve(async (req) => {
     debug.timing_ms.image_normalize = Date.now() - normalizeStart;
 
     if (!signedImageUrl) {
+      console.log(`[deals-unified] ${traceId} NO_IMAGE`);
       return new Response(
-        JSON.stringify({ success: false, error: 'No valid image provided' }),
+        JSON.stringify({ success: false, error: 'No valid image provided', debug }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check cache
+    // Check cache with versioned key
     const cacheKey = hashKey(signedImageUrl + market);
+    debug.cache.key = cacheKey;
+    
     const cached = await getCache(supabase, cacheKey);
     if (cached) {
-      console.log('[deals-unified] Cache hit');
+      console.log(`[deals-unified] ${traceId} CACHE_HIT key=${cacheKey}`);
+      debug.cache.hit = true;
+      
+      // Return cached response with updated debug info
       return new Response(
-        JSON.stringify({ ...cached, cached: true }),
+        JSON.stringify({ 
+          ...cached, 
+          cached: true,
+          debug: {
+            ...cached.debug,
+            trace_id: traceId,
+            cache: { hit: true, version: CACHE_VERSION, key: cacheKey },
+          }
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -669,24 +860,52 @@ serve(async (req) => {
     let useXimilar = true;
 
     if (XIMILAR_KEY) {
-      console.log('[deals-unified] Calling Ximilar...');
-      debug.ximilar.called = true;
+      console.log(`[deals-unified] ${traceId} XIMILAR calling...`);
       
-      ximilarTags = await callXimilar(signedImageUrl, XIMILAR_KEY);
+      const ximilarResult = await callXimilar(signedImageUrl, XIMILAR_KEY);
+      
+      // Merge ximilar debug info
+      Object.assign(debug.ximilar, ximilarResult.debug);
+      ximilarTags = ximilarResult.tags;
       
       if (ximilarTags) {
-        debug.ximilar.objects_detected = 1;
         debug.ximilar.is_pattern_mode = ximilarTags.is_pattern_mode;
         debug.ximilar.roi_box_present = !!ximilarTags.roi_box;
         debug.ximilar.tags_summary = `${ximilarTags.primary_category || 'unknown'}, colors: [${ximilarTags.colors.map(c => c.name).join(',')}], patterns: [${ximilarTags.pattern_tags.join(',')}]`;
-        console.log(`[deals-unified] Ximilar: ${debug.ximilar.tags_summary}`);
+        console.log(`[deals-unified] ${traceId} XIMILAR called=true ok=true status=${debug.ximilar.status} tags="${debug.ximilar.tags_summary}"`);
       } else {
         debug.ximilar.failed = true;
         useXimilar = false;
+        console.log(`[deals-unified] ${traceId} XIMILAR called=true ok=${debug.ximilar.ok} status=${debug.ximilar.status} error="${debug.ximilar.error_text}"`);
+        
+        // Strict mode: fail if Ximilar required but failed
+        if (input.require_ximilar) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Ximilar tagging failed (strict mode enabled)', 
+              debug 
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     } else {
-      console.log('[deals-unified] Ximilar key not configured, using fallback');
+      console.log(`[deals-unified] ${traceId} XIMILAR key not configured, using fallback`);
       useXimilar = false;
+      debug.ximilar.error_text = 'XIMILAR_API_KEY not configured';
+      
+      // Strict mode: fail if Ximilar required but key missing
+      if (input.require_ximilar) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Ximilar API key not configured (strict mode enabled)', 
+            debug 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     debug.timing_ms.ximilar = Date.now() - ximilarStart;
@@ -700,7 +919,7 @@ serve(async (req) => {
     const chipsToLoop: string[] = [];
 
     // 3a. Run Google Lens
-    console.log('[deals-unified] Running Google Lens...');
+    console.log(`[deals-unified] ${traceId} Running Google Lens...`);
     const lensParams = new URLSearchParams({
       engine: 'google_lens',
       url: signedImageUrl,
@@ -726,7 +945,7 @@ serve(async (req) => {
           confidence: 0.95,
         };
         debug.serpapi.exact_count = lensData.exact_matches.length;
-        console.log(`[deals-unified] Found exact match: ${exactMatch.source}`);
+        console.log(`[deals-unified] ${traceId} Found exact match: ${exactMatch.source}`);
       }
 
       // Visual matches
@@ -760,7 +979,7 @@ serve(async (req) => {
       }
 
     } catch (err) {
-      console.error('[deals-unified] Lens error:', err);
+      console.error(`[deals-unified] ${traceId} Lens error:`, err);
     }
 
     debug.timing_ms.lens = Date.now() - lensStart;
@@ -768,7 +987,7 @@ serve(async (req) => {
     // 3b. Chip looping (max 2 chips)
     const chipStart = Date.now();
     if (chipsToLoop.length > 0) {
-      console.log(`[deals-unified] Looping ${chipsToLoop.length} chips...`);
+      console.log(`[deals-unified] ${traceId} Looping ${chipsToLoop.length} chips...`);
       
       for (const chipUrl of chipsToLoop) {
         try {
@@ -798,7 +1017,7 @@ serve(async (req) => {
             }
           }
         } catch (err) {
-          console.warn('[deals-unified] Chip loop error:', err);
+          console.warn(`[deals-unified] ${traceId} Chip loop error:`, err);
         }
       }
     }
@@ -821,7 +1040,7 @@ serve(async (req) => {
       debug.ximilar.fallback_used = true;
     }
 
-    console.log(`[deals-unified] Query hint: "${hintString}"`);
+    console.log(`[deals-unified] ${traceId} Query hint: "${hintString}"`);
 
     // Build query pack
     const searchQueries: string[] = [];
@@ -875,7 +1094,7 @@ serve(async (req) => {
       });
 
       try {
-        console.log(`[deals-unified] Shopping: "${query.substring(0, 40)}..."`);
+        console.log(`[deals-unified] ${traceId} Shopping: "${query.substring(0, 40)}..."`);
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
 
@@ -900,7 +1119,7 @@ serve(async (req) => {
           });
         }
       } catch (err) {
-        console.warn(`[deals-unified] Shopping error:`, err);
+        console.warn(`[deals-unified] ${traceId} Shopping error:`, err);
       }
     }
 
@@ -917,7 +1136,7 @@ serve(async (req) => {
     debug.rerank.min_thresholds_used = { visual: minVisualThreshold, pattern: minPatternThreshold };
 
     if (allShoppingResults.length >= 5 && LOVABLE_API_KEY) {
-      console.log(`[deals-unified] Running visual rerank on ${Math.min(allShoppingResults.length, 30)} results, patternMode=${isPatternMode}...`);
+      console.log(`[deals-unified] ${traceId} Running visual rerank on ${Math.min(allShoppingResults.length, 30)} results, patternMode=${isPatternMode}...`);
       
       try {
         const topResults = allShoppingResults.slice(0, 30);
@@ -963,7 +1182,7 @@ serve(async (req) => {
           }
         }
       } catch (err) {
-        console.warn('[deals-unified] Visual rerank failed:', err);
+        console.warn(`[deals-unified] ${traceId} Visual rerank failed:`, err);
       }
     }
 
@@ -1110,7 +1329,7 @@ serve(async (req) => {
       results_count: allShoppingResults.length,
       exact_match_found: !!exactMatch,
       pipeline_timing_ms: debug.timing_ms,
-    }).then(() => {}).catch(err => console.warn('[deals-unified] Failed to log search run:', err));
+    }).then(() => {}).catch(err => console.warn(`[deals-unified] ${traceId} Failed to log search run:`, err));
 
     // ============ Build Response ============
     const response = {
@@ -1133,7 +1352,7 @@ serve(async (req) => {
     // Cache response
     await setCache(supabase, cacheKey, response);
 
-    console.log(`[deals-unified] Success: ${allShoppingResults.length} deals found in ${debug.timing_ms.total}ms`);
+    console.log(`[deals-unified] ${traceId} SUCCESS deals=${allShoppingResults.length} ximilar_ok=${debug.ximilar.ok} time=${debug.timing_ms.total}ms`);
 
     return new Response(
       JSON.stringify(response),
@@ -1141,7 +1360,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[deals-unified] Error:', error);
+    console.error(`[deals-unified] ${traceId} ERROR:`, error);
+    debug.timing_ms.total = Date.now() - startTime;
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -1150,6 +1371,7 @@ serve(async (req) => {
         visual_matches: [],
         price_stats: { low: null, median: null, high: null, valid_count: 0 },
         deals_found: 0,
+        debug,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
