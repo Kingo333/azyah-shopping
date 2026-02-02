@@ -9,13 +9,37 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const CACHE_VERSION = 'v3'; // Bump for structured hint + color ranking changes
+const CACHE_VERSION = 'v4'; // Bump for priority-group ranking (Color → Type → Pattern → Silhouette)
 const MIN_RESULTS_FLOOR = 10;
 const MAX_CHIP_LOOPS = 2;
-const COLOR_PASS_THRESHOLD = 0.50; // colorSubScore >= this means "color pass"
+
+// Priority-group ranking thresholds (per audit: Color → Type → Pattern → Silhouette)
+const COLOR_PASS_THRESHOLD = 0.55;    // colorSubScore >= this means "color pass" (raised from 0.50)
+const TYPE_PASS_THRESHOLD = 0.50;     // type match score threshold
+const PATTERN_PASS_THRESHOLD = 0.50;  // pattern score threshold (for patterned items)
 
 // Feature flag for Ximilar (can be disabled via env var)
 const USE_XIMILAR = Deno.env.get('USE_XIMILAR') !== 'false';  // Default true
+
+// Item type categories for cheap detection
+const ITEM_TYPE_LONG = ['abaya', 'maxi', 'gown', 'dress', 'kaftan', 'jalabiya', 'jilbab', 'coat', 'trench', 'duster', 'robe'];
+const ITEM_TYPE_TOP = ['top', 'blouse', 'shirt', 'sweater', 'hoodie', 'cardigan', 'jacket', 'blazer', 'tunic'];
+const ITEM_TYPE_BOTTOM = ['pants', 'shorts', 'jeans', 'skirt', 'trousers'];
+const ITEM_TYPE_ACCESSORY = ['bag', 'handbag', 'clutch', 'tote', 'purse', 'shoes', 'heels', 'sandals', 'sneakers'];
+
+// Color family mapping for cheap thumbnail filtering
+const COLOR_FAMILIES: Record<string, string[]> = {
+  'purple_family': ['purple', 'violet', 'lavender', 'mauve', 'plum', 'maroon', 'burgundy', 'lilac', 'amethyst'],
+  'brown_family': ['brown', 'tan', 'beige', 'camel', 'taupe', 'rust', 'bronze', 'chocolate', 'coffee', 'mocha'],
+  'gold_family': ['gold', 'champagne', 'mustard', 'amber', 'honey', 'brass', 'golden'],
+  'blue_family': ['blue', 'navy', 'teal', 'turquoise', 'aqua', 'cobalt', 'indigo', 'azure', 'sapphire', 'denim'],
+  'green_family': ['green', 'olive', 'sage', 'emerald', 'mint', 'forest', 'lime', 'khaki', 'moss'],
+  'pink_family': ['pink', 'coral', 'blush', 'rose', 'salmon', 'fuchsia', 'magenta', 'peach'],
+  'red_family': ['red', 'crimson', 'scarlet', 'ruby', 'cherry', 'wine', 'burgundy', 'maroon'],
+  'black_family': ['black', 'charcoal', 'ebony', 'jet', 'onyx'],
+  'white_family': ['white', 'cream', 'ivory', 'snow', 'pearl', 'off-white', 'eggshell'],
+  'grey_family': ['grey', 'gray', 'silver', 'slate', 'ash', 'pewter', 'stone'],
+};
 
 // ============ Interfaces ============
 
@@ -86,8 +110,13 @@ interface ShoppingResult {
   };
   tag_agreement?: number;
   is_exact_match?: boolean;
-  was_reranked?: boolean;  // NEW: Track if this result went through visual rerank
-  color_pass?: boolean;    // NEW: Track if this result passed color threshold
+  was_reranked?: boolean;     // Track if this result went through visual rerank
+  color_pass?: boolean;       // Track if this result passed color threshold
+  type_pass?: boolean;        // NEW: Track if this result passed item type match
+  pattern_pass?: boolean;     // NEW: Track if this result passed pattern match
+  ranking_group?: 'A' | 'B' | 'C' | 'D';  // NEW: Priority ranking group
+  cheap_color_bucket?: 'likely' | 'unknown' | 'unlikely';  // NEW: Cheap color filter result
+  cheap_type_bucket?: 'long' | 'top' | 'bottom' | 'accessory' | 'unknown';  // NEW: Cheap type detection
 }
 
 interface DebugInfo {
@@ -142,11 +171,20 @@ interface DebugInfo {
     shopping_raw_in: number;
     after_dedupe: number;
     with_valid_thumbnail: number;
+    cheap_color_likely_n: number;     // NEW: Cheap filter bucket count
+    cheap_color_unlikely_n: number;   // NEW: Cheap filter bucket count
+    cheap_type_matched_n: number;     // NEW: Items matching target type
     after_rerank: number;
     final_returned: number;
-    reranked_top15_n: number;      // NEW: How many of the top 15 were reranked
-    top10_has_unreranked_n: number; // NEW: How many of top 10 were NOT reranked
-    returned_top10_color_pass_n: number; // NEW: How many of top 10 passed color threshold
+    reranked_top15_n: number;
+    top10_has_unreranked_n: number;
+    returned_top10_color_pass_n: number;
+    returned_top10_type_pass_n: number;    // NEW: Type pass count in top 10
+    returned_top10_pattern_pass_n: number; // NEW: Pattern pass count in top 10
+    group_a_count: number;  // NEW: Count of Group A (color+type+pattern) results
+    group_b_count: number;  // NEW: Count of Group B results
+    group_c_count: number;  // NEW: Count of Group C results
+    group_d_count: number;  // NEW: Count of Group D results
   };
   filters: {
     before_filter: number;
@@ -155,7 +193,7 @@ interface DebugInfo {
     dropped_by_visual_threshold: number;
     after_filter: number;
   };
-  top5_scores: Array<{ url: string; visual: number; color: number; tag_agree: number; final: number; was_reranked: boolean; color_pass: boolean }>;
+  top5_scores: Array<{ url: string; visual: number; color: number; tag_agree: number; final: number; was_reranked: boolean; color_pass: boolean; type_pass?: boolean; pattern_pass?: boolean; ranking_group?: string }>;
   description_hint_raw: string | null;  // NEW: Raw description from ROI
   description_hint_parsed: ParsedDescriptionHint | null;  // NEW: Structured parsed hint
   ximilar_health: {  // NEW: Ximilar health summary
@@ -445,6 +483,105 @@ function buildHintFromParsedDescription(parsed: ParsedDescriptionHint): string {
   }
   
   return parts.join(' ');
+}
+
+// ============ Cheap Pre-Filters (NO LLM calls) ============
+
+// Map detected colors to color family for cheap filtering
+function getColorFamily(colors: string[]): string[] {
+  const families: Set<string> = new Set();
+  for (const color of colors) {
+    const lowerColor = color.toLowerCase();
+    for (const [family, members] of Object.entries(COLOR_FAMILIES)) {
+      if (members.some(m => lowerColor.includes(m) || m.includes(lowerColor))) {
+        families.add(family);
+      }
+    }
+  }
+  return Array.from(families);
+}
+
+// Cheap color check using title (titles often omit color, so neutral if missing)
+function cheapColorCheck(candidateTitle: string, targetFamilies: string[]): 'likely' | 'unknown' | 'unlikely' {
+  if (targetFamilies.length === 0) return 'unknown'; // No target = neutral
+  
+  const lowerTitle = candidateTitle.toLowerCase();
+  
+  // Check if title contains any color from target families
+  for (const family of targetFamilies) {
+    const familyColors = COLOR_FAMILIES[family] || [];
+    if (familyColors.some(color => lowerTitle.includes(color))) {
+      return 'likely';
+    }
+  }
+  
+  // Check if title has ANY color words (conflicting color)
+  const hasAnyColor = Object.values(COLOR_FAMILIES)
+    .flat()
+    .some(c => lowerTitle.includes(c));
+  
+  // If title has a different color, it's unlikely; if no color mentioned, unknown
+  return hasAnyColor ? 'unlikely' : 'unknown';
+}
+
+// Detect item type from category/description using heuristics
+function detectItemType(category: string | null): 'long' | 'top' | 'bottom' | 'accessory' | 'unknown' {
+  if (!category) return 'unknown';
+  
+  const lowerCat = category.toLowerCase();
+  
+  if (ITEM_TYPE_LONG.some(t => lowerCat.includes(t))) return 'long';
+  if (ITEM_TYPE_TOP.some(t => lowerCat.includes(t))) return 'top';
+  if (ITEM_TYPE_BOTTOM.some(t => lowerCat.includes(t))) return 'bottom';
+  if (ITEM_TYPE_ACCESSORY.some(t => lowerCat.includes(t))) return 'accessory';
+  
+  return 'unknown';
+}
+
+// Cheap type check using title
+function cheapTypeCheck(candidateTitle: string, targetType: 'long' | 'top' | 'bottom' | 'accessory' | 'unknown'): boolean {
+  if (targetType === 'unknown') return true; // No constraint
+  
+  const lowerTitle = candidateTitle.toLowerCase();
+  
+  switch (targetType) {
+    case 'long':
+      return ITEM_TYPE_LONG.some(t => lowerTitle.includes(t));
+    case 'top':
+      return ITEM_TYPE_TOP.some(t => lowerTitle.includes(t));
+    case 'bottom':
+      return ITEM_TYPE_BOTTOM.some(t => lowerTitle.includes(t));
+    case 'accessory':
+      return ITEM_TYPE_ACCESSORY.some(t => lowerTitle.includes(t));
+    default:
+      return true;
+  }
+}
+
+// Compute ranking group based on pass flags (Color → Type → Pattern priority)
+function computeRankingGroup(
+  colorPass: boolean,
+  typePass: boolean,
+  patternPass: boolean,
+  isPatternRequired: boolean
+): 'A' | 'B' | 'C' | 'D' {
+  // Group A: Best matches (all requirements met)
+  if (colorPass && typePass && (!isPatternRequired || patternPass)) {
+    return 'A';
+  }
+  
+  // Group B: Color + Type pass, but pattern not confirmed
+  if (colorPass && typePass) {
+    return 'B';
+  }
+  
+  // Group C: Color pass but type uncertain
+  if (colorPass) {
+    return 'C';
+  }
+  
+  // Group D: Everything else
+  return 'D';
 }
 
 // ============ Rate Limiting & Caching ============
@@ -769,12 +906,21 @@ serve(async (req) => {
       lens_visual_after_domain_filter: 0, 
       shopping_raw_in: 0, 
       after_dedupe: 0, 
-      with_valid_thumbnail: 0, 
+      with_valid_thumbnail: 0,
+      cheap_color_likely_n: 0,
+      cheap_color_unlikely_n: 0,
+      cheap_type_matched_n: 0,
       after_rerank: 0, 
       final_returned: 0,
       reranked_top15_n: 0,
       top10_has_unreranked_n: 0,
       returned_top10_color_pass_n: 0,
+      returned_top10_type_pass_n: 0,
+      returned_top10_pattern_pass_n: 0,
+      group_a_count: 0,
+      group_b_count: 0,
+      group_c_count: 0,
+      group_d_count: 0,
     },
     filters: { before_filter: 0, dropped_by_category_gate: 0, dropped_by_color_gate: 0, dropped_by_visual_threshold: 0, after_filter: 0 },
     top5_scores: [],
@@ -1383,63 +1529,69 @@ serve(async (req) => {
 
     debug.timing_ms.rerank = Date.now() - rerankStart;
 
-    // ============ STAGE 5: Filtering + Scoring ============
+    // ============ STAGE 5: Priority-Group Ranking (Color → Type → Pattern → Silhouette) ============
     const ximilarColors = useXimilar && ximilarTags ? ximilarTags.colors.map(c => c.name) : fallbackDescriptors.colors;
     const ximilarCategory = useXimilar && ximilarTags ? (ximilarTags.subcategory || ximilarTags.primary_category) : fallbackDescriptors.categories[0];
     const ximilarPatterns = useXimilar && ximilarTags ? ximilarTags.pattern_tags : fallbackDescriptors.patterns;
+    
+    // Determine target item type and color families for cheap filtering
+    const targetItemType = detectItemType(ximilarCategory || parsedDescHint?.category || null);
+    const targetColorFamilies = getColorFamily(ximilarColors.length > 0 ? ximilarColors : (parsedDescHint?.colors || []));
+    const isPatternRequired = isPatternMode && (ximilarPatterns.length > 0 || parsedDescHint?.pattern);
+    
+    console.log(`[deals-unified] ${traceId} Target: type=${targetItemType}, colors=${targetColorFamilies.join(',')}, patternRequired=${isPatternRequired}`);
 
-    // Compute tag agreement and apply soft filters
+    // Apply cheap pre-filters and compute tag agreement
+    let cheapColorLikelyN = 0;
+    let cheapColorUnlikelyN = 0;
+    let cheapTypeMatchedN = 0;
+    
     for (const result of allShoppingResults) {
       const resultTitle = (result.title || '').toLowerCase();
       const visualScore = result.similarity_score ?? 0;
       const colorSubScore = result.sub_scores?.color ?? 0;
+      const patternSubScore = result.sub_scores?.pattern ?? 0;
+      const silhouetteSubScore = result.sub_scores?.silhouette ?? 0;
+      
+      // Cheap color bucket (for debugging, not hard-filtering)
+      result.cheap_color_bucket = cheapColorCheck(resultTitle, targetColorFamilies);
+      if (result.cheap_color_bucket === 'likely') cheapColorLikelyN++;
+      if (result.cheap_color_bucket === 'unlikely') cheapColorUnlikelyN++;
+      
+      // Cheap type bucket
+      result.cheap_type_bucket = targetItemType;
+      const typeMatchesTitle = cheapTypeCheck(resultTitle, targetItemType);
+      if (typeMatchesTitle) cheapTypeMatchedN++;
       
       let tagAgreement = 0;
-      let penalized = false;
       
-      // Category match (soft - 0.15-0.25)
+      // Category/type match (soft - 0.15-0.25)
       if (ximilarCategory) {
         const categoryMatch = resultTitle.includes(ximilarCategory.toLowerCase());
         if (categoryMatch) {
           tagAgreement += isPatternMode ? 0.15 : 0.25;
         } else if (visualScore < 0.70) {
-          // Penalize only if visual is not strong
           debug.filters.dropped_by_category_gate++;
-          penalized = true;
         }
       }
       
       // Color match: VISUAL-FIRST per audit (image-based color score is primary)
-      // Title match is now a BONUS, not primary
       if (ximilarColors.length > 0) {
         const titleHasColor = ximilarColors.some(c => resultTitle.includes(c));
         
-        // PRIMARY: Use visual color sub-score from rerank
         if (colorSubScore >= 0.60) {
-          // High color match from image comparison - strong boost
           tagAgreement += isPatternMode ? 0.30 : 0.40;
         } else if (colorSubScore >= 0.45) {
-          // Medium color match - moderate boost
           tagAgreement += isPatternMode ? 0.20 : 0.30;
-          // Title confirmation gives extra bonus
-          if (titleHasColor) {
-            tagAgreement += 0.10;
-          }
+          if (titleHasColor) tagAgreement += 0.10;
         } else if (colorSubScore >= 0.30) {
-          // Low-medium color match - only if title confirms
-          if (titleHasColor) {
-            tagAgreement += isPatternMode ? 0.15 : 0.20;
-          }
+          if (titleHasColor) tagAgreement += isPatternMode ? 0.15 : 0.20;
         } else if (colorSubScore > 0 && colorSubScore < 0.25) {
-          // Very low color match - apply penalty (stronger than before: was -0.10)
           debug.filters.dropped_by_color_gate++;
           tagAgreement -= 0.25;
-          penalized = true;
         } else if (!titleHasColor && colorSubScore === 0) {
-          // No visual score and no title match - light penalty
           debug.filters.dropped_by_color_gate++;
           tagAgreement -= 0.15;
-          penalized = true;
         }
       }
       
@@ -1453,11 +1605,6 @@ serve(async (req) => {
       
       result.tag_agreement = Math.max(0, Math.min(1, tagAgreement));
       
-      // Apply visual threshold filter (HARD for very low scores)
-      if (visualScore > 0 && visualScore < minVisualThreshold && !penalized) {
-        debug.filters.dropped_by_visual_threshold++;
-      }
-      
       // Check for exact match (extension mode only)
       if (input.source === 'chrome_extension' && input.page_url) {
         const pageDomain = extractDomain(input.page_url);
@@ -1467,48 +1614,91 @@ serve(async (req) => {
         }
       }
     }
+    
+    // Update cheap filter counts
+    debug.counts.cheap_color_likely_n = cheapColorLikelyN;
+    debug.counts.cheap_color_unlikely_n = cheapColorUnlikelyN;
+    debug.counts.cheap_type_matched_n = cheapTypeMatchedN;
 
-    // Final scoring formula + color_pass computation
+    // Final scoring + pass computation with STRICT PRIORITY ordering
+    let groupACnt = 0, groupBCnt = 0, groupCCnt = 0, groupDCnt = 0;
+    
     for (const result of allShoppingResults) {
       const visualScore = result.similarity_score ?? 0.3;
       const tagAgreement = result.tag_agreement ?? 0;
       const exactBonus = result.is_exact_match ? 0.10 : 0;
       
+      // Compute final score blend
       if (isPatternMode) {
-        // Pattern mode: 65% visual, 25% tag agreement, 10% exact
         result.similarity_score = (visualScore * 0.65) + (tagAgreement * 0.25) + exactBonus;
       } else {
-        // Normal mode: 60% visual, 30% tag agreement, 10% exact
         result.similarity_score = (visualScore * 0.60) + (tagAgreement * 0.30) + exactBonus;
       }
       
-      // NEW: Compute color_pass - ONLY for reranked items with real scores
-      // Non-reranked items get color_pass = false (per audit tweak #1)
+      // Compute pass flags - ONLY for reranked items with real scores
       const colorSubScore = result.sub_scores?.color ?? 0;
+      const patternSubScore = result.sub_scores?.pattern ?? 0;
+      const silhouetteSubScore = result.sub_scores?.silhouette ?? 0;
+      
       if (result.was_reranked && colorSubScore > 0) {
+        // Color pass: PRIMARY ranking criterion
         result.color_pass = colorSubScore >= COLOR_PASS_THRESHOLD;
+        
+        // Type pass: Use silhouette as proxy (tall/narrow = long garment, short/wide = top/accessory)
+        // Combined with title type detection for better accuracy
+        const titleTypeMatch = cheapTypeCheck(result.title, targetItemType);
+        const silhouetteTypeMatch = silhouetteSubScore >= TYPE_PASS_THRESHOLD;
+        result.type_pass = titleTypeMatch || silhouetteTypeMatch;
+        
+        // Pattern pass: For pattern-required searches
+        if (isPatternRequired) {
+          const titlePatternMatch = ximilarPatterns.some(p => result.title.toLowerCase().includes(p));
+          result.pattern_pass = patternSubScore >= PATTERN_PASS_THRESHOLD || titlePatternMatch;
+        } else {
+          result.pattern_pass = true;  // Not required, auto-pass
+        }
       } else {
-        result.color_pass = false;  // Non-reranked items cannot pass color gate
+        // Non-reranked items: cannot meet criteria
+        result.color_pass = false;
+        result.type_pass = false;
+        result.pattern_pass = !isPatternRequired;  // Only fail if pattern was required
+      }
+      
+      // Compute ranking group (strict priority: Color → Type → Pattern)
+      result.ranking_group = computeRankingGroup(
+        result.color_pass ?? false,
+        result.type_pass ?? false,
+        result.pattern_pass ?? false,
+        !!isPatternRequired
+      );
+      
+      // Track group counts
+      switch (result.ranking_group) {
+        case 'A': groupACnt++; break;
+        case 'B': groupBCnt++; break;
+        case 'C': groupCCnt++; break;
+        case 'D': groupDCnt++; break;
       }
     }
+    
+    debug.counts.group_a_count = groupACnt;
+    debug.counts.group_b_count = groupBCnt;
+    debug.counts.group_c_count = groupCCnt;
+    debug.counts.group_d_count = groupDCnt;
 
-    // NEW: TWO-STAGE SORT for color-first ranking (per audit requirement)
-    // Stage A: Color-passing reranked items float to top
-    // Stage B: Within same color_pass group, sort by similarity_score
+    // PRIORITY-GROUP SORT: A > B > C > D, then by similarity_score within each group
+    // This guarantees: Top 10 comes from Group A if available, then B, then C, never D unless necessary
     allShoppingResults.sort((a, b) => {
-      // First: reranked items with color_pass go to top
-      const aColorPass = a.was_reranked && a.color_pass;
-      const bColorPass = b.was_reranked && b.color_pass;
-      if (aColorPass && !bColorPass) return -1;
-      if (!aColorPass && bColorPass) return 1;
+      const groupOrder = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+      const aGroup = groupOrder[a.ranking_group ?? 'D'];
+      const bGroup = groupOrder[b.ranking_group ?? 'D'];
       
-      // Second: reranked items without color_pass
-      const aReranked = a.was_reranked ?? false;
-      const bReranked = b.was_reranked ?? false;
-      if (aReranked && !bReranked) return -1;
-      if (!aReranked && bReranked) return 1;
+      // First: sort by group (A first, D last)
+      if (aGroup !== bGroup) {
+        return aGroup - bGroup;
+      }
       
-      // Third: by similarity score within same group
+      // Second: within same group, sort by final score
       return (b.similarity_score ?? 0) - (a.similarity_score ?? 0);
     });
     
@@ -1517,10 +1707,12 @@ serve(async (req) => {
       result.position = index + 1;
     });
     
-    // NEW: Compute key acceptance metrics
+    // Compute key acceptance metrics
     const top10 = allShoppingResults.slice(0, 10);
     const top15 = allShoppingResults.slice(0, 15);
     debug.counts.returned_top10_color_pass_n = top10.filter(r => r.color_pass).length;
+    debug.counts.returned_top10_type_pass_n = top10.filter(r => r.type_pass).length;
+    debug.counts.returned_top10_pattern_pass_n = top10.filter(r => r.pattern_pass).length;
     debug.counts.top10_has_unreranked_n = top10.filter(r => !r.was_reranked).length;
     debug.counts.reranked_top15_n = top15.filter(r => r.was_reranked).length;
 
@@ -1551,7 +1743,7 @@ serve(async (req) => {
       }
     }
 
-    // ============ Top 5 scores for debug (including color sub-score, was_reranked, color_pass) ============
+    // ============ Top 5 scores for debug (enhanced with type/pattern/group) ============
     debug.top5_scores = allShoppingResults.slice(0, 5).map(r => ({
       url: r.link.substring(0, 60),
       visual: r.sub_scores ? (r.sub_scores.pattern + r.sub_scores.silhouette + r.sub_scores.color) / 3 : 0,
@@ -1560,6 +1752,9 @@ serve(async (req) => {
       final: r.similarity_score ?? 0,
       was_reranked: r.was_reranked ?? false,
       color_pass: r.color_pass ?? false,
+      type_pass: r.type_pass ?? false,
+      pattern_pass: r.pattern_pass ?? false,
+      ranking_group: r.ranking_group ?? 'D',
     }));
     
     // Set final count

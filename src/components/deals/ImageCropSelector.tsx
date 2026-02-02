@@ -302,28 +302,11 @@ export function ImageCropSelector({
                 </div>
               )}
               
-              {/* Other candidate boxes (subtle indicators with labels) */}
-              {!isDetecting && candidateBoxes.map((box, idx) => {
-                if (idx === selectedBoxIndex) return null;
-                const boxPixels = cropRectToPixels(boxToCropRect(box), displayDimensions.width, displayDimensions.height);
-                return (
-                  <div
-                    key={idx}
-                    className="absolute border border-dashed border-white/40 rounded pointer-events-none"
-                    style={{
-                      left: boxPixels.x,
-                      top: boxPixels.y,
-                      width: boxPixels.width,
-                      height: boxPixels.height,
-                    }}
-                  >
-                    {/* Label badge */}
-                    <div className="absolute -top-5 left-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                      {box.label}
-                    </div>
-                  </div>
-                );
-              })}
+              {/* 
+                REMOVED: Other candidate box markers (per audit cleanup)
+                Only the selected box is now rendered to avoid clutter.
+                Users can tap anywhere on the image to reselect if needed.
+              */}
               
               {/* Active crop box */}
               {!isDetecting && (
