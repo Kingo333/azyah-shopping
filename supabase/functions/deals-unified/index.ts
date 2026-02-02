@@ -9,11 +9,22 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const CACHE_VERSION = 'v2'; // Bump when Ximilar integration changes
+const CACHE_VERSION = 'v3'; // Bump for structured hint + color ranking changes
 const MIN_RESULTS_FLOOR = 10;
 const MAX_CHIP_LOOPS = 2;
+const COLOR_PASS_THRESHOLD = 0.50; // colorSubScore >= this means "color pass"
+
+// Feature flag for Ximilar (can be disabled via env var)
+const USE_XIMILAR = Deno.env.get('USE_XIMILAR') !== 'false';  // Default true
 
 // ============ Interfaces ============
+
+interface ParsedDescriptionHint {
+  colors: string[];
+  category: string | null;
+  pattern: string | null;
+  raw: string;
+}
 
 interface UnifiedInput {
   source: 'app_upload' | 'chrome_extension' | 'safari_extension';
@@ -25,6 +36,7 @@ interface UnifiedInput {
   image_url?: string;
   image_base64?: string;
   require_ximilar?: boolean; // Strict mode: fail if Ximilar fails
+  description_hint?: string;  // NEW: Raw description from ROI detection (e.g., "long purple and brown abaya")
 }
 
 interface XimilarTags {
@@ -74,6 +86,8 @@ interface ShoppingResult {
   };
   tag_agreement?: number;
   is_exact_match?: boolean;
+  was_reranked?: boolean;  // NEW: Track if this result went through visual rerank
+  color_pass?: boolean;    // NEW: Track if this result passed color threshold
 }
 
 interface DebugInfo {
@@ -84,6 +98,7 @@ interface DebugInfo {
     has_image_base64: boolean;
     has_page_url: boolean;
     has_title_hint: boolean;
+    has_description_hint: boolean;  // NEW
     has_ximilar_key: boolean;
     require_ximilar: boolean;
   };
@@ -91,6 +106,11 @@ interface DebugInfo {
     hit: boolean;
     version: string;
     key: string | null;
+    key_components: {  // NEW: Expose cache key components for debugging
+      market: string;
+      use_ximilar: boolean;
+      hint_colors: string;
+    };
   };
   image_normalize: {
     downloaded: boolean;
@@ -124,6 +144,9 @@ interface DebugInfo {
     with_valid_thumbnail: number;
     after_rerank: number;
     final_returned: number;
+    reranked_top15_n: number;      // NEW: How many of the top 15 were reranked
+    top10_has_unreranked_n: number; // NEW: How many of top 10 were NOT reranked
+    returned_top10_color_pass_n: number; // NEW: How many of top 10 passed color threshold
   };
   filters: {
     before_filter: number;
@@ -132,7 +155,16 @@ interface DebugInfo {
     dropped_by_visual_threshold: number;
     after_filter: number;
   };
-  top5_scores: Array<{ url: string; visual: number; color: number; tag_agree: number; final: number }>;
+  top5_scores: Array<{ url: string; visual: number; color: number; tag_agree: number; final: number; was_reranked: boolean; color_pass: boolean }>;
+  description_hint_raw: string | null;  // NEW: Raw description from ROI
+  description_hint_parsed: ParsedDescriptionHint | null;  // NEW: Structured parsed hint
+  ximilar_health: {  // NEW: Ximilar health summary
+    enabled: boolean;
+    called: boolean;
+    success: boolean;
+    status_code: number | null;
+    plan_hint: 'ok' | 'upgrade_required' | 'disabled' | 'error' | null;
+  };
   timing_ms: {
     image_normalize: number;
     ximilar: number;
@@ -347,6 +379,70 @@ function buildHintFromDescriptors(
   if (categories.length > 0) parts.push(categories[0]);
   if (colors.length > 0) parts.push(colors[0]);
   if (colors.length > 1) parts.push(colors[1]);
+  
+  return parts.join(' ');
+}
+
+// NEW: Parse description_hint from ROI detection into structured fields
+// Converts "long purple and brown printed abaya" → { colors: ['purple', 'brown'], category: 'abaya', pattern: 'printed' }
+function parseDescriptionHint(rawDescription: string): ParsedDescriptionHint {
+  const result: ParsedDescriptionHint = {
+    colors: [],
+    category: null,
+    pattern: null,
+    raw: rawDescription,
+  };
+  
+  if (!rawDescription) return result;
+  
+  const lowerDesc = rawDescription.toLowerCase();
+  
+  // Extract colors using the color vocabulary
+  result.colors = COLOR_WORDS.filter(color => {
+    // Match whole words to avoid partial matches (e.g., "gold" in "golden")
+    const regex = new RegExp(`\\b${color}\\b`, 'i');
+    return regex.test(lowerDesc);
+  }).slice(0, 3);  // Limit to 3 colors max
+  
+  // Extract category
+  for (const cat of CATEGORY_WORDS) {
+    const regex = new RegExp(`\\b${cat}\\b`, 'i');
+    if (regex.test(lowerDesc)) {
+      result.category = cat;
+      break;  // Take first match (usually most specific)
+    }
+  }
+  
+  // Extract pattern
+  for (const pat of PATTERN_WORDS) {
+    const regex = new RegExp(`\\b${pat}\\b`, 'i');
+    if (regex.test(lowerDesc)) {
+      result.pattern = pat;
+      break;
+    }
+  }
+  
+  return result;
+}
+
+// Build hint from parsed description hint
+function buildHintFromParsedDescription(parsed: ParsedDescriptionHint): string {
+  const parts: string[] = [];
+  
+  // Pattern first if present
+  if (parsed.pattern) {
+    parts.push(parsed.pattern);
+  }
+  
+  // Category
+  if (parsed.category) {
+    parts.push(parsed.category);
+  }
+  
+  // Colors (max 2)
+  for (const color of parsed.colors.slice(0, 2)) {
+    parts.push(color);
+  }
   
   return parts.join(' ');
 }
@@ -634,6 +730,7 @@ serve(async (req) => {
       has_image_base64: false,
       has_page_url: false,
       has_title_hint: false,
+      has_description_hint: false,
       has_ximilar_key: false,
       require_ximilar: false,
     },
@@ -641,6 +738,11 @@ serve(async (req) => {
       hit: false,
       version: CACHE_VERSION,
       key: null,
+      key_components: {
+        market: 'AE',
+        use_ximilar: USE_XIMILAR,
+        hint_colors: '',
+      },
     },
     image_normalize: { downloaded: false, uploaded_path: null, signed: false, content_type: null, bytes: null },
     ximilar: { 
@@ -662,9 +764,29 @@ serve(async (req) => {
     },
     serpapi: { lens_ran: false, exact_count: 0, visual_count: 0, chips_used: 0, shopping_queries: [], shopping_result_count: 0, market: 'AE' },
     rerank: { sent_count: 0, scored_count: 0, filtered_count: 0, min_thresholds_used: { visual: 0.40, pattern: 0.50 } },
-    counts: { lens_visual_in: 0, lens_visual_after_domain_filter: 0, shopping_raw_in: 0, after_dedupe: 0, with_valid_thumbnail: 0, after_rerank: 0, final_returned: 0 },
+    counts: { 
+      lens_visual_in: 0, 
+      lens_visual_after_domain_filter: 0, 
+      shopping_raw_in: 0, 
+      after_dedupe: 0, 
+      with_valid_thumbnail: 0, 
+      after_rerank: 0, 
+      final_returned: 0,
+      reranked_top15_n: 0,
+      top10_has_unreranked_n: 0,
+      returned_top10_color_pass_n: 0,
+    },
     filters: { before_filter: 0, dropped_by_category_gate: 0, dropped_by_color_gate: 0, dropped_by_visual_threshold: 0, after_filter: 0 },
     top5_scores: [],
+    description_hint_raw: null,
+    description_hint_parsed: null,
+    ximilar_health: {
+      enabled: USE_XIMILAR,
+      called: false,
+      success: false,
+      status_code: null,
+      plan_hint: null,
+    },
     timing_ms: { image_normalize: 0, ximilar: 0, lens: 0, chips: 0, shopping: 0, rerank: 0, total: 0 },
   };
 
@@ -689,12 +811,21 @@ serve(async (req) => {
       has_image_base64: !!input.image_base64,
       has_page_url: !!input.page_url,
       has_title_hint: !!input.title_hint,
+      has_description_hint: !!input.description_hint,
       has_ximilar_key: !!XIMILAR_KEY,
       require_ximilar: !!input.require_ximilar,
     };
 
+    // Parse description_hint into structured fields (NEW)
+    let parsedDescHint: ParsedDescriptionHint | null = null;
+    if (input.description_hint) {
+      parsedDescHint = parseDescriptionHint(input.description_hint);
+      debug.description_hint_raw = input.description_hint;
+      debug.description_hint_parsed = parsedDescHint;
+    }
+
     // Log entry IMMEDIATELY before any early returns
-    console.log(`[deals-unified] ENTRY trace_id=${traceId} source=${input.source} has_image_url=${!!input.image_url} has_image_base64=${!!input.image_base64} has_page_url=${!!input.page_url} has_ximilar_key=${!!XIMILAR_KEY}`);
+    console.log(`[deals-unified] ENTRY trace_id=${traceId} source=${input.source} has_image_url=${!!input.image_url} has_image_base64=${!!input.image_base64} has_page_url=${!!input.page_url} has_desc_hint=${!!input.description_hint} has_ximilar_key=${!!XIMILAR_KEY}`);
     
     if (!SERPAPI_KEY) {
       throw new Error('SERPAPI_API_KEY not configured');
@@ -841,9 +972,16 @@ serve(async (req) => {
       );
     }
 
-    // Check cache with versioned key
-    const cacheKey = hashKey(signedImageUrl + market);
+    // Check cache with versioned key that includes hint colors + ximilar flag
+    const hintColorsForKey = parsedDescHint?.colors?.join(',') || '';
+    const cacheKeyComponents = `${signedImageUrl}|${market}|${USE_XIMILAR}|${hintColorsForKey}`;
+    const cacheKey = hashKey(cacheKeyComponents);
     debug.cache.key = cacheKey;
+    debug.cache.key_components = {
+      market,
+      use_ximilar: USE_XIMILAR,
+      hint_colors: hintColorsForKey,
+    };
     
     const cached = await getCache(supabase, cacheKey);
     if (cached) {
@@ -858,7 +996,7 @@ serve(async (req) => {
           debug: {
             ...cached.debug,
             trace_id: traceId,
-            cache: { hit: true, version: CACHE_VERSION, key: cacheKey },
+            cache: { hit: true, version: CACHE_VERSION, key: cacheKey, key_components: debug.cache.key_components },
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -868,9 +1006,21 @@ serve(async (req) => {
     // ============ STAGE 2: Ximilar Tagging ============
     const ximilarStart = Date.now();
     let ximilarTags: XimilarTags | null = null;
-    let useXimilar = true;
+    let useXimilar = USE_XIMILAR;
 
-    if (XIMILAR_KEY) {
+    // Only call Ximilar if feature flag is enabled
+    if (!USE_XIMILAR) {
+      console.log(`[deals-unified] ${traceId} XIMILAR disabled via USE_XIMILAR=false`);
+      debug.ximilar.error_text = 'Disabled via USE_XIMILAR feature flag';
+      debug.ximilar_health = {
+        enabled: false,
+        called: false,
+        success: false,
+        status_code: null,
+        plan_hint: 'disabled',
+      };
+      useXimilar = false;
+    } else if (XIMILAR_KEY) {
       console.log(`[deals-unified] ${traceId} XIMILAR calling...`);
       
       const ximilarResult = await callXimilar(signedImageUrl, XIMILAR_KEY);
@@ -878,6 +1028,15 @@ serve(async (req) => {
       // Merge ximilar debug info
       Object.assign(debug.ximilar, ximilarResult.debug);
       ximilarTags = ximilarResult.tags;
+      
+      // Update ximilar_health
+      debug.ximilar_health = {
+        enabled: true,
+        called: true,
+        success: !!ximilarTags,
+        status_code: debug.ximilar.status,
+        plan_hint: debug.ximilar.status === 403 ? 'upgrade_required' : (ximilarTags ? 'ok' : 'error'),
+      };
       
       if (ximilarTags) {
         debug.ximilar.is_pattern_mode = ximilarTags.is_pattern_mode;
@@ -905,6 +1064,13 @@ serve(async (req) => {
       console.log(`[deals-unified] ${traceId} XIMILAR key not configured, using fallback`);
       useXimilar = false;
       debug.ximilar.error_text = 'XIMILAR_API_KEY not configured';
+      debug.ximilar_health = {
+        enabled: USE_XIMILAR,
+        called: false,
+        success: false,
+        status_code: null,
+        plan_hint: 'error',
+      };
       
       // Strict mode: fail if Ximilar required but key missing
       if (input.require_ximilar) {
@@ -1040,8 +1206,17 @@ serve(async (req) => {
     
     if (useXimilar && ximilarTags) {
       hintString = buildHintFromXimilar(ximilarTags);
+    } else if (parsedDescHint && (parsedDescHint.colors.length > 0 || parsedDescHint.category)) {
+      // NEW: Use parsed description_hint from ROI detection (structured, not raw)
+      hintString = buildHintFromParsedDescription(parsedDescHint);
+      // Also merge parsed colors/patterns into fallback descriptors for scoring
+      fallbackDescriptors.colors = parsedDescHint.colors;
+      fallbackDescriptors.categories = parsedDescHint.category ? [parsedDescHint.category] : [];
+      fallbackDescriptors.patterns = parsedDescHint.pattern ? [parsedDescHint.pattern] : [];
+      debug.ximilar.fallback_used = true;
+      console.log(`[deals-unified] ${traceId} Using parsed description_hint: "${hintString}"`);
     } else {
-      // Fallback to descriptor extraction
+      // Fallback to descriptor extraction from visual match titles
       fallbackDescriptors = extractDescriptors([...visualMatchTitles, input.title_hint || '']);
       hintString = buildHintFromDescriptors(
         fallbackDescriptors.colors,
@@ -1189,6 +1364,7 @@ serve(async (req) => {
                 if (result) {
                   result.similarity_score = vr.visualSimilarity;
                   result.sub_scores = vr.subScores;
+                  result.was_reranked = true;  // NEW: Mark as reranked
                   
                   // Track filtered but don't hard-drop (soft gate per user's tweak)
                   if (vr.filtered) {
@@ -1292,7 +1468,7 @@ serve(async (req) => {
       }
     }
 
-    // Final scoring formula
+    // Final scoring formula + color_pass computation
     for (const result of allShoppingResults) {
       const visualScore = result.similarity_score ?? 0.3;
       const tagAgreement = result.tag_agreement ?? 0;
@@ -1305,15 +1481,48 @@ serve(async (req) => {
         // Normal mode: 60% visual, 30% tag agreement, 10% exact
         result.similarity_score = (visualScore * 0.60) + (tagAgreement * 0.30) + exactBonus;
       }
+      
+      // NEW: Compute color_pass - ONLY for reranked items with real scores
+      // Non-reranked items get color_pass = false (per audit tweak #1)
+      const colorSubScore = result.sub_scores?.color ?? 0;
+      if (result.was_reranked && colorSubScore > 0) {
+        result.color_pass = colorSubScore >= COLOR_PASS_THRESHOLD;
+      } else {
+        result.color_pass = false;  // Non-reranked items cannot pass color gate
+      }
     }
 
-    // Sort by final score
-    allShoppingResults.sort((a, b) => (b.similarity_score ?? 0) - (a.similarity_score ?? 0));
+    // NEW: TWO-STAGE SORT for color-first ranking (per audit requirement)
+    // Stage A: Color-passing reranked items float to top
+    // Stage B: Within same color_pass group, sort by similarity_score
+    allShoppingResults.sort((a, b) => {
+      // First: reranked items with color_pass go to top
+      const aColorPass = a.was_reranked && a.color_pass;
+      const bColorPass = b.was_reranked && b.color_pass;
+      if (aColorPass && !bColorPass) return -1;
+      if (!aColorPass && bColorPass) return 1;
+      
+      // Second: reranked items without color_pass
+      const aReranked = a.was_reranked ?? false;
+      const bReranked = b.was_reranked ?? false;
+      if (aReranked && !bReranked) return -1;
+      if (!aReranked && bReranked) return 1;
+      
+      // Third: by similarity score within same group
+      return (b.similarity_score ?? 0) - (a.similarity_score ?? 0);
+    });
     
     // Update positions
     allShoppingResults.forEach((result, index) => {
       result.position = index + 1;
     });
+    
+    // NEW: Compute key acceptance metrics
+    const top10 = allShoppingResults.slice(0, 10);
+    const top15 = allShoppingResults.slice(0, 15);
+    debug.counts.returned_top10_color_pass_n = top10.filter(r => r.color_pass).length;
+    debug.counts.top10_has_unreranked_n = top10.filter(r => !r.was_reranked).length;
+    debug.counts.reranked_top15_n = top15.filter(r => r.was_reranked).length;
 
     debug.filters.after_filter = allShoppingResults.length;
 
@@ -1342,13 +1551,15 @@ serve(async (req) => {
       }
     }
 
-    // ============ Top 5 scores for debug (including color sub-score separately) ============
+    // ============ Top 5 scores for debug (including color sub-score, was_reranked, color_pass) ============
     debug.top5_scores = allShoppingResults.slice(0, 5).map(r => ({
       url: r.link.substring(0, 60),
       visual: r.sub_scores ? (r.sub_scores.pattern + r.sub_scores.silhouette + r.sub_scores.color) / 3 : 0,
       color: r.sub_scores?.color ?? 0,
       tag_agree: r.tag_agreement ?? 0,
       final: r.similarity_score ?? 0,
+      was_reranked: r.was_reranked ?? false,
+      color_pass: r.color_pass ?? false,
     }));
     
     // Set final count

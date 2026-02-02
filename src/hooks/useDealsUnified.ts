@@ -122,6 +122,7 @@ interface SearchUnifiedParams {
   title_hint?: string;
   price_hint?: number;
   currency_hint?: string;
+  description_hint?: string;  // NEW: Detected description from ROI (e.g., "purple abaya")
 }
 
 export function useDealsUnified() {
@@ -146,6 +147,7 @@ export function useDealsUnified() {
             title_hint: params.title_hint,
             price_hint: params.price_hint,
             currency_hint: params.currency_hint,
+            description_hint: params.description_hint,  // NEW: Forward description hint
           },
         }
       );
