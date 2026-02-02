@@ -377,7 +377,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
 
           {/* Results list */}
           <div className="space-y-2">
-            {data.shopping_results.slice(0, 15).map((result, index) => (
+            {data.shopping_results.slice(0, 30).map((result, index) => (
               <DealResultCard
                 key={`${result.link}-${index}`}
                 result={result}

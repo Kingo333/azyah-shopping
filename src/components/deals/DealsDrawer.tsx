@@ -6,7 +6,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Camera, Link2, Tag } from 'lucide-react';
+import { Camera, Link2 } from 'lucide-react';
 import { PhotoTab } from './PhotoTab';
 import { LinkTab } from './LinkTab';
 
@@ -50,9 +50,11 @@ export function DealsDrawer({
       >
         <DrawerHeader className="pb-3">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg">
-              <Tag className="h-3.5 w-3.5 text-white" />
-            </div>
+            <img 
+              src="/marketing/azyah-logo.png" 
+              alt="Azyah" 
+              className="w-7 h-7 object-contain rounded-lg"
+            />
             <DrawerTitle className="font-serif text-lg" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
               Find Better Deals
             </DrawerTitle>
