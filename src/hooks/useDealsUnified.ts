@@ -54,7 +54,40 @@ export interface ExactMatch {
   extracted_price?: number | null;
 }
 
+interface XimilarDebug {
+  called: boolean;
+  ok: boolean;
+  status: number | null;
+  request_id: string | null;
+  error_text: string | null;
+  latency_ms: number;
+  objects_detected: number;
+  primary_object_reason: string | null;
+  primary_object_area: number | null;
+  primary_object_prob: number | null;
+  tags_summary: string;
+  roi_box_present: boolean;
+  is_pattern_mode: boolean;
+  failed: boolean;
+  fallback_used: boolean;
+}
+
 interface DebugInfo {
+  trace_id: string;
+  entry: {
+    source: string;
+    has_image_url: boolean;
+    has_image_base64: boolean;
+    has_page_url: boolean;
+    has_title_hint: boolean;
+    has_ximilar_key: boolean;
+    require_ximilar: boolean;
+  };
+  cache: {
+    hit: boolean;
+    version: string;
+    key: string | null;
+  };
   timing_ms: {
     image_normalize: number;
     ximilar: number;
@@ -64,10 +97,7 @@ interface DebugInfo {
     rerank: number;
     total: number;
   };
-  ximilar: {
-    called: boolean;
-    is_pattern_mode: boolean;
-  };
+  ximilar: XimilarDebug;
   [key: string]: unknown;
 }
 
@@ -81,6 +111,7 @@ export interface UnifiedDealsResult {
   ximilar_tags?: XimilarTags | null;
   debug?: DebugInfo;
   error?: string;
+  cached?: boolean;
 }
 
 interface SearchUnifiedParams {
