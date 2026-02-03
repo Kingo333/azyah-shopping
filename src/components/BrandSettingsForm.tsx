@@ -10,9 +10,10 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { RegionSelector, WORLDWIDE_VALUE } from '@/components/brand/RegionSelector';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, DollarSign, MapPin } from 'lucide-react';
+import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, DollarSign, MapPin, Ruler } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { SizeChartUpload } from '@/components/SizeChartUpload';
 
 // Helper function to check if a display name is already taken by another brand
 const checkDisplayNameAvailable = async (name: string, currentBrandId: string): Promise<boolean> => {
@@ -43,6 +44,7 @@ interface Brand {
   shipping_regions: string[];
   currency?: string;
   category?: string;
+  size_chart_url?: string | null;
 }
 
 interface BrandSettingsFormProps {
@@ -407,6 +409,24 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               </div>
             </div>
 
+            {/* Size Chart - Universal for all products */}
+            {isFashionBrand && (
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Size Chart
+                  <InfoTooltip content="Upload a universal size chart that applies to all your products" />
+                </label>
+                {brand.size_chart_url ? (
+                  <div className="p-3 bg-muted/50 rounded-md">
+                    <p className="text-sm text-muted-foreground">Size chart uploaded</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No size chart uploaded</p>
+                )}
+              </div>
+            )}
+
             {/* Social Links */}
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
@@ -606,6 +626,32 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               maxHeight="200px"
             />
           </div>
+
+          {/* Size Chart - Universal for all products (only for fashion brands) */}
+          {isFashionBrand && (
+            <div>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                <Ruler className="h-4 w-4" />
+                Size Chart
+                <InfoTooltip content="Upload a universal size chart that applies to all your products" />
+              </label>
+              <SizeChartUpload
+                currentSizeChart={brand.size_chart_url}
+                onSizeChartUpdate={async (sizeChartUrl) => {
+                  // Update brand with new size chart URL
+                  const { error } = await supabase
+                    .from('brands')
+                    .update({ size_chart_url: sizeChartUrl, updated_at: new Date().toISOString() })
+                    .eq('id', brand.id);
+                  
+                  if (!error) {
+                    onBrandUpdate({ ...brand, size_chart_url: sizeChartUrl });
+                  }
+                }}
+                productId={brand.id}
+              />
+            </div>
+          )}
 
           {/* Social Media */}
           <div>

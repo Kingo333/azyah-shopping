@@ -1,16 +1,14 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
-import { ArrowRight, ShoppingBag, Check } from 'lucide-react';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
-import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { SmartImage } from '@/components/SmartImage';
-import { HangerIcon } from '@/components/icons/HangerIcon';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { swipeHaptics } from '@/utils/haptics';
 import { toast } from 'sonner';
@@ -60,9 +58,7 @@ const MiniSwipeCard = memo(({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
-  const [isAdded, setIsAdded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   
@@ -114,18 +110,6 @@ const MiniSwipeCard = memo(({
   const handleDragStart = useCallback(() => {
     handleInteraction();
   }, [handleInteraction]);
-
-  const handleAddToCloset = useCallback(() => {
-    if (!user) {
-      showGuestToast('add to your closet', navigate);
-      return;
-    }
-    if (isPending || isAdded) return;
-    swipeHaptics.selection();
-    addToWardrobe(product as any, {
-      onSuccess: () => setIsAdded(true)
-    });
-  }, [user, isPending, isAdded, addToWardrobe, product, navigate]);
 
   const handleLike = useCallback(async () => {
     if (!user) {
@@ -209,35 +193,6 @@ const MiniSwipeCard = memo(({
             {/* Overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             
-            {/* Top right: Closet button */}
-            <div className="absolute top-3 right-3 z-10">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddToCloset();
-                }}
-                disabled={isPending || isAdded}
-                className={cn(
-                  "h-auto px-2.5 py-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-md flex items-center gap-1.5 transition-all",
-                  isAdded && "bg-green-500/90 text-white"
-                )}
-              >
-                {isAdded ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    <span className="text-[10px] font-medium">Added</span>
-                  </>
-                ) : (
-                  <>
-                    <HangerIcon className="h-3.5 w-3.5" size={14} />
-                    <span className="text-[10px] font-medium">Closet</span>
-                  </>
-                )}
-              </Button>
-            </div>
-            
             {/* Bottom content area - product info + action bar */}
             <div className="absolute bottom-0 left-0 right-0 z-10">
               {/* Product info */}
@@ -308,21 +263,8 @@ const MiniSwipeCard = memo(({
 });
 MiniSwipeCard.displayName = 'MiniSwipeCard';
 
-// List item card
+// List item card - simplified without closet button
 const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
-  const { user } = useAuth();
-  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
-  const [isAdded, setIsAdded] = useState(false);
-
-  const handleAddToCloset = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user || isPending || isAdded) return;
-    addToWardrobe(product as any, {
-      onSuccess: () => setIsAdded(true)
-    });
-  }, [user, isPending, isAdded, addToWardrobe, product]);
-
   const handleShop = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -350,26 +292,9 @@ const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
             className="w-full h-full object-cover"
           />
           
-          {/* Hover overlay with actions */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleAddToCloset}
-              disabled={isPending || isAdded || !user}
-              className={cn(
-                "h-7 w-7 rounded-full",
-                isAdded && "bg-green-500 text-white"
-              )}
-            >
-              {isAdded ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <HangerIcon className="h-3.5 w-3.5" size={14} />
-              )}
-            </Button>
-            
-            {product.external_url && (
+          {/* Hover overlay with shop action only */}
+          {product.external_url && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <Button
                 variant="secondary"
                 size="icon"
@@ -378,8 +303,8 @@ const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
         <div className="p-1.5">

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler, Shirt, Check } from 'lucide-react';
+import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
-import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
@@ -16,8 +15,6 @@ import { getProductImageUrls } from '@/utils/imageHelpers';
 import { SmartImage } from '@/components/SmartImage';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
-import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
-import { cn } from '@/lib/utils';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface PhotoCloseupProps {
@@ -37,8 +34,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showSizeChart, setShowSizeChart] = useState(false);
-  const [isAddedToCloset, setIsAddedToCloset] = useState(false);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -68,7 +63,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   });
 
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(productId);
-  const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
 
   // Initialize browsing stack
   useEffect(() => {
@@ -286,8 +280,29 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
-  // Get size chart URL from product attributes
+  // Get size chart URL - first try brand's universal size chart, then fallback to product attributes
   const getSizeChartUrl = () => {
+    // Priority 1: Brand's universal size chart
+    if (product?.brand?.size_chart_url) {
+      const brandSizeChart = product.brand.size_chart_url;
+      if (isSupabaseAbsoluteUrl(brandSizeChart)) {
+        const pathData = extractSupabasePath(brandSizeChart);
+        return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : brandSizeChart;
+      }
+      return brandSizeChart.includes('/') ? imageUrlFrom(brandSizeChart.split('/')[0], brandSizeChart.split('/').slice(1).join('/')) : brandSizeChart;
+    }
+    
+    // Priority 2: Retailer's universal size chart
+    if (product?.retailer?.size_chart_url) {
+      const retailerSizeChart = product.retailer.size_chart_url;
+      if (isSupabaseAbsoluteUrl(retailerSizeChart)) {
+        const pathData = extractSupabasePath(retailerSizeChart);
+        return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : retailerSizeChart;
+      }
+      return retailerSizeChart.includes('/') ? imageUrlFrom(retailerSizeChart.split('/')[0], retailerSizeChart.split('/').slice(1).join('/')) : retailerSizeChart;
+    }
+    
+    // Fallback: Product-level size chart (legacy)
     const attributes = product?.attributes as any;
     const sizeChartUrl = attributes?.size_chart;
     if (!sizeChartUrl) return null;
@@ -435,48 +450,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               >
                 <ShoppingBag className="h-4 w-4 mr-1" />
                 Save
-              </Button>
-              {/* Save to Closet button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  console.log('[Closet] clicked', product?.id, 'user:', !!user);
-                  if (!user) {
-                    toast({ title: 'Sign in to save to Closet', variant: 'destructive' });
-                    return;
-                  }
-                  if (product) {
-                    const isDuplicate = await checkClosetDuplicate(user.id, product.id);
-                    if (isDuplicate) {
-                      setShowDuplicateDialog(true);
-                      return;
-                    }
-                    addToWardrobe({ product, skipDuplicateCheck: true }, {
-                      onSuccess: () => {
-                        setIsAddedToCloset(true);
-                        setTimeout(() => setIsAddedToCloset(false), 1500);
-                      }
-                    });
-                  }
-                }}
-                disabled={wardrobeLoading || isAddedToCloset}
-                className={cn(
-                  "flex-1 min-w-[90px] opacity-80 hover:opacity-100 transition-all",
-                  isAddedToCloset && "bg-green-500/80 text-white border-green-500"
-                )}
-              >
-                {isAddedToCloset ? (
-                  <>
-                    <Check className="h-4 w-4 mr-1" />
-                    Added
-                  </>
-                ) : (
-                  <>
-                    <Shirt className="h-4 w-4 mr-1" />
-                    + Closet
-                  </>
-                )}
               </Button>
               {sizeChartUrl && (
                 <Button
@@ -633,77 +606,36 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   <Heart className="h-4 w-4 mr-2" />
                   Like
                 </Button>
+              <Button
+                variant="ghost"
+                onClick={handleAddToWishlist}
+                disabled={wishlistLoading}
+                className="flex-1"
+              >
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+              {sizeChartUrl && (
                 <Button
                   variant="ghost"
-                  onClick={handleAddToWishlist}
-                  disabled={wishlistLoading}
+                  onClick={() => setShowSizeChart(true)}
                   className="flex-1"
                 >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Save
+                  <Ruler className="h-4 w-4 mr-2" />
+                  Size Chart
                 </Button>
-                {/* Save to Closet button - Desktop */}
+              )}
+              {product.external_url && (
                 <Button
-                  variant="outline"
-                  onClick={async () => {
-                    console.log('[Closet] clicked', product?.id, 'user:', !!user);
-                    if (!user) {
-                      toast({ title: 'Sign in to save to Closet', variant: 'destructive' });
-                      return;
-                    }
-                    if (product) {
-                      const isDuplicate = await checkClosetDuplicate(user.id, product.id);
-                      if (isDuplicate) {
-                        setShowDuplicateDialog(true);
-                        return;
-                      }
-                      addToWardrobe({ product, skipDuplicateCheck: true }, {
-                        onSuccess: () => {
-                          setIsAddedToCloset(true);
-                          setTimeout(() => setIsAddedToCloset(false), 1500);
-                        }
-                      });
-                    }
-                  }}
-                  disabled={wardrobeLoading || isAddedToCloset}
-                  className={cn(
-                    "flex-1 opacity-80 hover:opacity-100 transition-all",
-                    isAddedToCloset && "bg-green-500/80 text-white border-green-500"
-                  )}
+                  onClick={handleVisitBrand}
+                  variant="default"
+                  className="flex-1"
                 >
-                  {isAddedToCloset ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Added
-                    </>
-                  ) : (
-                    <>
-                      <Shirt className="h-4 w-4 mr-2" />
-                      + Closet
-                    </>
-                  )}
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Shop Now
                 </Button>
-                {sizeChartUrl && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowSizeChart(true)}
-                    className="flex-1"
-                  >
-                    <Ruler className="h-4 w-4 mr-2" />
-                    Size Chart
-                  </Button>
-                )}
-                {product.external_url && (
-                  <Button
-                    onClick={handleVisitBrand}
-                    variant="default"
-                    className="flex-1"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Shop Now
-                  </Button>
-                )}
-              </div>
+              )}
+            </div>
             </div>
 
             {/* Scrollable Similar Items */}
@@ -766,23 +698,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           />
         </div>
       )}
-
-      {/* Duplicate Closet Dialog */}
-      <DuplicateClosetDialog
-        isOpen={showDuplicateDialog}
-        onClose={() => setShowDuplicateDialog(false)}
-        onConfirm={() => {
-          setShowDuplicateDialog(false);
-          if (product) {
-            addToWardrobe({ product, skipDuplicateCheck: true }, {
-              onSuccess: () => {
-                setIsAddedToCloset(true);
-                setTimeout(() => setIsAddedToCloset(false), 1500);
-              }
-            });
-          }
-        }}
-      />
     </div>
   );
 };

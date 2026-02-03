@@ -1,16 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Heart, ShoppingBag, ExternalLink, ArrowLeft, Share } from 'lucide-react';
 import { Product } from '@/types';
 import { EnhancedProductGallery } from './EnhancedProductGallery';
-import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
-// AddToClosetModal removed - feature deprecated
 import { useToast } from '@/hooks/use-toast';
-import { useAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { Money } from '@/components/ui/Money';
+import { useWishlist } from '@/hooks/useWishlist';
 interface ProductDetailPageProps {
   product: Product;
   onBack: () => void;
@@ -19,12 +17,8 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   product,
   onBack
 }) => {
-  const {
-    toast
-  } = useToast();
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
-  const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
+  const { toast } = useToast();
+  const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product?.id);
   const images = useMemo<string[]>(() => {
     return getProductImageUrls(product);
   }, [product]);
@@ -48,57 +42,34 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       });
     }
   };
-  const handleShare = async () => {
-    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
-    toast({
-      title: "Sharing coming soon",
-      description: "Product sharing will be available soon!",
-    });
+  const handleWishlist = async () => {
+    if (product?.id) {
+      try {
+        await addToWishlist(product.id);
+        toast({ description: `${product.title} added to your wishlist!` });
+      } catch {
+        toast({ description: 'Failed to add to wishlist', variant: 'destructive' });
+      }
+    }
   };
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
-    value: size,
-    label: size,
-    inStock: true,
-    stockCount: 10
-  }));
-  const availableColors = [{
-    value: 'black',
-    label: 'Black',
-    hexCode: '#000000',
-    inStock: true
-  }, {
-    value: 'white',
-    label: 'White',
-    hexCode: '#ffffff',
-    inStock: true
-  }, {
-    value: 'navy',
-    label: 'Navy',
-    hexCode: '#1e3a8a',
-    inStock: true
-  }, {
-    value: 'beige',
-    label: 'Beige',
-    hexCode: '#f5f5dc',
-    inStock: true
-  }];
+
   return <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       {/* Header - Mobile optimized */}
       <header className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
         <div className="px-4 py-3 md:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={onBack} className="bg-background hover:bg-accent border-border shadow-sm">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="hidden md:block">
-                <h1 className="text-lg font-semibold truncate max-w-md">{product.title}</h1>
-                <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleShare} className="bg-background hover:bg-accent border-border shadow-sm">
-              <Share className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={onBack} className="bg-background hover:bg-accent border-border shadow-sm">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+            <div className="hidden md:block">
+              <h1 className="text-lg font-semibold truncate max-w-md">{product.title}</h1>
+              <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => toast({ title: "Sharing coming soon", description: "Product sharing will be available soon!" })} className="bg-background hover:bg-accent border-border shadow-sm">
+            <Share className="h-4 w-4" />
+          </Button>
           </div>
         </div>
       </header>
@@ -150,33 +121,18 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   )}
                 </div>
                 {compareAtCents && (
-                  <p className="text-sm text-green-600 font-medium">
+                  <p className="text-sm text-primary font-medium">
                     Save <Money cents={compareAtCents - priceCents} currency={priceCurrency} />
                   </p>
                 )}
               </div>
 
-              {/* Size and Color Selection */}
-              <div className="space-y-4">
-                <AdvancedSizeColorSelector sizes={availableSizes} colors={availableColors} selectedSize={selectedSize} selectedColor={selectedColor} onSizeSelect={setSelectedSize} onColorSelect={setSelectedColor} sizeChart={{
-                "XS": "Chest: 32-34, Waist: 24-26",
-                "S": "Chest: 34-36, Waist: 26-28",
-                "M": "Chest: 36-38, Waist: 28-30",
-                "L": "Chest: 38-40, Waist: 30-32",
-                "XL": "Chest: 40-42, Waist: 32-34"
-              }} sizeChartImage="/placeholder.svg" />
-              </div>
-
               {/* Action Buttons */}
               <div className="space-y-3">
                 <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1 gap-2" onClick={() => {/* Add wishlist functionality */}}>
+                  <Button variant="outline" className="flex-1 gap-2" onClick={handleWishlist} disabled={wishlistLoading}>
                     <Heart className="h-4 w-4" />
                     Wishlist
-                  </Button>
-                  <Button variant="outline" className="flex-1 gap-2" onClick={() => setIsClosetModalOpen(true)}>
-                    <ShoppingBag className="h-4 w-4" />
-                    Add to Closet
                   </Button>
                 </div>
 
@@ -231,8 +187,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           </div>
         </div>
       </main>
-
-      {/* Add to Closet Modal - Feature Deprecated */}
     </div>;
 };
 export default ProductDetailPage;

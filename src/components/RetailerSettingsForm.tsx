@@ -8,8 +8,9 @@ import { LogoUpload } from '@/components/LogoUpload';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Plus, X, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { Save, Plus, X, Trash2, CheckCircle, Loader2, Ruler } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { SizeChartUpload } from '@/components/SizeChartUpload';
 
 // Helper function to check if a display name is already taken by another retailer
 const checkDisplayNameAvailable = async (name: string, currentRetailerId: string): Promise<boolean> => {
@@ -40,6 +41,7 @@ interface RetailerSettingsFormProps {
     logo_url: string | null;
     shipping_regions: string[];
     socials: Record<string, string>;
+    size_chart_url?: string | null;
   };
   onRetailerUpdate: (updatedRetailer: any) => void;
 }
@@ -344,6 +346,19 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
                 </div>
               </div>
 
+              {/* Size Chart */}
+              <div>
+                <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Size Chart
+                </h3>
+                {retailer.size_chart_url ? (
+                  <p className="text-muted-foreground">Size chart uploaded</p>
+                ) : (
+                  <p className="text-muted-foreground">No size chart uploaded</p>
+                )}
+              </div>
+
               {/* Social Links */}
               <div>
                 <h3 className="text-lg font-medium mb-2">Social Media</h3>
@@ -508,6 +523,30 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Size Chart */}
+          <div>
+            <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+              <Ruler className="h-4 w-4" />
+              Size Chart
+              <InfoTooltip content="Upload a universal size chart that applies to all your products" />
+            </label>
+            <SizeChartUpload
+              currentSizeChart={retailer.size_chart_url}
+              onSizeChartUpdate={async (sizeChartUrl) => {
+                // Update retailer with new size chart URL
+                const { error } = await supabase
+                  .from('retailers')
+                  .update({ size_chart_url: sizeChartUrl, updated_at: new Date().toISOString() })
+                  .eq('id', retailer.id);
+                
+                if (!error) {
+                  onRetailerUpdate({ ...retailer, size_chart_url: sizeChartUrl });
+                }
+              }}
+              productId={retailer.id}
+            />
           </div>
 
           {/* Social Media */}
