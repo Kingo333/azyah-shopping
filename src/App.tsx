@@ -71,6 +71,7 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import OnboardingCalibration from './pages/OnboardingCalibration';
 import ExtensionAuth from './pages/ExtensionAuth';
+import Profile from './pages/Profile';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,11 +99,14 @@ function AppContent() {
                     </AuthAwareRoute>
                   } />
                   <Route path="/landing" element={<Landing />} />
-                  <Route path="/dashboard" element={
+                  {/* Profile page - new primary route for user profile/insights */}
+                  <Route path="/profile" element={
                     <ProtectedRoute>
-                      <Index />
+                      <Profile />
                     </ProtectedRoute>
                   } />
+                  {/* Dashboard redirects to profile for backward compatibility */}
+                  <Route path="/dashboard" element={<Navigate to="/profile" replace />} />
                   <Route path="/dashboard/upgrade" element={
                     <ProtectedRoute>
                       <Upgrade />

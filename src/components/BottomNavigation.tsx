@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, ShoppingBag, Sparkles, ChevronUp } from 'lucide-react';
-import { HangerIcon } from '@/components/icons/HangerIcon';
+import { ShoppingBag, Globe, Sparkles, User, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
@@ -17,19 +16,18 @@ interface NavItem {
   requiresAuth?: boolean; // Routes that require auth (show prompt for guests)
 }
 
-// Tech-forward navigation: Insights, Community, Feed (center), Wardrobe, Collabs
+// Navigation restructured: 4 tabs - Feed (center), Explore, Collabs, Profile
 const navItems: NavItem[] = [
-  { id: 'insights', label: 'Insights', icon: Home, path: '/dashboard' },
-  { id: 'community', label: 'Explore', icon: Users, path: '/explore' },
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
-  { id: 'wardrobe', label: 'Wardrobe', icon: HangerIcon, path: '/dress-me', requiresAuth: true },
+  { id: 'explore', label: 'Explore', icon: Globe, path: '/explore' },
   { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc', requiresAuth: true },
+  { id: 'profile', label: 'Profile', icon: User, path: '/profile', requiresAuth: true },
 ];
 
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
 const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/community', '/trending', '/influencers', '/brands', '/wishlist', '/forum', '/affiliate', '/events', '/', '/landing', '/onboarding/intro'];
 
-// Routes where bottom nav should NOT appear (removed '/' and '/landing' to allow guest preview)
+// Routes where bottom nav should NOT appear
 const EXCLUDED_ROUTES = [
   '/onboarding/signup',
   '/onboarding/calibration',
@@ -39,6 +37,7 @@ const EXCLUDED_ROUTES = [
   '/brand-portal',
   '/retailer-portal',
   '/dashboard/upgrade',
+  '/dress-me',
 ];
 
 export const BottomNavigation: React.FC = () => {
@@ -49,18 +48,18 @@ export const BottomNavigation: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
 
   const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/dashboard';
+    // Profile matches /profile and /dashboard (legacy redirect)
+    if (path === '/profile') {
+      return location.pathname === '/profile' || location.pathname === '/dashboard';
     }
     if (path === '/swipe') {
-      return AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
+      return AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route) && route !== '/explore');
     }
     return location.pathname.startsWith(path);
   };
 
-  const isDashboardPage = location.pathname === '/dashboard';
-  const isAutoHidePage = !isDashboardPage && AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
-  const isDressMePage = location.pathname.startsWith('/dress-me');
+  const isProfilePage = location.pathname === '/profile' || location.pathname === '/dashboard';
+  const isAutoHidePage = !isProfilePage && AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
   const isExcludedPage = EXCLUDED_ROUTES.some(route => 
     route === location.pathname || location.pathname.startsWith(route + '/')
   );
@@ -94,10 +93,10 @@ export const BottomNavigation: React.FC = () => {
     navigate(item.path);
   }, [user, isLandingPage, navigate, toast]);
 
-  // Auto-hide logic for auto-hide pages (dashboard always visible)
+  // Auto-hide logic for auto-hide pages (profile always visible)
   useEffect(() => {
-    // Dashboard always shows nav - never minimize
-    if (isDashboardPage) {
+    // Profile always shows nav - never minimize
+    if (isProfilePage) {
       setIsMinimized(false);
       window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
       return;
@@ -118,7 +117,7 @@ export const BottomNavigation: React.FC = () => {
       setIsMinimized(false);
       window.dispatchEvent(new CustomEvent('bottomNavStateChange', { detail: { minimized: false } }));
     }
-  }, [location.pathname, isAutoHidePage, isDashboardPage]);
+  }, [location.pathname, isAutoHidePage, isProfilePage]);
 
   const handleExpandNav = useCallback(() => {
     setIsMinimized(false);
@@ -135,7 +134,7 @@ export const BottomNavigation: React.FC = () => {
   // Show bottom nav for logged in users, guest mode, or landing page (to preview nav)
   const isGuest = isGuestMode();
   
-  if ((!user && !isGuest && !isLandingPage) || isDressMePage || isExcludedPage) {
+  if ((!user && !isGuest && !isLandingPage) || isExcludedPage) {
     return null;
   }
 
@@ -177,7 +176,7 @@ export const BottomNavigation: React.FC = () => {
                   const active = isActive(item.path);
 
                   if (item.isCenter) {
-                    // Center "Discover" button - pop-out style
+                    // Center "Feed" button - pop-out style
                     return (
                       <button
                         key={item.id}

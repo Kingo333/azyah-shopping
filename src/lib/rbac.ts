@@ -46,7 +46,7 @@ export const canAccessRoute = (userRole: UserRole, route: string): boolean => {
 export const getRedirectRoute = (userRole: UserRole): string => {
   switch (userRole) {
     case 'shopper':
-      return '/dashboard';
+      return '/swipe'; // Shoppers land on Feed after login
     case 'brand':
       return '/brand-portal';
     case 'retailer':
