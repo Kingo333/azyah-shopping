@@ -4,8 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Check, ShoppingBag, Shirt } from 'lucide-react';
-import { HangerIcon } from '@/components/icons/HangerIcon';
+import { Info, Image, Sparkles, ShoppingBag, Shirt } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { Money } from '@/components/ui/Money';
 import { SwipeActionBar } from '@/components/SwipeActionBar';
@@ -13,8 +12,6 @@ import { SwipeActionBar } from '@/components/SwipeActionBar';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import { cn } from '@/lib/utils';
-import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
-import { useAuth } from '@/contexts/AuthContext';
 
 import { openExternalUrl } from '@/lib/openExternalUrl';
 
@@ -52,71 +49,6 @@ interface SwipeCardProps {
   motionProps: any;
   showHint?: boolean; // Show instruction hint on first card
 }
-
-// Separate component for Add to Closet button to use hooks
-const AddToClosetButton = memo(({ product }: { product: SwipeProduct }) => {
-  const { user } = useAuth();
-  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
-  const [isAdded, setIsAdded] = useState(false);
-  
-  const handleClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('[Closet] clicked', product?.id, 'user:', !!user);
-    
-    if (!user) {
-      import('sonner').then(({ toast }) => {
-        toast.error('Sign in to save to Closet');
-      });
-      return;
-    }
-    
-    // Check for duplicates first
-    const isDuplicate = await checkClosetDuplicate(user.id, product.id);
-    if (isDuplicate) {
-      import('sonner').then(({ toast }) => {
-        toast.info('Already in Closet', {
-          description: 'This item is already saved',
-          duration: 2000,
-        });
-      });
-      return;
-    }
-    
-    addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
-      onSuccess: () => {
-        setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 1500);
-      }
-    });
-  };
-  
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleClick}
-      disabled={isPending || isAdded}
-      className={cn(
-        "h-auto px-2.5 py-1.5 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100 flex items-center gap-1.5 transition-all",
-        isAdded && "bg-green-500/80 text-white"
-      )}
-      title="Add to Closet"
-    >
-      {isAdded ? (
-        <>
-          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-          <span className="text-xs font-medium">Added</span>
-        </>
-      ) : (
-        <>
-          <HangerIcon className="h-3.5 w-3.5" size={14} />
-          <span className="text-[10px] font-medium">+ Closet</span>
-        </>
-      )}
-    </Button>
-  );
-});
-AddToClosetButton.displayName = 'AddToClosetButton';
 
 // Helper to get brand logo URL
 const getBrandLogoUrl = (product: SwipeProduct): string | undefined => {
@@ -216,11 +148,8 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* RIGHT: Closet + Try-On + Info buttons - stacked vertically */}
+            {/* RIGHT: Try-On + Info buttons - stacked vertically */}
             <div className="flex flex-col items-end gap-2">
-              {/* Add to Closet button */}
-              <AddToClosetButton product={product} />
-              
               {/* Virtual Try-On button */}
               {onTryOn && (
                 <Button

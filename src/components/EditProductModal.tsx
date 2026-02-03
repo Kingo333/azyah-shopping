@@ -8,12 +8,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X, Loader2, Trash2, User } from 'lucide-react';
-import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName, GENDER_OPTIONS, getGenderDisplayName } from '@/lib/categories';
-import { SizeChartUpload } from '@/components/SizeChartUpload';
-import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
+import { Upload, X, Loader2, Trash2 } from 'lucide-react';
+import { getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName, GENDER_OPTIONS, getGenderDisplayName } from '@/lib/categories';
+import type { TopCategory, SubCategory } from '@/lib/categories';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
-import { useProductOutfits } from '@/hooks/useProductOutfits';
 import type { Product } from '@/types';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
@@ -40,19 +38,8 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [images, setImages] = useState<string[]>([]);
-  const [sizeChartUrl, setSizeChartUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Try-on outfit functionality
-  const { 
-    outfitAssets, 
-    uploadOutfit, 
-    deleteOutfit, 
-    isUploading: isUploadingOutfit,
-    remainingSlots 
-  } = useProductOutfits(product?.brand_id);
-  
-  const productOutfit = outfitAssets.find(asset => asset.product_id === product?.id);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -62,7 +49,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     subcategory_slug: '',
     gender: '',
     sku: '',
-    stock_qty: '0',
     external_url: ''
   });
   const [availableSubcategories, setAvailableSubcategories] = useState<readonly SubCategory[]>([]);
@@ -72,22 +58,16 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         title: product.title || '',
         description: product.description || '',
         price_cents: product.price_cents ? (product.price_cents / 100).toString() : '',
-        currency: product.currency || brandCurrency, // Use product currency, fallback to brand
+        currency: product.currency || brandCurrency,
         category_slug: product.category_slug || '',
         subcategory_slug: product.subcategory_slug || '',
         gender: (product as any).gender || '',
         sku: product.sku || '',
-        stock_qty: product.stock_qty?.toString() || '0',
         external_url: product.external_url || ''
       });
 
-      // Set existing images
       const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls : typeof product.media_urls === 'string' ? [product.media_urls] : [];
       setImages(mediaUrls);
-
-      // Set existing size chart
-      const attributes = product.attributes as any;
-      setSizeChartUrl(attributes?.size_chart || null);
     }
   }, [product, isOpen]);
 
@@ -187,7 +167,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     if (!user || !product) return;
     setLoading(true);
     try {
-      const currentAttributes = product.attributes as any || {};
       const updateData = {
         title: formData.title,
         description: formData.description,
@@ -196,14 +175,10 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         category_slug: formData.category_slug as any,
         subcategory_slug: (formData.subcategory_slug || null) as any,
         sku: formData.sku || `SKU-${Date.now()}`,
-        stock_qty: parseInt(formData.stock_qty) || 0,
+        stock_qty: 0,
         external_url: formData.external_url,
         gender: formData.gender as any || null,
         media_urls: images,
-        attributes: {
-          ...currentAttributes,
-          size_chart: sizeChartUrl
-        },
         updated_at: new Date().toISOString()
       };
       const {
@@ -355,20 +330,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="stock">Stock Quantity</Label>
-              <Input id="stock" type="number" value={formData.stock_qty} onChange={e => handleInputChange('stock_qty', e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="sku">SKU</Label>
-              <Input id="sku" value={formData.sku} onChange={e => handleInputChange('sku', e.target.value)} placeholder="Auto-generated if empty" />
-            </div>
-          </div>
-
           <div>
-            <Label htmlFor="external_url">Shop Now URL</Label>
-            <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
+            <Label htmlFor="sku">SKU</Label>
+            <Input id="sku" value={formData.sku} onChange={e => handleInputChange('sku', e.target.value)} placeholder="Auto-generated if empty" />
           </div>
 
           <div className="space-y-4">
@@ -426,93 +390,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             </div>
           </div>
 
-          {/* Size Chart & Virtual Try-On Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Size Chart Section */}
-            <div className="space-y-2">
-              <SizeChartUpload currentSizeChart={sizeChartUrl} onSizeChartUpdate={setSizeChartUrl} productId={product.id} />
-            </div>
-
-            {/* Virtual Try-On Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-medium">Virtual Try-On</Label>
-                <span className="text-xs text-muted-foreground">
-                  ({5 - (outfitAssets?.length || 0)}/5)
-                </span>
-              </div>
-              
-              {productOutfit ? (
-                <div className="border rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Outfit configured</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteOutfit(product.id)}
-                      className="text-destructive hover:text-destructive h-6 px-2 text-xs"
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                  <img 
-                    src={productOutfit.outfit_image_url} 
-                    alt="Outfit preview" 
-                    className="w-full h-20 object-cover rounded border"
-                  />
-                </div>
-              ) : (
-                <div className="border rounded-lg p-3 space-y-2">
-                  {remainingSlots > 0 ? (
-                    <>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file && product) {
-                            uploadOutfit({ 
-                              productId: product.id, 
-                              brandId: product.brand_id!, 
-                              file 
-                            });
-                          }
-                        }}
-                        className="hidden"
-                        id="outfit-upload"
-                      />
-                      <label 
-                        htmlFor="outfit-upload" 
-                        className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-muted-foreground/25 rounded cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                      >
-                        {isUploadingOutfit ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground mt-1">Uploading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground mt-1">Upload outfit</span>
-                          </>
-                        )}
-                      </label>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Front-facing outfit photo for virtual try-on
-                      </p>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-20 text-muted-foreground">
-                      <User className="h-4 w-4 mb-1 opacity-50" />
-                      <span className="text-xs">Try-on limit reached (5/5 products)</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          <div>
+            <Label htmlFor="external_url">Shop Now URL</Label>
+            <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
           </div>
 
            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t">
