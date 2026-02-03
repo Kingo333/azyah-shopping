@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import DashboardHeader from '@/components/DashboardHeader';
 import GlobalSearch from '@/components/GlobalSearch';
 
-import { Settings, ChevronRight, Gift, CalendarIcon, MapPin, Sparkles } from 'lucide-react';
+import { Settings, ChevronRight, Gift, CalendarIcon, MapPin } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
@@ -18,10 +18,6 @@ import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 import { StyleLinkCardCompact } from '@/components/dashboard/StyleLinkCardCompact';
-import { DealsCard } from '@/components/deals/DealsCard';
-import { DealsDrawer } from '@/components/deals/DealsDrawer';
-import { useClipboardLinkDetector } from '@/hooks/useClipboardLinkDetector';
-import { ClipboardLinkPrompt } from '@/components/deals/ClipboardLinkPrompt';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 
@@ -49,22 +45,6 @@ const Profile: React.FC = () => {
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
-  const [dealsDrawerOpen, setDealsDrawerOpen] = useState(false);
-  const [dealsInitialUrl, setDealsInitialUrl] = useState<string | null>(null);
-  
-  const { detectedUrl, clearDetectedUrl } = useClipboardLinkDetector();
-
-  // Handle navigation state for deep links
-  useEffect(() => {
-    const state = location.state as { openDeals?: boolean; productUrl?: string } | null;
-    if (state?.openDeals) {
-      setDealsDrawerOpen(true);
-      if (state.productUrl) {
-        setDealsInitialUrl(state.productUrl);
-      }
-      navigate('/profile', { replace: true, state: {} });
-    }
-  }, [location.state, navigate]);
 
   // Load saved category selection
   useEffect(() => {
@@ -212,10 +192,6 @@ const Profile: React.FC = () => {
         <DashboardHeader onOpenSearch={() => setSearchOpen(true)} />
 
         <div className="space-y-0 pb-[calc(80px+env(safe-area-inset-bottom))]">
-          {/* Deals Card */}
-          <div className="px-4 pt-4 pb-2">
-            <DealsCard onOpenDeals={() => setDealsDrawerOpen(true)} />
-          </div>
 
           {/* StyleLink Card */}
           <div className="px-4 pb-2">
@@ -379,24 +355,6 @@ const Profile: React.FC = () => {
             </Card>
           </section>
 
-          {/* Collabs Preview */}
-          <section className="px-4 pt-3 pb-4">
-            <Card 
-              className="bg-card border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/ugc')}
-            >
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm text-foreground">Collabs</h3>
-                  <p className="text-xs text-muted-foreground">Brand partnerships & reviews</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </section>
         </div>
 
         {/* Global Search Modal */}
@@ -409,29 +367,6 @@ const Profile: React.FC = () => {
           }}
           initialQuery={searchInitialQuery}
           initialTab={searchInitialTab}
-        />
-        
-        {/* Clipboard Link Prompt */}
-        {detectedUrl && (
-          <ClipboardLinkPrompt
-            url={detectedUrl}
-            onAccept={() => {
-              setDealsInitialUrl(detectedUrl);
-              setDealsDrawerOpen(true);
-              clearDetectedUrl();
-            }}
-            onDismiss={clearDetectedUrl}
-          />
-        )}
-        
-        {/* Deals Drawer */}
-        <DealsDrawer
-          open={dealsDrawerOpen}
-          onOpenChange={(open) => {
-            setDealsDrawerOpen(open);
-            if (!open) setDealsInitialUrl(null);
-          }}
-          initialUrl={dealsInitialUrl}
         />
       </div>
     </ErrorBoundary>

@@ -12,13 +12,12 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
-  isCenter?: boolean;
   requiresAuth?: boolean; // Routes that require auth (show prompt for guests)
 }
 
-// Navigation restructured: 4 tabs - Feed (center), Explore, Collabs, Profile
+// Navigation restructured: 4 uniform tabs - Feed, Explore, Collabs, Profile
 const navItems: NavItem[] = [
-  { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe', isCenter: true },
+  { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe' },
   { id: 'explore', label: 'Explore', icon: Globe, path: '/explore' },
   { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc', requiresAuth: true },
   { id: 'profile', label: 'Profile', icon: User, path: '/profile', requiresAuth: true },
@@ -170,61 +169,23 @@ export const BottomNavigation: React.FC = () => {
           >
             {/* Background bar */}
             <div className="relative border-t border-border">
-              <div className="flex items-end justify-around h-16 px-2">
+              <div className="flex items-center justify-around h-16 px-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
 
-                  if (item.isCenter) {
-                    // Center "Feed" button - pop-out style
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleNavClick(item)}
-                        className="relative flex flex-col items-center justify-end gap-1 py-2 px-3"
-                      >
-                        {/* Pop-out circular button - positioned above */}
-                        <div 
-                          className={`
-                            absolute left-1/2 -translate-x-1/2 -top-6 sm:-top-5
-                            w-[52px] h-[52px] sm:w-14 sm:h-14
-                            rounded-full flex items-center justify-center
-                            shadow-lg transition-all duration-200
-                            ${active 
-                              ? 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.4)]' 
-                              : 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_16px_hsl(var(--azyah-maroon)/0.3)]'
-                            }
-                          `}
-                          style={{
-                            minWidth: '52px',
-                            minHeight: '52px',
-                            aspectRatio: '1 / 1',
-                          }}
-                        >
-                          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                        </div>
-                        {/* Spacer to match icon height */}
-                        <div className="h-5" />
-                        <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  // Regular nav items
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleNavClick(item)}
-                      className={`flex flex-col items-center justify-end gap-1 py-2 px-3 transition-colors ${
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-4 transition-colors flex-1 ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
-                      <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
+                      <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
                         {item.label}
                       </span>
                     </button>
