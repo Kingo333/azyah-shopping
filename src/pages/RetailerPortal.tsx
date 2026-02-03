@@ -17,7 +17,8 @@ import {
   ShoppingBag,
   LogOut,
   Trash2,
-  Edit
+  Edit,
+  Upload
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { AddProductModal } from '@/components/AddProductModal';
@@ -61,6 +62,7 @@ const RetailerPortal = () => {
   };
   const [products, setProducts] = useState<Product[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -504,13 +506,23 @@ const RetailerPortal = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Product Catalog</CardTitle>
-                <Button 
-                  onClick={() => setIsAddModalOpen(true)} 
-                  className="gap-2 bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Product
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => setIsAddModalOpen(true)} 
+                    className="gap-2 bg-primary hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Product
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setIsBulkAddModalOpen(true)} 
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Add Multiple
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -673,8 +685,20 @@ const RetailerPortal = () => {
             fetchProducts();
           }}
           userType="retailer"
+          retailerId={retailer?.id}
         />
-
+        
+        <AddProductModal 
+          isOpen={isBulkAddModalOpen}
+          onClose={() => setIsBulkAddModalOpen(false)}
+          onProductAdded={() => {
+            setIsBulkAddModalOpen(false);
+            fetchProducts();
+          }}
+          userType="retailer"
+          retailerId={retailer?.id}
+          initialBulkMode={true}
+        />
         {editingProduct && (
           <EditProductModal
             product={editingProduct}
