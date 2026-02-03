@@ -116,7 +116,7 @@ export const ClosetOutfitsSection: React.FC = () => {
 
   const displayClosetItems = getDisplayItems();
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const itemCount = closetItems?.length ?? 0;
 
   return (

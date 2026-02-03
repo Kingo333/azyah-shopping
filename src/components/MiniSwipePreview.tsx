@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, X, ArrowRight } from 'lucide-react';
+import { ArrowRight, MoveHorizontal } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
+import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import type { Product } from '@/types';
 
 interface MiniSwipePreviewProps {
@@ -11,18 +12,79 @@ interface MiniSwipePreviewProps {
   onSkip: (product: Product) => void;
 }
 
+const DISTANCE_THRESHOLD = 80;
+
 export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
   products,
   onOpenFullSwipe,
   onLike,
   onSkip,
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  // Motion values for swipe effect
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-150, 0, 150], [-10, 0, 10]);
+  const opacity = useTransform(x, [-150, -75, 0, 75, 150], [0.6, 1, 1, 1, 0.6]);
+  
+  // Like/Skip overlays
+  const likeOpacity = useTransform(x, [0, 60], [0, 1]);
+  const skipOpacity = useTransform(x, [-60, 0], [1, 0]);
+
+  const currentProduct = products[currentIndex];
+
+  // Sway animation to demonstrate interaction
+  useEffect(() => {
+    if (hasInteracted || products.length === 0) return;
+
+    const runSwayAnimation = async () => {
+      if (hasInteracted) return;
+      await animate(x, -30, { duration: 0.5, ease: "easeInOut" });
+      await animate(x, 30, { duration: 0.7, ease: "easeInOut" });
+      await animate(x, 0, { duration: 0.5, ease: "easeInOut" });
+    };
+
+    const timeout = setTimeout(runSwayAnimation, 1000);
+    const interval = setInterval(runSwayAnimation, 5000);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [hasInteracted, x, products.length]);
+
+  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
+    if (!currentProduct) return;
+    
+    setHasInteracted(true);
+    const { offset } = info;
+
+    if (offset.x > DISTANCE_THRESHOLD) {
+      // Swipe right - LIKE
+      onLike(currentProduct);
+      setCurrentIndex(prev => (prev + 1) % products.length);
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    } else if (offset.x < -DISTANCE_THRESHOLD) {
+      // Swipe left - SKIP
+      onSkip(currentProduct);
+      setCurrentIndex(prev => (prev + 1) % products.length);
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    } else {
+      // Return to center
+      animate(x, 0, { type: "spring", stiffness: 150, damping: 20 });
+    }
+  }, [currentProduct, products.length, x, onLike, onSkip]);
+
   if (products.length === 0) return null;
+
+  const imageUrl = currentProduct?.media_urls?.[0] || currentProduct?.image_url || '/placeholder.svg';
+  const brandName = currentProduct?.merchant_name || currentProduct?.brand?.name || 'Unknown';
 
   return (
     <section className="py-4 bg-background">
       <div className="flex items-center justify-between mb-3 px-4">
-        <h2 className="text-sm font-serif font-medium text-foreground">Quick Swipe</h2>
+        <h2 className="text-base font-serif font-medium text-foreground">Quick Swipe</h2>
         <Button 
           variant="link" 
           size="sm" 
@@ -34,67 +96,67 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
         </Button>
       </div>
       
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
-        {products.slice(0, 6).map((product) => (
-          <MiniSwipeCard
-            key={product.id}
-            product={product}
-            onLike={() => onLike(product)}
-            onSkip={() => onSkip(product)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-};
+      {/* Single swipeable card */}
+      <div className="px-4">
+        <div className="relative w-full max-w-[280px] mx-auto aspect-[3/4] overflow-visible">
+          <motion.div
+            className="w-full h-full bg-card rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing relative border border-border"
+            style={{ x, rotate, opacity }}
+            drag="x"
+            dragElastic={0.15}
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={handleSwipeEnd}
+          >
+            {/* Product Image */}
+            <SmartImage
+              src={imageUrl}
+              alt={currentProduct?.title || 'Product'}
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
 
-interface MiniSwipeCardProps {
-  product: Product;
-  onLike: () => void;
-  onSkip: () => void;
-}
+            {/* Like Overlay */}
+            <motion.div 
+              className="absolute inset-0 bg-green-500/20 pointer-events-none flex items-center justify-center"
+              style={{ opacity: likeOpacity }}
+            >
+              <span className="text-2xl font-bold text-green-600 bg-white/90 px-4 py-2 rounded-full">LIKE</span>
+            </motion.div>
 
-const MiniSwipeCard: React.FC<MiniSwipeCardProps> = ({ product, onLike, onSkip }) => {
-  const imageUrl = product.media_urls?.[0] || product.image_url || '/placeholder.svg';
-  const brandName = product.merchant_name || product.brand?.name || 'Unknown';
+            {/* Skip Overlay */}
+            <motion.div 
+              className="absolute inset-0 bg-red-500/20 pointer-events-none flex items-center justify-center"
+              style={{ opacity: skipOpacity }}
+            >
+              <span className="text-2xl font-bold text-red-600 bg-white/90 px-4 py-2 rounded-full">SKIP</span>
+            </motion.div>
 
-  return (
-    <div className="flex-shrink-0 w-28 snap-start">
-      <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-border shadow-sm">
-        <SmartImage
-          src={imageUrl}
-          alt={product.title}
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Brand overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-          <p className="text-[10px] font-medium text-white truncate">{brandName}</p>
+            {/* Swipe Instruction */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+              <MoveHorizontal className="w-3 h-3 text-white" />
+              <span className="text-white text-[10px] font-medium whitespace-nowrap">Swipe to train</span>
+            </div>
+
+            {/* Brand Info Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+              <p className="text-sm font-medium text-white truncate">{brandName}</p>
+              <p className="text-xs text-white/80 truncate">{currentProduct?.title}</p>
+            </div>
+          </motion.div>
+
+          {/* Pagination Dots */}
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {products.slice(0, 6).map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 rounded-full transition-all ${
+                  index === currentIndex ? 'w-5 bg-[hsl(var(--azyah-maroon))]' : 'w-1.5 bg-muted-foreground/40'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
-      
-      {/* Action buttons */}
-      <div className="flex gap-2 mt-2 justify-center">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSkip();
-          }}
-          className="w-8 h-8 rounded-full bg-muted hover:bg-destructive/10 border border-border flex items-center justify-center transition-colors"
-        >
-          <X className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLike();
-          }}
-          className="w-8 h-8 rounded-full bg-muted hover:bg-[hsl(var(--azyah-maroon))]/10 border border-border flex items-center justify-center transition-colors"
-        >
-          <Heart className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
-        </button>
-      </div>
-    </div>
+    </section>
   );
 };
 

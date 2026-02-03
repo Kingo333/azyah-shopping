@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Bookmark } from 'lucide-react';
+import { Heart, Info, User } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Product } from '@/types';
@@ -13,6 +14,8 @@ interface ProductMasonryGridProps {
   isLoading: boolean;
   communityOutfitsInterval?: number;
   onProductClick?: (product: Product) => void;
+  onInfoClick?: (product: Product) => void;
+  onTryOnClick?: (product: Product) => void;
 }
 
 export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
@@ -20,6 +23,8 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   isLoading,
   communityOutfitsInterval = 12,
   onProductClick,
+  onInfoClick,
+  onTryOnClick,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -99,6 +104,25 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     }
   };
 
+  const handleInfoClick = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onInfoClick) {
+      onInfoClick(product);
+    } else {
+      navigate(`/p/${product.id}`);
+    }
+  };
+
+  const handleTryOnClick = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTryOnClick) {
+      onTryOnClick(product);
+    } else {
+      // Navigate to try-on feature with product
+      navigate(`/p/${product.id}?tryon=true`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
@@ -141,6 +165,8 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
           isLiked={likedProducts.has(product.id)}
           onLikeToggle={(e) => handleLikeToggle(product.id, e)}
           onClick={() => handleProductClick(product)}
+          onInfoClick={(e) => handleInfoClick(product, e)}
+          onTryOnClick={(e) => handleTryOnClick(product, e)}
         />
       );
     });
@@ -160,6 +186,8 @@ interface MasonryProductCardProps {
   isLiked: boolean;
   onLikeToggle: (e: React.MouseEvent) => void;
   onClick: () => void;
+  onInfoClick: (e: React.MouseEvent) => void;
+  onTryOnClick: (e: React.MouseEvent) => void;
 }
 
 const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
@@ -167,6 +195,8 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
   isLiked,
   onLikeToggle,
   onClick,
+  onInfoClick,
+  onTryOnClick,
 }) => {
   const imageUrl = product.media_urls?.[0] || product.image_url || '/placeholder.svg';
   const brandName = product.merchant_name || product.brand?.name || 'Unknown';
@@ -185,7 +215,7 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
             className="w-full h-auto object-cover"
           />
           
-          {/* Bookmark/Like button - shows on hover */}
+          {/* Like button - always visible when liked, shows on hover otherwise */}
           <button
             onClick={onLikeToggle}
             className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -196,10 +226,30 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
           >
             <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
           </button>
+
+          {/* Action buttons overlay - bottom right, shows on hover */}
+          <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-7 w-7 rounded-full bg-white/90 hover:bg-white shadow-sm"
+              onClick={onInfoClick}
+            >
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-7 w-7 rounded-full bg-white/90 hover:bg-white shadow-sm"
+              onClick={onTryOnClick}
+            >
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
         
         {/* Brand name overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3 pointer-events-none">
           <p className="text-xs font-medium text-white truncate">{brandName}</p>
         </div>
       </div>
