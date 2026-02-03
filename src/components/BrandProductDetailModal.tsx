@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Share2, ExternalLink } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { EnhancedProductGallery } from '@/components/EnhancedProductGallery';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { Money } from '@/components/ui/Money';
+import { cn } from '@/lib/utils';
 
 interface BrandProductDetailModalProps {
   product: Product | null;
@@ -47,15 +47,8 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Image Gallery */}
-          <div>
-            <EnhancedProductGallery
-              images={mediaUrls}
-              productTitle={product.title}
-              hasARMesh={!!product.ar_mesh_url}
-              onARTryOn={() => toast({ title: 'AR Try-On', description: 'AR feature coming soon!' })}
-            />
-          </div>
+          {/* Image Gallery - Constrained for modal */}
+          <ProductImageGallery images={mediaUrls} title={product.title} />
 
           {/* Product Info */}
           <div className="space-y-4">
@@ -124,5 +117,42 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// Simple image gallery component constrained for modal use
+const ProductImageGallery: React.FC<{ images: string[]; title: string }> = ({ images, title }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const displayImages = images.length > 0 ? images : ['/placeholder.svg'];
+
+  return (
+    <div className="space-y-3">
+      {/* Main Image */}
+      <div className="aspect-[4/5] max-h-[50vh] overflow-hidden rounded-lg bg-muted">
+        <img
+          src={displayImages[selectedIndex]}
+          alt={title}
+          className="w-full h-full object-contain"
+        />
+      </div>
+      
+      {/* Thumbnails */}
+      {displayImages.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {displayImages.map((url, idx) => (
+            <button
+              key={idx}
+              onClick={() => setSelectedIndex(idx)}
+              className={cn(
+                "flex-shrink-0 w-14 h-14 rounded-md border-2 overflow-hidden transition-colors",
+                selectedIndex === idx ? "border-primary" : "border-border hover:border-muted-foreground"
+              )}
+            >
+              <img src={url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

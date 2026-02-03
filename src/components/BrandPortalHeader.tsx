@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-import { LogOut, Sun, Moon, Globe } from 'lucide-react';
+import { LogOut, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 interface Brand {
   id: string;
   name: string;
@@ -35,7 +34,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
     setTheme
   } = useTheme();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
@@ -44,13 +42,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
   };
   const getUserName = () => {
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
-  };
-
-  const handleImportFromWebsite = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Website import feature is coming soon! Use the feedback button to request early access.",
-    });
   };
   return (
     <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 p-3 md:p-4 rounded-lg bg-card border border-border gap-3 md:gap-0", className)}>
@@ -80,17 +71,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
         {/* Theme Toggle */}
         <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 w-8 md:h-10 md:w-10">
           {theme === 'dark' ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
-        </Button>
-
-        {/* Import from Website Button */}
-        <Button
-          variant="outline"
-          onClick={handleImportFromWebsite}
-          className="gap-1 md:gap-2 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
-        >
-          <Globe className="h-3 w-3 md:h-4 md:w-4" />
-          <span className="hidden sm:inline">Import from Website</span>
-          <span className="sm:hidden">Import</span>
         </Button>
 
         {/* User Info & Sign Out */}

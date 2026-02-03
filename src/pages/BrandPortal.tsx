@@ -25,7 +25,7 @@ import { BrandOnboardingModal } from '@/components/brand/BrandOnboardingModal';
 import { BrandCategoryChangeCard } from '@/components/brand/BrandCategoryChangeCard';
 import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
 import { PortfolioManager } from '@/components/brand/PortfolioManager';
-import { ServicesMarketplace } from '@/components/brand/ServicesMarketplace';
+
 import { SalonDashboard } from '@/components/salon/SalonDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store, Briefcase } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
@@ -73,6 +73,7 @@ const BrandPortal: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -475,11 +476,10 @@ const BrandPortal: React.FC = () => {
         { value: 'settings', label: 'Settings' }
       ];
     }
-    // Fashion brand: Products + Services marketplace + Collabs + Analytics + Settings
+    // Fashion brand: Products + Collabs + Analytics + Settings
     return [
       { value: 'products', label: 'Products' },
       { value: 'collabs', label: 'Collabs' },
-      { value: 'partner-services', label: 'Services' },
       { value: 'analytics', label: 'Analytics' },
       { value: 'settings', label: 'Settings' }
     ];
@@ -653,13 +653,6 @@ const BrandPortal: React.FC = () => {
             </TabsContent>
           )}
 
-          {/* Partner Services marketplace for fashion brands */}
-          {isFashionBrand && (
-            <TabsContent value="partner-services">
-              <ServicesMarketplace currentBrandId={brand.id} />
-            </TabsContent>
-          )}
-
           {/* Products tab - only for fashion brands */}
           {isFashionBrand && (
             <TabsContent value="products">
@@ -699,6 +692,24 @@ const BrandPortal: React.FC = () => {
                       >
                         <Plus className="h-4 w-4" />
                         Add Product
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          if (products.length >= 10) {
+                            toast({
+                              title: "Product Limit Reached",
+                              description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setIsBulkAddModalOpen(true);
+                        }} 
+                        className="gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Add Multiple
                       </Button>
                     </div>
                   </div>
@@ -777,7 +788,8 @@ const BrandPortal: React.FC = () => {
       </div>
 
       <AddProductModal isOpen={isAddProductModalOpen} onClose={() => setIsAddProductModalOpen(false)} onProductAdded={fetchProducts} userType="brand" brandId={brand.id} brandCurrency={brand.currency || 'AED'} />
-
+      
+      <AddProductModal isOpen={isBulkAddModalOpen} onClose={() => setIsBulkAddModalOpen(false)} onProductAdded={fetchProducts} userType="brand" brandId={brand.id} brandCurrency={brand.currency || 'AED'} initialBulkMode={true} />
       {selectedProduct && <>
           <BrandProductDetailModal isOpen={isDetailModalOpen} onClose={() => {
         setIsDetailModalOpen(false);

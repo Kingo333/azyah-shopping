@@ -29,6 +29,7 @@ interface AddProductModalProps {
   selectedEvent?: any;
   selectedBrandForProducts?: string;
   brandCurrency?: string;
+  initialBulkMode?: boolean;
 }
 
 export const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -42,7 +43,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   onAddProductToEvent,
   selectedEvent,
   selectedBrandForProducts,
-  brandCurrency = 'AED'
+  brandCurrency = 'AED',
+  initialBulkMode = false
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -53,7 +55,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [bulkImages, setBulkImages] = useState<File[]>([]);
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const bulkPreviewUrls = useObjectUrls(bulkImages);
-  const [showBulkMode, setShowBulkMode] = useState(false);
+  const [showBulkMode, setShowBulkMode] = useState(initialBulkMode);
   
   const [hasManualCurrency, setHasManualCurrency] = useState(false);
   
@@ -82,6 +84,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       [field]: value
     }));
   };
+
+  // Sync bulk mode with initialBulkMode prop when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setShowBulkMode(initialBulkMode);
+    }
+  }, [isOpen, initialBulkMode]);
 
   useEffect(() => {
     if (formData.category_slug) {
