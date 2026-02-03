@@ -1,131 +1,103 @@
 
+# Fix Chrome Extension Icons: SVG to PNG Conversion
 
-# Apply User's Refined Extension Fixes
+## Problem Summary
 
-## Summary
+Chrome's `icons` and `action.default_icon` manifest fields do not reliably support SVG format. While the current SVG icons are valid and contain the correct Azyah branding (maroon circle with white magnifying glass), they may:
+- Display as blank squares in the toolbar
+- Fail Chrome Web Store validation
+- Cause inconsistent behavior across Chrome versions
 
-You've provided a refined, battle-tested version of the extension's `content_script.js` that addresses several issues the current codebase has. I'll apply your fixes to make the extension load and work properly on retail sites like Next.ae.
+## Solution
 
----
-
-## Changes You Made (That I'll Apply)
-
-| Issue | Current Code | Your Fix |
-|-------|--------------|----------|
-| **Retry timeout** | 10 attempts / 5 seconds | 14 attempts / 7 seconds (more time for slow sites) |
-| **Extractor injection** | Direct assignment, no try/catch | IIFE with try/catch for safety |
-| **Detection signals** | Narrower button detection | Expanded Arabic + more button variants |
-| **Button detection selectors** | `a.button, a[class*="btn"]` | `a, input[type="submit"]` (broader) |
-| **Size selectors** | Limited class patterns | Added `[class*="size" i]` catch-all |
-| **Body text scan** | 15,000 chars | 20,000 chars (catches more price data) |
-| **Inline extraction image threshold** | 100x100px | 120x120px (higher quality) |
-| **Variable declarations** | Multiple in STATE section | Cleaner scoping, `imageSelectorActive` moved closer to usage |
-| **Error handling** | Some missing catches | Comprehensive try/catch on extraction |
-| **SPA nav delay** | 300ms | 400ms (more reliable on slow transitions) |
-| **Manifest** | Missing `tabs` permission | Add `tabs` for `chrome.tabs.query()` |
+Create PNG versions of all three icon sizes and update the manifest to reference them.
 
 ---
 
-## Files to Modify
+## Implementation Steps
 
-### 1. `extension/manifest.json`
-- Add `"tabs"` permission (required by sidepanel.js for `chrome.tabs.query()`)
+### Step 1: Create PNG Icon Files
 
-### 2. `extension/content_script.js`
-- Apply your refined version with:
-  - Extended retry timeout (14 attempts / 7 seconds)
-  - Safer extractor injection with IIFE + try/catch
-  - Expanded button detection with Arabic variants
-  - Broader selector coverage for size/cart/price
-  - Increased body text scan to 20,000 chars
-  - More robust cleanup patterns
-  - Better error handling in click handler
+Create three new PNG files with the same visual design as the current SVGs:
 
----
+| File | Size | Design |
+|------|------|--------|
+| `extension/icons/icon16.png` | 16x16px | Maroon circle (#7A143E) with white magnifying glass |
+| `extension/icons/icon48.png` | 48x48px | Same design, scaled proportionally |
+| `extension/icons/icon128.png` | 128x128px | Same design, scaled proportionally |
 
-## Implementation Details
+The PNG files will be generated programmatically using an HTML canvas approach, encoding the same visual as the existing SVGs.
 
-### Manifest Update
+### Step 2: Update manifest.json
+
+Change both icon references from `.svg` to `.png`:
+
+**icons field (lines 6-10):**
 ```json
-"permissions": [
-  "activeTab",
-  "scripting", 
-  "storage",
-  "sidePanel",
-  "tabs"  // <-- ADD THIS
-]
-```
-
-### Key content_script.js Improvements
-
-**1. Safer extractor injection:**
-```javascript
-(() => {
-  try {
-    const s = document.createElement('script');
-    s.src = chrome.runtime.getURL('lib/extractor.js');
-    (document.head || document.documentElement).appendChild(s);
-  } catch (e) {
-    console.warn('[Azyah] Failed to inject extractor:', e);
-  }
-})();
-```
-
-**2. Expanded button detection:**
-```javascript
-const buttons = document.querySelectorAll('button, [role="button"], a, input[type="submit"]');
-for (const el of buttons) {
-  const text = (el.textContent || el.getAttribute('value') || '').toLowerCase();
-  if (/add to (cart|bag|basket)|buy now|add to trolley|checkout|اضف إلى السلة|أضف للسلة|اشتري الآن/i.test(text)) {
-    signals.push('cart-button');
-    break;
-  }
+"icons": {
+  "16": "icons/icon16.png",
+  "48": "icons/icon48.png",
+  "128": "icons/icon128.png"
 }
 ```
 
-**3. Extended retry (7 seconds instead of 5):**
-```javascript
-let attempts = 0;
-const maxAttempts = 14; // ~7s
-const intervalMs = 500;
+**action.default_icon field (lines 36-40):**
+```json
+"action": {
+  "default_icon": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "default_title": "Find Better Deals"
+}
 ```
 
-**4. Moved `imageSelectorActive` to local scope:**
-```javascript
-// Closer to where it's used
-let imageSelectorActive = false;
-function activateImageSelector() { ... }
-```
+### Step 3: Keep SVG Files (Optional)
+
+The existing SVG files can remain in the `icons/` folder since `web_accessible_resources` includes `icons/*`. They may be useful for:
+- Future reference
+- Use in the side panel UI
+- Higher quality display in certain contexts
 
 ---
 
-## Testing After Changes
+## Technical Details
 
-1. **Reload extension** in `chrome://extensions`
-2. **Visit Next.ae product page** (e.g., `/en/style/...`)
-3. **Check console** for:
-   ```javascript
-   window.__AZYAH_CONTENT_SCRIPT_LOADED  // Should be true
-   // Should see detection logs with strong/weak signals
-   ```
-4. **Verify button appears** within 3-7 seconds
-5. **Click button** → Side panel should open
+### PNG Generation Approach
+
+Since Lovable cannot run image conversion tools directly, I will create the PNG files as base64-encoded data URIs converted to binary PNG format. The icon design is simple enough to recreate:
+
+1. Draw a filled circle with color `#7A143E` (Azyah maroon)
+2. Draw an unfilled circle (stroke only, white) for the magnifying glass lens
+3. Draw a diagonal line (white) for the magnifying glass handle
+
+### File Changes Summary
+
+| Action | File |
+|--------|------|
+| Create | `extension/icons/icon16.png` |
+| Create | `extension/icons/icon48.png` |
+| Create | `extension/icons/icon128.png` |
+| Modify | `extension/manifest.json` (2 locations) |
 
 ---
 
-## Debug Commands for Next.ae
+## Verification After Implementation
 
-```javascript
-// 1. Verify script loaded
-window.__AZYAH_CONTENT_SCRIPT_LOADED
+1. Go to `chrome://extensions`
+2. Click **Reload** on the Azyah extension
+3. Verify the icon appears correctly (not blank) in:
+   - Extension card
+   - Browser toolbar
+4. Test on a product page (Next.ae) to confirm functionality unchanged
+5. Check `chrome://extensions` for any "Errors"
 
-// 2. Check for button
-document.getElementById('azyah-fab-host')
+---
 
-// 3. Check Shadow DOM button
-document.getElementById('azyah-fab-host')?.shadowRoot?.querySelector('.fab')
+## Chrome Web Store Readiness
 
-// 4. Manual extraction test
-window.AzyahExtractor?.extractProduct()
-```
-
+After this fix, the extension will meet Chrome Web Store icon requirements:
+- PNG format (required)
+- Correct sizes: 16x16, 48x48, 128x128 (required)
+- Consistent branding across all sizes
