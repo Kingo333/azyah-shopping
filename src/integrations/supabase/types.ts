@@ -759,6 +759,7 @@ export type Database = {
           name: string
           owner_user_id: string | null
           shipping_regions: string[] | null
+          size_chart_url: string | null
           slug: string
           socials: Json | null
           updated_at: string
@@ -777,6 +778,7 @@ export type Database = {
           name: string
           owner_user_id?: string | null
           shipping_regions?: string[] | null
+          size_chart_url?: string | null
           slug: string
           socials?: Json | null
           updated_at?: string
@@ -795,6 +797,7 @@ export type Database = {
           name?: string
           owner_user_id?: string | null
           shipping_regions?: string[] | null
+          size_chart_url?: string | null
           slug?: string
           socials?: Json | null
           updated_at?: string
@@ -3365,6 +3368,7 @@ export type Database = {
           name: string
           owner_user_id: string | null
           shipping_regions: string[] | null
+          size_chart_url: string | null
           slug: string
           socials: Json | null
           updated_at: string
@@ -3380,6 +3384,7 @@ export type Database = {
           name: string
           owner_user_id?: string | null
           shipping_regions?: string[] | null
+          size_chart_url?: string | null
           slug: string
           socials?: Json | null
           updated_at?: string
@@ -3395,6 +3400,7 @@ export type Database = {
           name?: string
           owner_user_id?: string | null
           shipping_regions?: string[] | null
+          size_chart_url?: string | null
           slug?: string
           socials?: Json | null
           updated_at?: string

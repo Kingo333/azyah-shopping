@@ -1,17 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Share2, Save, X, BarChart3, TrendingUp, ExternalLink } from 'lucide-react';
+import { Edit, Share2, Save, X, BarChart3, ExternalLink } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { EnhancedProductGallery } from '@/components/EnhancedProductGallery';
-import { AdvancedSizeColorSelector } from '@/components/AdvancedSizeColorSelector';
-import { SizeChartUpload } from '@/components/SizeChartUpload';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { openExternalUrl } from '@/lib/openExternalUrl';
@@ -31,8 +28,6 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
   onEdit,
   onProductUpdated
 }) => {
-  const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [editedProduct, setEditedProduct] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -125,21 +120,6 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
 
   const attributes = product.attributes as any;
   const mediaUrls = getProductImageUrls(product);
-
-  // Static sizes and colors for preview
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
-    value: size,
-    label: size,
-    inStock: true,
-    stockCount: 10
-  }));
-
-  const availableColors = [
-    { value: 'black', label: 'Black', hexCode: '#000000', inStock: true },
-    { value: 'white', label: 'White', hexCode: '#ffffff', inStock: true },
-    { value: 'navy', label: 'Navy', hexCode: '#1e3a8a', inStock: true },
-    { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: true }
-  ];
 
   // Mock analytics data
   const analyticsData = {
@@ -295,24 +275,6 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
               ))}
             </div>
 
-            {/* Size & Color Preview */}
-            <AdvancedSizeColorSelector
-              sizes={availableSizes}
-              colors={availableColors}
-              selectedSize={selectedSize}
-              selectedColor={selectedColor}
-              onSizeSelect={setSelectedSize}
-              onColorSelect={setSelectedColor}
-              sizeChart={{
-                XS: '32-34 inches',
-                S: '34-36 inches',
-                M: '36-38 inches',
-                L: '38-40 inches',
-                XL: '40-42 inches'
-              }}
-              sizeChartImage={product.attributes?.size_chart}
-            />
-
             {/* Description */}
             <div>
               <h3 className="font-medium mb-2">Description</h3>
@@ -326,49 +288,6 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
               ) : (
                 <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
               )}
-            </div>
-
-            {/* Size Chart Upload */}
-            {isEditing && (
-              <SizeChartUpload
-                currentSizeChart={editedProduct?.size_chart}
-                onSizeChartUpdate={(sizeChart) => setEditedProduct({...editedProduct, size_chart: sizeChart})}
-                productId={product.id}
-              />
-            )}
-
-            {/* Inventory Management */}
-            <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
-              <h3 className="font-medium mb-3">Inventory Management</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Stock Quantity:</span>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={editedProduct?.stock_qty || 0}
-                      onChange={(e) => setEditedProduct({...editedProduct, stock_qty: parseInt(e.target.value)})}
-                      className="w-20 h-8"
-                    />
-                  ) : (
-                    <span className={`font-medium ${product.stock_qty <= 5 ? 'text-red-500' : 'text-green-500'}`}>
-                      {product.stock_qty} units
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">SKU:</span>
-                  <span className="font-medium">{product.sku}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Category:</span>
-                  <span className="font-medium capitalize">{product.category_slug}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span className="font-medium">{new Date(product.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
             </div>
 
             {/* External URL */}

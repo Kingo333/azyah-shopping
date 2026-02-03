@@ -1,19 +1,13 @@
-
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, Check } from 'lucide-react';
-import { HangerIcon } from '@/components/icons/HangerIcon';
+import { Heart, ShoppingBag, Info, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import ProductDetailPage from '@/components/ProductDetailPage';
-import PhotoCloseup from '@/components/PhotoCloseup';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import CategoryGrid from '@/components/CategoryGrid';
@@ -21,9 +15,6 @@ import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
-import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
-import { toast as sonnerToast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { Money } from '@/components/ui/Money';
 
@@ -47,8 +38,6 @@ const ProductCard: React.FC<{
   requireAuth: (action: string, callback: () => void) => void;
 }> = ({ product, handleLike, handleProductClick, user, toast, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
-  const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
-  const [isAdded, setIsAdded] = useState(false);
 
   const handleAddToWishlist = async () => {
     requireAuth('add to wishlist', async () => {
@@ -68,29 +57,6 @@ const ProductCard: React.FC<{
           variant: "destructive"
         });
       }
-    });
-  };
-
-  const handleAddToWardrobe = async () => {
-    requireAuth('save to Closet', async () => {
-      if (!user) return;
-      
-      // Check for duplicates first
-      const isDuplicate = await checkClosetDuplicate(user.id, product.id);
-      if (isDuplicate) {
-        sonnerToast.info('Already in Closet', {
-          description: 'This item is already saved',
-          duration: 2000,
-        });
-        return;
-      }
-      
-      addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
-        onSuccess: () => {
-          setIsAdded(true);
-          setTimeout(() => setIsAdded(false), 1500);
-        }
-      });
     });
   };
 
@@ -158,56 +124,27 @@ const ProductCard: React.FC<{
           </div>
           
           {/* Action buttons */}
-          <div className="flex flex-col gap-2">
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 rounded-full bg-primary/10"
-                onClick={() => handleProductClick(product)}
-              >
-                <Info className="h-3 w-3" />
-              </Button>
-              
-              {/* Shop Now button */}
-              {product.external_url && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => openExternalUrl(product.external_url)}
-                  className="flex-1 text-xs h-8"
-                >
-                  Shop Now
-                </Button>
-              )}
-            </div>
-            
-            {/* + Closet button */}
+          <div className="flex gap-2">
             <Button
-              variant="outline"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddToWardrobe();
-              }}
-              disabled={wardrobeLoading || isAdded}
-              className={cn(
-                "w-full text-xs h-8 opacity-80 hover:opacity-100 backdrop-blur-sm transition-all",
-                isAdded && "bg-green-500/80 text-white border-green-500"
-              )}
+              variant="ghost"
+              className="h-8 w-8 p-0 rounded-full bg-primary/10"
+              onClick={() => handleProductClick(product)}
             >
-              {isAdded ? (
-                <>
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  Added
-                </>
-              ) : (
-              <>
-                  <HangerIcon className="h-3.5 w-3.5 mr-1" size={14} />
-                  <span className="text-[10px]">+ Closet</span>
-                </>
-              )}
+              <Info className="h-3 w-3" />
             </Button>
+            
+            {/* Shop Now button */}
+            {product.external_url && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openExternalUrl(product.external_url)}
+                className="flex-1 text-xs h-8"
+              >
+                Shop Now
+              </Button>
+            )}
           </div>
         </div>
       </div>

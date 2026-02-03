@@ -41,6 +41,7 @@ export interface Brand {
   website?: string;
   contact_email?: string;
   shipping_regions?: string[];
+  size_chart_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ export interface Retailer {
   website?: string;
   contact_email?: string;
   shipping_regions?: string[];
+  size_chart_url?: string;
   created_at: string;
   updated_at: string;
 }
