@@ -7,8 +7,12 @@
 const SUPABASE_URL = 'https://klwolsopucgswhtdlsps.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ';
 
-// Enable side panel on extension click
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+// Enable side panel on extension click (with fallback for unsupported contexts)
+try {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+} catch (e) {
+  console.warn('[Azyah SW] sidePanel behavior not set:', e);
+}
 
 // Message handlers
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
