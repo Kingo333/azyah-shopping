@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,6 @@ import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
-import ProductListView from '@/components/ProductListView';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import UnifiedCategoryFilter from '@/components/UnifiedCategoryFilter';
 import type { UnifiedFilterState } from '@/components/UnifiedCategoryFilter';
@@ -19,6 +18,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CATEGORY_TREE, getCategoryDisplayName, type TopCategory } from '@/lib/categories';
+import { MiniSwipePreview } from '@/components/MiniSwipePreview';
+import { ProductMasonryGrid } from '@/components/ProductMasonryGrid';
+import CategoryGrid from '@/components/CategoryGrid';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -47,7 +49,10 @@ const Swipe = () => {
       countryCode: countryParam || undefined
     };
   });
-  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>(() => {
+    const saved = localStorage.getItem('feed-view-mode');
+    return (saved === 'swipe' || saved === 'list') ? saved : 'list';
+  });
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
@@ -79,12 +84,16 @@ const Swipe = () => {
   });
   const showListToggle = true; // Always show toggle
 
+  // Persist view mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('feed-view-mode', viewMode);
+  }, [viewMode]);
+
   // First-time tutorial for Discover page
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('discover-tutorial-seen');
     if (!hasSeenTutorial && !loading) {
-      // Start in swipe mode to show toggle demo
-      setViewMode('swipe');
+      // Don't force swipe mode, just show tutorial
       setShowDiscoverTutorial(true);
       setTutorialStep('initial');
     }
@@ -153,6 +162,26 @@ const Swipe = () => {
       replace: true
     });
   }, [filters, setSearchParams]);
+
+  // Swipe action handlers for mini preview (must be before early returns)
+  const handleSwipeLike = useCallback(async (product: any) => {
+    if (!user?.id) return;
+    await supabase.from('swipes').insert({
+      user_id: user.id,
+      product_id: product.id,
+      action: 'right' as const
+    });
+  }, [user?.id]);
+
+  const handleSwipeSkip = useCallback(async (product: any) => {
+    if (!user?.id) return;
+    await supabase.from('swipes').insert({
+      user_id: user.id,
+      product_id: product.id,
+      action: 'left' as const
+    });
+  }, [user?.id]);
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -171,7 +200,7 @@ const Swipe = () => {
     return null;
   }
   const getCurrentCategoryDisplay = () => {
-    if (filters.genders.length === 0 && filters.categories.length === 0) return 'All';
+    if (filters.genders.length === 0 && filters.categories.length === 0) return 'Browse';
     const displays: string[] = [];
     if (filters.genders.length > 0) {
       displays.push(filters.genders[0].charAt(0).toUpperCase() + filters.genders[0].slice(1));
@@ -179,7 +208,7 @@ const Swipe = () => {
     if (filters.categories.length > 0) {
       displays.push(getCategoryDisplayName(filters.categories[0] as TopCategory).substring(0, 10));
     }
-    return displays.join(' · ') || 'All';
+    return displays.join(' · ') || 'Browse';
   };
 
   const handleCategorySelect = (category: TopCategory | null) => {
@@ -256,13 +285,6 @@ const Swipe = () => {
                   <SheetTitle className="text-lg font-serif">Categories</SheetTitle>
                 </SheetHeader>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button
-                    variant={filters.categories.length === 0 ? "default" : "outline"}
-                    className="h-12 justify-start px-4"
-                    onClick={() => handleCategorySelect(null)}
-                  >
-                    All Categories
-                  </Button>
                   {Object.keys(CATEGORY_TREE).map((category) => (
                     <Button
                       key={category}
@@ -273,6 +295,15 @@ const Swipe = () => {
                       {getCategoryDisplayName(category as TopCategory)}
                     </Button>
                   ))}
+                  {filters.categories.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      className="h-12 justify-start px-4 text-muted-foreground"
+                      onClick={() => handleCategorySelect(null)}
+                    >
+                      Clear filter
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -344,30 +375,38 @@ const Swipe = () => {
                 onProductDetailChange={setIsProductDetailOpen}
               />
             </div>
-          </div> : <div className="flex-1 container max-w-screen-lg mx-auto px-1">
-            <ProductListView 
-              products={products} 
-              isLoading={productsLoading}
-              selectedCategories={filters.categories}
-              onCategoryToggle={(category) => {
-                setFilters(prev => ({
-                  ...prev,
-                  categories: prev.categories.includes(category as any)
-                    ? prev.categories.filter(c => c !== category)
-                    : [...prev.categories, category as any]
-                }));
-              }}
-              selectedSubcategories={filters.subcategories}
-              onSubcategoryToggle={(subcategory) => {
-                setFilters(prev => ({
-                  ...prev,
-                  subcategories: prev.subcategories.includes(subcategory)
-                    ? prev.subcategories.filter(s => s !== subcategory)
-                    : [...prev.subcategories, subcategory]
-                }));
-              }}
-              showCategoryCarousel={true}
+          </div> : <div className="flex-1 overflow-auto">
+            {/* Mini Swipe Preview at top */}
+            <MiniSwipePreview 
+              products={products.slice(0, 6)}
+              onOpenFullSwipe={() => setViewMode('swipe')}
+              onLike={handleSwipeLike}
+              onSkip={handleSwipeSkip}
             />
+            
+            {/* Category Grid */}
+            <div className="px-4 pt-4">
+              <CategoryGrid 
+                selectedCategories={filters.categories}
+                onCategoryToggle={(category) => {
+                  setFilters(prev => ({
+                    ...prev,
+                    categories: prev.categories.includes(category as any)
+                      ? prev.categories.filter(c => c !== category)
+                      : [category as any]
+                  }));
+                }}
+              />
+            </div>
+            
+            {/* Masonry Grid with Community Blocks */}
+            <div className="px-4 pt-4 pb-24">
+              <ProductMasonryGrid 
+                products={products}
+                isLoading={productsLoading}
+                communityOutfitsInterval={12}
+              />
+            </div>
           </div>}
       </main>
 
