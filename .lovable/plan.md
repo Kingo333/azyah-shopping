@@ -1,97 +1,141 @@
 
-# Product Upload and Display Simplification — Complete Audit and Plan
+# Simplify Brand/Retailer Product Detail Modals
 
-## ✅ IMPLEMENTATION COMPLETE
+## Problem
 
-All phases have been successfully implemented. Below is the summary of changes made.
+When brand or retailer users click on a product in their catalog, they see a complex modal with:
+- **Shopper Engagement Insights** (mock analytics with random numbers)
+- **Inline editing** capability with multiple input fields
+- **Inventory details** (SKU, stock quantity) in RetailerProductDetailModal
+- **Size/color attributes** that don't match the simplified product upload
 
----
-
-## Implementation Summary
-
-### Phase 1: Database Migration ✅
-- Added `size_chart_url` column to `brands` table
-- Added `size_chart_url` column to `retailers` table
-- Updated `src/types/index.ts` with `size_chart_url` field for Brand and Retailer types
-
-### Phase 2: Settings Forms ✅
-- Added Size Chart upload to `BrandSettingsForm.tsx` (for fashion brands)
-- Added Size Chart upload to `RetailerSettingsForm.tsx`
-- Uses existing `SizeChartUpload` component with direct DB update
-
-### Phase 3: Simplified Product Upload ✅
-- **`AddProductModal.tsx`:**
-  - Product Name is now optional (defaults to "Untitled Product")
-  - Removed Stock Quantity field
-  - Removed per-product Size Chart section
-  - Removed Virtual Try-On (VTO) section
-  - Added "Bulk Upload" mode toggle for adding up to 5 products at once
-
-- **`EditProductModal.tsx`:**
-  - Removed Stock Quantity field
-  - Removed per-product Size Chart section
-  - Removed Virtual Try-On (VTO) section
-
-### Phase 4: Simplified Brand/Retailer Product View ✅
-- **`BrandProductDetailModal.tsx`:**
-  - Removed `AdvancedSizeColorSelector` component
-  - Removed Inventory Management section
-  - Removed Size Chart editing section
-  - Kept: Analytics, Pricing, Description, External URL
-
-### Phase 5: Removed "Add to Closet" Buttons ✅
-- **`SwipeCard.tsx`:** Removed `AddToClosetButton` component and all closet-related logic
-- **`ProductListView.tsx`:** Removed "+ Closet" button and `useAddProductToWardrobe` hook
-- **`MiniDiscover.tsx`:** Removed closet functionality from both MiniSwipeCard and MiniListCard
-- **`PhotoCloseup.tsx`:** Removed "+ Closet" button from both mobile and desktop views
-
-### Phase 6: Updated Info Modal Content ✅
-- **`PhotoCloseup.tsx`:**
-  - Updated size chart fetching to prioritize brand/retailer `size_chart_url`
-  - Falls back to product-level size chart (legacy) if brand/retailer doesn't have one
-  - Simplified action buttons: Like, Save, Size Chart, Shop Now
-
-- **`ProductDetailPage.tsx`:**
-  - Removed size/color selectors (`AdvancedSizeColorSelector`)
-  - Removed "Add to Closet" button
-  - Simplified action buttons: Wishlist, Shop Now
+This is confusing because it doesn't match what shoppers actually see.
 
 ---
 
-## Files Modified
+## Goal
 
-| File | Status |
-|------|--------|
-| `supabase/migrations/20260203165653_*.sql` | ✅ Created |
-| `src/types/index.ts` | ✅ Updated |
-| `src/components/BrandSettingsForm.tsx` | ✅ Updated |
-| `src/components/RetailerSettingsForm.tsx` | ✅ Updated |
-| `src/components/AddProductModal.tsx` | ✅ Updated |
-| `src/components/EditProductModal.tsx` | ✅ Updated |
-| `src/components/BrandProductDetailModal.tsx` | ✅ Updated |
-| `src/components/SwipeCard.tsx` | ✅ Updated |
-| `src/components/ProductListView.tsx` | ✅ Updated |
-| `src/components/MiniDiscover.tsx` | ✅ Updated |
-| `src/components/PhotoCloseup.tsx` | ✅ Updated |
-| `src/components/ProductDetailPage.tsx` | ✅ Updated |
+When a brand/retailer clicks a product, show them **exactly what shoppers see** - a clean product preview with:
+- Image gallery
+- Title + Brand name
+- Price (with compare-at price if applicable)
+- Description
+- External shop link
+- Edit button (to open the Edit modal separately)
 
 ---
 
-## Key Behavioral Changes
+## Current vs. Proposed
 
-1. **Size Chart Flow:**
-   - Before: Each product had its own size chart
-   - After: Brands/Retailers have ONE universal size chart for all their products
+| Element | Current (Brand Modal) | Proposed |
+|---------|----------------------|----------|
+| Analytics section | ✅ Shows mock data | ❌ Remove |
+| Inline editing | ✅ Edit mode with inputs | ❌ Remove (keep Edit button to open separate modal) |
+| Inventory (SKU/Stock) | ✅ Shows in Retailer modal | ❌ Remove |
+| Size/Color attributes | ✅ Shows badges | ❌ Remove |
+| Image gallery | ✅ EnhancedProductGallery | ✅ Keep |
+| Title & Brand | ✅ Shows | ✅ Keep |
+| Price | ✅ Shows | ✅ Keep |
+| Description | ✅ Shows | ✅ Keep |
+| External URL | ✅ Shows with button | ✅ Keep |
+| Share button | ✅ Shows | ✅ Keep |
+| Status badge | ✅ Shows | ✅ Keep (useful for brand to know) |
 
-2. **Product Upload:**
-   - Streamlined form with only essential fields
-   - Bulk upload mode for adding multiple products quickly
-   - Product name optional (uses brand name as fallback display)
+---
 
-3. **Discovery Feed:**
-   - No more "Add to Closet" buttons on cards
-   - Cleaner UI focused on: swipe actions, like, save, shop
+## Implementation Plan
 
-4. **Info/Detail Views:**
-   - Simplified to show: images, description, size chart (from brand), and shop action
-   - No inventory/variant management in shopper-facing views
+### 1. Simplify `BrandProductDetailModal.tsx`
+
+**Remove:**
+- `isEditing` state and all inline editing logic (lines 31-111)
+- `useProductAnalytics` hook import
+- Mock analytics data object (lines 124-131)
+- Shopper Engagement Insights section (lines 243-267)
+- Inline editing inputs for title, price, description, external URL
+- Cancel/Save buttons
+
+**Keep:**
+- Image gallery (EnhancedProductGallery)
+- Product title + brand name (read-only)
+- Status badge
+- Price display (read-only)
+- Description (read-only)
+- External URL button
+- Share button
+- Edit button (opens EditProductModal via `onEdit` prop)
+
+**Result:** Clean shopper-like preview with a single "Edit" button
+
+### 2. Simplify `RetailerProductDetailModal.tsx`
+
+**Remove:**
+- Product Details section showing SKU/Stock (lines 147-173)
+- Size/Color attributes from the grid
+
+**Keep:**
+- Image gallery
+- Title
+- Price
+- Category/Status badges
+- Description
+- External URL button
+- Edit/Share buttons
+
+---
+
+## File Changes
+
+| File | Changes |
+|------|---------|
+| `src/components/BrandProductDetailModal.tsx` | Major simplification - remove analytics, inline editing, keep read-only preview |
+| `src/components/RetailerProductDetailModal.tsx` | Remove SKU/Stock/Size/Color details section |
+
+---
+
+## Visual Comparison
+
+### Before (Brand Modal):
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Image Gallery]     Product Title            [Share][Edit] │
+│                      Brand Name                             │
+│                      ───────────────────                    │
+│                      $99.00                                 │
+│                      ┌─────────────────────────────────┐    │
+│                      │ Shopper Engagement Insights     │    │
+│                      │ Views: 1553    Likes: 312       │    │
+│                      │ Wishlist: 94   Conversions: 33  │    │
+│                      └─────────────────────────────────┘    │
+│                      [Badges: occasion, material, tags]     │
+│                      Description text...                    │
+│                      ┌─────────────────────────────────┐    │
+│                      │ External Product Link           │    │
+│                      └─────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### After (Simplified):
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Image Gallery]     Product Title        [Share][➚][Edit]  │
+│                      Brand Name     [active]                │
+│                      ───────────────────                    │
+│                      $99.00  $129.00                        │
+│                                                             │
+│                      Description                            │
+│                      Product description text...            │
+│                                                             │
+│                      ┌─────────────────────────────────┐    │
+│                      │  [Shop Now / Visit Store]       │    │
+│                      └─────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Technical Notes
+
+- The `onEdit` prop callback is already available and wired up - clicking Edit will open the separate EditProductModal
+- Analytics can be moved to a dedicated "Analytics" tab in the brand portal if needed later
+- This aligns with the simplified product upload flow we already implemented
