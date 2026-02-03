@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp, MapPin, X } from "lucide-react";
+import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, Grid3X3 } from "lucide-react";
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { CATEGORY_TREE, getCategoryDisplayName, type TopCategory } from '@/lib/categories';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ const Swipe = () => {
     };
   });
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
@@ -169,20 +171,30 @@ const Swipe = () => {
     return null;
   }
   const getCurrentCategoryDisplay = () => {
-    if (filters.genders.length === 0 && filters.categories.length === 0) return 'All Categories';
-    const displays = [];
+    if (filters.genders.length === 0 && filters.categories.length === 0) return 'All';
+    const displays: string[] = [];
     if (filters.genders.length > 0) {
       displays.push(filters.genders[0].charAt(0).toUpperCase() + filters.genders[0].slice(1));
     }
     if (filters.categories.length > 0) {
-      displays.push(filters.categories[0].split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
+      displays.push(getCategoryDisplayName(filters.categories[0] as TopCategory).substring(0, 10));
     }
-    return displays.join(' · ') || 'All Categories';
+    return displays.join(' · ') || 'All';
   };
-  return <div className="h-[100dvh] dashboard-bg flex flex-col overflow-hidden">
+
+  const handleCategorySelect = (category: TopCategory | null) => {
+    setFilters(prev => ({
+      ...prev,
+      categories: category ? [category as any] : [],
+      subcategories: []
+    }));
+    setCategorySheetOpen(false);
+  };
+
+  return <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header 
-        className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`sticky top-0 z-50 w-full bg-background/95 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}
       >
         <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
@@ -192,7 +204,7 @@ const Swipe = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => navigate("/dashboard")} 
+                onClick={() => navigate("/profile")} 
                 className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/60 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -228,21 +240,42 @@ const Swipe = () => {
               </div>
             </div>
             
-            {/* Center Section - Search */}
-            <div className="relative flex-1 max-w-[180px] sm:max-w-xs">
-              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground/60" />
-              <Input 
-                type="text" 
-                placeholder="Search..." 
-                value={filters.searchQuery} 
-                onChange={e => setFilters(prev => ({
-                  ...prev,
-                  searchQuery: e.target.value
-                }))} 
-                className="pl-8 sm:pl-9 h-8 sm:h-9 text-xs sm:text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all"
-                style={{ fontSize: '16px' }}
-              />
-            </div>
+            {/* Center Section - Category Button (replaced Search) */}
+            <Sheet open={categorySheetOpen} onOpenChange={setCategorySheetOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 max-w-[160px] sm:max-w-xs h-8 sm:h-9 rounded-full bg-muted/40 border-0 hover:bg-muted/60 text-xs sm:text-sm gap-1.5"
+                >
+                  <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="truncate">{getCurrentCategoryDisplay()}</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[60vh] rounded-t-xl">
+                <SheetHeader>
+                  <SheetTitle className="text-lg font-serif">Categories</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button
+                    variant={filters.categories.length === 0 ? "default" : "outline"}
+                    className="h-12 justify-start px-4"
+                    onClick={() => handleCategorySelect(null)}
+                  >
+                    All Categories
+                  </Button>
+                  {Object.keys(CATEGORY_TREE).map((category) => (
+                    <Button
+                      key={category}
+                      variant={filters.categories.includes(category as any) ? "default" : "outline"}
+                      className="h-12 justify-start px-4"
+                      onClick={() => handleCategorySelect(category as TopCategory)}
+                    >
+                      {getCategoryDisplayName(category as TopCategory)}
+                    </Button>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
 
             {/* Right Section - Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2">
