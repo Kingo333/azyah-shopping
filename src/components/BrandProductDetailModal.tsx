@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Edit, Share2, Save, X, BarChart3, ExternalLink } from 'lucide-react';
+import { Edit, Share2, ExternalLink } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { EnhancedProductGallery } from '@/components/EnhancedProductGallery';
-import { useProductAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { Money } from '@/components/ui/Money';
 
 interface BrandProductDetailModalProps {
   product: Product | null;
@@ -26,120 +23,32 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
   isOpen,
   onClose,
   onEdit,
-  onProductUpdated
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProduct, setEditedProduct] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const { trackProductView } = useProductAnalytics();
-
-  useEffect(() => {
-    if (product && isOpen) {
-      trackProductView(product.id, 'brand_product_detail_modal');
-      setEditedProduct({
-        title: product.title,
-        description: product.description,
-        price_cents: product.price_cents,
-        compare_at_price_cents: product.compare_at_price_cents,
-        stock_qty: product.stock_qty,
-        external_url: product.external_url || '',
-        size_chart: product.attributes?.size_chart || null
-      });
-    }
-  }, [product, isOpen, trackProductView]);
-
   if (!product) return null;
 
-  const formatPrice = (cents: number, currency: string = 'USD') =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-
-  const handleSave = async () => {
-    if (!editedProduct) return;
-    
-    setSaving(true);
-    try {
-      const updateData = {
-        title: editedProduct.title,
-        description: editedProduct.description,
-        price_cents: parseInt(editedProduct.price_cents.toString()),
-        compare_at_price_cents: editedProduct.compare_at_price_cents ? parseInt(editedProduct.compare_at_price_cents.toString()) : null,
-        stock_qty: parseInt(editedProduct.stock_qty.toString()),
-        external_url: editedProduct.external_url,
-        attributes: {
-          ...product.attributes,
-          size_chart: editedProduct.size_chart
-        }
-      };
-
-      const { error } = await supabase
-        .from('products')
-        .update(updateData)
-        .eq('id', product.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Product updated',
-        description: 'Product details have been saved successfully'
-      });
-
-      setIsEditing(false);
-      onProductUpdated?.();
-    } catch (error) {
-      console.error('Error updating product:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update product. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditedProduct({
-      title: product.title,
-      description: product.description,
-      price_cents: product.price_cents,
-      compare_at_price_cents: product.compare_at_price_cents,
-      stock_qty: product.stock_qty,
-      external_url: product.external_url || '',
-      size_chart: product.attributes?.size_chart || null
-    });
-    setIsEditing(false);
-  };
-
   const handleShare = async () => {
-    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
     toast({ 
       title: 'Sharing coming soon', 
       description: 'Product sharing will be available soon!' 
     });
   };
 
-  const attributes = product.attributes as any;
-  const mediaUrls = getProductImageUrls(product);
-
-  // Mock analytics data
-  const analyticsData = {
-    shopperViews: Math.floor(Math.random() * 2000) + 500,
-    shopperLikes: Math.floor(Math.random() * 300) + 50,
-    shopperShares: Math.floor(Math.random() * 100) + 10,
-    shopperConversions: Math.floor(Math.random() * 50) + 5,
-    shopperWishlistAdds: Math.floor(Math.random() * 150) + 25
+  const handleEdit = () => {
+    onEdit?.(product);
   };
+
+  const mediaUrls = getProductImageUrls(product);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="sr-only">{product.title} - Brand Management</DialogTitle>
+          <DialogTitle className="sr-only">{product.title} - Preview</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-          {/* Enhanced Image Gallery */}
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Image Gallery */}
+          <div>
             <EnhancedProductGallery
               images={mediaUrls}
               productTitle={product.title}
@@ -149,27 +58,13 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
           </div>
 
           {/* Product Info */}
-          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+          <div className="space-y-4">
             {/* Header with Actions */}
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <Input
-                      value={editedProduct?.title || ''}
-                      onChange={(e) => setEditedProduct({...editedProduct, title: e.target.value})}
-                      className="text-xl sm:text-2xl font-bold"
-                      placeholder="Product title"
-                    />
-                    {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
-                  </div>
-                ) : (
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-bold">{product.title}</h1>
-                    {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
-                  </div>
-                )}
-                <Badge variant="outline" className="mt-1 capitalize text-xs">
+                <h1 className="text-xl sm:text-2xl font-bold">{product.title}</h1>
+                {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
+                <Badge variant="outline" className="mt-2 capitalize text-xs">
                   {product.status.replace('_', ' ')}
                 </Badge>
               </div>
@@ -183,140 +78,47 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 )}
-                {isEditing ? (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving}>
-                      <Save className="h-4 w-4 mr-2" />
-                      {saving ? 'Saving...' : 'Save'}
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
               </div>
             </div>
 
-            {/* Pricing */}
-            <div className="flex items-center gap-4">
-              {isEditing ? (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div>
-                    <label className="text-sm font-medium">Price</label>
-                    <Input
-                      type="number"
-                      value={editedProduct?.price_cents ? editedProduct.price_cents / 100 : ''}
-                      onChange={(e) => setEditedProduct({...editedProduct, price_cents: parseFloat(e.target.value) * 100})}
-                      className="w-32"
-                      step="0.01"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Compare Price</label>
-                    <Input
-                      type="number"
-                      value={editedProduct?.compare_at_price_cents ? editedProduct.compare_at_price_cents / 100 : ''}
-                      onChange={(e) => setEditedProduct({...editedProduct, compare_at_price_cents: e.target.value ? parseFloat(e.target.value) * 100 : null})}
-                      className="w-32"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl sm:text-3xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
-                  {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
-                    <span className="text-lg text-muted-foreground line-through">
-                      {formatPrice(product.compare_at_price_cents, product.currency)}
-                    </span>
-                  )}
-                </div>
+            {/* Price */}
+            <div className="flex items-center gap-3">
+              <Money 
+                cents={product.price_cents} 
+                currency={product.currency} 
+                size="lg"
+                className="text-2xl font-bold"
+              />
+              {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
+                <Money 
+                  cents={product.compare_at_price_cents} 
+                  currency={product.currency}
+                  className="text-muted-foreground line-through"
+                />
               )}
-            </div>
-
-            {/* Shopper Analytics */}
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-sm text-blue-800">Shopper Engagement Insights</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Views:</span>
-                  <span className="font-medium text-blue-700">{analyticsData.shopperViews}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Likes:</span>
-                  <span className="font-medium text-blue-700">{analyticsData.shopperLikes}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Wishlist:</span>
-                  <span className="font-medium text-blue-700">{analyticsData.shopperWishlistAdds}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Conversions:</span>
-                  <span className="font-medium text-blue-700">{analyticsData.shopperConversions}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Attributes */}
-            <div className="flex flex-wrap gap-2">
-              {attributes.occasion && <Badge variant="secondary" className="capitalize">{attributes.occasion}</Badge>}
-              {attributes.material && <Badge variant="outline" className="capitalize">{attributes.material}</Badge>}
-              {attributes.style_tags && attributes.style_tags.slice(0, 3).map((tag: string) => (
-                <Badge key={tag} variant="outline" className="capitalize">{tag}</Badge>
-              ))}
             </div>
 
             {/* Description */}
-            <div>
-              <h3 className="font-medium mb-2">Description</h3>
-              {isEditing ? (
-                <Textarea
-                  value={editedProduct?.description || ''}
-                  onChange={(e) => setEditedProduct({...editedProduct, description: e.target.value})}
-                  className="min-h-20"
-                  placeholder="Product description"
-                />
-              ) : (
-                <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
-              )}
-            </div>
-
-            {/* External URL */}
-            {isEditing ? (
+            {product.description && (
               <div>
-                <label className="text-sm font-medium mb-2 block">External Product URL</label>
-                <Input
-                  value={editedProduct?.external_url || ''}
-                  onChange={(e) => setEditedProduct({...editedProduct, external_url: e.target.value})}
-                  placeholder="https://your-store.com/product"
-                />
+                <h3 className="font-medium mb-2">Description</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
               </div>
-            ) : product.external_url && (
-              <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <ExternalLink className="h-4 w-4 text-purple-600" />
-                  <span className="font-medium text-sm text-purple-800">External Product Link</span>
-                </div>
-                <p className="text-xs text-purple-600 mb-2">This product links to your external store</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => openExternalUrl(product.external_url)}
-                  className="border-purple-300 text-purple-600 hover:bg-purple-100"
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  View on Your Store
-                </Button>
-              </div>
+            )}
+
+            {/* Shop Now Button */}
+            {product.external_url && (
+              <Button 
+                className="w-full mt-4"
+                onClick={() => openExternalUrl(product.external_url)}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Shop Now
+              </Button>
             )}
           </div>
         </div>
