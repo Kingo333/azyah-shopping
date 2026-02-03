@@ -230,3 +230,51 @@ chrome.runtime.onInstalled.addListener((details) => {
     console.log('[Azyah] Extension installed');
   }
 });
+
+// Listen for auth tokens from web app (external messaging)
+chrome.runtime.onMessageExternal.addListener(
+  (message, sender, sendResponse) => {
+    // Verify sender is from allowed domain
+    const senderUrl = sender.url || '';
+    if (!senderUrl.includes('lovable.app') && !senderUrl.includes('localhost')) {
+      console.warn('[Azyah SW] Unauthorized external message from:', senderUrl);
+      sendResponse({ success: false, error: 'Unauthorized origin' });
+      return;
+    }
+    
+    console.log('[Azyah SW] External message received:', message.type);
+    
+    if (message.type === 'SET_AUTH_TOKEN') {
+      // Store token in extension storage
+      chrome.storage.local.set({
+        authToken: message.token,
+        authExpiry: message.expiry || (Date.now() + 3600000) // 1 hour default
+      }).then(() => {
+        console.log('[Azyah SW] Auth token stored successfully');
+        sendResponse({ success: true });
+      }).catch((error) => {
+        console.error('[Azyah SW] Failed to store auth token:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // Keep channel open for async response
+    }
+    
+    if (message.type === 'CLEAR_AUTH_TOKEN') {
+      chrome.storage.local.remove(['authToken', 'authExpiry']).then(() => {
+        console.log('[Azyah SW] Auth token cleared');
+        sendResponse({ success: true });
+      }).catch((error) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true;
+    }
+    
+    if (message.type === 'PING') {
+      // Simple ping to check if extension is installed
+      sendResponse({ success: true, extensionId: chrome.runtime.id });
+      return;
+    }
+    
+    sendResponse({ success: false, error: 'Unknown message type' });
+  }
+);

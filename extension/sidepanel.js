@@ -42,8 +42,28 @@ const elements = {
   errorMessage: document.getElementById('error-message'),
 };
 
+// Update auth link with extension ID
+function updateAuthLink() {
+  const authLink = document.getElementById('auth-link');
+  if (authLink) {
+    const extId = chrome.runtime.id;
+    authLink.href = `https://azyah-shopping.lovable.app/extension-auth?ext=${extId}`;
+  }
+}
+
+// Listen for auth token updates from web app
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.authToken?.newValue) {
+    console.log('[Azyah Panel] Auth token updated, reinitializing...');
+    init();
+  }
+});
+
 // Initialize
 async function init() {
+  // Update auth link with extension ID
+  updateAuthLink();
+  
   // Check auth status
   const authStatus = await sendMessage({ type: 'GET_AUTH_STATUS' });
   

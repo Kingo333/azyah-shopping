@@ -70,6 +70,7 @@ import ResetPasswordRequest from './pages/ResetPasswordRequest';
 import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import OnboardingCalibration from './pages/OnboardingCalibration';
+import ExtensionAuth from './pages/ExtensionAuth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -132,6 +133,7 @@ function AppContent() {
                   } />
                   <Route path="/reset-password-request" element={<ResetPasswordRequest />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/extension-auth" element={<ExtensionAuth />} />
                   
                   <Route path="/profile/:userId" element={
                     <ProtectedRoute>

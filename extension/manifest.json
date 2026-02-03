@@ -45,5 +45,12 @@
       "resources": ["icons/*", "lib/*"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://azyah-shopping.lovable.app/*",
+      "https://*.lovable.app/*",
+      "http://localhost:*/*"
+    ]
+  }
 }
