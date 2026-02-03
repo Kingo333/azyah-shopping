@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, Grid3X3 } from "lucide-react";
+import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X } from "lucide-react";
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,8 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { CATEGORY_TREE, getCategoryDisplayName, type TopCategory } from '@/lib/categories';
+import { type TopCategory } from '@/lib/categories';
 import { MiniSwipePreview } from '@/components/MiniSwipePreview';
 import { ProductMasonryGrid } from '@/components/ProductMasonryGrid';
 import CategoryGrid from '@/components/CategoryGrid';
@@ -53,7 +52,6 @@ const Swipe = () => {
     const saved = localStorage.getItem('feed-view-mode');
     return (saved === 'swipe' || saved === 'list') ? saved : 'list';
   });
-  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
@@ -199,26 +197,6 @@ const Swipe = () => {
     navigate("/onboarding/signup");
     return null;
   }
-  const getCurrentCategoryDisplay = () => {
-    if (filters.genders.length === 0 && filters.categories.length === 0) return 'Browse';
-    const displays: string[] = [];
-    if (filters.genders.length > 0) {
-      displays.push(filters.genders[0].charAt(0).toUpperCase() + filters.genders[0].slice(1));
-    }
-    if (filters.categories.length > 0) {
-      displays.push(getCategoryDisplayName(filters.categories[0] as TopCategory).substring(0, 10));
-    }
-    return displays.join(' · ') || 'Browse';
-  };
-
-  const handleCategorySelect = (category: TopCategory | null) => {
-    setFilters(prev => ({
-      ...prev,
-      categories: category ? [category as any] : [],
-      subcategories: []
-    }));
-    setCategorySheetOpen(false);
-  };
 
   return <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Header */}
@@ -269,44 +247,10 @@ const Swipe = () => {
               </div>
             </div>
             
-            {/* Center Section - Category Button (replaced Search) */}
-            <Sheet open={categorySheetOpen} onOpenChange={setCategorySheetOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="flex-1 max-w-[160px] sm:max-w-xs h-8 sm:h-9 rounded-full bg-muted/40 border-0 hover:bg-muted/60 text-xs sm:text-sm gap-1.5"
-                >
-                  <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="truncate">{getCurrentCategoryDisplay()}</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-[60vh] rounded-t-xl">
-                <SheetHeader>
-                  <SheetTitle className="text-lg font-serif">Categories</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {Object.keys(CATEGORY_TREE).map((category) => (
-                    <Button
-                      key={category}
-                      variant={filters.categories.includes(category as any) ? "default" : "outline"}
-                      className="h-12 justify-start px-4"
-                      onClick={() => handleCategorySelect(category as TopCategory)}
-                    >
-                      {getCategoryDisplayName(category as TopCategory)}
-                    </Button>
-                  ))}
-                  {filters.categories.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      className="h-12 justify-start px-4 text-muted-foreground"
-                      onClick={() => handleCategorySelect(null)}
-                    >
-                      Clear filter
-                    </Button>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Center Section - Title on mobile */}
+            <div className="flex-1 flex justify-center sm:hidden">
+              <h1 className="text-base font-serif font-medium tracking-tight">Feed</h1>
+            </div>
 
             {/* Right Section - Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -384,7 +328,7 @@ const Swipe = () => {
               onSkip={handleSwipeSkip}
             />
             
-            {/* Category Grid */}
+            {/* Category Pills */}
             <div className="px-4 pt-4">
               <CategoryGrid 
                 selectedCategories={filters.categories}
@@ -399,8 +343,13 @@ const Swipe = () => {
               />
             </div>
             
+            {/* Suggested for you heading */}
+            <div className="px-4 pt-2 pb-2">
+              <h2 className="text-lg font-serif font-medium text-foreground">Suggested for you</h2>
+            </div>
+            
             {/* Masonry Grid with Community Blocks */}
-            <div className="px-4 pt-4 pb-24">
+            <div className="px-4 pb-24">
               <ProductMasonryGrid 
                 products={products}
                 isLoading={productsLoading}
