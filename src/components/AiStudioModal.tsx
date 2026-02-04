@@ -836,6 +836,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       <div className="text-center py-6 px-4">
                         <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
                         <p className="text-sm text-muted-foreground mt-3">{videoStatus || 'Generating video...'}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-2">
+                          You can close this modal — we'll notify you when it's ready!
+                        </p>
                       </div>
                     )}
                   </div>
