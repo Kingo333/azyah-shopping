@@ -25,8 +25,8 @@ export const CommunityOutfitBlock: React.FC<CommunityOutfitBlockProps> = ({ outf
   if (outfits.length === 0) return null;
 
   return (
-    <section className="py-4 my-4 border-y border-border bg-muted/30">
-      <div className="flex items-center justify-between mb-3 px-4">
+    <section className="col-span-full py-4 my-2">
+      <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="text-sm font-serif font-medium text-foreground">Community Outfits</h3>
         <Button 
           variant="link" 
@@ -39,8 +39,9 @@ export const CommunityOutfitBlock: React.FC<CommunityOutfitBlockProps> = ({ outf
         </Button>
       </div>
       
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide">
-        {outfits.slice(0, 3).map((outfit) => (
+      {/* 2-column grid layout to match masonry width */}
+      <div className="grid grid-cols-2 gap-3 px-1">
+        {outfits.slice(0, 2).map((outfit) => (
           <CommunityOutfitCard
             key={outfit.id}
             outfit={outfit}
@@ -68,7 +69,7 @@ const CommunityOutfitCard: React.FC<CommunityOutfitCardProps> = ({
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex-shrink-0 w-32 snap-start">
+    <div className="w-full">
       <div 
         className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-border shadow-sm cursor-pointer group"
         onClick={onViewOutfit}
@@ -87,21 +88,24 @@ const CommunityOutfitCard: React.FC<CommunityOutfitCardProps> = ({
         
         {/* User avatar badge */}
         <div className="absolute bottom-2 left-2">
-          <Avatar className="h-6 w-6 border-2 border-white shadow-sm">
+          <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
             <AvatarImage src={outfit.user?.avatar_url} />
-            <AvatarFallback className="text-[10px] bg-[hsl(var(--azyah-maroon))] text-white">
+            <AvatarFallback className="text-xs bg-[hsl(var(--azyah-maroon))] text-white">
               {userInitial}
             </AvatarFallback>
           </Avatar>
         </div>
+        
+        {/* Gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       
       {/* Action buttons */}
-      <div className="flex gap-1.5 mt-2">
+      <div className="flex gap-2 mt-2">
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 h-7 text-[10px] px-2 gap-1"
+          className="flex-1 h-8 text-xs px-2 gap-1"
           onClick={(e) => {
             e.stopPropagation();
             onViewOutfit();
@@ -113,7 +117,7 @@ const CommunityOutfitCard: React.FC<CommunityOutfitCardProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 h-7 text-[10px] px-2 gap-1"
+          className="flex-1 h-8 text-xs px-2 gap-1"
           onClick={(e) => {
             e.stopPropagation();
             onGoToWardrobe();
