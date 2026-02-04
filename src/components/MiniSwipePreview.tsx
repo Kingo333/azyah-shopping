@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MoveHorizontal } from 'lucide-react';
+import { ArrowRight, MoveHorizontal, Shirt, Info } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import type { Product } from '@/types';
@@ -10,6 +10,8 @@ interface MiniSwipePreviewProps {
   onOpenFullSwipe: () => void;
   onLike: (product: Product) => void;
   onSkip: (product: Product) => void;
+  onInfoClick?: (product: Product) => void;
+  onTryOnClick?: (product: Product) => void;
 }
 
 const DISTANCE_THRESHOLD = 80;
@@ -19,6 +21,8 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
   onOpenFullSwipe,
   onLike,
   onSkip,
+  onInfoClick,
+  onTryOnClick,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -82,8 +86,8 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
   const brandName = currentProduct?.merchant_name || currentProduct?.brand?.name || 'Unknown';
 
   return (
-    <section className="py-4 bg-background">
-      <div className="flex items-center justify-between mb-3 px-4">
+    <section className="py-2 bg-background">
+      <div className="flex items-center justify-between mb-2 px-4">
         <h2 className="text-base font-serif font-medium text-foreground">Quick Swipe</h2>
         <Button 
           variant="link" 
@@ -98,7 +102,7 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
       
       {/* Single swipeable card */}
       <div className="px-4">
-        <div className="relative w-full max-w-[280px] mx-auto aspect-[3/4] overflow-visible">
+        <div className="relative w-full max-w-[220px] mx-auto aspect-[3/4] overflow-visible">
           <motion.div
             className="w-full h-full bg-card rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing relative border border-border"
             style={{ x, rotate, opacity }}
@@ -113,6 +117,41 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
               alt={currentProduct?.title || 'Product'}
               className="w-full h-full object-cover select-none pointer-events-none"
             />
+
+            {/* RIGHT: Try-On + Info buttons - stacked vertically */}
+            <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5 z-10">
+              {/* Virtual Try-On button */}
+              {onTryOnClick && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTryOnClick(currentProduct);
+                  }}
+                  className="h-auto px-2 py-1 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-md flex items-center gap-1 transition-all"
+                  title="Virtual Try-On"
+                >
+                  <Shirt className="h-3 w-3" strokeWidth={2} />
+                  <span className="text-[9px] font-medium">Try On</span>
+                </Button>
+              )}
+              
+              {/* Info button */}
+              {onInfoClick && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onInfoClick(currentProduct);
+                  }}
+                  className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-md"
+                >
+                  <Info className="h-3 w-3" strokeWidth={2.5} />
+                </Button>
+              )}
+            </div>
 
             {/* Like Overlay */}
             <motion.div 
@@ -131,25 +170,25 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
             </motion.div>
 
             {/* Swipe Instruction */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
-              <MoveHorizontal className="w-3 h-3 text-white" />
-              <span className="text-white text-[10px] font-medium whitespace-nowrap">Swipe to train</span>
+            <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+              <MoveHorizontal className="w-2.5 h-2.5 text-white" />
+              <span className="text-white text-[9px] font-medium whitespace-nowrap">Swipe to train</span>
             </div>
 
             {/* Brand Info Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-              <p className="text-sm font-medium text-white truncate">{brandName}</p>
-              <p className="text-xs text-white/80 truncate">{currentProduct?.title}</p>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2.5">
+              <p className="text-xs font-medium text-white truncate">{brandName}</p>
+              <p className="text-[10px] text-white/80 truncate">{currentProduct?.title}</p>
             </div>
           </motion.div>
 
           {/* Pagination Dots */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex gap-1">
             {products.slice(0, 6).map((_, index) => (
               <div
                 key={index}
-                className={`h-1.5 rounded-full transition-all ${
-                  index === currentIndex ? 'w-5 bg-[hsl(var(--azyah-maroon))]' : 'w-1.5 bg-muted-foreground/40'
+                className={`h-1 rounded-full transition-all ${
+                  index === currentIndex ? 'w-4 bg-[hsl(var(--azyah-maroon))]' : 'w-1 bg-muted-foreground/40'
                 }`}
               />
             ))}
