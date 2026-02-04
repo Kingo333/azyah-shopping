@@ -5420,6 +5420,7 @@ export type Database = {
         Args: { amount?: number; target_user_id: string }
         Returns: boolean
       }
+      delete_expired_ai_assets: { Args: never; Returns: undefined }
       delete_user_completely:
         | { Args: { target_email: string }; Returns: Json }
         | {
