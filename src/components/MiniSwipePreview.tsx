@@ -105,9 +105,10 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
         <div className="relative w-full max-w-[220px] mx-auto aspect-[3/4] overflow-visible">
           <motion.div
             className="w-full h-full bg-card rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing relative border border-border"
-            style={{ x, rotate, opacity }}
+            style={{ x, rotate, opacity, touchAction: 'pan-y' }}
             drag="x"
-            dragElastic={0.15}
+            dragElastic={0.2}
+            dragMomentum={false}
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleSwipeEnd}
           >
@@ -182,17 +183,6 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
             </div>
           </motion.div>
 
-          {/* Pagination Dots */}
-          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex gap-1">
-            {products.slice(0, 6).map((_, index) => (
-              <div
-                key={index}
-                className={`h-1 rounded-full transition-all ${
-                  index === currentIndex ? 'w-4 bg-[hsl(var(--azyah-maroon))]' : 'w-1 bg-muted-foreground/40'
-                }`}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </section>
