@@ -523,7 +523,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
           
-          {/* Sheet - Glass UI */}
+          {/* Sheet - White Frosted Glass UI */}
           <motion.div
             initial={{ y: 24, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
@@ -531,56 +531,57 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
                        rounded-t-3xl sm:rounded-3xl 
-                       bg-gray-900/95 backdrop-blur-xl
-                       shadow-2xl border border-white/10
+                       bg-white/90 backdrop-blur-2xl
+                       shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.8)]
+                       border border-gray-200/60
                        flex flex-col"
           >
-            {/* Header - Dark Glass */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 
-                          bg-gradient-to-b from-black/40 to-transparent sticky top-0 z-10 rounded-t-3xl">
+            {/* Header - Clean White Glass */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 
+                          bg-white/80 backdrop-blur-sm sticky top-0 z-10 rounded-t-3xl">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Shirt className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-white">AI Studio</h2>
+                  <h2 className="text-lg font-semibold text-foreground">AI Studio</h2>
                 </div>
-                <p className="text-xs text-white/60 mt-0.5">Virtual try-on & video</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video</p>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition"
+                  className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 active:scale-95 transition"
                   aria-label="Close"
                 >
-                  <XMarkIcon className="h-5 w-5 text-white" />
+                  <XMarkIcon className="h-5 w-5 text-foreground" />
                 </button>
               </div>
             </div>
 
-            {/* Tabs - Glass Pill Style */}
+            {/* Tabs - Soft Glass Pill Style */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video')} className="flex-1 flex flex-col min-h-0">
               <div className="flex-shrink-0 px-4 pt-3">
-                <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-2 gap-1">
+                <TabsList className="w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid grid-cols-2 gap-1">
                   <TabsTrigger 
                     value="picture" 
-                    className="flex items-center gap-2 text-white/70 data-[state=active]:text-white data-[state=active]:bg-primary rounded-full transition-all"
+                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
                   >
                     <Image className="h-4 w-4" />
                     Picture
                   </TabsTrigger>
                   <TabsTrigger 
                     value="video" 
-                    className="flex items-center gap-2 text-white/70 data-[state=active]:text-white data-[state=active]:bg-primary rounded-full transition-all"
+                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
                   >
                     <Video className="h-4 w-4" />
                     Video
                   </TabsTrigger>
                 </TabsList>
                 
-                {/* Credits display - Light on Dark */}
-                <div className="flex justify-center gap-4 mt-3 text-xs text-white/60">
-                  <span>Picture: <strong className="text-white">{pictureCredits}/{maxPictureCredits}</strong></span>
-                  <span>Video: <strong className="text-white">{videoCredits}/{maxVideoCredits}</strong></span>
+                {/* Credits display */}
+                <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <span>Picture: <strong className="text-foreground">{pictureCredits}/{maxPictureCredits}</strong></span>
+                  <span>Video: <strong className="text-foreground">{videoCredits}/{maxVideoCredits}</strong></span>
                 </div>
               </div>
 
@@ -589,16 +590,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 
                 {/* Picture Tab */}
                 <TabsContent value="picture" className="mt-0 space-y-4">
-                  {/* Upload Section - Glass Card */}
-                  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4">
+                  {/* Upload Section - Light Glass Card */}
+                  <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm text-white/70">
+                      <p className="text-sm text-muted-foreground">
                         Upload a photo of yourself and an outfit to try on
                       </p>
                       {(personFile || outfitFile || personUrl || outfitUrl) && (
                         <button
                           onClick={handleClearPicture}
-                          className="text-xs text-white/50 hover:text-white transition-colors"
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                         >
                           Clear
                         </button>
@@ -627,9 +628,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Result - Glass Card */}
+                  {/* Result - Light Glass Card */}
                   {pictureResult && (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4">
+                    <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
                       <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-black/30 mb-3">
                         <img 
                           src={pictureResult} 
@@ -660,13 +661,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {pictureAssets.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-white">Previous Results</h3>
+                        <h3 className="text-sm font-semibold text-foreground">Previous Results</h3>
                         <button 
                           onClick={() => {
                             setSelectMode(!selectMode);
                             setSelectedAssets([]);
                           }}
-                          className="text-xs px-2 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white/70 transition"
+                          className="text-xs px-2 py-1 rounded-full border border-gray-200 bg-gray-100 hover:bg-gray-200 text-muted-foreground transition"
                         >
                           {selectMode ? "Done" : "Select"}
                         </button>
@@ -676,8 +677,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           <button 
                             key={asset.id} 
                             onClick={() => handleAssetClick(asset)}
-                            className={`shrink-0 relative w-16 h-20 rounded-lg overflow-hidden bg-black/30 border
-                                       ${selectMode && selectedAssets.includes(asset.id) ? 'ring-2 ring-primary' : 'border-white/20'}`}
+                            className={`shrink-0 relative w-16 h-20 rounded-lg overflow-hidden bg-gray-100 border
+                                       ${selectMode && selectedAssets.includes(asset.id) ? 'ring-2 ring-primary' : 'border-gray-200'}`}
                           >
                             <img src={asset.asset_url} alt="" className="w-full h-full object-cover" />
                             {selectMode && selectedAssets.includes(asset.id) && (
@@ -705,8 +706,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                   {/* Upgrade prompt for non-premium */}
                   {!isPremium && pictureCredits <= 0 && (
-                    <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
-                      <p className="text-sm text-white mb-2">
+                    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
+                      <p className="text-sm text-foreground mb-2">
                         You've used your free credits
                       </p>
                       <button
@@ -721,12 +722,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                 {/* Video Tab */}
                 <TabsContent value="video" className="mt-0 space-y-4">
-                  {/* Upload Section for Video Tab - Glass Card */}
-                  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4">
-                    <p className="text-sm text-white/70 text-center mb-2">
+                  {/* Upload Section for Video Tab - Light Glass Card */}
+                  <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
+                    <p className="text-sm text-muted-foreground text-center mb-2">
                       Upload your photo and outfit to create a 5-second fashion video
                     </p>
-                    <p className="text-xs text-white/50 text-center mb-3">
+                    <p className="text-xs text-muted-foreground/70 text-center mb-3">
                       Note: Video from photos uses 1 picture credit + 1 video credit
                     </p>
                     
@@ -761,8 +762,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                             disabled={generatingVideoInput || !videoPersonUrl || !videoOutfitUrl || videoUploadMode === 'direct' || pictureCredits <= 0}
                             whileTap={{ scale: 0.99 }}
                             className="w-full py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2
-                              disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed
-                              bg-white/20 text-white hover:bg-white/30"
+                              disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
+                              bg-gray-200 text-foreground hover:bg-gray-300"
                           >
                           {generatingVideoInput ? (
                               <div className="w-full px-2">
@@ -781,7 +782,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           {videoUploadMode === 'person-outfit' && (videoPersonFile || videoOutfitFile) && (
                             <button
                               onClick={handleClearPersonOutfit}
-                              className="w-full mt-2 py-1.5 text-xs text-white/50 hover:text-white transition"
+                              className="w-full mt-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
                             >
                               Clear selection
                             </button>
@@ -790,9 +791,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                         {/* Divider */}
                         <div className="flex items-center gap-2 my-3">
-                          <div className="flex-1 border-t border-white/10" />
-                          <span className="text-xs text-white/50">or upload existing image</span>
-                          <div className="flex-1 border-t border-white/10" />
+                          <div className="flex-1 border-t border-gray-200/60" />
+                          <span className="text-xs text-muted-foreground">or upload existing image</span>
+                          <div className="flex-1 border-t border-gray-200/60" />
                         </div>
 
                         {/* Option 2: Direct Image Upload */}
@@ -822,7 +823,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               {/* Clear button */}
                               <button
                                 onClick={handleClearDirectUpload}
-                                className="w-full py-1.5 text-xs text-white/50 hover:text-white transition flex items-center justify-center gap-1"
+                                className="w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition flex items-center justify-center gap-1"
                               >
                                 <X className="h-3 w-3" />
                                 Clear selection
@@ -834,7 +835,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               whileTap={{ scale: videoUploadMode === 'person-outfit' ? 1 : 0.98 }}
                               className={`group relative flex flex-col items-center justify-center gap-2
                                 h-32 rounded-xl border transition-all cursor-pointer overflow-hidden
-                                border-dashed border-white/20 bg-white/5 hover:border-primary/50 hover:bg-white/10
+                                border-dashed border-gray-300 bg-gray-50 hover:border-primary/50 hover:bg-gray-100
                                 ${videoUploadMode === 'person-outfit' ? 'cursor-not-allowed opacity-40' : ''}`}
                             >
                               <input
@@ -847,11 +848,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                                   if (f) handleDirectImageUpload(f);
                                 }}
                               />
-                              <div className="text-white/50">
+                              <div className="text-muted-foreground">
                                 <Video className="h-5 w-5" />
                               </div>
-                              <div className="text-sm font-medium text-white">Upload for Video</div>
-                              <div className="text-[10px] text-white/50">Any image to animate</div>
+                              <div className="text-sm font-medium text-foreground">Upload for Video</div>
+                              <div className="text-[10px] text-muted-foreground">Any image to animate</div>
                             </motion.label>
                           )}
                         </div>
@@ -860,9 +861,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         {pictureResult && !videoUploadMode && (
                           <>
                             <div className="flex items-center gap-2 my-3">
-                              <div className="flex-1 border-t border-white/10" />
-                              <span className="text-xs text-white/50">or</span>
-                              <div className="flex-1 border-t border-white/10" />
+                              <div className="flex-1 border-t border-gray-200/60" />
+                              <span className="text-xs text-muted-foreground">or</span>
+                              <div className="flex-1 border-t border-gray-200/60" />
                             </div>
                             <button
                               onClick={() => setVideoInputUrl(pictureResult)}
@@ -877,14 +878,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     ) : (
                       <>
                         {/* Input image preview */}
-                        <div className="aspect-[3/4] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden bg-black/30 mb-3 relative">
+                        <div className="aspect-[3/4] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden bg-gray-100 mb-3 relative">
                           <img 
                             src={videoInputUrl} 
                             alt="Video input" 
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute bottom-2 left-2 right-2 text-center">
-                            <span className="text-xs bg-black/60 text-white px-2 py-1 rounded">
+                            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                               Ready for video
                             </span>
                           </div>
@@ -901,7 +902,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                             setDirectImageFile(null);
                             setVideoUploadMode(null);
                           }}
-                          className="w-full py-2 text-xs text-white/50 hover:text-white transition"
+                          className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition"
                         >
                           ← Change image
                         </button>
@@ -912,8 +913,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     {videoPolling && (
                       <div className="text-center py-6 px-4">
                         <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
-                        <p className="text-sm text-white/70 mt-3">{videoStatus || 'Generating video...'}</p>
-                        <p className="text-xs text-white/50 mt-2">
+                        <p className="text-sm text-muted-foreground mt-3">{videoStatus || 'Generating video...'}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-2">
                           You can close this modal — we'll notify you when it's ready!
                         </p>
                       </div>
@@ -968,7 +969,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {/* Previous Try-On Results - clickable to use for video */}
                   {pictureAssets.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-white mb-2">Previous Try-On Results</h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-2">Previous Try-On Results</h3>
                       <div className="grid grid-cols-4 gap-2">
                         {pictureAssets.slice(0, 8).map(asset => (
                           <button 
@@ -977,7 +978,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                               setVideoInputUrl(asset.asset_url);
                               toast({ title: 'Image ready for video!' });
                             }}
-                            className="aspect-square rounded-lg overflow-hidden bg-black/30 border border-white/20 hover:border-primary/50 transition"
+                            className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 hover:border-primary/50 transition"
                           >
                             <img 
                               src={asset.asset_url} 
@@ -987,7 +988,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           </button>
                         ))}
                       </div>
-                      <p className="text-xs text-white/50 mt-2 text-center">
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
                         Tap a result to use it for video
                       </p>
                     </div>
@@ -995,8 +996,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                   {/* Upgrade prompt for video */}
                   {!isPremium && videoCredits <= 0 && (
-                    <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
-                      <p className="text-sm text-white mb-2">
+                    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
+                      <p className="text-sm text-foreground mb-2">
                         Sign up for premium to get 4 video credits daily!
                       </p>
                       <button
@@ -1010,15 +1011,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 </TabsContent>
               </div>
 
-              {/* Sticky Action Bar - Dark Glass Footer */}
-              <div className="flex-shrink-0 p-3 border-t border-white/10 bg-black/30">
+              {/* Sticky Action Bar - White Glass Footer */}
+              <div className="flex-shrink-0 p-3 border-t border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
                 {activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
                     disabled={loading || uploadingPerson || uploadingOutfit || !personUrl || !outfitUrl || pictureCredits <= 0}
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
-                      disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed
+                      disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
                       bg-primary text-primary-foreground hover:opacity-95"
                   >
                     {loading ? (
@@ -1051,7 +1052,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     }
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
-                      disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed
+                      disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
                       bg-primary text-primary-foreground hover:opacity-95"
                   >
                     {videoPolling ? (
@@ -1124,7 +1125,7 @@ function UploadCard({
                  h-32 rounded-xl border transition-all cursor-pointer overflow-hidden
                  ${hasUrl 
                    ? 'border-primary/50 bg-primary/10' 
-                   : 'border-dashed border-white/20 bg-white/5 hover:border-primary/50 hover:bg-white/10'
+                   : 'border-dashed border-gray-300 bg-gray-50 hover:border-primary/50 hover:bg-gray-100'
                  }`}
     >
       <input
@@ -1162,9 +1163,9 @@ function UploadCard({
       {/* Show upload state when no file */}
       {!file && (
         <>
-          <div className="text-white/50">{icon}</div>
-          <div className="text-sm font-medium text-white">{label}</div>
-          <div className="text-[10px] text-white/50">{hint}</div>
+          <div className="text-muted-foreground">{icon}</div>
+          <div className="text-sm font-medium text-foreground">{label}</div>
+          <div className="text-[10px] text-muted-foreground">{hint}</div>
         </>
       )}
     </motion.label>
