@@ -4,6 +4,22 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PENDING_JOBS_KEY = 'pending_tryon_jobs';
+const NOTIFIED_JOBS_KEY = 'notified_tryon_jobs';
+
+// Helper: Check if already notified for this job (prevents duplicate toasts)
+const hasNotified = (jobId: string): boolean => {
+  const notified = JSON.parse(sessionStorage.getItem(NOTIFIED_JOBS_KEY) || '[]');
+  return notified.includes(jobId);
+};
+
+// Helper: Mark job as notified
+const markNotified = (jobId: string): void => {
+  const notified = JSON.parse(sessionStorage.getItem(NOTIFIED_JOBS_KEY) || '[]');
+  if (!notified.includes(jobId)) {
+    notified.push(jobId);
+    sessionStorage.setItem(NOTIFIED_JOBS_KEY, JSON.stringify(notified));
+  }
+};
 
 export const useTryOnJobMonitor = () => {
   const { toast } = useToast();
@@ -37,20 +53,27 @@ export const useTryOnJobMonitor = () => {
 
         if (data) {
           if (data.status === 'succeeded' && data.result_url) {
-            toast({
-              title: 'Try-On Complete! ✨',
-              description: 'Your virtual try-on is ready. Check AI Studio to view it.',
-            });
+            // Only show toast if not already notified (prevents duplicates)
+            if (!hasNotified(jobId)) {
+              toast({
+                title: 'Try-On Complete! ✨',
+                description: 'Your virtual try-on is ready. Check AI Studio to view it.',
+              });
+              markNotified(jobId);
+            }
             // Remove from pending
             const updated = pending.filter((id: string) => id !== jobId);
             localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
             continue;
           } else if (data.status === 'failed') {
-            toast({
-              title: 'Try-On Failed',
-              description: 'There was a problem generating your try-on. Please try again.',
-              variant: 'destructive',
-            });
+            if (!hasNotified(jobId)) {
+              toast({
+                title: 'Try-On Failed',
+                description: 'There was a problem generating your try-on. Please try again.',
+                variant: 'destructive',
+              });
+              markNotified(jobId);
+            }
             // Remove failed jobs
             const updated = pending.filter((id: string) => id !== jobId);
             localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
@@ -66,10 +89,14 @@ export const useTryOnJobMonitor = () => {
             });
 
             if (checkResult?.ok && checkResult?.status === 'completed') {
-              toast({
-                title: 'Video Ready! 🎬',
-                description: 'Your fashion video has been generated. Check AI Studio to view it.',
-              });
+              // Only show toast if not already notified (prevents duplicates)
+              if (!hasNotified(jobId)) {
+                toast({
+                  title: 'Video Ready! 🎬',
+                  description: 'Your fashion video has been generated. Check AI Studio to view it.',
+                });
+                markNotified(jobId);
+              }
               // Remove from pending
               const updated = pending.filter((id: string) => id !== jobId);
               localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
