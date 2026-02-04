@@ -204,7 +204,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
       'image/png': ['.png'],
       'image/webp': ['.webp'],
     },
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 8 * 1024 * 1024, // 8MB
     maxFiles: 1,
     disabled: isUploading || isLoading,
   });
@@ -254,7 +254,7 @@ export function PhotoTab({ onClose }: PhotoTabProps) {
                 {isUploading ? 'Uploading...' : 'Upload a product photo'}
               </p>
               <p className="text-xs text-muted-foreground/80 mt-1">
-                JPG, PNG or WebP up to 5MB
+                JPG, PNG or WebP up to 8MB
               </p>
             </div>
             {!isUploading && (

@@ -1408,50 +1408,57 @@ serve(async (req) => {
     const uniqueQueries = [...new Set(searchQueries)].slice(0, 6);
     debug.serpapi.shopping_queries = uniqueQueries;
 
-    // ============ 3c. Shopping searches ============
+    // ============ 3c. Shopping searches (parallelized) ============
     const shoppingStart = Date.now();
     const allShoppingResults: ShoppingResult[] = [];
     const seenKeys = new Set<string>();
 
-    for (const query of uniqueQueries) {
-      if (!query) continue;
+    // Run all shopping queries in parallel for faster results
+    const shoppingPromises = uniqueQueries
+      .filter(query => !!query)
+      .map(async (query) => {
+        const shoppingParams = new URLSearchParams({
+          engine: 'google_shopping',
+          q: query,
+          api_key: SERPAPI_KEY,
+          gl: marketParams.gl,
+          hl: 'en',
+          location: marketParams.location,
+        });
 
-      const shoppingParams = new URLSearchParams({
-        engine: 'google_shopping',
-        q: query,
-        api_key: SERPAPI_KEY,
-        gl: marketParams.gl,
-        hl: 'en',
-        location: marketParams.location,
-      });
-
-      try {
         console.log(`[deals-unified] ${traceId} Shopping: "${query.substring(0, 40)}..."`);
         const shoppingResponse = await fetch(`https://serpapi.com/search?${shoppingParams.toString()}`);
         const shoppingData = await shoppingResponse.json();
+        return { query, data: shoppingData };
+      });
 
-        const allResults = mergeShoppingArrays(shoppingData);
+    const shoppingResults = await Promise.allSettled(shoppingPromises);
+
+    // Process results from all parallel queries
+    for (const result of shoppingResults) {
+      if (result.status === 'fulfilled') {
+        const allResults = mergeShoppingArrays(result.value.data);
         debug.serpapi.shopping_result_count += allResults.length;
 
-        for (const result of allResults.slice(0, 15)) {
-          const key = dedupKey(result);
+        for (const item of allResults.slice(0, 15)) {
+          const key = dedupKey(item);
           if (!key || seenKeys.has(key)) continue;
           seenKeys.add(key);
 
           allShoppingResults.push({
-            title: result.title || '',
-            link: normalizeLink(result.link),
-            thumbnail: result.image || result.thumbnail || '',
-            source: result.source || '',
-            price: result.price || '',
-            extracted_price: result.extracted_price ?? extractNumericPrice(result.price),
-            rating: result.rating || undefined,
-            reviews: result.reviews || undefined,
+            title: item.title || '',
+            link: normalizeLink(item.link),
+            thumbnail: item.image || item.thumbnail || '',
+            source: item.source || '',
+            price: item.price || '',
+            extracted_price: item.extracted_price ?? extractNumericPrice(item.price),
+            rating: item.rating || undefined,
+            reviews: item.reviews || undefined,
             position: allShoppingResults.length + 1,
           });
         }
-      } catch (err) {
-        console.warn(`[deals-unified] ${traceId} Shopping error:`, err);
+      } else {
+        console.warn(`[deals-unified] ${traceId} Shopping error:`, result.reason);
       }
     }
 
