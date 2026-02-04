@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, ShoppingBag, Globe, Sparkles, User } from "lucide-react";
+import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, Home, Search, Bookmark, User } from "lucide-react";
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -381,37 +381,24 @@ const Swipe = () => {
 
             {/* Floating Icon-Only Bottom Nav for List View */}
             <div 
-              className="fixed z-40 left-1/2 -translate-x-1/2
-                         bg-card/95 backdrop-blur-xl 
-                         rounded-full px-10 py-3.5
-                         shadow-[0_8px_32px_rgba(0,0,0,0.15)]
-                         border border-border
-                         flex items-center justify-center gap-10"
-              style={{ bottom: 'calc(var(--safe-bottom, 0px) + 20px)' }}
+              className="fixed z-40 left-4 right-4
+                         bg-white 
+                         rounded-full py-4 px-6
+                         shadow-[0_4px_20px_rgba(0,0,0,0.12)]
+                         flex items-center justify-between"
+              style={{ bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }}
             >
-              <button 
-                onClick={() => navigate('/swipe')} 
-                className="p-2 text-primary"
-              >
-                <ShoppingBag className="h-6 w-6" strokeWidth={2} />
+              <button onClick={() => navigate('/swipe')} className="p-2">
+                <Home className="h-7 w-7 text-black" strokeWidth={1.5} />
               </button>
-              <button 
-                onClick={() => navigate('/explore')} 
-                className="p-2 text-foreground/60 hover:text-foreground transition-colors"
-              >
-                <Globe className="h-6 w-6" strokeWidth={2} />
+              <button onClick={() => navigate('/explore')} className="p-2">
+                <Search className="h-7 w-7 text-black" strokeWidth={1.5} />
               </button>
-              <button 
-                onClick={() => navigate('/ugc')} 
-                className="p-2 text-foreground/60 hover:text-foreground transition-colors"
-              >
-                <Sparkles className="h-6 w-6" strokeWidth={2} />
+              <button onClick={() => navigate('/favorites')} className="p-2">
+                <Bookmark className="h-7 w-7 text-black" strokeWidth={1.5} />
               </button>
-              <button 
-                onClick={() => navigate('/profile')} 
-                className="p-2 text-foreground/60 hover:text-foreground transition-colors"
-              >
-                <User className="h-6 w-6" strokeWidth={2} />
+              <button onClick={() => navigate('/profile')} className="p-2">
+                <User className="h-7 w-7 text-black" strokeWidth={1.5} />
               </button>
             </div>
           </div>}
