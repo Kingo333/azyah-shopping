@@ -5,6 +5,17 @@ import { toast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import type { Product } from '@/types';
 
+// Helper function for stable seeded random
+const getSeededRandom = (productId: string, sessionKey: number): number => {
+  let hash = 0;
+  const str = productId + sessionKey.toString();
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0) / 4294967295; // Return 0-1
+};
+
 export interface UnifiedProductFilters {
   category?: string;
   subcategory?: string;
@@ -16,6 +27,7 @@ export interface UnifiedProductFilters {
   offset?: number;
   categories?: string[];
   countryCode?: string; // ISO2 country code for filtering by brand country
+  sessionKey?: number; // For stable random sorting
 }
 
 export interface UnifiedProductsResult {
@@ -227,10 +239,13 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
               } as Product;
             });
 
-            // Sort by personalization with some randomization
+            // Sort by personalization with stable seeded randomization
+            const sessionKey = filters.sessionKey || Date.now();
             processedProducts.sort((a, b) => {
-              const aScore = ((a as any)._personalization_score || 0.5) + (Math.random() * 0.2 - 0.1);
-              const bScore = ((b as any)._personalization_score || 0.5) + (Math.random() * 0.2 - 0.1);
+              const aRandom = getSeededRandom(a.id, sessionKey);
+              const bRandom = getSeededRandom(b.id, sessionKey);
+              const aScore = ((a as any)._personalization_score || 0.5) + (aRandom * 0.2 - 0.1);
+              const bScore = ((b as any)._personalization_score || 0.5) + (bRandom * 0.2 - 0.1);
               return bScore - aScore;
             });
           }
@@ -268,6 +283,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
     filters.limit,
     filters.offset,
     filters.countryCode,
+    filters.sessionKey,
     user?.id
   ]);
 

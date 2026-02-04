@@ -29,6 +29,9 @@ const Swipe = () => {
   } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Session key for stable sorting - only changes on page reload
+  const [sessionKey] = useState(() => Date.now());
+
   // Initialize unified filter state from URL params
   const [filters, setFilters] = useState<UnifiedFilterState>(() => {
     const genderParam = searchParams.get('gender');
@@ -142,7 +145,8 @@ const Swipe = () => {
     searchQuery: filters.searchQuery,
     currency: filters.currency,
     categories: viewMode === 'list' ? filters.categories : undefined,
-    countryCode: (filters as any).countryCode
+    countryCode: (filters as any).countryCode,
+    sessionKey // For stable sorting
   });
 
   // Update URL when filters change
@@ -178,6 +182,15 @@ const Swipe = () => {
       product_id: product.id,
       action: 'left' as const
     });
+  }, [user?.id]);
+
+  // Callbacks for MiniSwipePreview buttons
+  const handleMiniSwipeInfo = useCallback((product: any) => {
+    navigate(`/p/${product.id}`);
+  }, [navigate]);
+
+  const handleMiniSwipeTryOn = useCallback((product: any) => {
+    navigate(`/p/${product.id}?tryon=true`);
   }, [user?.id]);
 
   if (loading) {
@@ -326,6 +339,8 @@ const Swipe = () => {
               onOpenFullSwipe={() => setViewMode('swipe')}
               onLike={handleSwipeLike}
               onSkip={handleSwipeSkip}
+              onInfoClick={handleMiniSwipeInfo}
+              onTryOnClick={handleMiniSwipeTryOn}
             />
             
             {/* Category Pills */}
