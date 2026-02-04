@@ -153,11 +153,12 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
       // Add the masonry chunk
       chunks.push(
         <div key={`masonry-${i}`} className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          {chunk.map(product => (
+          {chunk.map((product, idx) => (
             <MasonryProductCard
               key={product.id}
               product={product}
               isLiked={likedProducts.has(product.id)}
+              index={i + idx}
               onLikeToggle={(e) => handleLikeToggle(product.id, e)}
               onClick={() => handleProductClick(product)}
               onInfoClick={(e) => handleInfoClick(product, e)}
@@ -195,15 +196,30 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
 interface MasonryProductCardProps {
   product: Product;
   isLiked: boolean;
+  index: number;
   onLikeToggle: (e: React.MouseEvent) => void;
   onClick: () => void;
   onInfoClick: (e: React.MouseEvent) => void;
   onTryOnClick: (e: React.MouseEvent) => void;
 }
 
+// Generate pseudo-random height variant for organic masonry feel
+const getCardStyle = (index: number, productId: string): React.CSSProperties => {
+  // Use product ID hash + index for consistent but varied randomness
+  const hash = productId.charCodeAt(0) + productId.charCodeAt(productId.length - 1) + index;
+  const variant = hash % 5;
+  
+  // Create irregular margins/padding for organic feel
+  return {
+    marginTop: variant === 0 ? '12px' : variant === 2 ? '8px' : '0',
+    paddingBottom: variant === 1 ? '4px' : variant === 3 ? '8px' : '0',
+  };
+};
+
 const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
   product,
   isLiked,
+  index,
   onLikeToggle,
   onClick,
   onInfoClick,
@@ -211,10 +227,12 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
 }) => {
   const imageUrl = product.media_urls?.[0] || product.image_url || '/placeholder.svg';
   const brandName = product.merchant_name || product.brand?.name || 'Unknown';
+  const cardStyle = getCardStyle(index, product.id);
 
   return (
     <div 
       className="break-inside-avoid mb-4 group cursor-pointer"
+      style={cardStyle}
       onClick={onClick}
     >
       <div className="relative rounded-xl overflow-hidden bg-card border border-border shadow-sm hover:shadow-md transition-shadow">
@@ -226,30 +244,30 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
             className="w-full h-auto object-cover"
           />
           
-          {/* Right-side buttons - stacked vertically */}
+          {/* Right-side buttons - stacked vertically - ALWAYS VISIBLE */}
           <div className="absolute top-2 right-2 flex flex-col gap-1.5">
-            {/* Like/Heart button */}
+            {/* Like/Heart button - always visible */}
             <button
               onClick={onLikeToggle}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
                 isLiked 
                   ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
-                  : 'bg-white/90 text-muted-foreground opacity-0 group-hover:opacity-100'
+                  : 'bg-white/80 backdrop-blur-sm text-muted-foreground hover:bg-white'
               }`}
             >
               <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
             </button>
             
-            {/* Try-On button - below heart */}
+            {/* Try-On button - always visible */}
             <button
               onClick={onTryOnClick}
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/90 text-muted-foreground opacity-0 group-hover:opacity-100 shadow-sm transition-all hover:bg-white"
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80 backdrop-blur-sm text-muted-foreground shadow-sm transition-all hover:bg-white"
             >
               <Shirt className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Info button - bottom right */}
+          {/* Info button - bottom right - keep hover behavior */}
           <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               size="icon"

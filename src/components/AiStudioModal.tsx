@@ -128,7 +128,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
         
         // Calculate true elapsed time from original start
         const elapsed = getElapsedSeconds(activeJob);
-        setVideoStatus(`Processing... ${formatElapsedTime(elapsed)} (typically 2-5 min)`);
+        setVideoStatus(`Processing... ${formatElapsedTime(elapsed)} (typically 1-2 min)`);
         
         // Continue polling with true elapsed time
         pollVideoUntilComplete(
@@ -520,10 +520,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 sm:max-w-md md:max-w-lg lg:max-w-xl sm:max-h-[92vh] sm:h-auto">
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+          {/* Backdrop - lighter for see-through effect */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
           
-          {/* Sheet - White Frosted Glass UI */}
+          {/* Sheet - Frosty See-Through Glass UI */}
           <motion.div
             initial={{ y: 24, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
@@ -531,14 +531,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
                        rounded-t-3xl sm:rounded-3xl 
-                       bg-white/90 backdrop-blur-2xl
-                       shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.8)]
-                       border border-gray-200/60
+                       bg-white/70 backdrop-blur-xl
+                       shadow-[0_8px_32px_rgba(0,0,0,0.15)]
+                       border border-white/40
                        flex flex-col"
           >
-            {/* Header - Clean White Glass */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 
-                          bg-white/80 backdrop-blur-sm sticky top-0 z-10 rounded-t-3xl">
+            {/* Header - Frosty Glass */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/30 
+                          bg-white/60 backdrop-blur-lg sticky top-0 z-10 rounded-t-3xl">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Shirt className="h-5 w-5 text-primary" />
@@ -591,7 +591,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {/* Picture Tab */}
                 <TabsContent value="picture" className="mt-0 space-y-4">
                   {/* Upload Section - Light Glass Card */}
-                  <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
+                  <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-4">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-sm text-muted-foreground">
                         Upload a photo of yourself and an outfit to try on
@@ -630,7 +630,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                   {/* Result - Light Glass Card */}
                   {pictureResult && (
-                    <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
+                    <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-4">
                       <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-black/30 mb-3">
                         <img 
                           src={pictureResult} 
@@ -723,7 +723,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {/* Video Tab */}
                 <TabsContent value="video" className="mt-0 space-y-4">
                   {/* Upload Section for Video Tab - Light Glass Card */}
-                  <div className="rounded-2xl border border-gray-200/50 bg-white/60 backdrop-blur-sm shadow-sm p-4">
+                  <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-4">
                     <p className="text-sm text-muted-foreground text-center mb-2">
                       Upload your photo and outfit to create a 5-second fashion video
                     </p>
@@ -1011,7 +1011,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </div>
 
               {/* Sticky Action Bar - White Glass Footer */}
-              <div className="flex-shrink-0 p-3 border-t border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+              <div className="flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
                 {activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}

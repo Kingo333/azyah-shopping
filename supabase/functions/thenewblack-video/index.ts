@@ -600,7 +600,7 @@ serve(async (req) => {
           ok: true, 
           job_id: cleanJobId,
           status: 'processing',
-          message: 'Video generation started. Check back in 2-5 minutes.',
+          message: 'Video generation started. Check back in 1-2 minutes.',
           credits_remaining: credits[0].video_credits - 1,
           debug: {
             usedUrl: providerSafeUrl

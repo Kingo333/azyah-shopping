@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X } from "lucide-react";
+import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, ShoppingBag, Globe, Sparkles, User } from "lucide-react";
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -377,6 +377,42 @@ const Swipe = () => {
                 communityOutfitsInterval={12}
                 onTryOnClick={handleMasonryTryOn}
               />
+            </div>
+
+            {/* Floating Icon-Only Bottom Nav for List View */}
+            <div 
+              className="fixed z-40 left-1/2 -translate-x-1/2
+                         bg-background/80 backdrop-blur-xl 
+                         rounded-full px-6 py-2.5
+                         shadow-[0_4px_24px_rgba(0,0,0,0.12)]
+                         border border-border/30
+                         flex items-center gap-5"
+              style={{ bottom: 'calc(var(--safe-bottom, 0px) + 24px)' }}
+            >
+              <button 
+                onClick={() => navigate('/swipe')} 
+                className="p-2 text-primary"
+              >
+                <ShoppingBag className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => navigate('/explore')} 
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Globe className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => navigate('/ugc')} 
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Sparkles className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => navigate('/profile')} 
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <User className="h-5 w-5" />
+              </button>
             </div>
           </div>}
           

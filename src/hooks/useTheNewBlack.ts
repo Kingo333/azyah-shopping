@@ -236,7 +236,7 @@ export function useTheNewBlack() {
 
       toast({
         title: 'Video generation started',
-        description: 'Your video will be ready in 2-5 minutes.',
+        description: 'Your video will be ready in 1-2 minutes.',
       });
 
       return data as VideoStartResult;
@@ -305,7 +305,7 @@ export function useTheNewBlack() {
       attempts++;
       const minutesElapsed = Math.floor((attempts * 5) / 60);
       const secondsElapsed = (attempts * 5) % 60;
-      onProgress?.(`Processing... ${minutesElapsed}:${secondsElapsed.toString().padStart(2, '0')} (typically 2-5 min)`);
+      onProgress?.(`Processing... ${minutesElapsed}:${secondsElapsed.toString().padStart(2, '0')} (typically 1-2 min)`);
 
       const result = await checkVideoStatus(jobId);
 
@@ -358,8 +358,8 @@ export function useTheNewBlack() {
       setTimeout(poll, 5000);
     };
 
-    // Initial delay before first poll (15 seconds) - video takes 2-5 min
-    onProgress?.('Starting video generation... (typically 2-5 min)');
+    // Initial delay before first poll (15 seconds) - video takes 1-2 min
+    onProgress?.('Starting video generation... (typically 1-2 min)');
     setTimeout(poll, 15000);
   }, [checkVideoStatus, toast]);
 
