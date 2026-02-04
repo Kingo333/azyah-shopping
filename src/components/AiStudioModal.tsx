@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +13,17 @@ import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedProgress } from '@/components/ui/animated-progress';
+import { ExpiryIndicator } from '@/components/ui/expiry-indicator';
+import {
+  savePictureJob,
+  getActivePictureJob,
+  clearPictureJob,
+  saveVideoJob,
+  getActiveVideoJob,
+  clearVideoJob,
+  getElapsedSeconds,
+  formatElapsedTime
+} from '@/hooks/useJobPersistence';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -88,12 +99,47 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const maxPictureCredits = isPremium ? 10 : 4;
   const maxVideoCredits = isPremium ? 4 : 1;
 
+  // Track if we've already resumed polling
+  const hasResumedVideoPolling = useRef(false);
+
   // Fetch assets when modal opens
   useEffect(() => {
     if (open) {
       fetchAssets();
     }
   }, [open]);
+
+  // Resume video polling on modal open if there's an active job
+  useEffect(() => {
+    if (open && !videoPolling && !hasResumedVideoPolling.current) {
+      const activeJob = getActiveVideoJob();
+      if (activeJob) {
+        hasResumedVideoPolling.current = true;
+        setVideoJobId(activeJob.jobId);
+        const elapsed = getElapsedSeconds(activeJob);
+        setVideoStatus(`Processing... ${formatElapsedTime(elapsed)} (resuming...)`);
+        
+        // Resume polling
+        pollVideoUntilComplete(
+          activeJob.jobId,
+          (checkResult) => {
+            if (checkResult.result_url) {
+              setVideoResult(checkResult.result_url);
+              setVideoStatus('');
+              clearVideoJob();
+              fetchAssets();
+            }
+          },
+          (status) => setVideoStatus(status)
+        );
+      }
+    }
+    
+    // Reset ref when modal closes
+    if (!open) {
+      hasResumedVideoPolling.current = false;
+    }
+  }, [open, videoPolling, pollVideoUntilComplete, fetchAssets]);
 
   // File validation
   const validateFile = (file: File): boolean => {
@@ -350,6 +396,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     const result = await startVideoGeneration(imageUrl);
     if (result.ok && result.job_id) {
       setVideoJobId(result.job_id);
+      // Save to localStorage for persistence
+      saveVideoJob(result.job_id);
       await refetchCredits();
       
       // Start polling
@@ -359,6 +407,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           if (checkResult.result_url) {
             setVideoResult(checkResult.result_url);
             setVideoStatus('');
+            clearVideoJob(); // Clear localStorage on completion
             fetchAssets();
           }
         },
@@ -612,6 +661,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                                 </div>
                               </div>
                             )}
+                            {/* Expiry countdown indicator */}
+                            {!selectMode && <ExpiryIndicator createdAt={asset.created_at} />}
                           </button>
                         ))}
                       </div>
@@ -880,6 +931,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                               <Play className="h-5 w-5 text-white" />
                             </div>
+                            {/* Expiry countdown indicator */}
+                            <ExpiryIndicator createdAt={asset.created_at} />
                           </button>
                         ))}
                       </div>

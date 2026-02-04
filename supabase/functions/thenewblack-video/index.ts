@@ -783,17 +783,18 @@ serve(async (req) => {
 
       console.log('[TheNewBlack Video] Stored at:', publicUrl.publicUrl);
 
-      // Save to ai_assets table
-      await serviceClient.from('ai_assets').insert({
+      // Save to ai_assets table (use existing columns, no metadata column)
+      const { error: assetError } = await serviceClient.from('ai_assets').insert({
         user_id: user.id,
+        job_id: job_id,
         asset_url: publicUrl.publicUrl,
         asset_type: 'tryon_video',
-        metadata: {
-          job_id: job_id,
-          provider: 'thenewblack',
-          original_url: resultText.trim()
-        }
+        title: `AI Video ${new Date().toLocaleDateString()}`
       });
+
+      if (assetError) {
+        console.error('[TheNewBlack Video] Failed to save asset:', assetError);
+      }
 
       // Log success
       await logJobLifecycle(serviceClient, user.id, {
