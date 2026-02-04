@@ -86,8 +86,8 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
   const brandName = currentProduct?.merchant_name || currentProduct?.brand?.name || 'Unknown';
 
   return (
-    <section className="py-2 bg-background">
-      <div className="flex items-center justify-between mb-2 px-4">
+    <section className="py-1 bg-background">
+      <div className="flex items-center justify-between mb-1.5 px-4">
         <h2 className="text-base font-serif font-medium text-foreground">Quick Swipe</h2>
         <Button 
           variant="link" 
