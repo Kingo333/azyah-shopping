@@ -39,6 +39,15 @@ const EXCLUDED_ROUTES = [
   '/dress-me',
 ];
 
+// Check if list view mode is active (for hiding nav on /swipe in list view)
+const getListViewMode = (): boolean => {
+  try {
+    return localStorage.getItem('feed-view-mode') === 'list';
+  } catch {
+    return false;
+  }
+};
+
 export const BottomNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -63,6 +72,9 @@ export const BottomNavigation: React.FC = () => {
     route === location.pathname || location.pathname.startsWith(route + '/')
   );
   const isLandingPage = location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/onboarding/intro';
+  
+  // Hide nav completely on /swipe when in list view mode (has its own floating nav)
+  const isSwipeListView = location.pathname === '/swipe' && getListViewMode();
 
   // Handle navigation with auto guest mode activation
   const handleNavClick = useCallback((item: NavItem) => {
@@ -133,7 +145,7 @@ export const BottomNavigation: React.FC = () => {
   // Show bottom nav for logged in users, guest mode, or landing page (to preview nav)
   const isGuest = isGuestMode();
   
-  if ((!user && !isGuest && !isLandingPage) || isExcludedPage) {
+  if ((!user && !isGuest && !isLandingPage) || isExcludedPage || isSwipeListView) {
     return null;
   }
 
