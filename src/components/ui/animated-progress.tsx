@@ -7,19 +7,21 @@ interface AnimatedProgressProps {
   duration?: number; // in seconds (e.g., 30 for image, 90 for video)
   label?: string;
   className?: string;
+  initialProgress?: number; // For resuming progress on modal reopen
 }
 
 export function AnimatedProgress({
   isActive,
   duration = 30,
   label,
-  className
+  className,
+  initialProgress = 0
 }: AnimatedProgressProps) {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(initialProgress);
 
   const resetProgress = useCallback(() => {
-    setProgress(0);
-  }, []);
+    setProgress(initialProgress);
+  }, [initialProgress]);
 
   useEffect(() => {
     if (!isActive) {

@@ -783,17 +783,29 @@ serve(async (req) => {
 
       console.log('[TheNewBlack Video] Stored at:', publicUrl.publicUrl);
 
-      // Save to ai_assets table (use existing columns, no metadata column)
-      const { error: assetError } = await serviceClient.from('ai_assets').insert({
-        user_id: user.id,
-        job_id: job_id,
-        asset_url: publicUrl.publicUrl,
-        asset_type: 'tryon_video',
-        title: `AI Video ${new Date().toLocaleDateString()}`
-      });
+      // Check if asset already exists for this job (prevents duplicate saves)
+      const { data: existingAsset } = await serviceClient
+        .from('ai_assets')
+        .select('id')
+        .eq('job_id', job_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (assetError) {
-        console.error('[TheNewBlack Video] Failed to save asset:', assetError);
+      if (!existingAsset) {
+        // Save to ai_assets table (use existing columns, no metadata column)
+        const { error: assetError } = await serviceClient.from('ai_assets').insert({
+          user_id: user.id,
+          job_id: job_id,
+          asset_url: publicUrl.publicUrl,
+          asset_type: 'tryon_video',
+          title: `AI Video ${new Date().toLocaleDateString()}`
+        });
+
+        if (assetError) {
+          console.error('[TheNewBlack Video] Failed to save asset:', assetError);
+        }
+      } else {
+        console.log('[TheNewBlack Video] Asset already exists for job:', job_id);
       }
 
       // Log success

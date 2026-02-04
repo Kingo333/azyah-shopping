@@ -909,11 +909,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       </>
                     )}
 
-                    {/* Processing status */}
+                    {/* Processing status - text only, progress bar is in the action bar */}
                     {videoPolling && (
-                      <div className="text-center py-6 px-4">
-                        <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
-                        <p className="text-sm text-muted-foreground mt-3">{videoStatus || 'Generating video...'}</p>
+                      <div className="text-center py-4 px-4">
+                        <p className="text-sm text-muted-foreground">{videoStatus || 'Generating video...'}</p>
                         <p className="text-xs text-muted-foreground/70 mt-2">
                           You can close this modal — we'll notify you when it's ready!
                         </p>
@@ -1057,7 +1056,19 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   >
                     {videoPolling ? (
                       <div className="w-full px-4">
-                        <AnimatedProgress isActive={true} duration={90} label="Creating Video" />
+                        <AnimatedProgress 
+                          isActive={true} 
+                          duration={90} 
+                          label="Creating Video"
+                          initialProgress={(() => {
+                            const activeJob = getActiveVideoJob();
+                            if (activeJob) {
+                              const elapsed = getElapsedSeconds(activeJob);
+                              return Math.min((elapsed / 90) * 95, 95); // Cap at 95%
+                            }
+                            return 0;
+                          })()}
+                        />
                       </div>
                     ) : generatingVideoInput ? (
                       <>
