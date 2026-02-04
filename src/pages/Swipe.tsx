@@ -382,24 +382,24 @@ const Swipe = () => {
             {/* Floating Icon-Only Bottom Nav for List View */}
             <div 
               className="fixed z-40 left-4 right-4
-                         bg-white/70 backdrop-blur-xl
-                         rounded-full py-3 px-6
-                         shadow-[0_4px_20px_rgba(0,0,0,0.08)]
-                         border border-white/40
+                         bg-white/50 backdrop-blur-xl
+                         rounded-full py-2 px-4
+                         shadow-[0_2px_12px_rgba(0,0,0,0.06)]
+                         border border-white/20
                          flex items-center justify-between"
               style={{ bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }}
             >
-              <button onClick={() => navigate('/swipe')} className="p-2">
-                <ShoppingBag className="h-6 w-6 text-foreground" strokeWidth={1.5} />
+              <button onClick={() => navigate('/swipe')} className="p-1.5">
+                <ShoppingBag className="h-5 w-5 text-foreground" strokeWidth={1.5} />
               </button>
-              <button onClick={() => navigate('/explore')} className="p-2">
-                <Globe className="h-6 w-6 text-foreground/60" strokeWidth={1.5} />
+              <button onClick={() => navigate('/explore')} className="p-1.5">
+                <Globe className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
               </button>
-              <button onClick={() => navigate('/ugc')} className="p-2">
-                <Sparkles className="h-6 w-6 text-foreground/60" strokeWidth={1.5} />
+              <button onClick={() => navigate('/ugc')} className="p-1.5">
+                <Sparkles className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
               </button>
-              <button onClick={() => navigate('/profile')} className="p-2">
-                <User className="h-6 w-6 text-foreground/60" strokeWidth={1.5} />
+              <button onClick={() => navigate('/profile')} className="p-1.5">
+                <User className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
               </button>
             </div>
           </div>}
