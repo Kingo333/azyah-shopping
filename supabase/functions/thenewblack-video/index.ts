@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VIDEO_PROMPT = "Front-facing model looks into camera from the image, does a slow 360° turn to show front/side/back, then returns to face camera and holds a final pose to display the full outfit.";
+const VIDEO_PROMPT = "Fashion model naturally showcasing the outfit with elegant movements";
 
 // Known-good test image for provider diagnostics
 const TEST_IMAGE_URL = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80";
@@ -143,11 +143,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const apiKey = Deno.env.get('THE_NEW_BLACK_API_KEY');
-    const tnbEmail = Deno.env.get('THE_NEW_BLACK_EMAIL');
-    const tnbPassword = Deno.env.get('THE_NEW_BLACK_PASSWORD');
 
-    if (!apiKey || !tnbEmail || !tnbPassword) {
-      console.error('TheNewBlack credentials not configured');
+    if (!apiKey) {
+      console.error('THE_NEW_BLACK_API_KEY not configured');
       return new Response(
         JSON.stringify({ ok: false, step: 'config', error: 'API credentials not configured' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -625,10 +623,8 @@ serve(async (req) => {
 
       console.log('[TheNewBlack Video] Checking job status:', job_id);
 
-      // Call The New Black API to get video result
+      // Call The New Black API to get video result (use api_key in URL per docs)
       const formData = new FormData();
-      formData.append('email', tnbEmail);
-      formData.append('password', tnbPassword);
       formData.append('id', job_id);
 
       let apiResponse: Response;
@@ -636,7 +632,7 @@ serve(async (req) => {
 
       try {
         apiResponse = await fetch(
-          'https://thenewblack.ai/api/1.1/wf/results_video',
+          `https://thenewblack.ai/api/1.1/wf/results_video?api_key=${apiKey}`,
           {
             method: 'POST',
             body: formData
