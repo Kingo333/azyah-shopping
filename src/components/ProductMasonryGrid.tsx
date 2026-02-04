@@ -42,7 +42,14 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         .limit(10);
       
       if (data) {
-        setCommunityOutfits(data);
+        // Map the data to match CommunityOutfit interface
+        const mappedOutfits = data.map((fit: any) => ({
+          id: fit.id,
+          name: fit.name || fit.title,
+          image_url: fit.image_preview || fit.render_path,
+          user: fit.user
+        }));
+        setCommunityOutfits(mappedOutfits);
       }
     };
 
@@ -124,9 +131,9 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
 
   if (isLoading) {
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+      <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="break-inside-avoid mb-3">
+          <div key={i} className="break-inside-avoid mb-4">
             <Skeleton className="w-full aspect-[3/4] rounded-xl" />
           </div>
         ))}
@@ -145,7 +152,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
       
       // Add the masonry chunk
       chunks.push(
-        <div key={`masonry-${i}`} className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+        <div key={`masonry-${i}`} className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
           {chunk.map(product => (
             <MasonryProductCard
               key={product.id}
@@ -207,7 +214,7 @@ const MasonryProductCard: React.FC<MasonryProductCardProps> = ({
 
   return (
     <div 
-      className="break-inside-avoid mb-3 group cursor-pointer"
+      className="break-inside-avoid mb-4 group cursor-pointer"
       onClick={onClick}
     >
       <div className="relative rounded-xl overflow-hidden bg-card border border-border shadow-sm hover:shadow-md transition-shadow">

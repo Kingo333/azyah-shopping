@@ -12,6 +12,7 @@ import AuthAwareRoute from '@/components/AuthAwareRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { useAuthNavigation } from '@/hooks/useAuthNavigation';
 import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
+import { useTryOnJobMonitor } from '@/hooks/useTryOnJobMonitor';
 
 import Index from './pages/Index';
 import Landing from './pages/Landing';
@@ -88,6 +89,7 @@ function AppContent() {
   useSessionMonitor();
   useAuthNavigation(); // Set up soft navigation for auth recovery
   useDeepLinkHandler(); // Handle deep links for Capacitor iOS/Android
+  useTryOnJobMonitor(); // Monitor background try-on jobs and notify on completion
   return (
     <>
       <StatusBarScrim />

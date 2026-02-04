@@ -20,6 +20,7 @@ import { type TopCategory } from '@/lib/categories';
 import { MiniSwipePreview } from '@/components/MiniSwipePreview';
 import { ProductMasonryGrid } from '@/components/ProductMasonryGrid';
 import CategoryGrid from '@/components/CategoryGrid';
+import AiStudioModal from '@/components/AiStudioModal';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ const Swipe = () => {
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<'initial' | 'demo' | 'done'>('initial');
+  const [showAiStudio, setShowAiStudio] = useState(false);
 
   // Get taste profile for model training percentage
   const { tasteProfile } = useUserTasteProfile();
@@ -190,8 +192,12 @@ const Swipe = () => {
   }, [navigate]);
 
   const handleMiniSwipeTryOn = useCallback((product: any) => {
-    navigate(`/p/${product.id}?tryon=true`);
-  }, [user?.id]);
+    setShowAiStudio(true);
+  }, []);
+
+  const handleMasonryTryOn = useCallback((product: any) => {
+    setShowAiStudio(true);
+  }, []);
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -369,9 +375,16 @@ const Swipe = () => {
                 products={products}
                 isLoading={productsLoading}
                 communityOutfitsInterval={12}
+                onTryOnClick={handleMasonryTryOn}
               />
             </div>
           </div>}
+          
+        {/* AI Studio Modal - for try-on from list view */}
+        <AiStudioModal 
+          open={showAiStudio} 
+          onClose={() => setShowAiStudio(false)} 
+        />
       </main>
 
       {/* First-time Tutorial Overlay */}
