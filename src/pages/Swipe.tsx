@@ -382,36 +382,36 @@ const Swipe = () => {
             {/* Floating Icon-Only Bottom Nav for List View */}
             <div 
               className="fixed z-40 left-1/2 -translate-x-1/2
-                         bg-background/80 backdrop-blur-xl 
-                         rounded-full px-6 py-2.5
+                         bg-background/90 backdrop-blur-xl 
+                         rounded-full px-8 py-2
                          shadow-[0_4px_24px_rgba(0,0,0,0.12)]
                          border border-border/30
-                         flex items-center gap-5"
+                         flex items-center gap-8"
               style={{ bottom: 'calc(var(--safe-bottom, 0px) + 24px)' }}
             >
               <button 
                 onClick={() => navigate('/swipe')} 
-                className="p-2 text-primary"
+                className="p-1.5 text-[hsl(var(--azyah-maroon))]"
               >
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="h-6 w-6" />
               </button>
               <button 
                 onClick={() => navigate('/explore')} 
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Globe className="h-5 w-5" />
+                <Globe className="h-6 w-6" />
               </button>
               <button 
                 onClick={() => navigate('/ugc')} 
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Sparkles className="h-5 w-5" />
+                <Sparkles className="h-6 w-6" />
               </button>
               <button 
                 onClick={() => navigate('/profile')} 
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <User className="h-5 w-5" />
+                <User className="h-6 w-6" />
               </button>
             </div>
           </div>}
