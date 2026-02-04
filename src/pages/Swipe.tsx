@@ -382,36 +382,36 @@ const Swipe = () => {
             {/* Floating Icon-Only Bottom Nav for List View */}
             <div 
               className="fixed z-40 left-1/2 -translate-x-1/2
-                         bg-background/90 backdrop-blur-xl 
-                         rounded-full px-8 py-2
-                         shadow-[0_4px_24px_rgba(0,0,0,0.12)]
-                         border border-border/30
-                         flex items-center gap-8"
-              style={{ bottom: 'calc(var(--safe-bottom, 0px) + 24px)' }}
+                         bg-background/95 backdrop-blur-xl 
+                         rounded-full px-10 py-3.5
+                         shadow-[0_8px_32px_rgba(0,0,0,0.15)]
+                         border border-border/40
+                         flex items-center justify-center gap-10"
+              style={{ bottom: 'calc(var(--safe-bottom, 0px) + 20px)' }}
             >
               <button 
                 onClick={() => navigate('/swipe')} 
-                className="p-1.5 text-[hsl(var(--azyah-maroon))]"
+                className="p-2 text-[hsl(var(--azyah-maroon))]"
               >
-                <ShoppingBag className="h-6 w-6" />
+                <ShoppingBag className="h-7 w-7" />
               </button>
               <button 
                 onClick={() => navigate('/explore')} 
-                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Globe className="h-6 w-6" />
+                <Globe className="h-7 w-7" />
               </button>
               <button 
                 onClick={() => navigate('/ugc')} 
-                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Sparkles className="h-6 w-6" />
+                <Sparkles className="h-7 w-7" />
               </button>
               <button 
                 onClick={() => navigate('/profile')} 
-                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <User className="h-6 w-6" />
+                <User className="h-7 w-7" />
               </button>
             </div>
           </div>}
