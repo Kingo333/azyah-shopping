@@ -28,11 +28,12 @@ export const useTryOnJobMonitor = () => {
 
       // Check each pending job
       for (const jobId of pending) {
+        // First try database for picture jobs
         const { data } = await supabase
           .from('ai_tryon_jobs')
           .select('status, result_url')
           .eq('id', jobId)
-          .single();
+          .maybeSingle();
 
         if (data) {
           if (data.status === 'succeeded' && data.result_url) {
@@ -43,6 +44,7 @@ export const useTryOnJobMonitor = () => {
             // Remove from pending
             const updated = pending.filter((id: string) => id !== jobId);
             localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
+            continue;
           } else if (data.status === 'failed') {
             toast({
               title: 'Try-On Failed',
@@ -52,6 +54,28 @@ export const useTryOnJobMonitor = () => {
             // Remove failed jobs
             const updated = pending.filter((id: string) => id !== jobId);
             localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
+            continue;
+          }
+        }
+
+        // If not in database or still processing, check via edge function (for video jobs)
+        if (!data || data.status === 'processing') {
+          try {
+            const { data: checkResult } = await supabase.functions.invoke('thenewblack-video', {
+              body: { action: 'check', job_id: jobId }
+            });
+
+            if (checkResult?.ok && checkResult?.status === 'completed') {
+              toast({
+                title: 'Video Ready! 🎬',
+                description: 'Your fashion video has been generated. Check AI Studio to view it.',
+              });
+              // Remove from pending
+              const updated = pending.filter((id: string) => id !== jobId);
+              localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(updated));
+            }
+          } catch (err) {
+            console.log('[useTryOnJobMonitor] Edge function check failed:', err);
           }
         }
       }
