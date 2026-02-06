@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CreditPackage {
   id: string;
-  type: 'ai_studio' | 'beauty' | 'video';
+  type: 'ai_studio' | 'video';
   amount: number;
   pointsCost: number;
   label: string;
