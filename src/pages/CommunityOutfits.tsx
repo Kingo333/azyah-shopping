@@ -8,6 +8,7 @@ import { LikeButton } from '@/components/LikeButton';
 import { CommentButton } from '@/components/CommentButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { useSendFriendRequest, useCheckFriendship } from '@/hooks/useFriends';
 import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
 import { UserPlus, Check, Palette } from 'lucide-react';
@@ -79,6 +80,7 @@ const StyleButton = ({ userId }: { userId: string }) => {
 
 export const CommunityOutfits = () => {
   const navigate = useNavigate();
+  const { blockedIds } = useBlockedUsers();
 
   const { data: fits, isLoading } = useQuery({
     queryKey: ['community-outfits'],
@@ -111,12 +113,14 @@ export const CommunityOutfits = () => {
       
       const userMap = new Map(users?.map(u => [u.id, u]) || []);
       
-      return data.map(fit => ({
-        ...fit,
-        user: userMap.get(fit.user_id) || { 
-          id: fit.user_id, username: null, name: null, avatar_url: null 
-        }
-      })) as PublicFit[];
+      return data
+        .filter(fit => !blockedIds.includes(fit.user_id))
+        .map(fit => ({
+          ...fit,
+          user: userMap.get(fit.user_id) || { 
+            id: fit.user_id, username: null, name: null, avatar_url: null 
+          }
+        })) as PublicFit[];
     },
   });
 

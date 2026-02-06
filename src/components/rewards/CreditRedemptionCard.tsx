@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CreditPackage {
   id: string;
-  type: 'ai_studio' | 'beauty' | 'video';
+  type: 'ai_studio' | 'video';
   amount: number;
   pointsCost: number;
   label: string;
@@ -33,14 +33,6 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     pointsCost: 200,
     label: 'AI Try-On',
     icon: <Shirt className="h-5 w-5" />
-  },
-  {
-    id: 'beauty_3',
-    type: 'beauty',
-    amount: 3,
-    pointsCost: 150,
-    label: 'Beauty AI',
-    icon: <Sparkles className="h-5 w-5" />
   },
   {
     id: 'video_1',

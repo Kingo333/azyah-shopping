@@ -38,7 +38,7 @@ import TrendingStyles from './pages/TrendingStyles';
 import FeaturedBrands from './pages/FeaturedBrands';
 import BrandDetail from './pages/BrandDetail';
 import Affiliate from './pages/Affiliate';
-import BeautyConsultant from './pages/BeautyConsultant';
+
 import Events from './pages/Events';
 import UGCCollaborations from './pages/UGCCollaborations';
 import Favorites from './pages/Favorites';
@@ -222,11 +222,6 @@ function AppContent() {
                   <Route path="/affiliate" element={
                     <ProtectedRoute>
                       <Affiliate />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/beauty-consultant" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <BeautyConsultant />
                     </ProtectedRoute>
                   } />
                   <Route path="/events" element={

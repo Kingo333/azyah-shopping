@@ -5,9 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart } from 'lucide-react';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 interface PublicFit {
   id: string;
+  user_id: string;
   title: string | null;
   render_path: string | null;
   image_preview: string | null;
@@ -23,6 +25,7 @@ interface PublicFitsGridProps {
 }
 
 export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) => {
+  const { blockedIds } = useBlockedUsers();
   const { data: fits, isLoading } = useQuery({
     queryKey: ['public-fits'],
     queryFn: async () => {
@@ -51,7 +54,9 @@ export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) =>
     );
   }
 
-  if (!fits || fits.length === 0) {
+  const filteredFits = (fits || []).filter(fit => !blockedIds.includes(fit.user_id));
+
+  if (filteredFits.length === 0 && !isLoading) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No public fits yet. Be the first to share!</p>
@@ -61,7 +66,7 @@ export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) =>
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {fits.map((fit) => (
+      {filteredFits.map((fit) => (
         <Card 
           key={fit.id} 
           className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"

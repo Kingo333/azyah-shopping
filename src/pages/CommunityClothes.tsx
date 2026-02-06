@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicWardrobeItems } from '@/hooks/usePublicWardrobeItems';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { CategoryFilterChips } from '@/components/CategoryFilterChips';
 import { ClothingItemCard } from '@/components/ClothingItemCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,7 +11,12 @@ export const CommunityClothes = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const navigate = useNavigate();
 
-  const { data: items, isLoading } = usePublicWardrobeItems(selectedCategory);
+  const { blockedIds } = useBlockedUsers();
+  const { data: rawItems, isLoading } = usePublicWardrobeItems(selectedCategory);
+  const items = useMemo(() => 
+    (rawItems || []).filter(item => !blockedIds.includes(item.user_id)),
+    [rawItems, blockedIds]
+  );
 
   const handleItemClick = (itemId: string) => {
     navigate(`/community/item/${itemId}`);

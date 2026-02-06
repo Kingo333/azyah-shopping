@@ -1,6 +1,6 @@
 /**
  * Rewards Page - Points wallet and credit redemption
- * Points can be redeemed for bonus app credits (AI try-on, beauty, video)
+ * Points can be redeemed for bonus app credits (AI try-on, video)
  */
 
 import React, { useState } from 'react';

@@ -13,6 +13,7 @@ import { CreatePostModal } from '@/components/CreatePostModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { 
   Heart, 
   MessageCircle, 
@@ -65,6 +66,7 @@ interface FeedPost {
 
 const FashionFeed: React.FC = () => {
   const { user } = useAuth();
+  const { blockedIds } = useBlockedUsers();
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -118,7 +120,7 @@ const FashionFeed: React.FC = () => {
         return;
       }
 
-      setPosts(data || []);
+      setPosts((data || []).filter(p => !blockedIds.includes(p.user_id)));
       
       // Set liked posts for current user
       if (user && data) {

@@ -37,7 +37,7 @@ const AUTH_REQUIRED_ROUTES = [
   '/cart',
   '/ugc',
   '/events',
-  '/beauty-consultant',
+  
   '/toy-replica',
   '/affiliate',
   '/brand-portal',

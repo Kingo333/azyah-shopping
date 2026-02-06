@@ -30,11 +30,6 @@ const features = [
     description: '10 virtual try-ons per day'
   },
   { 
-    icon: <TrendingUp className="h-5 w-5" />,
-    name: 'AI Beauty Consultant',
-    description: 'Unlimited beauty analysis'
-  },
-  { 
     icon: <Gift className="h-5 w-5" />,
     name: 'Redeem Points for Credits',
     description: 'Convert points to AI credits'
@@ -46,7 +41,7 @@ const comparisonFeatures = [
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
   { name: 'AI Try-on', free: '4 total', premium: '10/day' },
-  { name: 'AI Beauty Consultant', free: '4 credits', premium: 'Unlimited' },
+  
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Points → Credits', free: false, premium: true },
   { name: 'Priority support', free: false, premium: true },

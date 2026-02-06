@@ -3,7 +3,7 @@ import { Clock, Crown, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface CreditsDisplayProps {
-  feature: 'ai_studio' | 'beauty' | 'wardrobe';
+  feature: 'ai_studio' | 'wardrobe';
   aiStudioCredits?: number;
   beautyCredits?: number;
   wardrobeCredits?: number;
@@ -23,14 +23,11 @@ export function CreditsDisplay({ feature, aiStudioCredits, beautyCredits, wardro
 
   const featureLabels = {
     ai_studio: 'AI Studio',
-    beauty: 'Beauty Consultant',
     wardrobe: 'Wardrobe Enhancement'
   };
 
   const creditCount = feature === 'ai_studio' 
     ? aiStudioCredits ?? 0
-    : feature === 'beauty'
-    ? beautyCredits ?? 0
     : wardrobeCredits ?? 0;
 
   return (
