@@ -736,6 +736,10 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                     <RefreshCw className="h-4 w-4" />
                     Try Another
                   </Button>
+                  
+                  <p className="text-xs text-muted-foreground text-center">
+                    AI-generated preview — results may not reflect actual fit.
+                  </p>
                 </div>
               </CardContent>
             </Card>

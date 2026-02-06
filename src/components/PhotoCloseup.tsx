@@ -630,12 +630,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   onClick={handleVisitBrand}
                   variant="default"
                   className="flex-1"
+                  title="Opens retailer website in Safari"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Shop Now
                 </Button>
               )}
             </div>
+            {product.external_url && (
+              <p className="text-xs text-muted-foreground text-center -mt-1">Opens retailer website</p>
+            )}
             </div>
 
             {/* Scrollable Similar Items */}

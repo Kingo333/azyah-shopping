@@ -1021,8 +1021,8 @@ const ProfileSettings: React.FC = () => {
                         <span className="text-muted-foreground">4 total</span>
                       </div>
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-muted-foreground">AI Beauty Consultant</span>
-                        <span className="text-muted-foreground">4 credits</span>
+                        <span className="text-muted-foreground">Visual search</span>
+                        <span className="text-muted-foreground">4 searches</span>
                       </div>
                       <div className="flex items-center justify-between py-1">
                         <span className="text-muted-foreground">UGC collaboration</span>
