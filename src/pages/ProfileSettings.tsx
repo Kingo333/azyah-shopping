@@ -216,28 +216,17 @@ const ProfileSettings: React.FC = () => {
 
     setIsDeletingAccount(true);
     try {
-      const { error: reAuthError } = await supabase.auth.reauthenticate();
-      if (reAuthError) {
-        throw new Error('Re-authentication required for account deletion');
-      }
-
-      const { error } = await supabase
-        .from('users')
-        .update({
-          email: `deleted_${Date.now()}@azyah.com`,
-          name: 'Deleted User',
-          bio: null,
-          avatar_url: null,
-          socials: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      const { data, error } = await supabase.functions.invoke('delete-account');
 
       if (error) throw error;
 
+      if (!data?.success) {
+        throw new Error(data?.errors?.join(', ') || 'Account deletion failed');
+      }
+
       toast({
-        title: "Account Scheduled for Deletion",
-        description: "Your account will be permanently deleted in 30 days."
+        title: "Account Deleted",
+        description: "Your account and all associated data have been permanently deleted."
       });
 
       await signOut();
@@ -924,7 +913,7 @@ const ProfileSettings: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
                         <TrendingUp className="h-4 w-4" />
-                        <span>AI Beauty Consultant</span>
+                        <span>Priority Support</span>
                       </div>
                       <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
                         <Gift className="h-4 w-4" />
@@ -1062,6 +1051,22 @@ const ProfileSettings: React.FC = () => {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Contact Support */}
+          <div className="p-4 rounded-lg border bg-card">
+            <button 
+              onClick={() => window.open('mailto:support@azyahstyle.com', '_blank')}
+              className="flex items-center gap-3 w-full text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium">Contact Support</h3>
+                <p className="text-sm text-muted-foreground">support@azyahstyle.com</p>
+              </div>
+            </button>
+          </div>
+
           {/* Danger Zone */}
           <div className="pt-4 border-t mt-6">
             <h3 className="text-sm font-medium text-destructive mb-3">Danger Zone</h3>
@@ -1077,8 +1082,7 @@ const ProfileSettings: React.FC = () => {
                   <AlertDialogTitle>Delete Account</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-3">
                     <div>
-                      <strong>⚠️ This action cannot be undone.</strong> Your account will be scheduled for permanent deletion in 30 days.
-                      All your data including wishlists, posts, and preferences will be removed.
+                      <strong>⚠️ This action cannot be undone.</strong> This will permanently delete your account and all uploaded content. All your data including wardrobe items, outfits, posts, and preferences will be removed.
                     </div>
                     {subscription && isPremium && (
                       <div className="p-3 bg-warning/10 border border-warning/20 rounded-md">
