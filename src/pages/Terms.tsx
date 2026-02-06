@@ -150,8 +150,8 @@ const Terms = () => {
               <section className="space-y-4">
                 <h2 className="text-2xl font-cormorant font-bold text-primary">12. Governing Law</h2>
                 <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-                  <li>These Terms are governed by the laws of [Insert Jurisdiction].</li>
-                  <li>Any disputes will be subject to the exclusive jurisdiction of the courts in [Insert Location].</li>
+                  <li>These Terms are governed by the laws of the United Arab Emirates.</li>
+                  <li>Any disputes will be subject to the exclusive jurisdiction of the courts in Dubai, United Arab Emirates.</li>
                 </ul>
               </section>
 
