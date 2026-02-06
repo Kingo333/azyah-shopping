@@ -54,11 +54,7 @@ export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) =>
     );
   }
 
-  const filteredFits = (fits || []).filter(fit => !blockedIds.includes(fit.creator_username));
-
-  // Note: public-fits edge function returns creator_username but not user_id directly
-  // We filter by checking if any blocked ID matches - the edge function should ideally return user_id
-  // For now, filter using the data available
+  const filteredFits = (fits || []).filter(fit => !blockedIds.includes(fit.user_id));
 
   if (filteredFits.length === 0 && !isLoading) {
     return (
