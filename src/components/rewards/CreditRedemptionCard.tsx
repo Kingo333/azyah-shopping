@@ -35,14 +35,6 @@ const CREDIT_PACKAGES: CreditPackage[] = [
     icon: <Shirt className="h-5 w-5" />
   },
   {
-    id: 'beauty_3',
-    type: 'beauty',
-    amount: 3,
-    pointsCost: 150,
-    label: 'Beauty AI',
-    icon: <Sparkles className="h-5 w-5" />
-  },
-  {
     id: 'video_1',
     type: 'video',
     amount: 1,
