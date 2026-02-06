@@ -66,7 +66,7 @@ export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) =>
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {fits.map((fit) => (
+      {filteredFits.map((fit) => (
         <Card 
           key={fit.id} 
           className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
