@@ -3,7 +3,7 @@ import { Clock, Crown, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface CreditsDisplayProps {
-  feature: 'ai_studio' | 'beauty' | 'wardrobe';
+  feature: 'ai_studio' | 'wardrobe';
   aiStudioCredits?: number;
   beautyCredits?: number;
   wardrobeCredits?: number;
