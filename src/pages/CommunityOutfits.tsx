@@ -8,6 +8,7 @@ import { LikeButton } from '@/components/LikeButton';
 import { CommentButton } from '@/components/CommentButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { useSendFriendRequest, useCheckFriendship } from '@/hooks/useFriends';
 import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
 import { UserPlus, Check, Palette } from 'lucide-react';
