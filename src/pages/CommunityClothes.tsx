@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicWardrobeItems } from '@/hooks/usePublicWardrobeItems';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { CategoryFilterChips } from '@/components/CategoryFilterChips';
 import { ClothingItemCard } from '@/components/ClothingItemCard';
 import { Skeleton } from '@/components/ui/skeleton';
