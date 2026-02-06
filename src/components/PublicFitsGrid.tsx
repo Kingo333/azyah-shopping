@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart } from 'lucide-react';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 interface PublicFit {
   id: string;
