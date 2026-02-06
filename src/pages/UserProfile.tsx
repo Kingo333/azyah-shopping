@@ -13,6 +13,8 @@ import ShopperNavigation from '@/components/ShopperNavigation';
 import { BackButton } from '@/components/ui/back-button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
+import { useBlockedUsers, useBlockUser, useUnblockUser } from '@/hooks/useBlockedUsers';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   User, 
   MapPin, 
@@ -23,7 +25,10 @@ import {
   Users,
   Archive,
   ArrowRight,
-  Palette
+  Palette,
+  MoreHorizontal,
+  ShieldBan,
+  ShieldCheck
 } from 'lucide-react';
 
 interface UserProfile {
@@ -77,6 +82,12 @@ const UserProfile: React.FC = () => {
   // Check if this user has public items (for "Style Me" button)
   const { data: hasPublicItems } = useHasPublicItems(id || null);
   const isOwnProfile = user?.id === id;
+  
+  // Block user hooks
+  const { blockedIds } = useBlockedUsers();
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const isBlocked = id ? blockedIds.includes(id) : false;
 
   const { data: userProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', id],
@@ -211,10 +222,10 @@ const UserProfile: React.FC = () => {
                 )}
               </div>
 
-              {/* Social Links */}
+              {/* Social Links & Actions */}
               <div className="flex gap-4 justify-center md:justify-start flex-wrap">
                 {/* Style Me Button - Only show on other user's profiles who have public items */}
-                {!isOwnProfile && hasPublicItems && (
+                {!isOwnProfile && hasPublicItems && !isBlocked && (
                   <Button 
                     onClick={() => navigate(`/dress-me/canvas?mode=suggest&targetId=${id}`)}
                     className="hover:scale-105 transition-transform"
@@ -235,12 +246,62 @@ const UserProfile: React.FC = () => {
                     Website
                   </Button>
                 )}
+
+                {/* Block/Unblock Menu - only on other profiles */}
+                {!isOwnProfile && user && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {isBlocked ? (
+                        <DropdownMenuItem
+                          onClick={() => id && unblockUser.mutate(id)}
+                          disabled={unblockUser.isPending}
+                        >
+                          <ShieldCheck className="h-4 w-4 mr-2" />
+                          Unblock User
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => id && blockUser.mutate(id)}
+                          disabled={blockUser.isPending}
+                          className="text-destructive"
+                        >
+                          <ShieldBan className="h-4 w-4 mr-2" />
+                          Block User
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </div>
         </GlassPanel>
 
-        {/* Content Tabs */}
+        {/* Blocked State */}
+        {isBlocked && (
+          <div className="text-center py-12 rounded-lg border bg-card">
+            <ShieldBan className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground font-medium mb-2">You have blocked this user</p>
+            <p className="text-sm text-muted-foreground mb-4">Their content is hidden from your view.</p>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => id && unblockUser.mutate(id)}
+              disabled={unblockUser.isPending}
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Unblock
+            </Button>
+          </div>
+        )}
+
+        {/* Content Tabs - Only show when not blocked */}
+        {!isBlocked && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full glass-panel mb-8">
             <TabsTrigger value="posts">Posts</TabsTrigger>
@@ -285,6 +346,7 @@ const UserProfile: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </div>
   );

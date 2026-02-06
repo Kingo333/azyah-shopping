@@ -488,6 +488,10 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
               className="w-full rounded-lg shadow-lg"
             />
             
+            <p className="text-xs text-muted-foreground text-center">
+              AI-generated preview — results may not reflect actual fit.
+            </p>
+            
             <div className="grid grid-cols-2 gap-2">
               <Button 
                 variant="outline" 

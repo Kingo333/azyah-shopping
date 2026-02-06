@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Share2, Flag, Copy, Download } from 'lucide-react';
+import { Heart, Share2, Flag, Copy, Download, ShieldBan } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
+import { useBlockUser } from '@/hooks/useBlockedUsers';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PublicFit {
   id: string;
@@ -36,6 +38,8 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
 }) => {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [canAddItems, setCanAddItems] = useState(false);
+  const { user } = useAuth();
+  const blockUser = useBlockUser();
 
   if (!fit) return null;
 
@@ -198,7 +202,7 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
               Use this fit
             </Button>
             
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <Button variant="outline" size="sm" onClick={handleAddItemsToCloset}>
                 <Download className="w-4 h-4 mr-1" />
                 Items
@@ -211,6 +215,34 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
                 <Flag className="w-4 h-4 mr-1" />
                 Report
               </Button>
+              {user && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    // Get creator ID from the fit — we need to look it up
+                    // For now we use the username to find the user
+                    if (fit.creator_username) {
+                      supabase
+                        .from('users')
+                        .select('id')
+                        .eq('username', fit.creator_username)
+                        .single()
+                        .then(({ data }) => {
+                          if (data) {
+                            blockUser.mutate(data.id);
+                            onClose();
+                          }
+                        });
+                    }
+                  }}
+                  disabled={blockUser.isPending}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <ShieldBan className="w-4 h-4 mr-1" />
+                  Block
+                </Button>
+              )}
             </div>
           </div>
 
