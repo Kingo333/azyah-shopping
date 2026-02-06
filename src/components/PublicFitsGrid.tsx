@@ -24,6 +24,7 @@ interface PublicFitsGridProps {
 }
 
 export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) => {
+  const { blockedIds } = useBlockedUsers();
   const { data: fits, isLoading } = useQuery({
     queryKey: ['public-fits'],
     queryFn: async () => {
