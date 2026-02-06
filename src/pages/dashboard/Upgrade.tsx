@@ -30,11 +30,6 @@ const features = [
     description: '10 virtual try-ons per day'
   },
   { 
-    icon: <TrendingUp className="h-5 w-5" />,
-    name: 'AI Beauty Consultant',
-    description: 'Unlimited beauty analysis'
-  },
-  { 
     icon: <Gift className="h-5 w-5" />,
     name: 'Redeem Points for Credits',
     description: 'Convert points to AI credits'
