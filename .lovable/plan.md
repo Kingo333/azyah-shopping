@@ -1,72 +1,125 @@
 
+# Disable Beauty Consultant + Complete Feed Filtering + Updated Audit
 
-# Fix Remaining App Store Compliance Gaps
-
-Two issues remain that could cause rejection:
-
-1. **Block user content filtering is incomplete** -- blocked users' content still appears in all community feeds (FashionFeed, CommunityOutfits, CommunityClothes, DressMeCommunity). Apple expects blocked content to actually disappear everywhere, not just on profile pages.
-
-2. **AI Beauty Consultant has no AI disclosure** -- the Beauty Consultant page is live and active but has no "AI-generated" disclaimer, unlike the try-on modals which were already fixed.
+This plan covers three areas: (1) disabling the Beauty Consultant feature entirely since it is not being used, (2) completing the blocked-user content filtering that was missed in the feeds, and (3) providing the updated audit scorecard.
 
 ---
 
-## Fix 1: Filter Blocked Users from All Feed Queries
+## Part 1: Disable Beauty Consultant
 
-### Approach
-Import `useBlockedUsers` in each feed page and filter results client-side to exclude content from blocked user IDs. This is the fastest and safest approach -- no database changes needed, no new RPC functions.
+The Beauty Consultant is currently live and referenced in 6 locations. Since it is not being used, all references need to be removed or disabled.
 
-### Files to edit:
+### Changes:
+
+**A. Feature flag -- `src/lib/features.ts`**
+- Set `ai_beauty_consultant: false`
+
+**B. Upgrade page -- `src/pages/dashboard/Upgrade.tsx`**
+- Remove "AI Beauty Consultant" from the `features` highlight array (line 32-36)
+- Remove "AI Beauty Consultant" row from `comparisonFeatures` table (line 49)
+
+**C. Rewards credit redemption -- `src/components/rewards/CreditRedemptionCard.tsx`**
+- Remove the "Beauty AI" credit package (lines 37-44) from `CREDIT_PACKAGES`
+- Remove `'beauty'` from the `CreditPackage` type union
+
+**D. Credits display -- `src/components/CreditsDisplay.tsx`**
+- Remove `beauty: 'Beauty Consultant'` from `featureLabels`
+- Remove `'beauty'` from the `feature` prop type union
+- Remove the beauty branch from the credit count logic
+
+**E. Route cleanup -- `src/App.tsx`**
+- Remove the `/beauty-consultant` route (lines 227-231)
+- Remove the `BeautyConsultant` import (line 41)
+
+**F. Protected route list -- `src/components/ProtectedRoute.tsx`**
+- Remove `'/beauty-consultant'` from the protected paths array (line 40)
+
+**G. Rewards page comment -- `src/pages/Rewards.tsx`**
+- Update the file comment on line 3 to remove "beauty" from the description: change "AI try-on, beauty, video" to "AI try-on, video"
+
+Note: The `BeautyConsultant.tsx` page file itself will be kept but will be unreachable since the route is removed and the feature flag is `false`. This avoids deleting a large file unnecessarily.
+
+---
+
+## Part 2: Complete Blocked User Feed Filtering
+
+The block user hooks exist and the UI to block/unblock works, but blocked users' content still appears in all 4 community feed surfaces. This must be fixed for Apple UGC compliance.
+
+### Changes:
 
 **A. `src/pages/FashionFeed.tsx`**
-- Import `useBlockedUsers` hook
+- Import `useBlockedUsers` from `@/hooks/useBlockedUsers`
 - Call `const { blockedIds } = useBlockedUsers()` in the component
-- After posts are loaded (line 121), filter out posts where `user_id` is in `blockedIds`
-- Apply: `setPosts((data || []).filter(p => !blockedIds.includes(p.user_id)))`
+- After posts are loaded (line 121), filter: `setPosts((data || []).filter(p => !blockedIds.includes(p.user_id)))`
 
 **B. `src/pages/CommunityOutfits.tsx`**
-- Import `useBlockedUsers` hook
-- Call `const { blockedIds } = useBlockedUsers()` in the component
-- Filter the query results: after the fits are mapped with user data, filter out any where `user.id` is in `blockedIds`
-- Use `useMemo` to derive filtered fits from the query data + blockedIds
+- Import `useBlockedUsers`
+- Filter query results to exclude fits from blocked user IDs
 
 **C. `src/pages/CommunityClothes.tsx`**
-- Same pattern: import hook, filter results by blocked IDs
+- Import `useBlockedUsers`
+- Filter query results to exclude items from blocked user IDs
 
-**D. `src/pages/DressMeCommunity.tsx`**
-- Same pattern: import hook, filter community outfits by blocked user IDs
+**D. `src/components/PublicFitsGrid.tsx`** (used by DressMeCommunity)
+- Import `useBlockedUsers`
+- Filter the fits data to exclude blocked user IDs
 
 ---
 
-## Fix 2: AI Disclosure on Beauty Consultant
+## Part 3: Updated Audit Scorecard
 
-### File to edit: `src/pages/BeautyConsultant.tsx`
+After these changes, the compliance status will be:
 
-Add a small disclaimer text near the chat header area (where "AI Beauty Consultant" title appears):
-- Text: "AI-generated advice -- consult a professional for specific concerns."
-- Styled as `text-xs text-muted-foreground` to match the existing UI pattern
-- Placed below the subtitle text in the header area
+### Blockers -- ALL RESOLVED
+
+| Blocker | Status |
+|---------|--------|
+| A. Info.plist permission strings | Done |
+| B. Account deletion (full) | Done |
+| C. Block user (DB + UI + filtering) | Done after this plan |
+| D. Terms jurisdiction | Done |
+
+### Medium-Risk Items
+
+| Item | Status |
+|------|--------|
+| AI disclosure on try-on results | Done |
+| "Opens retailer website" on Shop Now | Done |
+| Contact Support in settings | Done |
+| Beauty Consultant removed from premium | Done after this plan |
+| Feed filtering for blocked users | Done after this plan |
+
+### Remaining (not code changes)
+
+| Item | Action Needed |
+|------|---------------|
+| Privacy labels for App Store Connect | Fill in manually during submission |
+| Test account with seeded data | Create before submission |
+| Screenshots for 6.7" and 5.5" | Create before submission |
+| Reviewer notes in App Store Connect | Write before submission |
+
+### Estimated Readiness After This Plan: 92/100
+
+The remaining 8 points are for non-code items (privacy labels, test account, screenshots) that need to be prepared in App Store Connect before submission.
 
 ---
 
 ## Implementation Order
 
 ```text
-Priority | Item                                    | Scope
----------|-----------------------------------------|------------------
-1        | Filter blocked users from FashionFeed   | 1 file, ~10 lines
-2        | Filter blocked users from CommunityOutfits | 1 file, ~10 lines
-3        | Filter blocked users from CommunityClothes | 1 file, ~10 lines
-4        | Filter blocked users from DressMeCommunity | 1 file, ~10 lines
-5        | AI disclosure on BeautyConsultant        | 1 file, ~3 lines
+Priority | Item                                | Scope
+---------|-------------------------------------|------------------
+1        | Feature flag: beauty consultant off  | 1 line
+2        | Remove from Upgrade.tsx              | 2 deletions
+3        | Remove from CreditRedemptionCard     | 1 deletion + type fix
+4        | Remove from CreditsDisplay           | type + logic cleanup
+5        | Remove route from App.tsx            | 2 lines
+6        | Remove from ProtectedRoute           | 1 line
+7        | Update Rewards.tsx comment            | 1 line
+8        | Filter blocked users in FashionFeed  | ~5 lines
+9        | Filter blocked users in CommunityOutfits | ~5 lines
+10       | Filter blocked users in CommunityClothes | ~5 lines
+11       | Filter blocked users in PublicFitsGrid | ~5 lines
 ```
 
-Total: 5 files edited, all small changes. No database changes, no new edge functions.
-
----
-
-## Technical Notes
-
-- The `useBlockedUsers` hook is already built and tested -- it fetches the current user's block list with a 5-minute cache (`staleTime: 1000 * 60 * 5`). For guest/logged-out users it returns an empty array, so filtering is a no-op.
-- Client-side filtering is appropriate here because block lists are typically small (tens of IDs, not thousands) and the feed queries already limit to 20-50 results.
-- The `blockedIds` array contains UUIDs of blocked users, and all feed data includes `user_id` fields, so matching is straightforward.
-
+Total: 11 files edited, all small targeted changes. No new files, no database changes, no new edge functions.
