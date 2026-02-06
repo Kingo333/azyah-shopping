@@ -41,7 +41,7 @@ const comparisonFeatures = [
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
   { name: 'AI Try-on', free: '4 total', premium: '10/day' },
-  { name: 'AI Beauty Consultant', free: '4 credits', premium: 'Unlimited' },
+  
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Points → Credits', free: false, premium: true },
   { name: 'Priority support', free: false, premium: true },

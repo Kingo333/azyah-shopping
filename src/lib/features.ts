@@ -5,7 +5,7 @@ export const features = {
   ugc_collab: true,
   axessoImport: true,
   axessoImportBulk: true,
-  ai_beauty_consultant: true
+  ai_beauty_consultant: false
 } as const;
 
 export type FeatureFlag = keyof typeof features;

@@ -23,14 +23,11 @@ export function CreditsDisplay({ feature, aiStudioCredits, beautyCredits, wardro
 
   const featureLabels = {
     ai_studio: 'AI Studio',
-    beauty: 'Beauty Consultant',
     wardrobe: 'Wardrobe Enhancement'
   };
 
   const creditCount = feature === 'ai_studio' 
     ? aiStudioCredits ?? 0
-    : feature === 'beauty'
-    ? beautyCredits ?? 0
     : wardrobeCredits ?? 0;
 
   return (

@@ -11,7 +11,12 @@ export const CommunityClothes = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const navigate = useNavigate();
 
-  const { data: items, isLoading } = usePublicWardrobeItems(selectedCategory);
+  const { blockedIds } = useBlockedUsers();
+  const { data: rawItems, isLoading } = usePublicWardrobeItems(selectedCategory);
+  const items = useMemo(() => 
+    (rawItems || []).filter(item => !blockedIds.includes(item.user_id)),
+    [rawItems, blockedIds]
+  );
 
   const handleItemClick = (itemId: string) => {
     navigate(`/community/item/${itemId}`);

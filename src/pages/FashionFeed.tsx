@@ -120,7 +120,7 @@ const FashionFeed: React.FC = () => {
         return;
       }
 
-      setPosts(data || []);
+      setPosts((data || []).filter(p => !blockedIds.includes(p.user_id)));
       
       // Set liked posts for current user
       if (user && data) {

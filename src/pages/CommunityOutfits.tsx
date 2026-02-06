@@ -113,12 +113,14 @@ export const CommunityOutfits = () => {
       
       const userMap = new Map(users?.map(u => [u.id, u]) || []);
       
-      return data.map(fit => ({
-        ...fit,
-        user: userMap.get(fit.user_id) || { 
-          id: fit.user_id, username: null, name: null, avatar_url: null 
-        }
-      })) as PublicFit[];
+      return data
+        .filter(fit => !blockedIds.includes(fit.user_id))
+        .map(fit => ({
+          ...fit,
+          user: userMap.get(fit.user_id) || { 
+            id: fit.user_id, username: null, name: null, avatar_url: null 
+          }
+        })) as PublicFit[];
     },
   });
 

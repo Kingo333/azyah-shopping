@@ -224,11 +224,6 @@ function AppContent() {
                       <Affiliate />
                     </ProtectedRoute>
                   } />
-                  <Route path="/beauty-consultant" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <BeautyConsultant />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/events" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Events />
