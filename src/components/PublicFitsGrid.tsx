@@ -9,6 +9,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 interface PublicFit {
   id: string;
+  user_id: string;
   title: string | null;
   render_path: string | null;
   image_preview: string | null;
