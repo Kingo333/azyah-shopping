@@ -66,6 +66,7 @@ interface FeedPost {
 
 const FashionFeed: React.FC = () => {
   const { user } = useAuth();
+  const { blockedIds } = useBlockedUsers();
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
