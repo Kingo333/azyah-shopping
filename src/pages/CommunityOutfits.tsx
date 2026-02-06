@@ -80,6 +80,7 @@ const StyleButton = ({ userId }: { userId: string }) => {
 
 export const CommunityOutfits = () => {
   const navigate = useNavigate();
+  const { blockedIds } = useBlockedUsers();
 
   const { data: fits, isLoading } = useQuery({
     queryKey: ['community-outfits'],
