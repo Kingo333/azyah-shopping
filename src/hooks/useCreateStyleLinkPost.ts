@@ -131,6 +131,8 @@ export const useCreateStyleLinkPost = () => {
     onSuccess: () => {
       // Invalidate posts queries to refetch
       queryClient.invalidateQueries({ queryKey: ['stylelink-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-posts-count'] });
       setUploadProgress(0);
     },
     onError: () => {
