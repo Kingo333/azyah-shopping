@@ -9,7 +9,7 @@ export const FavoritesSection: React.FC = () => {
   const navigate = useNavigate();
   const { likedProducts, isLoading, hasLikedProducts } = useLikedProducts();
 
-  // Show first 4 liked products
+  // Show first 4 liked products in carousel
   const previewItems = (likedProducts || []).slice(0, 4);
 
   return (
@@ -30,9 +30,9 @@ export const FavoritesSection: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+        <div className="flex gap-2 overflow-hidden">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="w-[120px] h-[120px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       ) : !hasLikedProducts ? (
@@ -52,14 +52,14 @@ export const FavoritesSection: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1">
           {previewItems.map((product: any) => {
             const imageUrl =
               (product.media_urls as any)?.[0] || '/placeholder.svg';
             return (
               <div
                 key={product.id}
-                className="aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-[120px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity snap-start"
                 onClick={() => navigate(`/p/${product.id}`)}
               >
                 <SmartImage

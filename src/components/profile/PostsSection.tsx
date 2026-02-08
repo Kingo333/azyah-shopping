@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, ChevronRight, ImageIcon } from 'lucide-react';
+import { Plus, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SmartImage } from '@/components/SmartImage';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,9 +62,9 @@ export const PostsSection: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex gap-2 overflow-hidden">
           {[1, 2].map(i => (
-            <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="w-[120px] h-[120px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       ) : !hasPosts ? (
@@ -84,7 +84,7 @@ export const PostsSection: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1">
           {posts!.map((post: any) => {
             const firstImage = post.post_images
               ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
@@ -103,7 +103,7 @@ export const PostsSection: React.FC = () => {
             return (
               <div
                 key={post.id}
-                className="relative aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer group"
+                className="relative w-[120px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
               >
                 {firstImage ? (
                   <SmartImage
