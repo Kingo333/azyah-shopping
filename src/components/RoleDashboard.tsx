@@ -35,7 +35,7 @@ import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSectio
 import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorialOverlay';
 import { CategoryTabs } from '@/components/dashboard/CategoryTabs';
 import { useUserTasteProfile } from '@/hooks/useUserTasteProfile';
-import { StyleLinkCardCompact } from '@/components/dashboard/StyleLinkCardCompact';
+// StyleLinkCardCompact removed (feature flag: style_link = false)
 import { DealsCard } from '@/components/deals/DealsCard';
 import { DealsDrawer } from '@/components/deals/DealsDrawer';
 import { useClipboardLinkDetector } from '@/hooks/useClipboardLinkDetector';
