@@ -22,6 +22,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { PostProductCircles } from '@/components/PostProductCircles';
+import { ImageIcon } from 'lucide-react';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -281,6 +283,36 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
   });
 
+  // Fetch public shopper posts (from posts table) for the Posts sub-tab
+  const { data: shopperPosts = [], isLoading: shopperPostsLoading } = useQuery({
+    queryKey: ['country-shopper-posts', shopperIds.join(',')],
+    queryFn: async () => {
+      if (shopperIds.length === 0) return [];
+      const { data } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          user_id,
+          content,
+          visibility,
+          created_at,
+          post_images(image_url, sort_order),
+          post_products(
+            product_id,
+            external_image_url,
+            external_title,
+            products:product_id(title, media_urls, image_url)
+          )
+        `)
+        .in('user_id', shopperIds)
+        .eq('visibility', 'public_explore')
+        .order('created_at', { ascending: false })
+        .limit(12);
+      return data || [];
+    },
+    enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
+  });
+
   const handleBrandClick = (slug: string) => {
     onOpenChange(false);
     navigate(`/brand/${slug}`);
@@ -343,6 +375,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   // Get total counts for posts sub-tab
   const totalOutfits = shopperFits?.length || 0;
   const totalItems = publicItems?.length || 0;
+  const totalShopperPosts = shopperPosts?.length || 0;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -679,13 +712,69 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                   ) : null}
                 </div>
               ) : (
-                // Posts Tab - Shows public outfits + public items (NOT the posts table)
-                itemsLoading ? (
+                // Posts Tab - Shows shopper posts + public outfits + public items
+                (itemsLoading || shopperPostsLoading) ? (
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
                   </div>
-                ) : (totalOutfits > 0 || totalItems > 0) ? (
+                ) : (totalShopperPosts > 0 || totalOutfits > 0 || totalItems > 0) ? (
                   <div className="space-y-6">
+                    {/* Shopper Posts Section (from posts table) */}
+                    {shopperPosts.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4 text-primary" />
+                          Shopper Posts ({totalShopperPosts})
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {shopperPosts.slice(0, isExpanded ? 12 : 6).map((post: any) => {
+                            const firstImage = post.post_images
+                              ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+                              ?.[0]?.image_url;
+
+                            const taggedProducts = (post.post_products || []).map((pp: any) => ({
+                              image_url:
+                                pp.external_image_url ||
+                                pp.products?.image_url ||
+                                (pp.products?.media_urls as any)?.[0] ||
+                                null,
+                              title: pp.external_title || pp.products?.title || 'Item',
+                            }));
+
+                            return (
+                              <Card
+                                key={post.id}
+                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                                onClick={() => {
+                                  onOpenChange(false);
+                                  navigate(`/profile/${post.user_id}`);
+                                }}
+                              >
+                                <div className="aspect-square relative overflow-hidden bg-muted">
+                                  {firstImage ? (
+                                    <SmartImage
+                                      src={firstImage}
+                                      alt={post.content || 'Post'}
+                                      className="w-full h-full object-cover"
+                                      sizes="100px"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
+                                    </div>
+                                  )}
+                                  <PostProductCircles products={taggedProducts} />
+                                </div>
+                                {post.content && (
+                                  <p className="text-[10px] p-1.5 truncate font-medium">{post.content}</p>
+                                )}
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Public Outfits Section */}
                     {shopperFits && shopperFits.length > 0 && (
                       <div>

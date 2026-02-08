@@ -24,6 +24,7 @@ import { YourFitPill } from '@/components/profile/YourFitPill';
 import { FavoritesSection } from '@/components/profile/FavoritesSection';
 import { BrandsSection } from '@/components/profile/BrandsSection';
 import { PostsSection } from '@/components/profile/PostsSection';
+import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 
 interface UserProfile {
   id: string;
@@ -199,11 +200,11 @@ const Profile: React.FC = () => {
           {/* 2. Your Fit (compact pill) */}
           <YourFitPill height={userProfile?.height} />
 
-          {/* 3. Your Favorites */}
-          <FavoritesSection />
+          {/* 3. Your Posts (carousel) */}
+          <PostsSection />
 
-          {/* 4. Your Brands */}
-          <BrandsSection />
+          {/* 4. Your Favorites (carousel) */}
+          <FavoritesSection />
 
           {/* 5. Trending Looks (smaller cards) */}
           <section className="px-4 pt-4">
@@ -254,8 +255,11 @@ const Profile: React.FC = () => {
             <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
           </section>
 
-          {/* 6. Your Posts */}
-          <PostsSection />
+          {/* 6. Wardrobe (Create & Earn + Add Items) */}
+          <ClosetOutfitsSection />
+
+          {/* 7. Your Brands */}
+          <BrandsSection />
 
           {/* 7. Events Section */}
           <section className="px-4 pt-4">
