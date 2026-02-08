@@ -261,9 +261,9 @@ function AppContent() {
                   <Route path="/share/outfit/:slug" element={<PublicOutfitView />} />
                   <Route path="/share/item/:slug" element={<PublicItemView />} />
                   
-                  {/* Style Link page - public profile with outfits */}
-                  <Route path="/u/:username" element={<StyleLinkPage />} />
-                  <Route path="/u/:username/deals" element={<PublicDealsPage />} />
+                  {/* Style Link page - disabled via feature flag, redirect to profile */}
+                  <Route path="/u/:username" element={<Navigate to="/profile" replace />} />
+                  <Route path="/u/:username/deals" element={<Navigate to="/profile" replace />} />
                   
                   {/* Legacy affiliate route - resolve username and redirect to deals */}
                   <Route path="/affiliate/:userId" element={<AffiliateRedirect />} />

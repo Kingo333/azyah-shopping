@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Camera, X, Plus, Loader2, Search, Check } from 'lucide-react';
+import { Camera, X, Plus, Loader2, Search, Check, Link2 } from 'lucide-react';
 import { useCreateStyleLinkPost, TaggedProduct } from '@/hooks/useCreateStyleLinkPost';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useToast } from '@/hooks/use-toast';
@@ -24,18 +24,22 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
 }) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Form state
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
-  const [showInExplore, setShowInExplore] = useState(true);
+  const [isPublic, setIsPublic] = useState(true);
   const [taggedProducts, setTaggedProducts] = useState<TaggedProduct[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState('');
-  
+
+  // External URL pasting
+  const [externalUrl, setExternalUrl] = useState('');
+  const [showUrlInput, setShowUrlInput] = useState(false);
+
   // Hooks
   const { createPostAsync, isLoading, uploadProgress } = useCreateStyleLinkPost();
-  
+
   // Product search - only Azyah products
   const { products: searchResults, isLoading: isSearching } = useUnifiedProducts({
     searchQuery: productSearchQuery,
@@ -47,7 +51,6 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file
     if (!file.type.startsWith('image/')) {
       toast({ description: 'Please select an image file', variant: 'destructive' });
       return;
@@ -70,17 +73,44 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
   };
 
   const handleAddProduct = (product: any) => {
-    // Check if already added
     if (taggedProducts.some(p => p.product_id === product.id)) {
       toast({ description: 'Product already added' });
       return;
     }
 
-    setTaggedProducts(prev => [...prev, {
-      product_id: product.id,
-    }]);
+    setTaggedProducts(prev => [...prev, { product_id: product.id }]);
     setProductSearchQuery('');
     toast({ description: 'Product added!' });
+  };
+
+  const handleAddExternalUrl = () => {
+    const url = externalUrl.trim();
+    if (!url) return;
+
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      toast({ description: 'Please enter a valid URL', variant: 'destructive' });
+      return;
+    }
+
+    // Extract domain as brand name hint
+    const domain = new URL(url).hostname.replace('www.', '');
+    const brandHint = domain.split('.')[0];
+
+    setTaggedProducts(prev => [
+      ...prev,
+      {
+        product_id: '', // No internal product
+        external_url: url,
+        external_title: brandHint.charAt(0).toUpperCase() + brandHint.slice(1),
+        external_brand_name: brandHint,
+      },
+    ]);
+    setExternalUrl('');
+    setShowUrlInput(false);
+    toast({ description: 'Link added!' });
   };
 
   const handleRemoveTaggedProduct = (index: number) => {
@@ -97,16 +127,16 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
       await createPostAsync({
         image: selectedImage,
         caption: caption.trim() || undefined,
-        visibility: showInExplore ? 'public_explore' : 'stylelink_only',
+        visibility: isPublic ? 'public_explore' : 'private',
         taggedProducts,
       });
 
       toast({ description: 'Post created successfully! 🎉' });
-      
+
       // Reset form
       handleRemoveImage();
       setCaption('');
-      setShowInExplore(true);
+      setIsPublic(true);
       setTaggedProducts([]);
       onOpenChange(false);
     } catch (error) {
@@ -115,6 +145,20 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
   };
 
   const getProductDisplay = (product: TaggedProduct) => {
+    // External product (URL pasted)
+    if (product.external_url) {
+      return {
+        title: product.external_title || 'External item',
+        image: product.external_image_url || undefined,
+        brand: product.external_brand_name || undefined,
+        price: undefined,
+        currency: 'USD',
+        isExternal: true,
+        url: product.external_url,
+      };
+    }
+
+    // Internal Azyah product
     if (product.product_id) {
       const found = searchResults.find(p => p.id === product.product_id);
       if (found) {
@@ -124,6 +168,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
           brand: found.brand?.name,
           price: found.price_cents,
           currency: found.currency,
+          isExternal: false,
         };
       }
     }
@@ -133,6 +178,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
       brand: undefined,
       price: undefined,
       currency: 'USD',
+      isExternal: false,
     };
   };
 
@@ -149,9 +195,9 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
             <Label className="text-sm font-medium mb-2 block">Photo</Label>
             {imagePreview ? (
               <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
+                <img
+                  src={imagePreview}
+                  alt="Preview"
                   className="w-full h-full object-cover"
                 />
                 <Button
@@ -193,13 +239,14 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
             />
           </div>
 
-          {/* Tag Azyah Products */}
+          {/* Tag Products */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Tag Azyah Products</Label>
+            <Label className="text-sm font-medium mb-2 block">Tag Products</Label>
             <p className="text-xs text-muted-foreground mb-3">
-              Link items from Azyah to your outfit post
+              Search Azyah catalog or paste an external link
             </p>
-            
+
+            {/* Search Azyah products */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -209,7 +256,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
                 className="pl-10"
               />
             </div>
-            
+
             {productSearchQuery && (
               <div className="mt-3 max-h-48 overflow-y-auto space-y-2">
                 {isSearching ? (
@@ -245,11 +292,54 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
               </div>
             )}
 
+            {/* Paste URL section */}
+            <div className="mt-3">
+              {!showUrlInput ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs gap-1.5"
+                  onClick={() => setShowUrlInput(true)}
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Paste a product link
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://brand.com/product..."
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    className="text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddExternalUrl();
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={handleAddExternalUrl} disabled={!externalUrl.trim()}>
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowUrlInput(false);
+                      setExternalUrl('');
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Tagged Products List */}
             {taggedProducts.length > 0 && (
               <div className="mt-4 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">
-                  {taggedProducts.length} product{taggedProducts.length !== 1 ? 's' : ''} tagged
+                  {taggedProducts.length} item{taggedProducts.length !== 1 ? 's' : ''} tagged
                 </p>
                 {taggedProducts.map((product, index) => {
                   const display = getProductDisplay(product);
@@ -264,6 +354,9 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
                         <p className="text-sm font-medium truncate">{display.title}</p>
                         {display.brand && (
                           <p className="text-xs text-muted-foreground">{display.brand}</p>
+                        )}
+                        {display.isExternal && display.url && (
+                          <p className="text-[10px] text-muted-foreground truncate">{display.url}</p>
                         )}
                       </div>
                       {display.price && (
@@ -284,17 +377,17 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
             )}
           </div>
 
-          {/* Visibility Toggle */}
+          {/* Visibility Toggle - simplified to Public/Private */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
             <div>
-              <p className="text-sm font-medium">Show in Explore</p>
+              <p className="text-sm font-medium">Public</p>
               <p className="text-xs text-muted-foreground">
-                Others can discover this post
+                {isPublic ? 'Visible in Explore & Feed' : 'Only visible on your profile'}
               </p>
             </div>
             <Switch
-              checked={showInExplore}
-              onCheckedChange={setShowInExplore}
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
             />
           </div>
         </div>
@@ -304,7 +397,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
           {isLoading && (
             <Progress value={uploadProgress} className="h-2" />
           )}
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={!selectedImage || isLoading}
             className="w-full"

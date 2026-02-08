@@ -4,12 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface TaggedProduct {
-  // For internal Azyah products only
+  // For internal Azyah products
   product_id: string;
   // Tap-to-tag position (0-1 normalized)
   position_x?: number;
   position_y?: number;
   label?: string;
+  // For external URL-pasted products
+  external_url?: string;
+  external_title?: string;
+  external_image_url?: string;
+  external_brand_name?: string;
 }
 
 export interface CreatePostInput {
@@ -99,10 +104,14 @@ export const useCreateStyleLinkPost = () => {
       if (input.taggedProducts && input.taggedProducts.length > 0) {
         const productRecords = input.taggedProducts.map(product => ({
           post_id: post.id,
-          product_id: product.product_id,
+          product_id: product.product_id || null,
           position_x: product.position_x ?? null,
           position_y: product.position_y ?? null,
           label: product.label || null,
+          external_url: product.external_url || null,
+          external_title: product.external_title || null,
+          external_image_url: product.external_image_url || null,
+          external_brand_name: product.external_brand_name || null,
         }));
 
         const { error: productsError } = await supabase

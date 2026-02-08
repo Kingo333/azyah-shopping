@@ -378,12 +378,7 @@ const RoleDashboard: React.FC = () => {
         <DealsCard onOpenDeals={() => setDealsDrawerOpen(true)} />
       </div>
 
-      {/* Row 1: StyleLink (full width) */}
-      <div className="px-4 pb-2">
-        <div className="rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-background p-2 flex items-center gap-2">
-          <StyleLinkCardCompact />
-        </div>
-      </div>
+      {/* StyleLink removed - disabled via feature flag */}
 
       {/* Row 2: Style Profile (full width) */}
       <div className="px-4 pb-2">
