@@ -10,7 +10,7 @@ import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import HorizontalCarousel from './HorizontalCarousel';
 import FollowButton from './FollowButton';
-import { useFollows } from '@/hooks/useFollows';
+import { useFollowBrands } from '@/hooks/useFollowBrands';
 
 interface BrandWithProducts {
   id: string;
@@ -28,7 +28,7 @@ interface BrandWithProducts {
 
 export const BrandsTab: React.FC = () => {
   const navigate = useNavigate();
-  const { isFollowing, toggleFollow, isToggling } = useFollows();
+  const { isFollowingBrand, toggleFollowBrand, isToggling } = useFollowBrands();
 
   const { data: brands, isLoading } = useQuery({
     queryKey: ['explore-brands-with-products'],
@@ -109,8 +109,8 @@ export const BrandsTab: React.FC = () => {
                 </AvatarFallback>
               </Avatar>
               <FollowButton
-                isFollowing={isFollowing(brand.id)}
-                onToggle={() => toggleFollow(brand.id)}
+                isFollowing={isFollowingBrand(brand.id)}
+                onToggle={() => toggleFollowBrand(brand.id)}
                 isLoading={isToggling}
               />
             </div>

@@ -5,7 +5,7 @@ import { SmartImage } from '@/components/SmartImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useProductLikes } from '@/hooks/useProductLikes';
 import type { Product } from '@/types';
 import { CommunityOutfitBlock } from './CommunityOutfitBlock';
 
@@ -27,8 +27,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   onTryOnClick,
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
+  const { isLiked, toggleLike } = useProductLikes();
   const [communityOutfits, setCommunityOutfits] = useState<any[]>([]);
 
   // Fetch community outfits for interleaving
@@ -56,51 +55,9 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     fetchCommunityOutfits();
   }, []);
 
-  // Fetch user's liked products
-  useEffect(() => {
-    const fetchLiked = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from('swipes')
-        .select('product_id')
-        .eq('user_id', user.id)
-        .eq('action', 'right');
-      
-      if (data) {
-        setLikedProducts(new Set(data.map(d => d.product_id).filter(Boolean) as string[]));
-      }
-    };
-
-    fetchLiked();
-  }, [user?.id]);
-
-  const handleLikeToggle = async (productId: string, e: React.MouseEvent) => {
+  const handleLikeToggle = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user?.id) return;
-
-    const isLiked = likedProducts.has(productId);
-    
-    if (isLiked) {
-      setLikedProducts(prev => {
-        const next = new Set(prev);
-        next.delete(productId);
-        return next;
-      });
-      await supabase
-        .from('swipes')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('product_id', productId);
-    } else {
-      setLikedProducts(prev => new Set(prev).add(productId));
-      await supabase
-        .from('swipes')
-        .insert({ 
-          user_id: user.id, 
-          product_id: productId, 
-          action: 'right' as const
-        });
-    }
+    toggleLike(productId);
   };
 
   const handleProductClick = (product: Product) => {
@@ -157,7 +114,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
             <MasonryProductCard
               key={product.id}
               product={product}
-              isLiked={likedProducts.has(product.id)}
+              isLiked={isLiked(product.id)}
               index={i + idx}
               onLikeToggle={(e) => handleLikeToggle(product.id, e)}
               onClick={() => handleProductClick(product)}

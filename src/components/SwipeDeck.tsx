@@ -362,9 +362,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             });
           }
 
-          // Invalidate likes cache so Likes page updates
+          // Invalidate all likes caches so every view updates instantly
           queryClient.invalidateQueries({ queryKey: ['likes'] });
           queryClient.invalidateQueries({ queryKey: ['liked-products'] });
+          queryClient.invalidateQueries({ queryKey: ['product-likes'] });
         } catch (error) {
           // Silent fail
         }

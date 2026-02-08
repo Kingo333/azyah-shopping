@@ -21,6 +21,7 @@ import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { logger } from '@/utils/logger';
+import { useProductLikes } from '@/hooks/useProductLikes';
 
 interface TrendingProduct {
   id: string;
@@ -42,6 +43,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const queryClient = useQueryClient();
   const [api, setApi] = React.useState<any>();
   const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
+  const { isLiked: isProductLiked, toggleLike } = useProductLikes();
 
   const { data: trendingProducts, isLoading, error } = useQuery({
     queryKey: ['trending-products-engagement', limit, categoryFilter],
@@ -486,11 +488,11 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                     onClick={(e) => {
                       e.stopPropagation();
                       requireAuth('save likes', () => {
-                        addToLikesMutation.mutate(product.id);
+                        toggleLike(product.id);
                       });
                     }}
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className={`h-4 w-4 ${isProductLiked(product.id) ? 'fill-current text-red-500' : ''}`} />
                   </Button>
                   <Button
                     size="sm"
