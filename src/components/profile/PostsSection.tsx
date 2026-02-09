@@ -63,24 +63,21 @@ export const PostsSection: React.FC = () => {
 
       {isLoading ? (
         <div className="flex gap-1.5 overflow-hidden">
-          {[1, 2].map(i => (
-            <div key={i} className="w-[100px] h-[100px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
+          {[1, 2, 3].map(i => (
+            <div key={i} className="w-[90px] h-[120px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       ) : !hasPosts ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-center">
-          <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm font-medium text-foreground mb-1">Share your outfits</p>
-          <p className="text-xs text-muted-foreground mb-4">
-            Post your looks and tag what you wore.
-          </p>
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card/50 p-3">
+          <ImageIcon className="h-6 w-6 text-muted-foreground/40 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground flex-1">Share your looks & tag what you wore.</p>
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full text-xs"
+            className="rounded-full text-[10px] h-7 px-3 flex-shrink-0"
             onClick={() => setShowCreateModal(true)}
           >
-            Create your first post
+            Create post
           </Button>
         </div>
       ) : (
@@ -103,7 +100,7 @@ export const PostsSection: React.FC = () => {
             return (
               <div
                 key={post.id}
-                className="relative w-[100px] h-[100px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
+                className="relative w-[90px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
               >
                 {firstImage ? (
                   <SmartImage

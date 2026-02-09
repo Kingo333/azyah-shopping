@@ -48,6 +48,7 @@ export const useLikedProducts = () => {
           price_cents,
           currency,
           media_urls,
+          image_url,
           external_url,
           brands (name)
         `)
