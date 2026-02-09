@@ -62,9 +62,9 @@ export const PostsSection: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex gap-2 overflow-hidden">
+        <div className="flex gap-1.5 overflow-hidden">
           {[1, 2].map(i => (
-            <div key={i} className="w-[120px] h-[120px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="w-[100px] h-[100px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       ) : !hasPosts ? (
@@ -84,7 +84,7 @@ export const PostsSection: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1">
           {posts!.map((post: any) => {
             const firstImage = post.post_images
               ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
@@ -103,7 +103,7 @@ export const PostsSection: React.FC = () => {
             return (
               <div
                 key={post.id}
-                className="relative w-[120px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
+                className="relative w-[100px] h-[100px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
               >
                 {firstImage ? (
                   <SmartImage

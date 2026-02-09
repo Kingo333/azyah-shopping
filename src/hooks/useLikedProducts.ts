@@ -32,7 +32,10 @@ export const useLikedProducts = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (likesError) throw likesError;
+      if (likesError) {
+        console.error('[useLikedProducts] likes query failed:', likesError);
+        throw likesError;
+      }
       if (!likeData?.length) return [];
 
       // Then get the products with their details
@@ -50,7 +53,10 @@ export const useLikedProducts = () => {
         `)
         .in('id', productIds);
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error('[useLikedProducts] products query failed:', productsError);
+        throw productsError;
+      }
 
       // Combine the data and return products directly
       const result = likeData.map(like => {
