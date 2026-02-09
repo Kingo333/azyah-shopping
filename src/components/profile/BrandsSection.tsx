@@ -36,19 +36,16 @@ export const BrandsSection: React.FC = () => {
           ))}
         </div>
       ) : !hasBrands ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-center">
-          <Store className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm font-medium text-foreground mb-1">Follow brands you love</p>
-          <p className="text-xs text-muted-foreground mb-4">
-            See their latest drops on your profile.
-          </p>
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-card/50 p-3">
+          <Store className="h-6 w-6 text-muted-foreground/40 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground flex-1">Follow brands to see their latest drops.</p>
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full text-xs"
+            className="rounded-full text-[10px] h-7 px-3 flex-shrink-0"
             onClick={() => navigate('/explore?tab=brands')}
           >
-            Browse brands
+            Browse
           </Button>
         </div>
       ) : (
