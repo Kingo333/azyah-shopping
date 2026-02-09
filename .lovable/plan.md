@@ -1,121 +1,71 @@
 
 
-# Profile Layout Reorder + Wardrobe Cards + Carousel Sections + Public Posts on Explore
+# Fix Profile Section Sizes + Favorites Bug + Capacitor Versions
 
-## Summary
+## 1. Make Posts and Brands Sections Smaller
 
-Three areas of work:
-1. **Profile page**: Reorder sections, convert Favorites and Posts to small horizontal carousels, bring back the Wardrobe (ClosetOutfitsSection) with its "Create & Earn" and "Add your items" cards
-2. **Explore page (CountryDrawer)**: Add actual public shopper posts from the `posts` table to the "Posts" sub-tab, shown alongside existing community outfits and shared items
+Both sections will be made more compact to match the visual weight of the Favorites carousel.
 
----
+**PostsSection (`src/components/profile/PostsSection.tsx`):**
+- Reduce card size from `w-[120px] h-[120px]` to `w-[100px] h-[100px]`
+- Reduce loading skeleton to match
+- Reduce gap from `gap-2` to `gap-1.5`
 
-## 1. Profile Page Section Reorder
+**BrandsSection (`src/components/profile/BrandsSection.tsx`):**
+- Reduce avatar circles from `h-12 w-12` to `h-10 w-10`
+- Reduce loading skeletons from `w-12 h-12` to `w-10 h-10`
+- Reduce label width from `w-14` to `w-12`
+- Tighten gap from `gap-3` to `gap-2.5`
 
-Current order:
-```text
-1. ProfileSummaryCard
-2. YourFitPill
-3. FavoritesSection (2x2 grid)
-4. BrandsSection
-5. Trending Looks
-6. PostsSection (2-column grid)
-7. Events
-8. Benefits & Offers
+## 2. Fix Favorites Not Showing Liked Products
+
+Two issues to address:
+
+**A. Silent error swallowing in `useLikedProducts` (`src/hooks/useLikedProducts.ts`):**
+- Add `console.error` logging when queries fail so errors surface in devtools
+- The hook currently catches errors and throws them to React Query, but the component never checks the `error` return value
+- Add a brief error state to `FavoritesSection.tsx` that shows when the query fails instead of showing the empty "Save items you love" placeholder
+
+**B. Image loading issue in SmartImage (`src/components/SmartImage.tsx`):**
+- Remove `crossOrigin="anonymous"` from the `<img>` tag -- this attribute forces CORS preflight requests on CDN images (like ASOS) that may not support it, causing images to fail loading silently
+- The `srcSet` functionality still works without this attribute for same-origin and CORS-enabled sources
+
+**C. Add error visibility in FavoritesSection (`src/components/profile/FavoritesSection.tsx`):**
+- Check the `error` return value from `useLikedProducts`
+- If error exists and no data loaded, show a small retry message instead of the empty state
+- This will help surface any remaining issues with the likes query
+
+## 3. Fix Capacitor Package Version Consistency
+
+**Package (`package.json`):**
+
+Current inconsistency:
+```
+@capacitor/app:        ^7.1.1
+@capacitor/browser:    ^7.0.3
+@capacitor/cli:        ^7.4.4
+@capacitor/clipboard:  ^8.0.0   <-- version 8, wrong!
+@capacitor/core:       ^7.4.4
+@capacitor/ios:        ^7.4.4
+@capacitor/share:      ^7.0.3
+@capacitor/status-bar: ^7.0.4
 ```
 
-New order:
-```text
-1. ProfileSummaryCard
-2. YourFitPill
-3. PostsSection (small horizontal carousel)    <-- moved UP, changed to carousel
-4. FavoritesSection (small horizontal carousel) <-- changed to carousel
-5. Trending Looks
-6. Wardrobe / ClosetOutfitsSection (brought back) <-- RE-ADDED
-7. BrandsSection                                <-- moved down
-8. Events
-9. Benefits & Offers
+Fix: Downgrade `@capacitor/clipboard` from `^8.0.0` to `^7.0.0` so all Capacitor packages are on the same major version 7.
+
+---
+
+## Files Changed
+
+```
+File                                            | Action
+------------------------------------------------|--------
+src/components/profile/PostsSection.tsx         | Edit -- reduce card size to 100x100
+src/components/profile/BrandsSection.tsx         | Edit -- reduce avatar to h-10 w-10
+src/hooks/useLikedProducts.ts                   | Edit -- add error logging
+src/components/profile/FavoritesSection.tsx      | Edit -- add error state handling
+src/components/SmartImage.tsx                    | Edit -- remove crossOrigin="anonymous"
+package.json                                    | Edit -- @capacitor/clipboard ^8.0.0 to ^7.0.0
 ```
 
-**File: `src/pages/Profile.tsx`**
-- Import `ClosetOutfitsSection`
-- Reorder the JSX sections to match the new order above
-
----
-
-## 2. FavoritesSection: Convert to Small Horizontal Carousel
-
-Currently shows a 2x2 grid of 4 liked products. Will be changed to a **small horizontal scroll carousel** (similar to trending but smaller cards).
-
-**File: `src/components/profile/FavoritesSection.tsx`**
-- Replace the 2x2 grid with a horizontal scrollable row
-- Show up to 4 liked product cards as small square thumbnails (~28vw wide) in a scrollable strip
-- Each card: rounded-xl, product image, tappable (navigates to `/p/{id}`)
-- Keep the existing `useLikedProducts` hook (reads from `likes` table -- properly linked to hearts)
-- Keep empty state as-is
-- Keep "View all" link
-
----
-
-## 3. PostsSection: Convert to Small Horizontal Carousel
-
-Currently shows a 2-column grid. Will be changed to a **small horizontal scroll carousel** matching Favorites style.
-
-**File: `src/components/profile/PostsSection.tsx`**
-- Replace the 2-column grid with a horizontal scrollable row
-- Each post card: small square thumbnail with `PostProductCircles` overlay
-- Keep "+ New post" button in the header
-- Keep empty state as-is
-- Keep the `CreateStyleLinkPostModal` trigger
-
----
-
-## 4. Bring Back Wardrobe / ClosetOutfitsSection
-
-The existing `ClosetOutfitsSection` component has both the "Add your items" card (left -- shows wardrobe item thumbnails with a + button) and the "Create & Earn" card (right -- shows cycling community outfit images with creator info). This component is fully functional and just needs to be re-added to the Profile page.
-
-**File: `src/pages/Profile.tsx`**
-- Import `ClosetOutfitsSection` from `@/components/dashboard/ClosetOutfitsSection`
-- Render it between Trending Looks and Brands sections
-
----
-
-## 5. Public Posts on Explore (CountryDrawer)
-
-The "Posts" sub-tab in the CountryDrawer currently shows only community outfits (from `fits` table) and shared wardrobe items. It does NOT show actual shopper posts from the `posts` table.
-
-**File: `src/components/globe/CountryDrawer.tsx`**
-
-Add a new section "Shopper Posts" at the top of the Posts sub-tab:
-- New query: fetch posts from `posts` table where `visibility = 'public_explore'` and `user_id` is in the `shopperIds` array for the selected country
-- Also fetch `post_images` (for thumbnails) and `post_products` (for product circle overlays)
-- Render as a 3-column grid of post image cards, matching the existing community outfits style
-- Each card shows the first post image with `PostProductCircles` overlay
-- Section header: "Shopper Posts" with a Sparkles icon and count
-- Appears above the existing "Community Outfits" and "Shared Items" sections
-- If no shopper posts exist for that country, section is simply not shown
-
----
-
-## Files Changed Summary
-
-```text
-File                                              | Action
---------------------------------------------------|--------
-src/pages/Profile.tsx                             | Edit -- reorder sections, add ClosetOutfitsSection import
-src/components/profile/FavoritesSection.tsx        | Edit -- convert 2x2 grid to horizontal scroll carousel
-src/components/profile/PostsSection.tsx            | Edit -- convert 2-col grid to horizontal scroll carousel
-src/components/globe/CountryDrawer.tsx             | Edit -- add public posts query + section to Posts sub-tab
-```
-
-No new files, no database changes needed. All queries use existing tables and RLS policies.
-
----
-
-## Technical Notes
-
-- **Favorites carousel** uses `useLikedProducts` hook which reads from the `likes` table -- this is the same source of truth as swipe hearts, so the sync is correct
-- **Posts carousel** uses the existing `user-posts` query that fetches from the `posts` table with `post_images` and `post_products` joins
-- **ClosetOutfitsSection** is already a complete component used on the RoleDashboard -- it includes wardrobe items preview, community outfit cycling, "Create & Earn" CTA, and guest mode handling
-- **CountryDrawer posts** will query `posts` with `visibility = 'public_explore'` and filter by shopper IDs in the selected country, reusing the `PostProductCircles` component for product overlays
-- Carousel styling: horizontal overflow-x-auto with `scrollbar-hide`, `snap-x`, small gap, cards sized at approximately 120-130px square to feel compact (smaller than trending cards)
+Total: 6 small edits. No database changes.
