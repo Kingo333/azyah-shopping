@@ -93,7 +93,6 @@ export const SmartImage = ({
         )}
         loading={loading}
         decoding="async"
-        crossOrigin="anonymous"
         onLoad={handleLoad}
         onError={handleError}
       />

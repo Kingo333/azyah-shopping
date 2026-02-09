@@ -30,9 +30,9 @@ export const BrandsSection: React.FC = () => {
       </div>
 
       {followsLoading ? (
-        <div className="flex gap-3">
+        <div className="flex gap-2.5">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="w-12 h-12 rounded-full bg-muted animate-pulse" />
+            <div key={i} className="w-10 h-10 rounded-full bg-muted animate-pulse" />
           ))}
         </div>
       ) : !hasBrands ? (
@@ -52,20 +52,20 @@ export const BrandsSection: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
           {previewBrands.map(brand => (
             <div
               key={brand.brand_id}
               className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0"
               onClick={() => navigate(`/brand/${brand.slug}`)}
             >
-              <Avatar className="h-12 w-12 ring-1 ring-border">
+              <Avatar className="h-10 w-10 ring-1 ring-border">
                 <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                <AvatarFallback className="text-xs font-semibold bg-muted">
+                <AvatarFallback className="text-[10px] font-semibold bg-muted">
                   {brand.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-[10px] text-muted-foreground truncate w-14 text-center">
+              <p className="text-[10px] text-muted-foreground truncate w-12 text-center">
                 {brand.name}
               </p>
             </div>

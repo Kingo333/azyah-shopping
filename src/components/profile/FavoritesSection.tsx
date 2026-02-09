@@ -7,7 +7,7 @@ import { useLikedProducts } from '@/hooks/useLikedProducts';
 
 export const FavoritesSection: React.FC = () => {
   const navigate = useNavigate();
-  const { likedProducts, isLoading, hasLikedProducts } = useLikedProducts();
+  const { likedProducts, isLoading, hasLikedProducts, error } = useLikedProducts();
 
   // Show first 4 liked products in carousel
   const previewItems = (likedProducts || []).slice(0, 4);
@@ -34,6 +34,22 @@ export const FavoritesSection: React.FC = () => {
           {[1, 2, 3].map(i => (
             <div key={i} className="w-[120px] h-[120px] flex-shrink-0 rounded-xl bg-muted animate-pulse" />
           ))}
+        </div>
+      ) : error && !hasLikedProducts ? (
+        <div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 p-6 text-center">
+          <Heart className="h-8 w-8 text-destructive/40 mx-auto mb-3" />
+          <p className="text-sm font-medium text-foreground mb-1">Couldn't load favorites</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Something went wrong. Try again later.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
         </div>
       ) : !hasLikedProducts ? (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-center">
