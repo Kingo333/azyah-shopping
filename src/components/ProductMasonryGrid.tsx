@@ -173,7 +173,6 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   const renderContent = () => {
     const chunks: React.ReactNode[] = [];
     const chunkSize = communityOutfitsInterval;
-    let userPostIndex = 0;
     
     for (let i = 0; i < products.length; i += chunkSize) {
       const chunk = products.slice(i, i + chunkSize);
@@ -202,14 +201,9 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         const isEvenChunk = chunkIndex % 2 === 0;
         
         if (isEvenChunk && userPosts.length > 0) {
-          // User post block first
-          const post = userPosts[userPostIndex % userPosts.length];
-          if (post) {
-            chunks.push(
-              <UserPostBlock key={`userpost-${i}`} post={post} />
-            );
-            userPostIndex++;
-          }
+          chunks.push(
+            <UserPostBlock key={`userpost-${i}`} posts={userPosts} />
+          );
         } else if (!isEvenChunk && communityOutfits.length > 0) {
           // Community outfit block second
           const outfitSlice = communityOutfits.slice(
