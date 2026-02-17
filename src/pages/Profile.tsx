@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '@/components/DashboardHeader';
 import GlobalSearch from '@/components/GlobalSearch';
 import { ChevronRight, Gift, CalendarIcon, MapPin } from 'lucide-react';
+import AiStudioModal from '@/components/AiStudioModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
@@ -51,6 +52,7 @@ const Profile: React.FC = () => {
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
+  const [showAiStudio, setShowAiStudio] = useState(false);
 
   const { followedBrands } = useFollowBrands();
 
@@ -255,7 +257,7 @@ const Profile: React.FC = () => {
                 </PopoverContent>
               </Popover>
             </div>
-            <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
+            <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} onTryOnClick={() => setShowAiStudio(true)} />
           </section>
 
           {/* 6. Wardrobe (Create & Earn + Add Items) */}
@@ -355,6 +357,12 @@ const Profile: React.FC = () => {
         <CreateStyleLinkPostModal
           open={showCreatePostModal}
           onOpenChange={setShowCreatePostModal}
+        />
+
+        {/* AI Studio Modal for Try-On */}
+        <AiStudioModal 
+          open={showAiStudio} 
+          onClose={() => setShowAiStudio(false)} 
         />
       </div>
     </ErrorBoundary>

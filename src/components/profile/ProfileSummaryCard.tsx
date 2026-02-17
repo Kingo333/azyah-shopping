@@ -34,20 +34,20 @@ export const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
       .slice(0, 2);
 
   return (
-    <div className="flex flex-col items-center pt-6 pb-4 px-4">
-      <Avatar className="h-20 w-20 ring-2 ring-border shadow-sm">
+    <div className="flex flex-col items-center pt-3 pb-2 px-4">
+      <Avatar className="h-16 w-16 ring-2 ring-border shadow-sm">
         <AvatarImage src={userProfile?.avatar_url} alt={displayName} />
         <AvatarFallback className="text-lg font-semibold bg-muted text-muted-foreground">
           {getInitials(displayName)}
         </AvatarFallback>
       </Avatar>
 
-      <h1 className="mt-3 text-lg font-semibold text-foreground">{displayName}</h1>
+      <h1 className="mt-2 text-lg font-semibold text-foreground">{displayName}</h1>
       {username && (
         <p className="text-sm text-muted-foreground">@{username}</p>
       )}
 
-      <div className="flex items-center gap-6 mt-3">
+      <div className="flex items-center gap-6 mt-2">
         <div className="text-center">
           <p className="text-sm font-semibold text-foreground">{postsCount}</p>
           <p className="text-xs text-muted-foreground">Posts</p>
@@ -59,7 +59,7 @@ export const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-4">
+      <div className="flex items-center gap-2 mt-2">
         <Button
           variant="outline"
           size="sm"

@@ -37,9 +37,10 @@ interface TrendingProduct {
 interface TrendingStylesCarouselProps {
   limit?: number;
   categoryFilter?: TopCategory;
+  onTryOnClick?: (product: TrendingProduct) => void;
 }
 
-const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8, categoryFilter }) => {
+const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8, categoryFilter, onTryOnClick }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -506,7 +507,11 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                     className="h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm p-0"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/p/${product.id}?tryon=true`);
+                      if (onTryOnClick) {
+                        onTryOnClick(product);
+                      } else {
+                        navigate(`/p/${product.id}?tryon=true`);
+                      }
                     }}
                   >
                     <Shirt className="h-3.5 w-3.5 text-white" />

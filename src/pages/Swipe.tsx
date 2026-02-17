@@ -390,7 +390,7 @@ const Swipe = () => {
               style={{ bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }}
             >
               <button onClick={() => navigate('/swipe')} className="p-1.5">
-                <ShoppingBag className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+                <ShoppingBag className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" strokeWidth={1.5} />
               </button>
               <button onClick={() => navigate('/explore')} className="p-1.5">
                 <Globe className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
