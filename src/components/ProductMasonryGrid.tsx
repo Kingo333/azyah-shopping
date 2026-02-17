@@ -37,17 +37,30 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     const fetchCommunityOutfits = async () => {
       const { data } = await supabase
         .from('fits')
-        .select('*, user:users(name, avatar_url)')
+        .select('id, name, title, image_preview, render_path, user_id, is_public')
         .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(10);
       
-      if (data) {
+      if (data && data.length > 0) {
+        // Fetch user info separately since fits has no FK to users
+        const userIds = [...new Set(data.map((fit: any) => fit.user_id).filter(Boolean))];
+        let usersMap: Record<string, any> = {};
+        if (userIds.length > 0) {
+          const { data: usersData } = await supabase
+            .from('users')
+            .select('id, name, avatar_url')
+            .in('id', userIds);
+          if (usersData) {
+            usersData.forEach((u: any) => { usersMap[u.id] = u; });
+          }
+        }
+
         const mappedOutfits = data.map((fit: any) => ({
           id: fit.id,
           name: fit.name || fit.title,
           image_url: fit.image_preview || fit.render_path,
-          user: fit.user
+          user: usersMap[fit.user_id] || null
         }));
         setCommunityOutfits(mappedOutfits);
       }
@@ -65,7 +78,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
           id, content, user_id,
           user:users(id, name, avatar_url),
           post_images(image_url),
-          post_products(image_url, title, product_id, external_url)
+          post_products(external_image_url, external_title, product_id, external_url)
         `)
         .eq('visibility', 'public_explore')
         .not('post_images', 'is', null)
@@ -80,7 +93,12 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
             content: p.content,
             user: p.user,
             images: p.post_images,
-            products: p.post_products || [],
+            products: (p.post_products || []).map((pp: any) => ({
+              image_url: pp.external_image_url,
+              title: pp.external_title,
+              product_id: pp.product_id,
+              external_url: pp.external_url,
+            })),
           }));
         setUserPosts(mapped);
       }
