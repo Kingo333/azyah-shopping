@@ -56,12 +56,11 @@ export const BottomNavigation: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
 
   const isActive = (path: string) => {
-    // Profile matches /profile and /dashboard (legacy redirect)
     if (path === '/profile') {
       return location.pathname === '/profile' || location.pathname === '/dashboard';
     }
     if (path === '/swipe') {
-      return AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route) && route !== '/explore');
+      return location.pathname === '/swipe';
     }
     return location.pathname.startsWith(path);
   };

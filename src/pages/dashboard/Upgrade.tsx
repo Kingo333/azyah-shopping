@@ -40,7 +40,7 @@ const comparisonFeatures = [
   { name: 'Create outfits', free: '5 total', premium: 'Unlimited' },
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
-  { name: 'AI Try-on', free: '4 total', premium: '10/day' },
+  { name: 'AI Try-on', free: '5 total', premium: '10/day' },
   
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Points → Credits', free: false, premium: true },
@@ -273,9 +273,9 @@ export default function Upgrade() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-primary/5">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b px-4 py-2 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white/70 backdrop-blur-xl border-b border-white/20 px-4 py-2 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -284,7 +284,7 @@ export default function Upgrade() {
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         {/* Hero - Compact */}
-        <div className="text-center flex flex-col items-center gap-1">
+        <div className="text-center flex flex-col items-center gap-1 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <Crown className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-bold">Unlock Azyah Premium</h2>
           <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
@@ -303,17 +303,19 @@ export default function Upgrade() {
         {/* Plan Selection - Compact cards */}
         <div className="space-y-2">
           {/* Yearly */}
-          <Card
+          <div
             onClick={() => setSelectedPlan('yearly')}
             className={cn(
-              "cursor-pointer transition-all relative",
-              selectedPlan === 'yearly' && "border-primary ring-2 ring-primary"
+              "cursor-pointer transition-all relative rounded-lg border p-0 overflow-hidden",
+              selectedPlan === 'yearly' 
+                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))]" 
+                : "bg-white/60 backdrop-blur-lg border-white/30"
             )}
           >
             <div className="absolute -top-2 left-4 bg-foreground text-background px-2 py-0.5 rounded-full text-[10px] font-bold">
               BEST VALUE
             </div>
-            <CardContent className="p-3 flex items-center justify-between">
+            <div className="p-3 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
                 <p className="text-xs text-muted-foreground">
@@ -325,20 +327,22 @@ export default function Upgrade() {
                   {yearlyMonthlyEquivalent}
                   <span className="text-xs text-muted-foreground">/mo</span>
                 </span>
-                {selectedPlan === 'yearly' && <Check className="h-5 w-5 text-primary" />}
+                {selectedPlan === 'yearly' && <Check className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Monthly */}
-          <Card
+          <div
             onClick={() => setSelectedPlan('monthly')}
             className={cn(
-              "cursor-pointer transition-all",
-              selectedPlan === 'monthly' && "border-primary ring-2 ring-primary"
+              "cursor-pointer transition-all rounded-lg border p-0 overflow-hidden",
+              selectedPlan === 'monthly' 
+                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))]" 
+                : "bg-white/60 backdrop-blur-lg border-white/30"
             )}
           >
-            <CardContent className="p-3 flex items-center justify-between">
+            <div className="p-3 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Monthly</h3>
                 <p className="text-xs text-muted-foreground">Billed monthly</p>
@@ -348,10 +352,10 @@ export default function Upgrade() {
                   {monthlyPrice.priceString}
                   <span className="text-xs text-muted-foreground">/mo</span>
                 </span>
-                {selectedPlan === 'monthly' && <Check className="h-5 w-5 text-primary" />}
+                {selectedPlan === 'monthly' && <Check className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" />}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Free */}
           <button
@@ -366,11 +370,11 @@ export default function Upgrade() {
         </div>
 
         {/* Comparison Table - Compact */}
-        <Card>
-          <CardHeader className="pb-2 pt-3 px-3">
-            <CardTitle className="text-sm">Free vs Premium</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="bg-white/50 backdrop-blur-xl rounded-lg border border-white/20 overflow-hidden">
+          <div className="pb-2 pt-3 px-3">
+            <h3 className="text-sm font-semibold">Free vs Premium</h3>
+          </div>
+          <div className="p-0">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b">
@@ -405,8 +409,8 @@ export default function Upgrade() {
                 ))}
               </tbody>
             </table>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* CTA */}
         <div className="space-y-2">
