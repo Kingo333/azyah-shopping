@@ -17,6 +17,7 @@ import { isGuestMode } from '@/hooks/useGuestMode';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useFollowBrands } from '@/hooks/useFollowBrands';
+import CreateStyleLinkPostModal from '@/components/stylelink/CreateStyleLinkPostModal';
 
 // Profile section components
 import { ProfileSummaryCard } from '@/components/profile/ProfileSummaryCard';
@@ -49,6 +50,7 @@ const Profile: React.FC = () => {
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
 
   const { followedBrands } = useFollowBrands();
 
@@ -195,6 +197,7 @@ const Profile: React.FC = () => {
             userProfile={userProfile}
             postsCount={postsCount || 0}
             brandsCount={followedBrands.length}
+            onNewPost={() => setShowCreatePostModal(true)}
           />
 
           {/* 2. Your Fit (compact pill) */}
@@ -346,6 +349,12 @@ const Profile: React.FC = () => {
           }}
           initialQuery={searchInitialQuery}
           initialTab={searchInitialTab}
+        />
+
+        {/* Create Post Modal from Profile Summary */}
+        <CreateStyleLinkPostModal
+          open={showCreatePostModal}
+          onOpenChange={setShowCreatePostModal}
         />
       </div>
     </ErrorBoundary>
