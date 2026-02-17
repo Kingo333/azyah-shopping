@@ -479,12 +479,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
-                {/* Top-right action buttons */}
-                <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Always-visible heart button */}
+                <div className="absolute top-2 right-2 z-10">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                    className="h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm p-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       requireAuth('save likes', () => {
@@ -492,12 +492,16 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                       });
                     }}
                   >
-                    <Heart className={`h-4 w-4 ${isProductLiked(product.id) ? 'fill-current text-red-500' : ''}`} />
+                    <Heart className={`h-3.5 w-3.5 ${isProductLiked(product.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
                   </Button>
+                </div>
+
+                {/* Wishlist button on hover */}
+                <div className="absolute top-10 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                    className="h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm p-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       requireAuth('add to wishlist', () => {
@@ -505,7 +509,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                       });
                     }}
                   >
-                    <ShoppingBag className="h-4 w-4" />
+                    <ShoppingBag className="h-3.5 w-3.5 text-white" />
                   </Button>
                 </div>
                 

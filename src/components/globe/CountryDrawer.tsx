@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play, Shirt, Sparkles, EyeOff, Eye, User } from 'lucide-react';
 import {
@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { PostProductCircles } from '@/components/PostProductCircles';
 import { ImageIcon } from 'lucide-react';
+import { useFollows } from '@/hooks/useFollows';
+import { useFollowBrands } from '@/hooks/useFollowBrands';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -85,6 +87,25 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const [drawerTab, setDrawerTab] = useState<'brands' | 'products'>('brands');
   const [shoppersSubTab, setShoppersSubTab] = useState<'people' | 'posts'>('people');
 
+  // Swipe-to-expand state
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].screenY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const deltaY = touchStartY.current - e.changedTouches[0].screenY;
+    if (deltaY > 50) setIsExpanded(true);
+    else if (deltaY < -50) setIsExpanded(false);
+    touchStartY.current = null;
+  };
+
+  // Follow hooks
+  const { isFollowing, toggleFollow } = useFollows();
+  const { isFollowingBrand, toggleFollowBrand } = useFollowBrands();
+
   // Fetch current user's profile and visibility status
   const { data: currentUserProfile } = useQuery({
     queryKey: ['current-user-profile', user?.id],
@@ -100,12 +121,10 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: !!user?.id && open && activeTab === 'shoppers',
   });
 
-  // Check if user is visible on globe (default true)
   const isVisibleOnGlobe = currentUserProfile?.preferences 
     ? (currentUserProfile.preferences as Record<string, unknown>).visible_on_globe !== false
     : true;
 
-  // Mutation to toggle visibility
   const toggleVisibilityMutation = useMutation({
     mutationFn: async (visible: boolean) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -136,7 +155,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     },
   });
 
-  // Fetch current user's public fits
+  // Fetch current user's public fits (kept for Posts tab)
   const { data: currentUserFits } = useQuery({
     queryKey: ['current-user-fits', user?.id],
     queryFn: async (): Promise<ShopperFit[]> => {
@@ -153,7 +172,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: !!user?.id && open && activeTab === 'shoppers',
   });
 
-  // Fetch current user's public wardrobe items
+  // Fetch current user's public wardrobe items (kept for Posts tab)
   const { data: currentUserItems } = useQuery({
     queryKey: ['current-user-public-items', user?.id],
     queryFn: async (): Promise<PublicWardrobeItem[]> => {
@@ -208,7 +227,6 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     queryFn: async (): Promise<CountryShopper[]> => {
       if (!countryCode) return [];
       
-      // For GLOBAL, get users without a country set or with unrecognized country
       if (countryCode === 'GLOBAL') {
         const usersResult = await supabase
           .from('users')
@@ -225,7 +243,6 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
           .limit(20);
         return (data ?? []) as CountryShopper[];
       } else {
-        // Convert country CODE to NAME for query (e.g., "AE" -> "United Arab Emirates")
         const countryNameForQuery = getCountryNameFromCode(countryCode);
         if (!countryNameForQuery) return [];
         
@@ -266,7 +283,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
   });
 
-  // Fetch public wardrobe items from shoppers in this country (for Posts sub-tab)
+  // Fetch public wardrobe items from shoppers
   const { data: publicItems = [], isLoading: itemsLoading } = useQuery({
     queryKey: ['country-public-items', shopperIds.join(',')],
     queryFn: async (): Promise<PublicWardrobeItem[]> => {
@@ -283,7 +300,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
   });
 
-  // Fetch public shopper posts (from posts table) for the Posts sub-tab
+  // Fetch public shopper posts
   const { data: shopperPosts = [], isLoading: shopperPostsLoading } = useQuery({
     queryKey: ['country-shopper-posts', shopperIds.join(',')],
     queryFn: async () => {
@@ -307,7 +324,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
         .in('user_id', shopperIds)
         .eq('visibility', 'public_explore')
         .order('created_at', { ascending: false })
-        .limit(12);
+        .limit(30);
       return data || [];
     },
     enabled: shopperIds.length > 0 && open && activeTab === 'shoppers',
@@ -334,7 +351,6 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   };
 
   const handleFitClick = (fitId: string) => {
-    // Check if user is guest
     if (!user) {
       toast({
         title: "Create an account",
@@ -342,7 +358,6 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
       });
     }
     onOpenChange(false);
-    // Navigate to community outfit view which has likes and comments
     navigate(`/community/outfit/${fitId}`);
   };
 
@@ -363,16 +378,12 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     return brands?.find(b => b.id === brandId)?.name || '';
   };
 
-  // Determine what to show based on activeTab
   const showBrandsContent = activeTab === 'brands';
   const showShoppersContent = activeTab === 'shoppers';
-
-  // Check loading states per content type
   const isLoadingBrands = brandsLoading;
   const isLoadingProducts = productsLoading;
   const isLoadingShoppers = shoppersLoading;
 
-  // Get total counts for posts sub-tab
   const totalOutfits = shopperFits?.length || 0;
   const totalItems = publicItems?.length || 0;
   const totalShopperPosts = shopperPosts?.length || 0;
@@ -385,8 +396,12 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
           isExpanded ? "h-[95vh]" : "max-h-[55vh]"
         )}
       >
-        <DrawerHeader className="pb-3 relative border-b border-border/30">
-          {/* Expand/Collapse Button with View All label */}
+        <DrawerHeader 
+          className="pb-3 relative border-b border-border/30"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Expand/Collapse Button */}
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className="absolute top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all"
@@ -417,7 +432,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             </div>
           </div>
 
-          {/* Swipe CTA with micro-note */}
+          {/* Swipe CTA */}
           <div className="flex items-center gap-3 mt-4">
             <Button
               onClick={handleSwipeToCountry}
@@ -432,7 +447,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             </p>
           </div>
 
-          {/* Premium Pill Tabs - Brands/Products for brands, People/Posts for shoppers */}
+          {/* Tabs */}
           {showBrandsContent && (
             <Tabs value={drawerTab} onValueChange={(v) => setDrawerTab(v as 'brands' | 'products')} className="mt-4">
               <TabsList className="w-full grid grid-cols-2 bg-black/5 dark:bg-white/10 p-1 rounded-full">
@@ -460,10 +475,8 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
 
         <ScrollArea className="flex-1 px-4 pb-4">
           {showBrandsContent ? (
-            // Brands & Products Content with Tabs
             <div className="space-y-4 py-4">
               {drawerTab === 'brands' ? (
-                // Brands Tab Content
                 isLoadingBrands ? (
                   <div className="grid grid-cols-3 gap-3">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
@@ -471,17 +484,32 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                 ) : brands && brands.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3">
                     {brands.map((brand) => (
-                      <button 
+                      <div 
                         key={brand.id} 
-                        onClick={() => handleBrandClick(brand.slug)} 
-                        className="flex flex-col items-center p-3 rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                        className="flex flex-col items-center p-3 rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-200"
                       >
-                        <Avatar className="w-14 h-14 mb-2 ring-2 ring-white/50 shadow-sm">
-                          <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{brand.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs font-medium text-center line-clamp-2">{brand.name}</span>
-                      </button>
+                        <button
+                          onClick={() => handleBrandClick(brand.slug)}
+                          className="flex flex-col items-center"
+                        >
+                          <Avatar className="w-14 h-14 mb-2 ring-2 ring-white/50 shadow-sm">
+                            <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{brand.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-medium text-center line-clamp-1">{brand.name}</span>
+                        </button>
+                        <Button
+                          variant={isFollowingBrand(brand.id) ? "secondary" : "outline"}
+                          size="sm"
+                          className="rounded-full text-[10px] h-6 px-3 mt-2 w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFollowBrand(brand.id);
+                          }}
+                        >
+                          {isFollowingBrand(brand.id) ? 'Following' : 'Follow'}
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -491,7 +519,6 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                   </div>
                 )
               ) : (
-                // Products Tab Content
                 isLoadingProducts ? (
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
@@ -529,180 +556,97 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
               )}
             </div>
           ) : showShoppersContent ? (
-            // Shoppers Content with People/Posts sub-tabs
             <div className="space-y-4 py-4">
               {shoppersSubTab === 'people' ? (
-                // People Tab - Shows shoppers with their fits
-                <div className="space-y-4">
-                  {/* Current User's Content Section */}
+                /* People Tab - Names only + follow buttons */
+                <div className="space-y-2">
+                  {/* Current User Row */}
                   {user && currentUserProfile && (
-                    <div className="space-y-3 pb-4 border-b border-border/50">
-                      {/* Your Content Header with Visibility Toggle */}
+                    <div className="space-y-2 pb-3 border-b border-border/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-semibold">Your Content</span>
+                          <User className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-xs font-semibold text-muted-foreground">You</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[10px] text-muted-foreground">
                             {isVisibleOnGlobe ? 'Visible' : 'Hidden'}
                           </span>
                           <Switch
                             checked={isVisibleOnGlobe}
                             onCheckedChange={(checked) => toggleVisibilityMutation.mutate(checked)}
                             disabled={toggleVisibilityMutation.isPending}
+                            className="scale-75"
                           />
                           {isVisibleOnGlobe ? (
-                            <Eye className="w-4 h-4 text-primary" />
+                            <Eye className="w-3.5 h-3.5 text-primary" />
                           ) : (
-                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                            <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
                           )}
                         </div>
                       </div>
 
-                      {/* Your Profile */}
                       <button 
                         onClick={() => handleShopperClick(user.id)} 
-                        className="flex items-center gap-3 w-full text-left bg-primary/5 hover:bg-primary/10 rounded-lg p-2 transition-colors"
+                        className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
                       >
-                        <Avatar className="w-10 h-10 ring-2 ring-primary/20">
-                          <AvatarImage src={currentUserProfile.avatar_url || undefined} alt={currentUserProfile.name || currentUserProfile.username || 'You'} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {(currentUserProfile.name || currentUserProfile.username || 'U').charAt(0).toUpperCase()}
+                        <Avatar className="w-9 h-9 ring-2 ring-primary/20">
+                          <AvatarImage src={currentUserProfile.avatar_url || undefined} alt={currentUserProfile.name || 'You'} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {(currentUserProfile.name || 'U').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium block truncate">
-                            {currentUserProfile.name || currentUserProfile.username || 'You'}
-                          </span>
-                          <span className="text-xs text-muted-foreground">Your profile</span>
-                        </div>
+                        <span className="text-sm font-medium flex-1 truncate">
+                          {currentUserProfile.name || currentUserProfile.username || 'You'}
+                        </span>
                         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       </button>
-
-                      {/* Your Public Fits */}
-                      {currentUserFits && currentUserFits.length > 0 && (
-                        <div className="ml-12">
-                          <p className="text-xs text-muted-foreground mb-2">Your public outfits</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {currentUserFits.slice(0, 3).map((fit) => (
-                              <Card 
-                                key={fit.id} 
-                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-primary/20"
-                                onClick={() => handleFitClick(fit.id)}
-                              >
-                                <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                                  <SmartImage 
-                                    src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
-                                    alt={fit.title || 'Outfit'} 
-                                    className="w-full h-full object-cover"
-                                    sizes="80px"
-                                  />
-                                </div>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Your Public Items */}
-                      {currentUserItems && currentUserItems.length > 0 && (
-                        <div className="ml-12">
-                          <p className="text-xs text-muted-foreground mb-2">Your shared items</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {currentUserItems.slice(0, 3).map((item) => {
-                              const displayImage = item.image_bg_removed_url || item.image_url;
-                              return (
-                                <Card 
-                                  key={item.id} 
-                                  className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-primary/20"
-                                  onClick={() => handleItemClick(item.id)}
-                                >
-                                  <div className="aspect-square relative overflow-hidden bg-muted flex items-center justify-center">
-                                    {displayImage ? (
-                                      <img src={displayImage} alt={item.name || 'Item'} className="w-full h-full object-contain" />
-                                    ) : (
-                                      <Shirt className="w-6 h-6 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* No content message */}
-                      {(!currentUserFits || currentUserFits.length === 0) && (!currentUserItems || currentUserItems.length === 0) && (
-                        <p className="text-xs text-muted-foreground text-center py-2">
-                          Make outfits or items public to appear on the globe
-                        </p>
-                      )}
                     </div>
                   )}
 
-                  {/* Other Shoppers */}
+                  {/* Other Shoppers - names only + follow */}
                   {isLoadingShoppers ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[1, 2, 3].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+                    <div className="space-y-2">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
                     </div>
                   ) : shoppers && shoppers.filter(s => s.id !== user?.id).length > 0 ? (
-                    <div className="space-y-4">
-                      <p className="text-xs text-muted-foreground font-medium">Other shoppers in {countryName}</p>
-                      {shoppers.filter(s => s.id !== user?.id).map((shopper) => {
-                        const userFits = shopperFits?.filter(f => f.user_id === shopper.id) || [];
-                        
-                        return (
-                          <div key={shopper.id} className="space-y-2">
-                            {/* Shopper Header */}
-                            <button 
-                              onClick={() => handleShopperClick(shopper.id)} 
-                              className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
+                    <div className="space-y-1">
+                      {shoppers.filter(s => s.id !== user?.id).map((shopper) => (
+                        <div key={shopper.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/30 transition-colors">
+                          <button
+                            onClick={() => handleShopperClick(shopper.id)}
+                            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                          >
+                            <Avatar className="w-9 h-9">
+                              <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || 'User'} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium block truncate">
+                                {shopper.name || shopper.username || 'Anonymous'}
+                              </span>
+                              {shopper.username && shopper.name && (
+                                <span className="text-[10px] text-muted-foreground">@{shopper.username}</span>
+                              )}
+                            </div>
+                          </button>
+                          {user && shopper.id !== user.id && (
+                            <Button
+                              variant={isFollowing(shopper.id) ? "secondary" : "outline"}
+                              size="sm"
+                              className="rounded-full text-[10px] h-7 px-3 flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFollow(shopper.id);
+                              }}
                             >
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.name || shopper.username || 'User'} />
-                                <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                                  {(shopper.name || shopper.username || 'U').charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm font-medium block truncate">
-                                  {shopper.name || shopper.username || 'Anonymous'}
-                                </span>
-                                {shopper.username && shopper.name && (
-                                  <span className="text-xs text-muted-foreground">@{shopper.username}</span>
-                                )}
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            </button>
-                            
-                            {/* Shopper's Public Fits */}
-                            {userFits.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2 ml-12">
-                                {userFits.slice(0, 3).map((fit) => (
-                                  <Card 
-                                    key={fit.id} 
-                                    className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
-                                    onClick={() => handleFitClick(fit.id)}
-                                  >
-                                    <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                                      <SmartImage 
-                                        src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
-                                        alt={fit.title || 'Outfit'} 
-                                        className="w-full h-full object-cover"
-                                        sizes="80px"
-                                      />
-                                    </div>
-                                    {fit.title && (
-                                      <p className="text-[10px] p-1 truncate text-muted-foreground">{fit.title}</p>
-                                    )}
-                                  </Card>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {isFollowing(shopper.id) ? 'Following' : 'Follow'}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   ) : !user ? (
                     <div className="text-center py-8 text-muted-foreground">
@@ -712,131 +656,102 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                   ) : null}
                 </div>
               ) : (
-                // Posts Tab - Shows shopper posts + public outfits + public items
+                /* Posts Tab - 5-col grid */
                 (itemsLoading || shopperPostsLoading) ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => <Skeleton key={i} className="aspect-square rounded-lg" />)}
                   </div>
                 ) : (totalShopperPosts > 0 || totalOutfits > 0 || totalItems > 0) ? (
-                  <div className="space-y-6">
-                    {/* Shopper Posts Section (from posts table) */}
+                  <div className="space-y-4">
+                    {/* Shopper Posts */}
                     {shopperPosts.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4 text-primary" />
-                          Shopper Posts ({totalShopperPosts})
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2">
-                          {shopperPosts.slice(0, isExpanded ? 12 : 6).map((post: any) => {
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <ImageIcon className="w-3 h-3" />
+                          Posts ({totalShopperPosts})
+                        </p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {shopperPosts.slice(0, isExpanded ? 30 : 10).map((post: any) => {
                             const firstImage = post.post_images
                               ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
                               ?.[0]?.image_url;
 
-                            const taggedProducts = (post.post_products || []).map((pp: any) => ({
-                              image_url:
-                                pp.external_image_url ||
-                                pp.products?.image_url ||
-                                (pp.products?.media_urls as any)?.[0] ||
-                                null,
-                              title: pp.external_title || pp.products?.title || 'Item',
-                            }));
-
                             return (
-                              <Card
+                              <div
                                 key={post.id}
-                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                                className="aspect-square relative overflow-hidden bg-muted rounded-lg cursor-pointer"
                                 onClick={() => {
                                   onOpenChange(false);
                                   navigate(`/profile/${post.user_id}`);
                                 }}
                               >
-                                <div className="aspect-square relative overflow-hidden bg-muted">
-                                  {firstImage ? (
-                                    <SmartImage
-                                      src={firstImage}
-                                      alt={post.content || 'Post'}
-                                      className="w-full h-full object-cover"
-                                      sizes="100px"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
-                                    </div>
-                                  )}
-                                  <PostProductCircles products={taggedProducts} />
-                                </div>
-                                {post.content && (
-                                  <p className="text-[10px] p-1.5 truncate font-medium">{post.content}</p>
+                                {firstImage ? (
+                                  <SmartImage
+                                    src={firstImage}
+                                    alt={post.content || 'Post'}
+                                    className="w-full h-full object-cover"
+                                    sizes="65px"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <ImageIcon className="w-4 h-4 text-muted-foreground/30" />
+                                  </div>
                                 )}
-                              </Card>
+                              </div>
                             );
                           })}
                         </div>
                       </div>
                     )}
 
-                    {/* Public Outfits Section */}
+                    {/* Community Outfits */}
                     {shopperFits && shopperFits.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          Community Outfits ({totalOutfits})
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2">
-                          {shopperFits.slice(0, isExpanded ? 12 : 6).map((fit) => (
-                            <Card 
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3" />
+                          Outfits ({totalOutfits})
+                        </p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {shopperFits.slice(0, isExpanded ? 20 : 10).map((fit) => (
+                            <div 
                               key={fit.id} 
-                              className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                              className="aspect-square relative overflow-hidden bg-muted rounded-lg cursor-pointer"
                               onClick={() => handleFitClick(fit.id)}
                             >
-                              <div className="aspect-[3/4] relative overflow-hidden bg-muted">
-                                <SmartImage 
-                                  src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
-                                  alt={fit.title || 'Outfit'} 
-                                  className="w-full h-full object-cover"
-                                  sizes="100px"
-                                />
-                              </div>
-                              {fit.title && (
-                                <p className="text-[10px] p-1.5 truncate font-medium">{fit.title}</p>
-                              )}
-                            </Card>
+                              <SmartImage 
+                                src={fit.render_path || fit.image_preview || '/placeholder.svg'} 
+                                alt={fit.title || 'Outfit'} 
+                                className="w-full h-full object-cover"
+                                sizes="65px"
+                              />
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Public Items Section */}
+                    {/* Shared Items */}
                     {publicItems && publicItems.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Shirt className="w-4 h-4 text-primary" />
-                          Shared Items ({totalItems})
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2">
-                          {publicItems.slice(0, isExpanded ? 12 : 6).map((item) => {
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Shirt className="w-3 h-3" />
+                          Items ({totalItems})
+                        </p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {publicItems.slice(0, isExpanded ? 20 : 10).map((item) => {
                             const displayImage = item.image_bg_removed_url || item.image_url;
-                            const displayName = item.name || item.brand || 'Item';
-                            
                             return (
-                              <Card 
+                              <div 
                                 key={item.id} 
-                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50 rounded-xl"
+                                className="aspect-square relative overflow-hidden bg-muted rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={() => handleItemClick(item.id)}
                               >
-                                <div className="aspect-square relative overflow-hidden bg-muted flex items-center justify-center">
-                                  {displayImage ? (
-                                    <img 
-                                      src={displayImage} 
-                                      alt={displayName} 
-                                      className="w-full h-full object-contain"
-                                    />
-                                  ) : (
-                                    <Shirt className="w-8 h-8 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <p className="text-[10px] p-1.5 truncate font-medium">{displayName}</p>
-                              </Card>
+                                {displayImage ? (
+                                  <img src={displayImage} alt={item.name || 'Item'} className="w-full h-full object-contain" />
+                                ) : (
+                                  <Shirt className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
                             );
                           })}
                         </div>
@@ -846,8 +761,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No public outfits or items yet</p>
-                    <p className="text-xs mt-1">Shoppers haven't shared content from this country</p>
+                    <p className="text-sm">No public content yet</p>
                   </div>
                 )
               )}

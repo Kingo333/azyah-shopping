@@ -101,6 +101,7 @@ export const PostsSection: React.FC = () => {
               <div
                 key={post.id}
                 className="relative w-[90px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
+                onClick={() => navigate(`/profile/${user?.id}`)}
               >
                 {firstImage ? (
                   <SmartImage
