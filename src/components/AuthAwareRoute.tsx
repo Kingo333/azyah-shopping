@@ -44,8 +44,8 @@ const AuthAwareRoute = ({ children, redirectAuthenticatedTo }: AuthAwareRoutePro
           console.log('AuthAwareRoute: Authenticated user, redirecting to:', dashboard);
           setRedirectPath(dashboard);
         } catch (error) {
-          console.error('AuthAwareRoute: Error getting role, defaulting to /dashboard');
-          setRedirectPath('/dashboard');
+          console.error('AuthAwareRoute: Error getting role, defaulting to /swipe');
+          setRedirectPath('/swipe');
         }
       }
       
