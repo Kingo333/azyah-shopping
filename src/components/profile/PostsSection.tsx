@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, ImageIcon } from 'lucide-react';
+import { Plus, ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SmartImage } from '@/components/SmartImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PostProductCircles } from '@/components/PostProductCircles';
 import CreateStyleLinkPostModal from '@/components/stylelink/CreateStyleLinkPostModal';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export const PostsSection: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['user-posts', user?.id],
@@ -101,7 +103,7 @@ export const PostsSection: React.FC = () => {
               <div
                 key={post.id}
                 className="relative w-[90px] h-[120px] flex-shrink-0 rounded-xl overflow-hidden bg-muted cursor-pointer group snap-start"
-                onClick={() => navigate(`/profile/${user?.id}`)}
+                onClick={() => setSelectedPost(post)}
               >
                 {firstImage ? (
                   <SmartImage
@@ -141,6 +143,50 @@ export const PostsSection: React.FC = () => {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
       />
+
+      {/* Post Detail Viewer */}
+      <Dialog open={!!selectedPost} onOpenChange={(open) => !open && setSelectedPost(null)}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
+          {selectedPost && (() => {
+            const postImage = selectedPost.post_images
+              ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+              ?.[0]?.image_url;
+            const taggedProducts = (selectedPost.post_products || []).map((pp: any) => ({
+              image_url:
+                pp.external_image_url ||
+                pp.products?.image_url ||
+                (pp.products?.media_urls as any)?.[0] ||
+                null,
+              title: pp.external_title || pp.products?.title || 'Item',
+            }));
+            return (
+              <div>
+                {postImage && (
+                  <div className="relative w-full aspect-square bg-muted">
+                    <SmartImage
+                      src={postImage}
+                      alt={selectedPost.content || 'Post'}
+                      className="w-full h-full object-cover"
+                    />
+                    <PostProductCircles products={taggedProducts} />
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  {selectedPost.visibility === 'private' && (
+                    <span className="inline-block text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Private</span>
+                  )}
+                  {selectedPost.content && (
+                    <p className="text-sm text-foreground">{selectedPost.content}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(selectedPost.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

@@ -82,7 +82,14 @@ const UserProfile: React.FC = () => {
   // Check if this user has public items (for "Style Me" button)
   const { data: hasPublicItems } = useHasPublicItems(id || null);
   const isOwnProfile = user?.id === id;
-  
+
+  // Redirect to own profile page
+  useEffect(() => {
+    if (isOwnProfile) {
+      navigate('/profile', { replace: true });
+    }
+  }, [isOwnProfile, navigate]);
+
   // Block user hooks
   const { blockedIds } = useBlockedUsers();
   const blockUser = useBlockUser();

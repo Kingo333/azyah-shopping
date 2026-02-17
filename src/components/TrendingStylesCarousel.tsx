@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
+import { TrendingUp, Heart, Shirt, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
@@ -40,6 +41,7 @@ interface TrendingStylesCarouselProps {
 
 const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8, categoryFilter }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [api, setApi] = React.useState<any>();
   const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
@@ -496,20 +498,18 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                   </Button>
                 </div>
 
-                {/* Wishlist button on hover */}
-                <div className="absolute top-10 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                {/* Try-On button - always visible */}
+                <div className="absolute top-10 right-2 z-10">
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm p-0"
                     onClick={(e) => {
                       e.stopPropagation();
-                      requireAuth('add to wishlist', () => {
-                        addToWishlistMutation.mutate(product.id);
-                      });
+                      navigate(`/p/${product.id}?tryon=true`);
                     }}
                   >
-                    <ShoppingBag className="h-3.5 w-3.5 text-white" />
+                    <Shirt className="h-3.5 w-3.5 text-white" />
                   </Button>
                 </div>
                 
