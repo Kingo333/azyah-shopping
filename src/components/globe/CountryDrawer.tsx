@@ -97,8 +97,8 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartY.current === null) return;
     const deltaY = touchStartY.current - e.changedTouches[0].screenY;
-    if (deltaY > 50) setIsExpanded(true);
-    else if (deltaY < -50) setIsExpanded(false);
+    if (deltaY > 30) setIsExpanded(true);
+    else if (deltaY < -30) setIsExpanded(false);
     touchStartY.current = null;
   };
 
@@ -397,7 +397,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
         )}
       >
         <DrawerHeader 
-          className="pb-3 relative border-b border-border/30"
+          className="pb-3 relative border-b border-border/30 touch-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -587,7 +587,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                       </div>
 
                       <button 
-                        onClick={() => handleShopperClick(user.id)} 
+                        onClick={() => { onOpenChange(false); navigate('/profile'); }} 
                         className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
                       >
                         <Avatar className="w-9 h-9 ring-2 ring-primary/20">
