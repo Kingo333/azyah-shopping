@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Crown, Sparkles, Users, Gift, TrendingUp, Loader2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, Crown, Sparkles, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   isNativeIOS, 
   initIap, 
@@ -19,21 +19,12 @@ import {
 } from '@/lib/iap';
 
 const features = [
-  { 
-    icon: <Users className="h-5 w-5" />,
-    name: 'UGC Collaboration',
-    description: 'Access all brand partnerships'
-  },
-  { 
-    icon: <Sparkles className="h-5 w-5" />,
-    name: '10 AI Try-Ons Daily',
-    description: '10 virtual try-ons per day'
-  },
-  { 
-    icon: <Gift className="h-5 w-5" />,
-    name: 'Redeem Points for Credits',
-    description: 'Convert points to AI credits'
-  },
+  { icon: <Sparkles className="h-3.5 w-3.5" />, name: 'AI Try-On' },
+  { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs' },
+  { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points' },
+  { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check' },
+  { icon: <Heart className="h-3.5 w-3.5" />, name: 'Taste Learning' },
+  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Price Compare' },
 ];
 
 const comparisonFeatures = [
@@ -41,7 +32,6 @@ const comparisonFeatures = [
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
   { name: 'AI Try-on', free: '5 total', premium: '10/day' },
-  
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Points → Credits', free: false, premium: true },
   { name: 'Priority support', free: false, premium: true },
@@ -59,6 +49,7 @@ export default function Upgrade() {
   const [restoring, setRestoring] = useState(false);
   const [iapInitialized, setIapInitialized] = useState(false);
   const [products, setProducts] = useState<IAPProduct[]>([]);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
   const navigate = useNavigate();
   const { isPremium: isSubPremium, subscription } = useSubscription();
   const { isPremium, refetch: refetchPremium } = usePremium();
@@ -142,7 +133,6 @@ export default function Upgrade() {
         const result = await purchaseProduct(productId);
 
         if (result.cancelled) {
-          // User cancelled - just return silently
           setLoading(false);
           return;
         }
@@ -153,25 +143,16 @@ export default function Upgrade() {
           return;
         }
 
-        // Purchase successful - update Supabase profiles table
         const planType = selectedPlan as 'monthly' | 'yearly';
         const expiresAt = result.expiresAt || 
           new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
 
-        // Update profiles table
         const updateResult = await updatePremiumStatus(user.id, true, planType, expiresAt);
         if (!updateResult.success) {
           console.error('Failed to update premium status:', updateResult.error);
         }
 
-        // Sync subscription record for consistency (sensitive IDs handled by webhook)
-        await syncSubscriptionRecord(
-          user.id,
-          planType,
-          expiresAt
-        );
-
-        // Refetch premium status
+        await syncSubscriptionRecord(user.id, planType, expiresAt);
         await refetchPremium();
 
         toast.success('Azyah Premium activated – enjoy unlimited outfits and salon rewards ✨');
@@ -198,7 +179,6 @@ export default function Upgrade() {
         return;
       }
 
-      // Update users table for onboarding flags only
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -239,27 +219,17 @@ export default function Upgrade() {
         return;
       }
 
-      // Active subscription found - update Supabase
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please sign in first');
         return;
       }
 
-      // Determine plan type from product ID
       const planType: 'monthly' | 'yearly' = 
         result.activeProductId === PRODUCT_IDS.YEARLY ? 'yearly' : 'monthly';
 
-      // Update premium status in profiles table
       await updatePremiumStatus(user.id, true, planType, result.expiresAt || null);
-      
-      // Sync subscription record (sensitive IDs handled by webhook)
-      await syncSubscriptionRecord(
-        user.id,
-        planType,
-        result.expiresAt || null
-      );
-
+      await syncSubscriptionRecord(user.id, planType, result.expiresAt || null);
       await refetchPremium();
 
       toast.success('Premium restored on this device ✅');
@@ -273,49 +243,71 @@ export default function Upgrade() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-primary/5">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/12 via-background to-primary/8">
+      {/* Decorative radial gradient */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 30% 20%, hsl(var(--azyah-maroon) / 0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, hsl(var(--primary) / 0.06) 0%, transparent 50%)'
+      }} />
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
+        backgroundImage: 'radial-gradient(circle, hsl(var(--azyah-maroon)) 1px, transparent 1px)',
+        backgroundSize: '24px 24px'
+      }} />
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/70 backdrop-blur-xl border-b border-white/20 px-4 py-2 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+        <Crown className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
         <h1 className="text-lg font-semibold">Choose Your Plan</h1>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        {/* Hero - Compact */}
-        <div className="text-center flex flex-col items-center gap-1 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
-          <Crown className="h-6 w-6 text-primary" />
-          <h2 className="text-xl font-bold">Unlock Azyah Premium</h2>
-          <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 relative z-[1]">
+        {/* Hero */}
+        <div className="relative text-center flex flex-col items-center gap-2 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20 p-5 overflow-hidden">
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 3s ease-in-out infinite',
+          }} />
+          <div className="relative z-[1] flex flex-col items-center gap-2">
+            <div className="rounded-full p-3 bg-[hsl(var(--azyah-maroon))]/10 shadow-[0_0_24px_hsl(var(--azyah-maroon)/0.2)]">
+              <Crown className="h-10 w-10 text-[hsl(var(--azyah-maroon))]" />
+            </div>
+            <h2 className="text-xl font-bold">Unlock Azyah Premium</h2>
+            <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
+          </div>
         </div>
 
-        {/* Feature Highlights - 2 column grid on mobile */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Feature Pills - glass */}
+        <div className="grid grid-cols-3 gap-2">
           {features.map((feature, index) => (
-            <div key={index} className="flex items-center justify-center gap-1 bg-primary/10 text-primary px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-medium">
-              <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">{feature.icon}</span>
+            <div key={index} className="flex items-center justify-center gap-1 bg-white/40 backdrop-blur-md border border-white/20 text-foreground px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-medium">
+              <span className="text-[hsl(var(--azyah-maroon))]">{feature.icon}</span>
               <span className="truncate">{feature.name}</span>
             </div>
           ))}
         </div>
 
-        {/* Plan Selection - Compact cards */}
+        {/* Plan Selection */}
         <div className="space-y-2">
           {/* Yearly */}
           <div
             onClick={() => setSelectedPlan('yearly')}
             className={cn(
-              "cursor-pointer transition-all relative rounded-lg border p-0 overflow-hidden",
+              "cursor-pointer transition-all active:scale-[0.98] relative rounded-xl border p-0 overflow-hidden",
               selectedPlan === 'yearly' 
-                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))]" 
+                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))] shadow-[inset_0_0_16px_hsl(var(--azyah-maroon)/0.06)]" 
                 : "bg-white/60 backdrop-blur-lg border-white/30"
             )}
           >
-            <div className="absolute -top-2 left-4 bg-foreground text-background px-2 py-0.5 rounded-full text-[10px] font-bold">
+            <div className="absolute top-0 left-4 -translate-y-1/2 flex items-center gap-1 bg-foreground text-background px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+              <Crown className="h-3 w-3" />
               BEST VALUE
             </div>
-            <div className="p-3 flex items-center justify-between">
+            <div className="p-4 pt-4 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
                 <p className="text-xs text-muted-foreground">
@@ -336,13 +328,13 @@ export default function Upgrade() {
           <div
             onClick={() => setSelectedPlan('monthly')}
             className={cn(
-              "cursor-pointer transition-all rounded-lg border p-0 overflow-hidden",
+              "cursor-pointer transition-all active:scale-[0.98] rounded-xl border p-0 overflow-hidden",
               selectedPlan === 'monthly' 
-                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))]" 
+                ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))] shadow-[inset_0_0_16px_hsl(var(--azyah-maroon)/0.06)]" 
                 : "bg-white/60 backdrop-blur-lg border-white/30"
             )}
           >
-            <div className="p-3 flex items-center justify-between">
+            <div className="p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Monthly</h3>
                 <p className="text-xs text-muted-foreground">Billed monthly</p>
@@ -369,55 +361,12 @@ export default function Upgrade() {
           </button>
         </div>
 
-        {/* Comparison Table - Compact */}
-        <div className="bg-white/50 backdrop-blur-xl rounded-lg border border-white/20 overflow-hidden">
-          <div className="pb-2 pt-3 px-3">
-            <h3 className="text-sm font-semibold">Free vs Premium</h3>
-          </div>
-          <div className="p-0">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 font-medium">Feature</th>
-                  <th className="text-center p-2 font-medium w-20">Free</th>
-                  <th className="text-center p-2 font-medium w-20">Premium</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonFeatures.map((feature, index) => (
-                  <tr key={index} className="border-b last:border-0">
-                    <td className="p-2">{feature.name}</td>
-                    <td className="p-2 text-center">
-                      {typeof feature.free === 'string' ? (
-                        <span className="text-muted-foreground">{feature.free}</span>
-                      ) : feature.free ? (
-                        <Check className="h-3.5 w-3.5 text-green-600 mx-auto" />
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="p-2 text-center">
-                      {typeof feature.premium === 'string' ? (
-                        <span className="text-primary font-medium">{feature.premium}</span>
-                      ) : feature.premium ? (
-                        <Check className="h-3.5 w-3.5 text-primary mx-auto" />
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         {/* CTA */}
         <div className="space-y-2">
           <Button
             onClick={handleContinue}
             disabled={loading || restoring}
-            className="w-full h-11 font-semibold"
+            className="w-full h-12 font-semibold text-base bg-gradient-to-r from-[hsl(var(--azyah-maroon))] to-primary text-white shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.3)] hover:shadow-[0_6px_28px_hsl(var(--azyah-maroon)/0.4)] transition-shadow border-0"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {selectedPlan === 'free' ? 'Continue Free' : `Upgrade to ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`}
@@ -444,12 +393,69 @@ export default function Upgrade() {
           )}
         </div>
 
+        {/* Comparison Table - Collapsible */}
+        <Collapsible open={comparisonOpen} onOpenChange={setComparisonOpen}>
+          <div className="bg-white/50 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-white/20 transition-colors">
+                <span>Free vs Premium</span>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", comparisonOpen && "rotate-180")} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-t border-b border-white/20">
+                    <th className="text-left p-2.5 font-medium">Feature</th>
+                    <th className="text-center p-2.5 font-medium w-20">Free</th>
+                    <th className="text-center p-2.5 font-medium w-20">Premium</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonFeatures.map((feature, index) => (
+                    <tr key={index} className={cn("border-b border-white/10 last:border-0", index % 2 === 0 && "bg-white/20")}>
+                      <td className="p-2.5">{feature.name}</td>
+                      <td className="p-2.5 text-center">
+                        {typeof feature.free === 'string' ? (
+                          <span className="text-muted-foreground">{feature.free}</span>
+                        ) : feature.free ? (
+                          <Check className="h-3.5 w-3.5 text-green-600 mx-auto" />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-2.5 text-center">
+                        {typeof feature.premium === 'string' ? (
+                          <span className="text-[hsl(var(--azyah-maroon))] font-medium">{feature.premium}</span>
+                        ) : feature.premium ? (
+                          <Check className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))] mx-auto" />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+
         {/* Footer */}
         <div className="flex justify-center gap-4 text-xs text-muted-foreground pb-4">
           <button className="hover:underline" onClick={() => navigate('/terms')}>Terms</button>
           <button className="hover:underline" onClick={() => navigate('/privacy')}>Privacy</button>
+          <button className="hover:underline" onClick={() => navigate('/cookies')}>Cookies</button>
         </div>
       </div>
+
+      {/* Shimmer keyframes */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `}</style>
     </div>
   );
 }

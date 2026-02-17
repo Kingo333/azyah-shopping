@@ -17,7 +17,6 @@ const Privacy = () => {
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button 
             variant="ghost" 
@@ -36,7 +35,7 @@ const Privacy = () => {
                 Privacy Policy
               </h1>
               <p className="text-muted-foreground text-lg">
-                Last Updated: August 20, 2025
+                Last Updated: February 17, 2026
               </p>
             </div>
 
@@ -53,13 +52,17 @@ const Privacy = () => {
                     <li>Name and email address (when you create an account)</li>
                     <li>Profile information (preferences, style choices)</li>
                     <li>Communication preferences</li>
+                    <li>Facial and body imagery (uploaded for AI virtual try-on features)</li>
+                    <li>Height and body measurements (for fit estimation features)</li>
                   </ul>
                   
                   <h3 className="text-lg font-semibold text-foreground">Usage Data:</h3>
                   <ul className="space-y-2 list-disc list-inside">
                     <li>Browsing behavior and interactions with products</li>
                     <li>Search queries and preferences</li>
-                    <li>Device information and IP address</li>
+                    <li>Style preference data from swipe interactions (taste learning)</li>
+                    <li>Device information, device identifiers, and IP address</li>
+                    <li>In-app purchase transaction metadata</li>
                     <li>Cookies and similar tracking technologies</li>
                   </ul>
                 </div>
@@ -69,8 +72,12 @@ const Privacy = () => {
                 <h2 className="text-2xl font-cormorant font-bold text-primary">2. How We Use Your Information</h2>
                 <ul className="space-y-2 list-disc list-inside text-muted-foreground">
                   <li>Provide personalized fashion recommendations</li>
+                  <li>Generate AI virtual try-on images and videos using your uploaded photos</li>
+                  <li>Provide height and fit fact-checking based on your measurements</li>
+                  <li>Learn your style preferences through your interactions to personalize recommendations</li>
                   <li>Improve our AI-powered discovery algorithms</li>
                   <li>Send you relevant product updates and notifications</li>
+                  <li>Process rewards points and credit redemptions</li>
                   <li>Process affiliate commissions and analytics</li>
                   <li>Ensure platform security and prevent fraud</li>
                   <li>Comply with legal obligations</li>
@@ -84,7 +91,8 @@ const Privacy = () => {
                   <p>We may share information with:</p>
                   <ul className="space-y-2 list-disc list-inside ml-4">
                     <li><strong>Brand and Retailer Partners:</strong> Aggregated, non-personal analytics to help them understand trends</li>
-                    <li><strong>Service Providers:</strong> Third-party services that help us operate the platform (hosting, analytics, email services)</li>
+                    <li><strong>AI Processing Partners:</strong> Your photos may be sent to third-party AI services to generate virtual try-on results. These services process images according to their own privacy policies and do not retain your data beyond the processing session.</li>
+                    <li><strong>Service Providers:</strong> Third-party services that help us operate the platform (hosting, analytics, subscription management)</li>
                     <li><strong>Legal Requirements:</strong> When required by law or to protect our rights and users' safety</li>
                   </ul>
                 </div>
@@ -100,7 +108,7 @@ const Privacy = () => {
                     <li>Analyze platform usage and performance</li>
                     <li>Support affiliate tracking for commissions</li>
                   </ul>
-                  <p>You can control cookie preferences through your browser settings.</p>
+                  <p>You can control cookie preferences through your browser settings. For more details, see our <button onClick={() => navigate('/cookies')} className="text-primary hover:underline">Cookie Policy</button>.</p>
                 </div>
               </section>
 
@@ -121,11 +129,11 @@ const Privacy = () => {
                   <ul className="space-y-2 list-disc list-inside">
                     <li><strong>Access:</strong> Request a copy of your personal data</li>
                     <li><strong>Update:</strong> Correct inaccurate or incomplete information</li>
-                    <li><strong>Delete:</strong> Request deletion of your account and data</li>
+                    <li><strong>Delete:</strong> Request deletion of your account, uploaded photos, and AI-generated outputs</li>
                     <li><strong>Portability:</strong> Export your data in a common format</li>
                     <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
                   </ul>
-                  <p>To exercise these rights, please contact us through the platform settings or email us.</p>
+                  <p>To exercise these rights, please contact us at <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a> or through your platform settings.</p>
                 </div>
               </section>
 
@@ -134,43 +142,72 @@ const Privacy = () => {
                 <div className="space-y-3 text-muted-foreground">
                   <p>Our platform integrates with third-party services:</p>
                   <ul className="space-y-2 list-disc list-inside">
-                    <li><strong>Social Media:</strong> Optional login via Google, Facebook, etc.</li>
-                    <li><strong>Analytics:</strong> Google Analytics, Supabase Analytics</li>
-                    <li><strong>Payment Processing:</strong> Stripe for premium features</li>
+                    <li><strong>Social Media:</strong> Optional login via Google, Apple, etc.</li>
+                    <li><strong>Database & Authentication:</strong> Supabase for user accounts and data storage</li>
+                    <li><strong>Subscription Management:</strong> RevenueCat and Apple In-App Purchases for premium subscription processing</li>
+                    <li><strong>AI Services:</strong> Third-party AI providers for virtual try-on image and video generation</li>
+                    <li><strong>Analytics:</strong> Usage analytics to improve platform performance</li>
                   </ul>
                   <p>These services have their own privacy policies, which we encourage you to review.</p>
                 </div>
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-2xl font-cormorant font-bold text-primary">8. International Users</h2>
+                <h2 className="text-2xl font-cormorant font-bold text-primary">8. AI Data & Photo Processing</h2>
+                <div className="space-y-3 text-muted-foreground">
+                  <p>When you use our AI virtual try-on features:</p>
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li>Photos you upload are processed by third-party AI services solely to generate the requested try-on result.</li>
+                    <li>Generated try-on outputs are stored temporarily and can be deleted by you at any time through the app.</li>
+                    <li>Azyah Style does not use your uploaded photos for purposes other than generating the requested try-on result and improving the service.</li>
+                    <li>You can request deletion of all uploaded photos and generated outputs by contacting <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a>.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h2 className="text-2xl font-cormorant font-bold text-primary">9. Data Retention</h2>
+                <div className="space-y-3 text-muted-foreground">
+                  <p>We retain your data for the following typical periods:</p>
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li><strong>Account data:</strong> Retained until you request deletion of your account.</li>
+                    <li><strong>AI try-on uploads and outputs:</strong> Retained until deleted by you, or 90 days after generation, whichever comes first.</li>
+                    <li><strong>Style preference and interaction data:</strong> Retained for the duration of your active account.</li>
+                    <li><strong>Analytics and usage logs:</strong> Retained for up to 24 months.</li>
+                    <li><strong>Subscription transaction records:</strong> Retained as required by applicable tax and financial regulations.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h2 className="text-2xl font-cormorant font-bold text-primary">10. International Users</h2>
                 <p className="text-muted-foreground">
                   Azyah Style operates globally. Your data may be processed in countries other than your own. We ensure appropriate safeguards are in place to protect your privacy rights regardless of location.
                 </p>
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-2xl font-cormorant font-bold text-primary">9. Children's Privacy</h2>
+                <h2 className="text-2xl font-cormorant font-bold text-primary">11. Children's Privacy</h2>
                 <p className="text-muted-foreground">
                   Our platform is not intended for users under 13 years old. We do not knowingly collect personal information from children under 13. If we become aware of such data collection, we will delete it promptly.
                 </p>
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-2xl font-cormorant font-bold text-primary">10. Changes to This Policy</h2>
+                <h2 className="text-2xl font-cormorant font-bold text-primary">12. Changes to This Policy</h2>
                 <p className="text-muted-foreground">
                   We may update this Privacy Policy from time to time. We will notify you of significant changes via email or platform notification. Your continued use of the platform constitutes acceptance of the updated policy.
                 </p>
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-2xl font-cormorant font-bold text-primary">11. Contact Us</h2>
+                <h2 className="text-2xl font-cormorant font-bold text-primary">13. Contact Us</h2>
                 <div className="text-muted-foreground">
                   <p>If you have questions about this Privacy Policy or our data practices, please contact us:</p>
                   <ul className="space-y-1 list-disc list-inside mt-2">
                     <li>Through your platform settings</li>
                     <li>Via our support system</li>
-                    <li>Email: privacy@azyah.app</li>
+                    <li>Email: <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a></li>
                   </ul>
                 </div>
               </section>

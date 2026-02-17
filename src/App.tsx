@@ -46,6 +46,7 @@ import Upgrade from './pages/dashboard/Upgrade';
 import Rewards from './pages/Rewards';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import CookiePolicy from './pages/CookiePolicy';
 
 
 import BrandPortal from './pages/BrandPortal';
@@ -256,7 +257,8 @@ function AppContent() {
                   } />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
-                  
+                  <Route path="/cookies" element={<CookiePolicy />} />
+
                   {/* Public share routes - SLUG ONLY (no UUIDs) */}
                   <Route path="/share/outfit/:slug" element={<PublicOutfitView />} />
                   <Route path="/share/item/:slug" element={<PublicItemView />} />
