@@ -587,7 +587,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
                       </div>
 
                       <button 
-                        onClick={() => { onOpenChange(false); navigate('/profile'); }} 
+                        onClick={() => { onOpenChange(false); navigate(`/profile/${user?.id}`); }} 
                         className="flex items-center gap-3 w-full text-left hover:bg-accent/30 rounded-lg p-2 transition-colors"
                       >
                         <Avatar className="w-9 h-9 ring-2 ring-primary/20">
