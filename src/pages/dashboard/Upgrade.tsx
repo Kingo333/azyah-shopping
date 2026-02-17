@@ -24,7 +24,7 @@ const features = [
   { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points' },
   { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check' },
   { icon: <Heart className="h-3.5 w-3.5" />, name: 'Taste Learning' },
-  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Price Compare' },
+  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Find Deals' },
 ];
 
 const comparisonFeatures = [
@@ -259,25 +259,24 @@ export default function Upgrade() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <Crown className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
         <h1 className="text-lg font-semibold">Choose Your Plan</h1>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 relative z-[1]">
         {/* Hero */}
-        <div className="relative text-center flex flex-col items-center gap-2 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20 p-5 overflow-hidden">
+        <div className="relative text-center flex flex-col items-center gap-1.5 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20 p-3 overflow-hidden">
           {/* Shimmer overlay */}
           <div className="absolute inset-0 pointer-events-none" style={{
             background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
             backgroundSize: '200% 100%',
             animation: 'shimmer 3s ease-in-out infinite',
           }} />
-          <div className="relative z-[1] flex flex-col items-center gap-2">
-            <div className="rounded-full p-3 bg-[hsl(var(--azyah-maroon))]/10 shadow-[0_0_24px_hsl(var(--azyah-maroon)/0.2)]">
-              <Crown className="h-10 w-10 text-[hsl(var(--azyah-maroon))]" />
+          <div className="relative z-[1] flex flex-col items-center gap-1">
+            <div className="rounded-full p-2 bg-[hsl(var(--azyah-maroon))]/10 shadow-[0_0_20px_hsl(var(--azyah-maroon)/0.15)]">
+              <Sparkles className="h-7 w-7 text-[hsl(var(--azyah-maroon))]" />
             </div>
-            <h2 className="text-xl font-bold">Unlock Azyah Premium</h2>
-            <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
+            <h2 className="text-lg font-bold">Unlock Azyah Premium</h2>
+            <p className="text-xs text-muted-foreground">Get the most out of your fashion journey</p>
           </div>
         </div>
 
@@ -304,10 +303,9 @@ export default function Upgrade() {
             )}
           >
             <div className="absolute top-0 left-4 -translate-y-1/2 flex items-center gap-1 bg-foreground text-background px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-              <Crown className="h-3 w-3" />
               BEST VALUE
             </div>
-            <div className="p-4 pt-4 flex items-center justify-between">
+            <div className="p-4 pt-5 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
                 <p className="text-xs text-muted-foreground">
