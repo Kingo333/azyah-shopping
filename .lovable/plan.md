@@ -1,54 +1,24 @@
 
 
-# Fix User Profile Page: Product Circles, Outfit & Item Navigation
+# Fix Capacitor Dependency Version Conflict
 
-## Issue 1: Post Product Circles Not Showing
+## Problem
 
-The posts query only selects `post_images` but does NOT include `post_products`. Without this data, there are no tagged product circles to render.
+The Codemagic build fails because five Capacitor plugin packages are at **v8** while `@capacitor/core` is at **v7.4.4**. The v8 plugins have a peer dependency requiring `@capacitor/core >= 8.0.0`, which conflicts.
 
-**Fix in `src/pages/UserProfile.tsx`:**
+**Conflicting packages (currently v8, need v7):**
+- `@capacitor/app`: `^8.0.1` --> `^7.2.0`
+- `@capacitor/browser`: `^8.0.1` --> `^7.2.0`
+- `@capacitor/clipboard`: `^8.0.1` --> `^7.2.0`
+- `@capacitor/share`: `^8.0.1` --> `^7.2.0`
+- `@capacitor/status-bar`: `^8.0.1` --> `^7.2.0`
 
-- Update the posts query select to include `post_products(external_image_url, external_title, product_id, external_url)`
-- Import `PostProductCircles` component
-- Map the `post_products` data and render `PostProductCircles` on each post thumbnail in the grid
+**Already correct (staying as-is):**
+- `@capacitor/core`: `^7.4.4`
+- `@capacitor/cli`: `^7.4.4`
+- `@capacitor/ios`: `^7.4.4`
 
-## Issue 2: Clicking Outfits Should Navigate to Dress Me Community
+## Fix
 
-Currently, outfit cards are not clickable (no onClick handler). Tapping an outfit should take the user to the community outfits area.
+Update `package.json` lines 15, 16, 18, 21, 22 to use `^7.2.0` (the latest v7 minor for these plugin packages). This aligns all Capacitor packages to major version 7, resolving the peer dependency conflict and allowing the Codemagic build to succeed.
 
-**Fix:**
-
-- Add `onClick={() => navigate('/dress-me/community')}` to each outfit card in the Outfits tab grid
-
-## Issue 3: Clicking Items Should Navigate to Dress Me Community
-
-Same issue -- item cards have no navigation. Tapping a public item should take the user to the community area.
-
-**Fix:**
-
-- Add `onClick={() => navigate('/dress-me/community')}` to each item card in the Items tab grid
-
----
-
-### Technical Details
-
-**File: `src/pages/UserProfile.tsx`**
-
-1. Add import for `PostProductCircles` from `@/components/PostProductCircles`
-2. Update line 89 posts query select:
-   ```
-   .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url)`)
-   ```
-3. In the Posts grid (around line 304-318), after the image and content overlay, add:
-   ```tsx
-   <PostProductCircles
-     products={(post.post_products || []).map((pp: any) => ({
-       image_url: pp.external_image_url,
-       title: pp.external_title,
-       product_id: pp.product_id,
-       external_url: pp.external_url,
-     }))}
-   />
-   ```
-4. On the outfit card div (line 341), add: `onClick={() => navigate('/dress-me/community')}`
-5. On the item card div (line 375), add: `onClick={() => navigate('/dress-me/community')}`
