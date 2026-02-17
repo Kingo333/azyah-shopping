@@ -205,16 +205,9 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
             <UserPostBlock key={`userpost-${i}`} posts={userPosts} />
           );
         } else if (!isEvenChunk && communityOutfits.length > 0) {
-          // Community outfit block second
-          const outfitSlice = communityOutfits.slice(
-            (chunkIndex * 3) % communityOutfits.length,
-            ((chunkIndex * 3) % communityOutfits.length) + 3
+          chunks.push(
+            <CommunityOutfitBlock key={`community-${i}`} outfits={communityOutfits} />
           );
-          if (outfitSlice.length > 0) {
-            chunks.push(
-              <CommunityOutfitBlock key={`community-${i}`} outfits={outfitSlice} />
-            );
-          }
         }
       }
     }

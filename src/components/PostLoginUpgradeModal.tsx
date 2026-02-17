@@ -10,15 +10,16 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Star, TrendingUp, Users, Gift, DollarSign } from 'lucide-react';
+import { Star, TrendingUp, Users, Gift, DollarSign, PenLine } from 'lucide-react';
 
 const UPGRADE_SESSION_KEY = 'upgrade_shown_this_session';
 
 const premiumPerks = [
-  { icon: <TrendingUp className="h-4 w-4" />, label: 'AI Try-On (AI generated)' },
-  { icon: <Users className="h-4 w-4" />, label: 'UGC Collaborations' },
-  { icon: <Gift className="h-4 w-4" />, label: 'Redeem Points for Credits' },
-  { icon: <DollarSign className="h-4 w-4" />, label: 'Find Deals & Compare' },
+  { icon: <TrendingUp className="h-4 w-4" />, label: 'AI Try-On: Picture & Video' },
+  { icon: <Users className="h-4 w-4" />, label: 'UGC Collab' },
+  { icon: <Gift className="h-4 w-4" />, label: 'Redeem Points' },
+  { icon: <DollarSign className="h-4 w-4" />, label: 'Find Deals' },
+  { icon: <PenLine className="h-4 w-4" />, label: 'Post & Earn' },
 ];
 
 export default function PostLoginUpgradeModal() {
@@ -55,9 +56,9 @@ export default function PostLoginUpgradeModal() {
           <div className="mx-auto h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
             <Star className="h-5 w-5 text-primary fill-primary" />
           </div>
-          <DialogTitle className="text-lg">Unlock Premium</DialogTitle>
+          <DialogTitle className="text-lg font-serif">Go Premium</DialogTitle>
           <DialogDescription className="text-sm">
-            Get the most out of your Azyah experience
+            Unlock every feature, earn more, and stand out.
           </DialogDescription>
         </DialogHeader>
 
