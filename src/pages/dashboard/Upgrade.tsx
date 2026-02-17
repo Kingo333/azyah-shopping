@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Crown, Sparkles, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
@@ -19,7 +19,7 @@ import {
 } from '@/lib/iap';
 
 const features = [
-  { icon: <Sparkles className="h-3.5 w-3.5" />, name: 'AI Try-On' },
+  { icon: <TrendingUp className="h-3.5 w-3.5" />, name: 'AI Try-On' },
   { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs' },
   { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points' },
   { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check' },
@@ -272,9 +272,6 @@ export default function Upgrade() {
             animation: 'shimmer 3s ease-in-out infinite',
           }} />
           <div className="relative z-[1] flex flex-col items-center gap-1">
-            <div className="rounded-full p-2 bg-[hsl(var(--azyah-maroon))]/10 shadow-[0_0_20px_hsl(var(--azyah-maroon)/0.15)]">
-              <Sparkles className="h-7 w-7 text-[hsl(var(--azyah-maroon))]" />
-            </div>
             <h2 className="text-lg font-bold">Unlock Azyah Premium</h2>
             <p className="text-xs text-muted-foreground">Get the most out of your fashion journey</p>
           </div>
@@ -296,7 +293,7 @@ export default function Upgrade() {
           <div
             onClick={() => setSelectedPlan('yearly')}
             className={cn(
-              "cursor-pointer transition-all active:scale-[0.98] relative rounded-xl border p-0 overflow-hidden",
+              "cursor-pointer transition-all active:scale-[0.98] relative rounded-xl border p-0",
               selectedPlan === 'yearly' 
                 ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))] shadow-[inset_0_0_16px_hsl(var(--azyah-maroon)/0.06)]" 
                 : "bg-white/60 backdrop-blur-lg border-white/30"
@@ -305,7 +302,7 @@ export default function Upgrade() {
             <div className="absolute top-0 left-4 -translate-y-1/2 flex items-center gap-1 bg-foreground text-background px-2.5 py-0.5 rounded-full text-[10px] font-bold">
               BEST VALUE
             </div>
-            <div className="p-4 pt-5 flex items-center justify-between">
+            <div className="p-4 pt-6 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
                 <p className="text-xs text-muted-foreground">
@@ -326,7 +323,7 @@ export default function Upgrade() {
           <div
             onClick={() => setSelectedPlan('monthly')}
             className={cn(
-              "cursor-pointer transition-all active:scale-[0.98] rounded-xl border p-0 overflow-hidden",
+              "cursor-pointer transition-all active:scale-[0.98] rounded-xl border p-0",
               selectedPlan === 'monthly' 
                 ? "bg-white/80 backdrop-blur-lg border-[hsl(var(--azyah-maroon))]/40 ring-2 ring-[hsl(var(--azyah-maroon))] shadow-[inset_0_0_16px_hsl(var(--azyah-maroon)/0.06)]" 
                 : "bg-white/60 backdrop-blur-lg border-white/30"
