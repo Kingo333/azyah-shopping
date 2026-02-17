@@ -25,8 +25,8 @@ export const CommunityOutfitBlock: React.FC<CommunityOutfitBlockProps> = ({ outf
   if (outfits.length === 0) return null;
 
   return (
-    <section className="col-span-full py-4 my-2">
-      <div className="flex items-center justify-between mb-3 px-1">
+    <section className="col-span-full py-2 my-1">
+      <div className="flex items-center justify-between mb-2 px-1">
         <h3 className="text-sm font-serif font-medium text-foreground">Community Outfits</h3>
         <Button 
           variant="link" 
@@ -71,7 +71,7 @@ const CommunityOutfitCard: React.FC<CommunityOutfitCardProps> = ({
   return (
     <div className="w-full">
       <div 
-        className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-border shadow-sm cursor-pointer group"
+        className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border shadow-sm cursor-pointer group"
         onClick={onViewOutfit}
       >
         {outfit.image_url ? (
@@ -100,33 +100,6 @@ const CommunityOutfitCard: React.FC<CommunityOutfitCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       
-      {/* Action buttons */}
-      <div className="flex gap-2 mt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 h-8 text-xs px-2 gap-1"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewOutfit();
-          }}
-        >
-          <Eye className="h-3 w-3" />
-          View
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 h-8 text-xs px-2 gap-1"
-          onClick={(e) => {
-            e.stopPropagation();
-            onGoToWardrobe();
-          }}
-        >
-          <Shirt className="h-3 w-3" />
-          Wardrobe
-        </Button>
-      </div>
     </div>
   );
 };

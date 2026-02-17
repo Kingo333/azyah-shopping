@@ -86,20 +86,39 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         .limit(8);
 
       if (data) {
-        const mapped = data
-          .filter((p: any) => p.post_images?.length > 0)
-          .map((p: any) => ({
-            id: p.id,
-            content: p.content,
-            user: p.user,
-            images: p.post_images,
-            products: (p.post_products || []).map((pp: any) => ({
-              image_url: pp.external_image_url,
-              title: pp.external_title,
-              product_id: pp.product_id,
-              external_url: pp.external_url,
-            })),
-          }));
+        const postsWithImages = data.filter((p: any) => p.post_images?.length > 0);
+        
+        // Collect all internal product_ids to fetch their images
+        const allProductIds = postsWithImages
+          .flatMap((p: any) => (p.post_products || []))
+          .map((pp: any) => pp.product_id)
+          .filter(Boolean);
+        
+        let productImagesMap: Record<string, { image_url: string; title: string }> = {};
+        if (allProductIds.length > 0) {
+          const { data: productsData } = await supabase
+            .from('products')
+            .select('id, image_url, title')
+            .in('id', [...new Set(allProductIds)]);
+          if (productsData) {
+            productsData.forEach((p: any) => {
+              productImagesMap[p.id] = { image_url: p.image_url, title: p.title };
+            });
+          }
+        }
+
+        const mapped = postsWithImages.map((p: any) => ({
+          id: p.id,
+          content: p.content,
+          user: p.user,
+          images: p.post_images,
+          products: (p.post_products || []).map((pp: any) => ({
+            image_url: pp.external_image_url || (pp.product_id && productImagesMap[pp.product_id]?.image_url) || null,
+            title: pp.external_title || (pp.product_id && productImagesMap[pp.product_id]?.title) || undefined,
+            product_id: pp.product_id,
+            external_url: pp.external_url,
+          })),
+        }));
         setUserPosts(mapped);
       }
     };
@@ -182,8 +201,17 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
       if (i + chunkSize < products.length) {
         const isEvenChunk = chunkIndex % 2 === 0;
         
-        if (isEvenChunk && communityOutfits.length > 0) {
-          // Community outfit block
+        if (isEvenChunk && userPosts.length > 0) {
+          // User post block first
+          const post = userPosts[userPostIndex % userPosts.length];
+          if (post) {
+            chunks.push(
+              <UserPostBlock key={`userpost-${i}`} post={post} />
+            );
+            userPostIndex++;
+          }
+        } else if (!isEvenChunk && communityOutfits.length > 0) {
+          // Community outfit block second
           const outfitSlice = communityOutfits.slice(
             (chunkIndex * 3) % communityOutfits.length,
             ((chunkIndex * 3) % communityOutfits.length) + 3
@@ -192,15 +220,6 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
             chunks.push(
               <CommunityOutfitBlock key={`community-${i}`} outfits={outfitSlice} />
             );
-          }
-        } else if (!isEvenChunk && userPosts.length > 0) {
-          // User post block
-          const post = userPosts[userPostIndex % userPosts.length];
-          if (post) {
-            chunks.push(
-              <UserPostBlock key={`userpost-${i}`} post={post} />
-            );
-            userPostIndex++;
           }
         }
       }
