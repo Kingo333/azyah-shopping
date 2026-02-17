@@ -34,7 +34,7 @@ export const UserPostBlock: React.FC<UserPostBlockProps> = ({ post }) => {
   if (!imageUrl) return null;
 
   return (
-    <section className="col-span-full py-3 my-1">
+    <section className="col-span-full py-2 my-1">
       {/* User header */}
       <div className="flex items-center gap-2 mb-2 px-1">
         <button onClick={() => post.user?.id && navigate(`/profile/${post.user.id}`)}>
@@ -58,7 +58,7 @@ export const UserPostBlock: React.FC<UserPostBlockProps> = ({ post }) => {
         <SmartImage
           src={imageUrl}
           alt={post.content || 'Post'}
-          className="w-full h-auto object-cover max-h-[400px]"
+          className="w-full h-auto object-cover max-h-[260px]"
         />
         {post.products.length > 0 && (
           <PostProductCircles
