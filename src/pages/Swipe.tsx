@@ -389,18 +389,16 @@ const Swipe = () => {
                          flex items-center justify-between"
               style={{ bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }}
             >
-              <button onClick={() => navigate('/swipe')} className="p-1.5">
-                <ShoppingBag className="h-5 w-5 text-[hsl(var(--azyah-maroon))]" strokeWidth={1.5} />
-              </button>
-              <button onClick={() => navigate('/explore')} className="p-1.5">
-                <Globe className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
-              </button>
-              <button onClick={() => navigate('/ugc')} className="p-1.5">
-                <Sparkles className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
-              </button>
-              <button onClick={() => navigate('/profile')} className="p-1.5">
-                <User className="h-5 w-5 text-foreground/60" strokeWidth={1.5} />
-              </button>
+              {[
+                { path: '/swipe', Icon: ShoppingBag },
+                { path: '/explore', Icon: Globe },
+                { path: '/ugc', Icon: Sparkles },
+                { path: '/profile', Icon: User },
+              ].map(({ path, Icon }) => (
+                <button key={path} onClick={() => navigate(path)} className="p-1.5">
+                  <Icon className={`h-5 w-5 ${location.pathname === path ? 'text-[hsl(var(--azyah-maroon))]' : 'text-foreground/60'}`} strokeWidth={1.5} />
+                </button>
+              ))}
             </div>
           </div>}
           
