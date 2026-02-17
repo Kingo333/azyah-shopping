@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFollows } from '@/hooks/useFollows';
 import { useBlockedUsers, useBlockUser, useUnblockUser } from '@/hooks/useBlockedUsers';
 import { SmartImage } from '@/components/SmartImage';
+import { PostProductCircles } from '@/components/PostProductCircles';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   MapPin, 
@@ -86,7 +87,7 @@ const UserProfile: React.FC = () => {
       
       let query = supabase
         .from('posts')
-        .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order)`)
+        .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url)`)
         .eq('user_id', id)
         .order('created_at', { ascending: false });
 
@@ -315,6 +316,14 @@ const UserProfile: React.FC = () => {
                             <p className="text-[10px] text-white line-clamp-2">{post.content}</p>
                           </div>
                         )}
+                        <PostProductCircles
+                          products={(post.post_products || []).map((pp: any) => ({
+                            image_url: pp.external_image_url,
+                            title: pp.external_title,
+                            product_id: pp.product_id,
+                            external_url: pp.external_url,
+                          }))}
+                        />
                       </div>
                     );
                   })}
@@ -338,7 +347,7 @@ const UserProfile: React.FC = () => {
                   {userOutfits.map((outfit: any) => {
                     const img = outfit.render_path || outfit.image_preview;
                     return (
-                      <div key={outfit.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative">
+                      <div key={outfit.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate('/dress-me/community')}>
                         {img ? (
                           <SmartImage src={img} alt={outfit.title || outfit.name || 'Outfit'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
@@ -372,7 +381,7 @@ const UserProfile: React.FC = () => {
                   {userItems.map((item: any) => {
                     const img = item.image_bg_removed_url || item.image_url;
                     return (
-                      <div key={item.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative">
+                      <div key={item.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate('/dress-me/community')}>
                         <SmartImage src={img} alt={item.name || item.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-[10px] text-white line-clamp-1">{item.name || item.category}</p>
