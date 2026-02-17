@@ -4,20 +4,20 @@ import { SmartImage } from '@/components/SmartImage';
 interface PostProduct {
   image_url?: string | null;
   title?: string;
+  product_id?: string | null;
+  external_url?: string | null;
 }
 
 interface PostProductCirclesProps {
   products: PostProduct[];
   maxVisible?: number;
+  onProductClick?: (product: PostProduct) => void;
 }
 
-/**
- * Small circular product thumbnails stacked vertically on the right side of a post image.
- * Matches the Phia reference design — small circles with white border.
- */
 export const PostProductCircles: React.FC<PostProductCirclesProps> = ({
   products,
   maxVisible = 3,
+  onProductClick,
 }) => {
   if (!products.length) return null;
 
@@ -27,9 +27,14 @@ export const PostProductCircles: React.FC<PostProductCirclesProps> = ({
   return (
     <div className="absolute bottom-3 right-3 flex flex-col gap-1.5">
       {visible.map((product, i) => (
-        <div
+        <button
           key={i}
-          className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white shadow-md bg-muted"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onProductClick?.(product);
+          }}
+          className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white shadow-md bg-muted cursor-pointer hover:ring-primary transition-all"
         >
           {product.image_url ? (
             <SmartImage
@@ -42,7 +47,7 @@ export const PostProductCircles: React.FC<PostProductCirclesProps> = ({
               ?
             </div>
           )}
-        </div>
+        </button>
       ))}
       {remaining > 0 && (
         <div className="w-9 h-9 rounded-full bg-foreground/70 ring-2 ring-white shadow-md flex items-center justify-center">
