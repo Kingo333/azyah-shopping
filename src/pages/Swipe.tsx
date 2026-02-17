@@ -21,6 +21,7 @@ import { MiniSwipePreview } from '@/components/MiniSwipePreview';
 import { ProductMasonryGrid } from '@/components/ProductMasonryGrid';
 import CategoryGrid from '@/components/CategoryGrid';
 import AiStudioModal from '@/components/AiStudioModal';
+import PostLoginUpgradeModal from '@/components/PostLoginUpgradeModal';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -407,6 +408,7 @@ const Swipe = () => {
           open={showAiStudio} 
           onClose={() => setShowAiStudio(false)} 
         />
+        <PostLoginUpgradeModal />
       </main>
 
       {/* First-time Tutorial Overlay */}

@@ -519,9 +519,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 sm:max-w-md md:max-w-lg lg:max-w-xl sm:max-h-[92vh] sm:h-auto">
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop - lighter for see-through effect */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-md" onClick={onClose} />
           
           {/* Sheet - Frosty See-Through Glass UI */}
           <motion.div
@@ -530,7 +530,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             exit={{ y: 24, opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
-                       rounded-t-3xl sm:rounded-3xl 
+                       rounded-3xl 
                        bg-white/70 backdrop-blur-xl
                        shadow-[0_8px_32px_rgba(0,0,0,0.15)]
                        border border-white/40
@@ -544,7 +544,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   <Shirt className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold text-foreground">AI Studio</h2>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video (AI generated)</p>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">

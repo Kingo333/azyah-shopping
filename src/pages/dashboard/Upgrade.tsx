@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
@@ -19,12 +19,12 @@ import {
 } from '@/lib/iap';
 
 const features = [
-  { icon: <TrendingUp className="h-3.5 w-3.5" />, name: 'AI Try-On' },
-  { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs' },
-  { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points' },
-  { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check' },
-  { icon: <Heart className="h-3.5 w-3.5" />, name: 'Taste Learning' },
-  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Find Deals' },
+  { icon: <TrendingUp className="h-3.5 w-3.5" />, name: 'AI Try-On', premiumOnly: true },
+  { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs', premiumOnly: true },
+  { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points', premiumOnly: true },
+  { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check', premiumOnly: false },
+  { icon: <Heart className="h-3.5 w-3.5" />, name: 'Taste Learning', premiumOnly: false },
+  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Find Deals', premiumOnly: true },
 ];
 
 const comparisonFeatures = [
@@ -283,6 +283,7 @@ export default function Upgrade() {
             <div key={index} className="flex items-center justify-center gap-1 bg-white/40 backdrop-blur-md border border-white/20 text-foreground px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-medium">
               <span className="text-[hsl(var(--azyah-maroon))]">{feature.icon}</span>
               <span className="truncate">{feature.name}</span>
+              {feature.premiumOnly && <Star className="h-2.5 w-2.5 text-[hsl(var(--azyah-maroon))] fill-[hsl(var(--azyah-maroon))]" />}
             </div>
           ))}
         </div>
@@ -302,7 +303,7 @@ export default function Upgrade() {
             <div className="absolute top-0 left-4 -translate-y-1/2 flex items-center gap-1 bg-foreground text-background px-2.5 py-0.5 rounded-full text-[10px] font-bold">
               BEST VALUE
             </div>
-            <div className="p-4 pt-6 flex items-center justify-between">
+            <div className="p-3 pt-5 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
                 <p className="text-xs text-muted-foreground">
@@ -310,7 +311,7 @@ export default function Upgrade() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">
+                <span className="text-base font-bold">
                   {yearlyMonthlyEquivalent}
                   <span className="text-xs text-muted-foreground">/mo</span>
                 </span>
@@ -329,13 +330,13 @@ export default function Upgrade() {
                 : "bg-white/60 backdrop-blur-lg border-white/30"
             )}
           >
-            <div className="p-4 flex items-center justify-between">
+            <div className="p-3 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Monthly</h3>
                 <p className="text-xs text-muted-foreground">Billed monthly</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">
+                <span className="text-base font-bold">
                   {monthlyPrice.priceString}
                   <span className="text-xs text-muted-foreground">/mo</span>
                 </span>

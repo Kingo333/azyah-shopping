@@ -107,10 +107,6 @@ const LikeCard: React.FC<{
                 {like.products.brands.name}
               </button>
             )}
-            {/* Product title - secondary */}
-            <h3 className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem]">
-              {like.products.title}
-            </h3>
             <p className="text-sm font-bold text-primary">
               {formatPrice(like.products.price_cents, like.products.currency)}
             </p>
