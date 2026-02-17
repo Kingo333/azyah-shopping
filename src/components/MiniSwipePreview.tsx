@@ -86,9 +86,9 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
   const brandName = currentProduct?.merchant_name || currentProduct?.brand?.name || 'Unknown';
 
   return (
-    <section className="py-1 bg-background">
-      <div className="flex items-center justify-between mb-1.5 px-4">
-        <h2 className="text-base font-serif font-medium text-foreground">Quick Swipe</h2>
+    <section className="py-0.5 bg-background">
+      <div className="flex items-center justify-between mb-1 px-4">
+        <h2 className="text-sm font-serif font-medium text-foreground">Quick Swipe</h2>
         <Button 
           variant="link" 
           size="sm" 
@@ -102,7 +102,7 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
       
       {/* Single swipeable card */}
       <div className="px-4">
-        <div className="relative w-full max-w-[220px] mx-auto aspect-[3/4] overflow-visible">
+        <div className="relative w-full max-w-[180px] mx-auto aspect-[3/4] overflow-visible">
           <motion.div
             className="w-full h-full bg-card rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing relative border border-border"
             style={{ x, rotate, opacity, touchAction: 'pan-y' }}
@@ -171,9 +171,9 @@ export const MiniSwipePreview: React.FC<MiniSwipePreviewProps> = ({
             </motion.div>
 
             {/* Swipe Instruction */}
-            <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
-              <MoveHorizontal className="w-2.5 h-2.5 text-white" />
-              <span className="text-white text-[9px] font-medium whitespace-nowrap">Swipe to train</span>
+            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+              <MoveHorizontal className="w-2 h-2 text-white" />
+              <span className="text-white text-[8px] font-medium whitespace-nowrap">Swipe to train</span>
             </div>
 
             {/* Brand Info Overlay */}

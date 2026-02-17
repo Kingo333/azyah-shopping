@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProductLikes } from '@/hooks/useProductLikes';
 import type { Product } from '@/types';
 import { CommunityOutfitBlock } from './CommunityOutfitBlock';
+import { UserPostBlock } from './UserPostBlock';
 
 interface ProductMasonryGridProps {
   products: Product[];
@@ -29,6 +30,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   const navigate = useNavigate();
   const { isLiked, toggleLike } = useProductLikes();
   const [communityOutfits, setCommunityOutfits] = useState<any[]>([]);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
 
   // Fetch community outfits for interleaving
   useEffect(() => {
@@ -41,7 +43,6 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         .limit(10);
       
       if (data) {
-        // Map the data to match CommunityOutfit interface
         const mappedOutfits = data.map((fit: any) => ({
           id: fit.id,
           name: fit.name || fit.title,
@@ -53,6 +54,39 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     };
 
     fetchCommunityOutfits();
+  }, []);
+
+  // Fetch public user posts with images and tagged products
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      const { data } = await supabase
+        .from('posts')
+        .select(`
+          id, content, user_id,
+          user:users(id, name, avatar_url),
+          post_images(image_url),
+          post_products(image_url, title, product_id, external_url)
+        `)
+        .eq('visibility', 'public_explore')
+        .not('post_images', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (data) {
+        const mapped = data
+          .filter((p: any) => p.post_images?.length > 0)
+          .map((p: any) => ({
+            id: p.id,
+            content: p.content,
+            user: p.user,
+            images: p.post_images,
+            products: p.post_products || [],
+          }));
+        setUserPosts(mapped);
+      }
+    };
+
+    fetchUserPosts();
   }, []);
 
   const handleLikeToggle = (productId: string, e: React.MouseEvent) => {
@@ -98,10 +132,11 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     );
   }
 
-  // Chunk-based rendering to fix community block layout
+  // Chunk-based rendering with alternating community outfits and user posts
   const renderContent = () => {
     const chunks: React.ReactNode[] = [];
     const chunkSize = communityOutfitsInterval;
+    let userPostIndex = 0;
     
     for (let i = 0; i < products.length; i += chunkSize) {
       const chunk = products.slice(i, i + chunkSize);
@@ -125,17 +160,30 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         </div>
       );
       
-      // Add community block after each chunk (except the last if partial)
-      if (i + chunkSize < products.length && communityOutfits.length > 0) {
-        const outfitSlice = communityOutfits.slice(
-          (chunkIndex * 3) % communityOutfits.length,
-          ((chunkIndex * 3) % communityOutfits.length) + 3
-        );
+      // After each chunk, alternate between community outfit and user post
+      if (i + chunkSize < products.length) {
+        const isEvenChunk = chunkIndex % 2 === 0;
         
-        if (outfitSlice.length > 0) {
-          chunks.push(
-            <CommunityOutfitBlock key={`community-${i}`} outfits={outfitSlice} />
+        if (isEvenChunk && communityOutfits.length > 0) {
+          // Community outfit block
+          const outfitSlice = communityOutfits.slice(
+            (chunkIndex * 3) % communityOutfits.length,
+            ((chunkIndex * 3) % communityOutfits.length) + 3
           );
+          if (outfitSlice.length > 0) {
+            chunks.push(
+              <CommunityOutfitBlock key={`community-${i}`} outfits={outfitSlice} />
+            );
+          }
+        } else if (!isEvenChunk && userPosts.length > 0) {
+          // User post block
+          const post = userPosts[userPostIndex % userPosts.length];
+          if (post) {
+            chunks.push(
+              <UserPostBlock key={`userpost-${i}`} post={post} />
+            );
+            userPostIndex++;
+          }
         }
       }
     }
@@ -162,11 +210,9 @@ interface MasonryProductCardProps {
 
 // Generate pseudo-random height variant for organic masonry feel
 const getCardStyle = (index: number, productId: string): React.CSSProperties => {
-  // Use product ID hash + index for consistent but varied randomness
   const hash = productId.charCodeAt(0) + productId.charCodeAt(productId.length - 1) + index;
   const variant = hash % 5;
   
-  // Create irregular margins/padding for organic feel
   return {
     marginTop: variant === 0 ? '12px' : variant === 2 ? '8px' : '0',
     paddingBottom: variant === 1 ? '4px' : variant === 3 ? '8px' : '0',

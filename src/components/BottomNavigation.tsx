@@ -168,7 +168,7 @@ export const BottomNavigation: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Navigation - always visible on non-auto-hide pages, or when not minimized */}
+      {/* Main Navigation */}
       <AnimatePresence>
         {(!isAutoHidePage || !isMinimized) && (
           <motion.div
@@ -176,35 +176,60 @@ export const BottomNavigation: React.FC = () => {
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-background"
-            style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
+            className={isProfilePage 
+              ? "fixed z-50 left-4 right-4 bg-white/50 backdrop-blur-xl rounded-full py-2 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-white/20 flex items-center justify-between"
+              : "fixed bottom-0 left-0 right-0 z-50 bg-background"
+            }
+            style={isProfilePage 
+              ? { bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }
+              : { paddingBottom: 'var(--safe-bottom, 0px)' }
+            }
           >
-            {/* Background bar */}
-            <div className="relative border-t border-border">
-              <div className="flex items-center justify-around h-16 px-2">
+            {isProfilePage ? (
+              /* Floating glass pill nav for profile */
+              <>
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
-
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleNavClick(item)}
-                      className={`flex flex-col items-center justify-center gap-1 py-2 px-4 transition-colors flex-1 ${
-                        active 
-                          ? 'text-[hsl(var(--azyah-maroon))]' 
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                      className="p-1.5"
                     >
-                      <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
-                      <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
-                        {item.label}
-                      </span>
+                      <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-foreground/60'}`} />
                     </button>
                   );
                 })}
+              </>
+            ) : (
+              /* Standard solid bar nav */
+              <div className="relative border-t border-border">
+                <div className="flex items-center justify-around h-16 px-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.path);
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleNavClick(item)}
+                        className={`flex flex-col items-center justify-center gap-1 py-2 px-4 transition-colors flex-1 ${
+                          active 
+                            ? 'text-[hsl(var(--azyah-maroon))]' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
+                        <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
