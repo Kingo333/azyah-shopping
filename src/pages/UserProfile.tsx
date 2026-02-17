@@ -37,7 +37,7 @@ interface UserProfileData {
 }
 
 const UserProfile: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { userId: id } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
