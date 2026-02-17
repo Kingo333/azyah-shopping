@@ -19,7 +19,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe' },
   { id: 'explore', label: 'Explore', icon: Globe, path: '/explore' },
-  { id: 'ugc', label: 'Collabs', icon: Sparkles, path: '/ugc', requiresAuth: true },
+  { id: 'ugc', label: 'UGC', icon: Sparkles, path: '/ugc', requiresAuth: true },
   { id: 'profile', label: 'Profile', icon: User, path: '/profile', requiresAuth: true },
 ];
 

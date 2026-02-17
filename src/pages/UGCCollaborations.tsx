@@ -33,13 +33,13 @@ export default function UGCCollaborations() {
         style={{ paddingTop: 'var(--safe-top, 0px)', height: 'calc(60px + var(--safe-top, 0px))' }}
       >
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/profile')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="flex-1 text-center text-lg font-serif font-medium text-foreground pr-9">
-          Collabs
+         <h1 className="flex-1 text-center text-lg font-serif font-medium text-foreground pr-9">
+          UGC
         </h1>
       </header>
 
@@ -53,10 +53,12 @@ export default function UGCCollaborations() {
             </TabsList>
 
             <TabsContent value="collabs">
+              <p className="text-xs text-muted-foreground mb-4">Partner with brands to create content and get paid for posting on social media.</p>
               <CollabList />
             </TabsContent>
 
             <TabsContent value="reviews">
+              <p className="text-xs text-muted-foreground mb-4">Read and share honest reviews about brands — help the community spot great partners and avoid bad ones.</p>
               <ReviewsList />
             </TabsContent>
           </Tabs>
