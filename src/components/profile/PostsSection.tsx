@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, ImageIcon, Pencil, Check, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SmartImage } from '@/components/SmartImage';
@@ -21,6 +22,7 @@ export const PostsSection: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const [editVisibility, setEditVisibility] = useState<string>('public_explore');
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['user-posts', user?.id],
@@ -53,11 +55,11 @@ export const PostsSection: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  const updateCaptionMutation = useMutation({
-    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+  const updatePostMutation = useMutation({
+    mutationFn: async ({ postId, content, visibility }: { postId: string; content: string; visibility: string }) => {
       const { error } = await supabase
         .from('posts')
-        .update({ content })
+        .update({ content, visibility })
         .eq('id', postId);
       if (error) throw error;
     },
@@ -65,11 +67,11 @@ export const PostsSection: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['user-posts'] });
       setIsEditing(false);
       if (selectedPost) {
-        setSelectedPost({ ...selectedPost, content: editContent });
+        setSelectedPost({ ...selectedPost, content: editContent, visibility: editVisibility });
       }
-      toast.success('Caption updated');
+      toast.success('Post updated');
     },
-    onError: () => toast.error('Failed to update caption'),
+    onError: () => toast.error('Failed to update post'),
   });
 
   const handleProductClick = (product: any) => {
@@ -213,15 +215,17 @@ export const PostsSection: React.FC = () => {
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {selectedPost.visibility === 'private' && (
-                        <span className="inline-block text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Private</span>
+                      {(selectedPost.visibility === 'followers_only' || selectedPost.visibility === 'private') && (
+                        <span className="inline-block text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                          {selectedPost.visibility === 'followers_only' ? 'Followers Only' : 'Private'}
+                        </span>
                       )}
                       <p className="text-xs text-muted-foreground">
                         {new Date(selectedPost.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     {!isEditing ? (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsEditing(true); setEditContent(selectedPost.content || ''); }}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setIsEditing(true); setEditContent(selectedPost.content || ''); setEditVisibility(selectedPost.visibility || 'public_explore'); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     ) : (
@@ -233,8 +237,8 @@ export const PostsSection: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-primary"
-                          disabled={updateCaptionMutation.isPending}
-                          onClick={() => updateCaptionMutation.mutate({ postId: selectedPost.id, content: editContent })}
+                          disabled={updatePostMutation.isPending}
+                          onClick={() => updatePostMutation.mutate({ postId: selectedPost.id, content: editContent, visibility: editVisibility })}
                         >
                           <Check className="h-3.5 w-3.5" />
                         </Button>
@@ -242,12 +246,28 @@ export const PostsSection: React.FC = () => {
                     )}
                   </div>
                   {isEditing ? (
-                    <Textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="text-sm min-h-[60px]"
-                      placeholder="Add a caption..."
-                    />
+                    <>
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="text-sm min-h-[60px]"
+                        placeholder="Add a caption..."
+                      />
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 mt-2">
+                        <div className="flex-1 mr-3">
+                          <p className="text-xs font-medium">{editVisibility === 'public_explore' ? 'Public' : 'Followers Only'}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {editVisibility === 'public_explore'
+                              ? 'Visible in Explore, Feed & profile'
+                              : 'Only mutual followers & your profile'}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={editVisibility === 'public_explore'}
+                          onCheckedChange={(checked) => setEditVisibility(checked ? 'public_explore' : 'followers_only')}
+                        />
+                      </div>
+                    </>
                   ) : (
                     selectedPost.content && (
                       <p className="text-sm text-foreground">{selectedPost.content}</p>
