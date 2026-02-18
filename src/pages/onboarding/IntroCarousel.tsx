@@ -81,7 +81,7 @@ const slides: SlideType[] = [
   {
     type: "interactive-slider",
     title: "See It On You",
-    subtitle: "See how items look on you with AI try-on technology",
+    subtitle: "Virtual Try-On",
   },
   {
     type: "gallery",
@@ -745,11 +745,11 @@ export default function IntroCarousel() {
                   <div className="flex items-center justify-center gap-2 mt-3">
                     <span className="inline-flex items-center gap-1.5 bg-white/50 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                      AI Try-On Image
+                      Image Try-On
                     </span>
                     <span className="inline-flex items-center gap-1.5 bg-white/50 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-                      AI Try-On Video
+                      Video Try-On
                     </span>
                   </div>
                 </div>
