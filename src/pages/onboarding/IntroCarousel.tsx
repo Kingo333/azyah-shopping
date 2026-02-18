@@ -928,18 +928,6 @@ export default function IntroCarousel() {
                     </motion.div>
                   </div>
 
-                  {/* Join creators badge with Animated Counter */}
-                  <motion.div
-                    className="text-center"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={currentSlide === 3 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-                    transition={{ delay: 0.5, duration: 0.4 }}
-                  >
-                    <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
-                      <span className="text-lg">✨</span>
-                      Start earning with your digital closet
-                    </p>
-                  </motion.div>
                 </div>
               </div>
             )}
