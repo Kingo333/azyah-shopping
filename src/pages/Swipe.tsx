@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, ShoppingBag, Globe, Sparkles, User } from "lucide-react";
+import { ArrowLeft, Heart, List, LayoutGrid, ArrowUp, MapPin, X, ShoppingBag, Globe, Users, User } from "lucide-react";
 import { getCountryNameFromCode } from '@/lib/countryCurrency';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -374,7 +374,7 @@ const Swipe = () => {
               {[
                 { path: '/swipe', Icon: ShoppingBag },
                 { path: '/explore', Icon: Globe },
-                { path: '/ugc', Icon: Sparkles },
+                { path: '/ugc', Icon: Users },
                 { path: '/profile', Icon: User },
               ].map(({ path, Icon }) => (
                 <button key={path} onClick={() => navigate(path)} className="p-1.5">
