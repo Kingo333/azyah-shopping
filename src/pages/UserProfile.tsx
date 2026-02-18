@@ -87,7 +87,7 @@ const UserProfile: React.FC = () => {
       
       let query = supabase
         .from('posts')
-        .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url)`)
+        .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url, product:products(image_url, title))`)
         .eq('user_id', id)
         .order('created_at', { ascending: false });
 
@@ -318,8 +318,8 @@ const UserProfile: React.FC = () => {
                         )}
                         <PostProductCircles
                           products={(post.post_products || []).map((pp: any) => ({
-                            image_url: pp.external_image_url,
-                            title: pp.external_title,
+                            image_url: pp.external_image_url || pp.product?.image_url,
+                            title: pp.external_title || pp.product?.title,
                             product_id: pp.product_id,
                             external_url: pp.external_url,
                           }))}
