@@ -163,7 +163,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
         <motion.div
           initial={{ opacity: 1 }}
           animate={{ opacity: isDragging ? 0 : 1 }}
-          className="absolute bottom-[45%] left-1/2 transform -translate-x-1/2 bg-black/75 text-white text-xs px-3 py-1 rounded-full pointer-events-none"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black/75 text-white text-xs px-3 py-1 rounded-full pointer-events-none"
         >
           Slide to compare
         </motion.div>

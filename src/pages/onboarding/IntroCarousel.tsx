@@ -941,13 +941,13 @@ export default function IntroCarousel() {
         style={{ paddingBottom: isNavMinimized ? 'calc(env(safe-area-inset-bottom) + 16px)' : 'calc(env(safe-area-inset-bottom) + 80px)' }}
       >
         {/* Azyah branding - centered above dots */}
-        <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="flex items-center justify-center gap-2 mb-1">
           <img
             src="/marketing/azyah-logo.png"
             alt="Azyah"
-            className="h-6 w-6 object-contain"
+            className="h-5 w-5 object-contain"
           />
-          <span className="text-lg font-serif text-foreground tracking-wider" style={{ fontWeight: 300 }}>
+          <span className="text-base font-serif text-foreground tracking-wider" style={{ fontWeight: 300 }}>
             Azyah
           </span>
         </div>
