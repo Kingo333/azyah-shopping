@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, Globe, Sparkles, User, ChevronUp } from 'lucide-react';
+import { ShoppingBag, Globe, Users, User, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
@@ -19,7 +19,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe' },
   { id: 'explore', label: 'Explore', icon: Globe, path: '/explore' },
-  { id: 'ugc', label: 'UGC', icon: Sparkles, path: '/ugc', requiresAuth: true },
+  { id: 'ugc', label: 'UGC', icon: Users, path: '/ugc', requiresAuth: true },
   { id: 'profile', label: 'Profile', icon: User, path: '/profile', requiresAuth: true },
 ];
 
