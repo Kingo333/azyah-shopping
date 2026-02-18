@@ -587,9 +587,8 @@ export default function IntroCarousel() {
         description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur."
       />
 
-      {/* Floating Navigation Elements - Only on first slide */}
-      {currentSlide === 0 && (
-        <div className="fixed left-3 right-3 sm:left-4 sm:right-4 z-50 flex items-center justify-between" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
+      {/* Floating Navigation Elements - Visible on all slides */}
+      <div className="fixed left-3 right-3 sm:left-4 sm:right-4 z-50 flex items-center justify-between" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
           {/* Logo */}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg">
             <img src="/marketing/azyah-logo.png" alt="Azyah" className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
@@ -639,7 +638,6 @@ export default function IntroCarousel() {
             </SheetContent>
           </Sheet>
         </div>
-      )}
 
       <InvestorContactModal isOpen={investorModalOpen} onOpenChange={setInvestorModalOpen} />
 
