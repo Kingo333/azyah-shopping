@@ -171,7 +171,7 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage src={fit.creator_avatar || undefined} />
-              <AvatarFallback>{fit.creator_username[0].toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{fit.creator_username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <p className="font-medium">{fit.creator_name || fit.creator_username}</p>
