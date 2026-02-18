@@ -19,6 +19,7 @@ import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useFollowBrands } from '@/hooks/useFollowBrands';
 import CreateStyleLinkPostModal from '@/components/stylelink/CreateStyleLinkPostModal';
+import PostLoginUpgradeModal from '@/components/PostLoginUpgradeModal';
 
 // Profile section components
 import { ProfileSummaryCard } from '@/components/profile/ProfileSummaryCard';
@@ -364,6 +365,9 @@ const Profile: React.FC = () => {
           open={showAiStudio} 
           onClose={() => setShowAiStudio(false)} 
         />
+
+        {/* Premium Upgrade Modal - accessible to all authenticated users */}
+        <PostLoginUpgradeModal />
       </div>
     </ErrorBoundary>
   );

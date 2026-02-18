@@ -53,6 +53,13 @@ const Explore: React.FC = () => {
       setYourFitDrawerOpen(true);
     } else if (newTab === 'deals') {
       setDealsDrawerOpen(true);
+    } else if (newTab === 'shoppers') {
+      // Auto-open drawer for shoppers tab with user's country or GLOBAL
+      const userCountryCode = user?.user_metadata?.country
+        ? getCountryCodeFromName(user.user_metadata.country)
+        : null;
+      setSelectedCountry(userCountryCode || 'GLOBAL');
+      setDrawerOpen(true);
     }
   };
 
