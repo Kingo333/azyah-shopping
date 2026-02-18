@@ -1,21 +1,20 @@
 
 
-## Remove "Find Deals" from the Upgrade Page
+## Update UGC Icon in Swipe Floating Nav
 
-### What changed previously
-- Removed "Find Deals" from the **Go Premium pop-up modal** (`PostLoginUpgradeModal.tsx`) -- already done.
+### Summary
+The floating glassmorphism pill nav in the Feed/Swipe page still uses the old `Sparkles` icon for UGC. It needs to be updated to `Users` to match the main BottomNavigation (already done) and the Upgrade page.
 
-### What to do now
-- Remove "Find Deals" from the **Upgrade page** (`src/pages/dashboard/Upgrade.tsx`)
+### Changes
 
-### Technical Details
+**File: `src/pages/Swipe.tsx`**
 
-| File | Line | Change |
-|------|------|--------|
-| `src/pages/dashboard/Upgrade.tsx` | 28 | Remove `{ icon: <DollarSign ...>, name: 'Find Deals', premiumOnly: true }` from the `features` array |
-| `src/pages/dashboard/Upgrade.tsx` | 6 | Remove `DollarSign` from the icon imports (if no longer used elsewhere in the file) |
+1. **Line 5 (imports):** Replace `Sparkles` with `Users` in the lucide-react import
+2. **Line 377:** Change `{ path: '/ugc', Icon: Sparkles }` to `{ path: '/ugc', Icon: Users }`
 
-After removal, the features array goes from 7 pills to 6, which still fits neatly in the 3-column grid layout (two full rows).
+### Already Done
+- `src/components/BottomNavigation.tsx` -- already uses `Users` for UGC (confirmed)
+- The floating pill on the Profile page is rendered by `BottomNavigation.tsx`, so it is also already correct
 
+### No other changes needed
 No backend or RevenueCat changes.
-
