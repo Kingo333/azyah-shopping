@@ -1,47 +1,67 @@
 
 
-## Fix Three Issues: People Tab Display, Post Click-to-Open, and Premium Modal Visibility
+## Plan: Post Visibility Overhaul + "Post & Earn" Subtext
 
-### Issue 1: People Tab in Explore Drawer Not Showing Users
-**Root Cause Investigation Needed**: The People tab in the Country Drawer (`src/components/globe/CountryDrawer.tsx`) has the correct code to show "You" (with visibility toggle) and other shoppers. The queries depend on:
-- `user?.id` being truthy (for the "You" section)
-- `countryCode` matching the user's stored country (converted via `getCountryCodeFromName`)
+### What Changes
 
-The most likely cause is a country name-to-code mismatch -- if a user's `country` value in the `users` table doesn't match what `getCountryCodeFromName()` expects, they won't appear in the drawer. Additionally, the header stat text in `Explore.tsx` (lines 256-264) may briefly show brand-related text while shopper data loads.
+**1. Add "Post and earn" subtext to PostsSection**
+Below the "Your posts" heading, add a small motivational line: *"Post and earn when people buy from your post."*
 
-**Fix**: Add fallback handling and ensure the "You" section always appears regardless of country match. No code changes needed to the query logic itself unless a data mismatch is confirmed.
+**2. Improve the visibility toggle in CreateStyleLinkPostModal**
+Replace the simple Public on/off toggle with a clearer explanation:
+- **Toggle ON (Public):** Label reads "Public" with subtext: *"Appears in Explore, Feed, and your profile for anyone to see."*
+- **Toggle OFF (Followers only):** Label reads "Followers Only" with subtext: *"Only visible to mutual followers and on your profile."*
+
+This replaces the old "private" concept. The key distinction:
+- **Public (`public_explore`)**: Visible everywhere -- Explore, Feed (Swipe), and the poster's profile to all visitors.
+- **Followers Only (`followers_only`)**: Visible only on the poster's profile and in feeds/drawers to users who share a **mutual follow** (both users follow each other).
+
+**3. Add new visibility value `followers_only`**
+- Update `useCreateStyleLinkPost.ts` type to include `'followers_only'` alongside `'public_explore'` and `'private'`.
+- In `CreateStyleLinkPostModal`, when toggle is OFF, set visibility to `'followers_only'` instead of `'private'`.
+
+**4. Update Feed (Swipe page) to show followers-only posts from mutual follows**
+In `ProductMasonryGrid.tsx` (which fetches posts for the Feed):
+- Continue fetching `public_explore` posts as-is (anyone can see).
+- Add a second query: fetch `followers_only` posts where the `user_id` is someone the current user mutually follows.
+- Merge both sets, sorted by `created_at` descending.
+
+Mutual follow logic: User A and User B mutually follow each other if there exist rows in `follows` where (A follows B) AND (B follows A). This will be checked client-side by:
+1. Fetching the current user's `following` list (already available via `useFollows`).
+2. Fetching who follows the current user back (a new query for `follower_id` where `following_id = currentUser`).
+3. The intersection = mutual follows.
+4. Fetching `followers_only` posts from those mutual follow user IDs.
+
+**5. Update Explore FollowingDrawer to show followers-only posts**
+The Following drawer currently shows fits and brand products from followed users. Add a "Posts" section that shows `followers_only` posts from mutual follows, plus `public_explore` posts from all followed users.
+
+**6. Update public profile view to respect followers-only visibility**
+In `UserProfile.tsx`, when viewing someone else's profile:
+- Show `public_explore` posts always.
+- Show `followers_only` posts only if the viewer and profile owner mutually follow each other.
+- Continue showing all posts for own profile.
+
+**7. Update PostsSection (own profile) visibility badge**
+Change the badge from "Private" to "Followers Only" for posts with `followers_only` visibility.
 
 ---
 
-### Issue 2: Posts Not Clickable on Public Profile (`/profile/:userId`)
-**Root Cause**: In `src/pages/UserProfile.tsx`, the posts grid (lines 302-329) renders post thumbnails but has **no onClick handler** and **no post detail dialog**. Unlike the own-profile `PostsSection.tsx` which has a `selectedPost` state and a `Dialog` for viewing post details, the `UserProfile.tsx` page is completely missing this functionality.
+### Technical Details
 
-**Fix** (in `src/pages/UserProfile.tsx`):
-1. Add `selectedPost` state variable
-2. Add `onClick={() => setSelectedPost(post)}` to each post grid item
-3. Add a post detail `Dialog` (similar to `PostsSection.tsx`) that shows:
-   - Full post image
-   - `PostProductCircles` with interactive product tags
-   - Product tags that navigate to `/p/{product_id}` for internal products or open external URLs via `openExternalUrl`
-   - Caption text
-   - Date display
-4. Import the necessary components (`Dialog`, `DialogContent`, `openExternalUrl`)
+| File | Changes |
+|------|---------|
+| `src/components/profile/PostsSection.tsx` | Add "Post and earn when people buy from your post." subtext below heading. Update "Private" badge to "Followers Only" for `followers_only` visibility. |
+| `src/components/stylelink/CreateStyleLinkPostModal.tsx` | Update toggle: ON = "Public" (Explore, Feed, Profile), OFF = "Followers Only" (mutual followers + profile). Change `'private'` to `'followers_only'`. Add descriptive subtext for each state. |
+| `src/hooks/useCreateStyleLinkPost.ts` | Add `'followers_only'` to the visibility type union. |
+| `src/hooks/useMutualFollows.ts` | **New hook**: Returns the set of user IDs that the current user mutually follows (intersection of "I follow them" and "they follow me"). |
+| `src/components/ProductMasonryGrid.tsx` | Fetch both `public_explore` posts AND `followers_only` posts from mutual follows. Merge and sort. |
+| `src/components/explore/FollowingDrawer.tsx` | Add a posts section showing public + followers-only posts from followed/mutual users. |
+| `src/pages/UserProfile.tsx` | When viewing another user's posts, also show `followers_only` posts if mutual follow exists. |
 
----
+### Visibility Logic Summary
 
-### Issue 3: Premium Upgrade Modal Only Shows for Shopper Users
-**Root Cause**: The `PostLoginUpgradeModal` is rendered inside the `/swipe` page (`src/pages/Swipe.tsx`), which is role-gated to `roles={['shopper', 'admin']}` in `src/App.tsx` (line 156). Brand users never visit `/swipe`, so they never see the upgrade modal.
-
-**Fix**: Move or duplicate the `PostLoginUpgradeModal` to a location accessible to all authenticated users. The best candidate is rendering it inside the main `Profile` page (or a shared layout component) since all user roles visit `/profile`.
-
----
-
-### Technical Changes
-
-| File | Change |
-|------|--------|
-| `src/pages/UserProfile.tsx` | Add `selectedPost` state, onClick handlers on post grid items, and a post detail Dialog with product tag interactions (using `openExternalUrl` for external links, navigate for internal products) |
-| `src/pages/UserProfile.tsx` | Import `Dialog`, `DialogContent` from ui, and `openExternalUrl` from lib |
-| `src/components/PostLoginUpgradeModal.tsx` or layout | Render the modal in a shared location (e.g., Profile page) so brand users also see it |
-| `src/pages/Profile.tsx` (or equivalent) | Add `<PostLoginUpgradeModal />` so all authenticated users can see the upgrade prompt |
+| Post Visibility | Shown in Explore | Shown in Feed | Shown on Profile (visitor) | Shown on Profile (owner) | Shown to Mutual Followers |
+|----------------|-----------------|---------------|---------------------------|-------------------------|--------------------------|
+| `public_explore` | Yes | Yes | Yes | Yes | Yes |
+| `followers_only` | No | Only to mutual followers | Only to mutual followers | Yes | Yes |
 
