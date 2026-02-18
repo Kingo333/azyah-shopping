@@ -74,11 +74,16 @@ export const UserPostBlock: React.FC<UserPostBlockProps> = ({ posts }) => {
 
       {/* Post image with navigation arrows and product circles */}
       <div className="relative rounded-xl overflow-hidden bg-muted border border-border shadow-sm">
-        <SmartImage
-          src={imageUrl}
-          alt={post.content || 'Post'}
-          className="w-full h-auto object-cover max-h-[260px] lg:max-h-[340px]"
-        />
+        <div
+          className="cursor-pointer"
+          onClick={() => post.user?.id && navigate(`/profile/${post.user.id}`)}
+        >
+          <SmartImage
+            src={imageUrl}
+            alt={post.content || 'Post'}
+            className="w-full h-auto object-cover max-h-[260px] lg:max-h-[340px]"
+          />
+        </div>
 
         {/* Navigation arrows */}
         {hasPrev && (
