@@ -1,50 +1,20 @@
 
 
-## Plan: Redesign "Go Premium" Modal with Once-Per-Week Frequency
+## Fix "Go Premium" Modal: Navigation and Perks
 
-### What changes
+### Issue 1: Fix 404 on "View Plans" button
+The modal navigates to `/upgrade` which doesn't exist as a route. The correct route is `/dashboard/upgrade`.
 
-**1. Show once per week instead of once per session**
-- Currently uses `sessionStorage` (resets every browser session)
-- Will switch to `localStorage` with a stored timestamp
-- Modal only reappears after 7 days have passed since last dismissal
+- **File:** `src/components/PostLoginUpgradeModal.tsx`, line 49
+- **Change:** `navigate('/upgrade')` to `navigate('/dashboard/upgrade')`
 
-**2. Redesign the modal to look more premium**
-- Gradient background with glassmorphism styling (matching the app's premium aesthetic)
-- Larger, more prominent crown/star icon with a glowing accent
-- Perk items styled as pill/chip badges in a grid layout instead of a plain list
-- Bolder "View Plans" CTA button using the `premium` button variant
-- Subtle shimmer/gradient border on the dialog
+### Issue 2: Remove "Find Deals" from perks
+Remove the "Find Deals" entry from the `premiumPerks` array. This also removes the unused `DollarSign` icon import.
 
-**3. Navigation stays connected**
-- "View Plans" button already navigates to `/upgrade` -- this will be preserved
-- No routing changes needed
+- **File:** `src/components/PostLoginUpgradeModal.tsx`, line 22
+- **Remove:** `{ icon: <DollarSign ... />, label: 'Find Deals' }`
+- **Remove from import (line 13):** `DollarSign`
 
-### Technical Details
+With "Find Deals" removed, 4 perks remain (even number), so the grid stays a clean 2x2 layout with no special centering logic needed.
 
-**File: `src/components/PostLoginUpgradeModal.tsx`**
-
-| Area | Current | New |
-|------|---------|-----|
-| Storage key | `sessionStorage` with `upgrade_shown_this_session` | `localStorage` with `upgrade_last_shown_at` (timestamp) |
-| Frequency | Once per session | Once per 7 days |
-| Icon | Small star in circle | Larger crown with gradient background glow |
-| Perks list | Vertical plain list | 2-column grid of styled pill badges |
-| CTA button | Default variant | `premium` variant with gradient styling |
-| Dialog style | Plain `rounded-2xl` | Gradient border, glassmorphism backdrop, richer padding |
-| Navigate target | `/upgrade` | `/upgrade` (unchanged) |
-
-**Logic change (pseudocode):**
-```
-const UPGRADE_STORAGE_KEY = 'upgrade_last_shown_at';
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-// In useEffect:
-const lastShown = localStorage.getItem(UPGRADE_STORAGE_KEY);
-if (lastShown && Date.now() - Number(lastShown) < ONE_WEEK_MS) return;
-
-// On show:
-localStorage.setItem(UPGRADE_STORAGE_KEY, String(Date.now()));
-```
-
-Only one file is modified: `src/components/PostLoginUpgradeModal.tsx`.
+No backend or RevenueCat changes.
