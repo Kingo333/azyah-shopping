@@ -12,6 +12,7 @@ import ShopperNavigation from '@/components/ShopperNavigation';
 import { BackButton } from '@/components/ui/back-button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFollows } from '@/hooks/useFollows';
+import { useMutualFollows } from '@/hooks/useMutualFollows';
 import { useBlockedUsers, useBlockUser, useUnblockUser } from '@/hooks/useBlockedUsers';
 import { SmartImage } from '@/components/SmartImage';
 import { PostProductCircles } from '@/components/PostProductCircles';
@@ -47,6 +48,7 @@ const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const { isFollowing, toggleFollow, isToggling } = useFollows();
+  const { isMutualFollow } = useMutualFollows();
 
   const isOwnProfile = user?.id === id;
 
@@ -83,25 +85,51 @@ const UserProfile: React.FC = () => {
     enabled: !!id
   });
 
-  // Fetch posts
+  const isMutual = id ? isMutualFollow(id) : false;
+
   const { data: userPosts, isLoading: postsLoading } = useQuery({
-    queryKey: ['user-profile-posts', id, isOwnProfile],
+    queryKey: ['user-profile-posts', id, isOwnProfile, isMutual],
     queryFn: async () => {
       if (!id) return [];
       
-      let query = supabase
+      if (isOwnProfile) {
+        // Own profile: show all posts
+        const { data, error } = await supabase
+          .from('posts')
+          .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url, product:products(image_url, title))`)
+          .eq('user_id', id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      }
+
+      // Other profile: always show public_explore
+      const { data: publicPosts, error: publicError } = await supabase
         .from('posts')
         .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url, product:products(image_url, title))`)
         .eq('user_id', id)
+        .eq('visibility', 'public_explore')
         .order('created_at', { ascending: false });
+      if (publicError) throw publicError;
 
-      if (!isOwnProfile) {
-        query = query.eq('visibility', 'public_explore');
+      let allPosts = publicPosts || [];
+
+      // If mutual follow, also show followers_only posts
+      if (isMutual) {
+        const { data: followersOnlyPosts } = await supabase
+          .from('posts')
+          .select(`id, content, created_at, visibility, post_images(id, image_url, sort_order), post_products(external_image_url, external_title, product_id, external_url, product:products(image_url, title))`)
+          .eq('user_id', id)
+          .eq('visibility', 'followers_only')
+          .order('created_at', { ascending: false });
+        if (followersOnlyPosts) {
+          allPosts = [...allPosts, ...followersOnlyPosts].sort((a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        }
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      return allPosts;
     },
     enabled: !!id
   });

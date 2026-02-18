@@ -19,6 +19,7 @@ import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFollows } from '@/hooks/useFollows';
+import { useMutualFollows } from '@/hooks/useMutualFollows';
 import { cn } from '@/lib/utils';
 import { isGuestMode } from '@/hooks/useGuestMode';
 
@@ -61,6 +62,7 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { following, followingLoading } = useFollows();
+  const { mutualFollowIds } = useMutualFollows();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'people' | 'brands'>('people');
 
@@ -114,6 +116,49 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
         .limit(30);
       
       return (data || []) as (UserFit & { user_id: string })[];
+    },
+    enabled: userIds.length > 0 && open,
+  });
+
+  // Fetch posts from followed users (public + followers_only from mutuals)
+  const { data: userPosts = [] } = useQuery({
+    queryKey: ['followed-user-posts', userIds.join(','), mutualFollowIds.join(',')],
+    queryFn: async () => {
+      if (userIds.length === 0) return [];
+
+      // Fetch public posts from all followed users
+      const { data: publicPosts } = await supabase
+        .from('posts')
+        .select('id, user_id, content, post_images(image_url, sort_order)')
+        .in('user_id', userIds)
+        .eq('visibility', 'public_explore')
+        .not('post_images', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      let allPosts = (publicPosts || []).filter((p: any) => p.post_images?.length > 0);
+
+      // Fetch followers_only posts from mutual follows
+      if (mutualFollowIds.length > 0) {
+        const mutualInFollowed = mutualFollowIds.filter(id => userIds.includes(id));
+        if (mutualInFollowed.length > 0) {
+          const { data: followersOnlyPosts } = await supabase
+            .from('posts')
+            .select('id, user_id, content, post_images(image_url, sort_order)')
+            .in('user_id', mutualInFollowed)
+            .eq('visibility', 'followers_only')
+            .not('post_images', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          if (followersOnlyPosts) {
+            const existingIds = new Set(allPosts.map((p: any) => p.id));
+            const newPosts = followersOnlyPosts.filter((p: any) => !existingIds.has(p.id) && p.post_images?.length > 0);
+            allPosts = [...allPosts, ...newPosts];
+          }
+        }
+      }
+
+      return allPosts;
     },
     enabled: userIds.length > 0 && open,
   });
@@ -277,6 +322,7 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
               ) : (
                 followedUsers.map((person) => {
                   const personFits = userFits.filter(f => f.user_id === person.id);
+                  const personPosts = userPosts.filter((p: any) => p.user_id === person.id);
                   
                   return (
                     <div key={person.id} className="space-y-2">
@@ -302,8 +348,33 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
                         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       </button>
                       
+                      {/* Person's Posts */}
+                      {personPosts.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 ml-12">
+                          {personPosts.slice(0, 3).map((post: any) => {
+                            const img = post.post_images?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))?.[0]?.image_url;
+                            return img ? (
+                              <Card 
+                                key={post.id} 
+                                className="overflow-hidden cursor-pointer hover:shadow-md transition-all bg-card/80 border-border/50"
+                                onClick={() => handleUserClick(person.id)}
+                              >
+                                <div className="aspect-square relative overflow-hidden bg-muted">
+                                  <SmartImage 
+                                    src={img} 
+                                    alt={post.content || 'Post'} 
+                                    className="w-full h-full object-cover"
+                                    sizes="80px"
+                                  />
+                                </div>
+                              </Card>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+
                       {/* Person's Public Fits */}
-                      {personFits.length > 0 && (
+                      {personFits.length > 0 && personPosts.length === 0 && (
                         <div className="grid grid-cols-3 gap-2 ml-12">
                           {personFits.slice(0, 3).map((fit) => (
                             <Card 

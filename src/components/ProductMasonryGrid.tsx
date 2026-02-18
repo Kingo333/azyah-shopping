@@ -6,6 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useProductLikes } from '@/hooks/useProductLikes';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMutualFollows } from '@/hooks/useMutualFollows';
 import type { Product } from '@/types';
 import { CommunityOutfitBlock } from './CommunityOutfitBlock';
 import { UserPostBlock } from './UserPostBlock';
@@ -29,6 +31,8 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
 }) => {
   const navigate = useNavigate();
   const { isLiked, toggleLike } = useProductLikes();
+  const { user } = useAuth();
+  const { mutualFollowIds } = useMutualFollows();
   const [communityOutfits, setCommunityOutfits] = useState<any[]>([]);
   const [userPosts, setUserPosts] = useState<any[]>([]);
 
@@ -69,13 +73,14 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     fetchCommunityOutfits();
   }, []);
 
-  // Fetch public user posts with images and tagged products
+  // Fetch public user posts + followers_only posts from mutual follows
   useEffect(() => {
     const fetchUserPosts = async () => {
-      const { data } = await supabase
+      // Fetch public posts
+      const { data: publicData } = await supabase
         .from('posts')
         .select(`
-          id, content, user_id,
+          id, content, user_id, created_at,
           user:users(id, name, avatar_url),
           post_images(image_url),
           post_products(external_image_url, external_title, product_id, external_url)
@@ -85,46 +90,72 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
         .order('created_at', { ascending: false })
         .limit(8);
 
-      if (data) {
-        const postsWithImages = data.filter((p: any) => p.post_images?.length > 0);
-        
-        // Collect all internal product_ids to fetch their images
-        const allProductIds = postsWithImages
-          .flatMap((p: any) => (p.post_products || []))
-          .map((pp: any) => pp.product_id)
-          .filter(Boolean);
-        
-        let productImagesMap: Record<string, { image_url: string; title: string }> = {};
-        if (allProductIds.length > 0) {
-          const { data: productsData } = await supabase
-            .from('products')
-            .select('id, image_url, title')
-            .in('id', [...new Set(allProductIds)]);
-          if (productsData) {
-            productsData.forEach((p: any) => {
-              productImagesMap[p.id] = { image_url: p.image_url, title: p.title };
-            });
-          }
-        }
+      let allPosts = publicData || [];
 
-        const mapped = postsWithImages.map((p: any) => ({
-          id: p.id,
-          content: p.content,
-          user: p.user,
-          images: p.post_images,
-          products: (p.post_products || []).map((pp: any) => ({
-            image_url: pp.external_image_url || (pp.product_id && productImagesMap[pp.product_id]?.image_url) || null,
-            title: pp.external_title || (pp.product_id && productImagesMap[pp.product_id]?.title) || undefined,
-            product_id: pp.product_id,
-            external_url: pp.external_url,
-          })),
-        }));
-        setUserPosts(mapped);
+      // Fetch followers_only posts from mutual follows
+      if (user?.id && mutualFollowIds.length > 0) {
+        const { data: followersOnlyData } = await supabase
+          .from('posts')
+          .select(`
+            id, content, user_id, created_at,
+            user:users(id, name, avatar_url),
+            post_images(image_url),
+            post_products(external_image_url, external_title, product_id, external_url)
+          `)
+          .eq('visibility', 'followers_only')
+          .in('user_id', mutualFollowIds)
+          .not('post_images', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        if (followersOnlyData) {
+          // Merge and deduplicate
+          const existingIds = new Set(allPosts.map((p: any) => p.id));
+          const newPosts = followersOnlyData.filter((p: any) => !existingIds.has(p.id));
+          allPosts = [...allPosts, ...newPosts].sort((a: any, b: any) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        }
       }
+
+      const postsWithImages = allPosts.filter((p: any) => p.post_images?.length > 0);
+      
+      // Collect all internal product_ids to fetch their images
+      const allProductIds = postsWithImages
+        .flatMap((p: any) => (p.post_products || []))
+        .map((pp: any) => pp.product_id)
+        .filter(Boolean);
+      
+      let productImagesMap: Record<string, { image_url: string; title: string }> = {};
+      if (allProductIds.length > 0) {
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('id, image_url, title')
+          .in('id', [...new Set(allProductIds)]);
+        if (productsData) {
+          productsData.forEach((p: any) => {
+            productImagesMap[p.id] = { image_url: p.image_url, title: p.title };
+          });
+        }
+      }
+
+      const mapped = postsWithImages.map((p: any) => ({
+        id: p.id,
+        content: p.content,
+        user: p.user,
+        images: p.post_images,
+        products: (p.post_products || []).map((pp: any) => ({
+          image_url: pp.external_image_url || (pp.product_id && productImagesMap[pp.product_id]?.image_url) || null,
+          title: pp.external_title || (pp.product_id && productImagesMap[pp.product_id]?.title) || undefined,
+          product_id: pp.product_id,
+          external_url: pp.external_url,
+        })),
+      }));
+      setUserPosts(mapped);
     };
 
     fetchUserPosts();
-  }, []);
+  }, [user?.id, mutualFollowIds]);
 
   const handleLikeToggle = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();

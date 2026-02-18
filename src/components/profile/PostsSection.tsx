@@ -87,7 +87,10 @@ export const PostsSection: React.FC = () => {
   return (
     <section className="px-4 pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-serif font-medium text-foreground">Your posts</h2>
+        <div>
+          <h2 className="text-base font-serif font-medium text-foreground">Your posts</h2>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Post and earn when people buy from your post.</p>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -162,9 +165,9 @@ export const PostsSection: React.FC = () => {
                   </div>
                 )}
 
-                {post.visibility === 'private' && (
+                {(post.visibility === 'private' || post.visibility === 'followers_only') && (
                   <div className="absolute top-2 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded-full">
-                    Private
+                    {post.visibility === 'followers_only' ? 'Followers Only' : 'Private'}
                   </div>
                 )}
               </div>
