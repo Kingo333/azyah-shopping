@@ -347,7 +347,7 @@ const UserProfile: React.FC = () => {
                   {userOutfits.map((outfit: any) => {
                     const img = outfit.render_path || outfit.image_preview;
                     return (
-                      <div key={outfit.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate('/dress-me/community')}>
+                      <div key={outfit.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate(`/community/outfit/${outfit.id}`)}>
                         {img ? (
                           <SmartImage src={img} alt={outfit.title || outfit.name || 'Outfit'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
@@ -381,7 +381,7 @@ const UserProfile: React.FC = () => {
                   {userItems.map((item: any) => {
                     const img = item.image_bg_removed_url || item.image_url;
                     return (
-                      <div key={item.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate('/dress-me/community')}>
+                      <div key={item.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => navigate(`/community/item/${item.id}`)}>
                         <SmartImage src={img} alt={item.name || item.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-[10px] text-white line-clamp-1">{item.name || item.category}</p>
