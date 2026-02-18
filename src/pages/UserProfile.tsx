@@ -15,7 +15,10 @@ import { useFollows } from '@/hooks/useFollows';
 import { useBlockedUsers, useBlockUser, useUnblockUser } from '@/hooks/useBlockedUsers';
 import { SmartImage } from '@/components/SmartImage';
 import { PostProductCircles } from '@/components/PostProductCircles';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 import { 
   MapPin, 
   MessageSquare,
@@ -42,6 +45,7 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
+  const [selectedPost, setSelectedPost] = useState<any>(null);
   const { isFollowing, toggleFollow, isToggling } = useFollows();
 
   const isOwnProfile = user?.id === id;
@@ -303,7 +307,7 @@ const UserProfile: React.FC = () => {
                   {userPosts.map((post: any) => {
                     const img = post.post_images?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))?.[0]?.image_url;
                     return (
-                      <div key={post.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative">
+                      <div key={post.id} className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer group relative" onClick={() => setSelectedPost(post)}>
                         {img ? (
                           <SmartImage src={img} alt={post.content || 'Post'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
@@ -396,6 +400,70 @@ const UserProfile: React.FC = () => {
           </Tabs>
         )}
       </div>
+
+      {/* Post Detail Dialog */}
+      <Dialog open={!!selectedPost} onOpenChange={(open) => { if (!open) setSelectedPost(null); }}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
+          {selectedPost && (() => {
+            const postImage = selectedPost.post_images
+              ?.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+              ?.[0]?.image_url;
+            const taggedProducts = (selectedPost.post_products || []).map((pp: any) => ({
+              image_url: pp.external_image_url || pp.product?.image_url,
+              title: pp.external_title || pp.product?.title || 'Item',
+              product_id: pp.product_id,
+              external_url: pp.external_url,
+            }));
+            const handleProductClick = (product: any) => {
+              if (product.product_id) {
+                navigate(`/p/${product.product_id}`);
+              } else if (product.external_url) {
+                openExternalUrl(product.external_url);
+              } else {
+                toast.info('No link available for this item');
+              }
+            };
+            return (
+              <div>
+                {postImage && (
+                  <div className="relative w-full aspect-square bg-muted">
+                    <SmartImage
+                      src={postImage}
+                      alt={selectedPost.content || 'Post'}
+                      className="w-full h-full object-cover"
+                    />
+                    <PostProductCircles products={taggedProducts} onProductClick={handleProductClick} />
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(selectedPost.created_at).toLocaleDateString()}
+                  </p>
+                  {selectedPost.content && (
+                    <p className="text-sm text-foreground">{selectedPost.content}</p>
+                  )}
+                  {taggedProducts.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Tagged items</p>
+                      <div className="flex gap-2 overflow-x-auto">
+                        {taggedProducts.filter((p: any) => p.image_url).map((product: any, i: number) => (
+                          <button
+                            key={i}
+                            onClick={() => handleProductClick(product)}
+                            className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted border border-border/50 hover:ring-2 hover:ring-primary/30 transition-all"
+                          >
+                            <SmartImage src={product.image_url} alt={product.title || 'Product'} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
