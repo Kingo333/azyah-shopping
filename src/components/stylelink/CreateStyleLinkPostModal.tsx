@@ -127,7 +127,7 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
       await createPostAsync({
         image: selectedImage,
         caption: caption.trim() || undefined,
-        visibility: isPublic ? 'public_explore' : 'private',
+        visibility: isPublic ? 'public_explore' : 'followers_only',
         taggedProducts,
       });
 
@@ -377,12 +377,14 @@ const CreateStyleLinkPostModal: React.FC<CreateStyleLinkPostModalProps> = ({
             )}
           </div>
 
-          {/* Visibility Toggle - simplified to Public/Private */}
+          {/* Visibility Toggle */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-            <div>
-              <p className="text-sm font-medium">Public</p>
-              <p className="text-xs text-muted-foreground">
-                {isPublic ? 'Visible in Explore & Feed' : 'Only visible on your profile'}
+            <div className="flex-1 mr-3">
+              <p className="text-sm font-medium">{isPublic ? 'Public' : 'Followers Only'}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {isPublic
+                  ? 'Appears in Explore, Feed, and your profile for anyone to see.'
+                  : 'Only visible to mutual followers and on your profile.'}
               </p>
             </div>
             <Switch

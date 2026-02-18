@@ -20,7 +20,7 @@ export interface TaggedProduct {
 export interface CreatePostInput {
   image: File;
   caption?: string;
-  visibility?: 'public_explore' | 'stylelink_only' | 'private';
+  visibility?: 'public_explore' | 'stylelink_only' | 'private' | 'followers_only';
   taggedProducts?: TaggedProduct[];
 }
 
