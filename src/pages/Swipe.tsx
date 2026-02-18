@@ -124,17 +124,7 @@ const Swipe = () => {
     setTutorialStep('demo');
   };
 
-  // Show tooltip when the toggle first becomes available
-  useEffect(() => {
-    if (showListToggle && !showTooltip && (swipeCount || 0) >= 5 && !showDiscoverTutorial) {
-      setShowTooltip(true);
-      const timer = setTimeout(() => {
-        setShowTooltip(false);
-      }, 2500); // Show for 2.5 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [showListToggle, swipeCount, showDiscoverTutorial]);
+  // Tooltip disabled - was interfering with premium modal
 
   // Use unified products hook - handle multiple categories for list view
   const {
@@ -276,30 +266,21 @@ const Swipe = () => {
             <div className="flex items-center gap-1.5 sm:gap-2">
               {/* View Mode Toggle */}
               {showListToggle && (
-                <TooltipProvider>
-                  <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)] animate-pulse cursor-pointer"
-                        onClick={() => setViewMode(prev => prev === 'swipe' ? 'list' : 'swipe')}
-                      >
-                        <div 
-                          className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
-                        >
-                          <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </div>
-                        <div 
-                          className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
-                        >
-                          <List className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-popover border shadow-lg max-w-[180px]">
-                      <p className="text-xs">Switch views anytime</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div 
+                  className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all cursor-pointer"
+                  onClick={() => setViewMode(prev => prev === 'swipe' ? 'list' : 'swipe')}
+                >
+                  <div 
+                    className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
+                  >
+                    <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  </div>
+                  <div 
+                    className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
+                  >
+                    <List className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  </div>
+                </div>
               )}
 
               <Button 
