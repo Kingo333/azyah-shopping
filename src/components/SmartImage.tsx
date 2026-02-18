@@ -23,12 +23,20 @@ export const SmartImage = ({
   onLoad,
   onError
 }: SmartImageProps) => {
-  const [currentSrc, setCurrentSrc] = useState(src);
+  const resolved = displaySrc(src);
+  const [currentSrc, setCurrentSrc] = useState(resolved);
   const [fallbackIndex, setFallbackIndex] = useState(0);
   const [isError, setIsError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const fallbacks = getImageFallbacks(src);
+  // Update currentSrc when src prop changes
+  if (resolved !== displaySrc(currentSrc) && fallbackIndex === 0 && !isError) {
+    setCurrentSrc(resolved);
+    setIsLoaded(false);
+    setFallbackIndex(0);
+  }
+
+  const fallbacks = getImageFallbacks(resolved);
 
   const handleError = () => {
     const nextIndex = fallbackIndex + 1;
@@ -83,8 +91,8 @@ export const SmartImage = ({
       
       {/* Actual image */}
       <img
-        src={displaySrc(currentSrc)}
-        srcSet={displaySrcSet(currentSrc)}
+        src={currentSrc}
+        srcSet={displaySrcSet(src)}
         sizes={sizes}
         alt={alt}
         className={cn(
