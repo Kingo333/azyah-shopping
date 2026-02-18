@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, DollarSign, ChevronDown, Star, PenLine } from 'lucide-react';
+import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, ChevronDown, Star, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
@@ -24,7 +24,6 @@ const features = [
   { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points', premiumOnly: true },
   { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check', premiumOnly: false },
   { icon: <Heart className="h-3.5 w-3.5" />, name: 'Taste Learning', premiumOnly: false },
-  { icon: <DollarSign className="h-3.5 w-3.5" />, name: 'Find Deals', premiumOnly: true },
   { icon: <PenLine className="h-3.5 w-3.5" />, name: 'Post & Earn', premiumOnly: true },
 ];
 
