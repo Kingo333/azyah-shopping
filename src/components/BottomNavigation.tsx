@@ -177,7 +177,7 @@ export const BottomNavigation: React.FC = () => {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className={isProfilePage 
               ? "fixed z-50 left-4 right-4 bg-white/50 backdrop-blur-xl rounded-full py-2 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-white/20 flex items-center justify-between"
-              : "fixed bottom-0 left-0 right-0 z-50 bg-background"
+              : "fixed bottom-0 left-0 right-0 z-50 bg-white/50 backdrop-blur-xl border-t border-white/20"
             }
             style={isProfilePage 
               ? { bottom: 'calc(var(--safe-bottom, 0px) + 16px)' }
@@ -202,8 +202,8 @@ export const BottomNavigation: React.FC = () => {
                 })}
               </>
             ) : (
-              /* Standard solid bar nav */
-              <div className="relative border-t border-border">
+              /* Standard frosted bar nav */
+              <div className="relative border-t border-white/20">
                 <div className="flex items-center justify-around h-16 px-2">
                   {navItems.map((item) => {
                     const Icon = item.icon;
