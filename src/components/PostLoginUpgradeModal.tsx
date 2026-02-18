@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Crown, TrendingUp, Users, Gift, DollarSign, PenLine } from 'lucide-react';
+import { Crown, TrendingUp, Users, Gift, PenLine } from 'lucide-react';
 
 const UPGRADE_STORAGE_KEY = 'upgrade_last_shown_at';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -19,7 +19,7 @@ const premiumPerks = [
   { icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'AI Try-On' },
   { icon: <Users className="h-3.5 w-3.5" />, label: 'UGC Collab' },
   { icon: <Gift className="h-3.5 w-3.5" />, label: 'Redeem Points' },
-  { icon: <DollarSign className="h-3.5 w-3.5" />, label: 'Find Deals' },
+  
   { icon: <PenLine className="h-3.5 w-3.5" />, label: 'Post & Earn' },
 ];
 
@@ -46,7 +46,7 @@ export default function PostLoginUpgradeModal() {
 
   const handleUpgrade = () => {
     setOpen(false);
-    navigate('/upgrade');
+    navigate('/dashboard/upgrade');
   };
 
   return (
