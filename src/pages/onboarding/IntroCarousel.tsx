@@ -9,6 +9,7 @@ import { Heart, X, ChevronLeft, ChevronRight, Menu, Search, Play } from "lucide-
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { SEOHead } from "@/components/SEOHead";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { supabase } from "@/integrations/supabase/client";
@@ -613,20 +614,18 @@ export default function IntroCarousel() {
                 {/* FAQ Section */}
                 <div className="border-b border-border pb-4">
                   <h3 className="font-semibold text-lg mb-3">Frequently Asked Questions</h3>
-                  {faqData.map((item, index) => (
-                    <div
-                      key={index}
-                      className="bg-muted/30 rounded-lg p-3 mb-2 border border-primary/10 hover:border-primary/20 transition-colors"
-                    >
-                      <div className="flex items-start gap-2">
-                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium text-sm text-foreground mb-1">{item.question}</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{item.answer}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <Accordion type="single" collapsible className="w-full">
+                    {faqData.map((item, index) => (
+                      <AccordionItem key={index} value={`faq-${index}`} className="border-primary/10">
+                        <AccordionTrigger className="text-sm font-medium text-foreground py-3 hover:no-underline">
+                          {item.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-xs text-muted-foreground leading-relaxed">
+                          {item.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 </div>
                 
                 {/* For Investors */}
@@ -940,18 +939,6 @@ export default function IntroCarousel() {
         className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20 transition-all duration-300"
         style={{ paddingBottom: isNavMinimized ? 'calc(env(safe-area-inset-bottom) + 16px)' : 'calc(env(safe-area-inset-bottom) + 80px)' }}
       >
-        {/* Azyah branding - centered above dots */}
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <img
-            src="/marketing/azyah-logo.png"
-            alt="Azyah"
-            className="h-5 w-5 object-contain"
-          />
-          <span className="text-base font-serif text-foreground tracking-wider" style={{ fontWeight: 300 }}>
-            Azyah
-          </span>
-        </div>
-        
         {/* Navigation Dots */}
         <div className="flex justify-center gap-2 mb-3 md:mb-4">
           {slides.map((_, index) => (
