@@ -1,20 +1,21 @@
 
 
-## Fix "Go Premium" Modal: Navigation and Perks
+## Remove "Find Deals" from the Upgrade Page
 
-### Issue 1: Fix 404 on "View Plans" button
-The modal navigates to `/upgrade` which doesn't exist as a route. The correct route is `/dashboard/upgrade`.
+### What changed previously
+- Removed "Find Deals" from the **Go Premium pop-up modal** (`PostLoginUpgradeModal.tsx`) -- already done.
 
-- **File:** `src/components/PostLoginUpgradeModal.tsx`, line 49
-- **Change:** `navigate('/upgrade')` to `navigate('/dashboard/upgrade')`
+### What to do now
+- Remove "Find Deals" from the **Upgrade page** (`src/pages/dashboard/Upgrade.tsx`)
 
-### Issue 2: Remove "Find Deals" from perks
-Remove the "Find Deals" entry from the `premiumPerks` array. This also removes the unused `DollarSign` icon import.
+### Technical Details
 
-- **File:** `src/components/PostLoginUpgradeModal.tsx`, line 22
-- **Remove:** `{ icon: <DollarSign ... />, label: 'Find Deals' }`
-- **Remove from import (line 13):** `DollarSign`
+| File | Line | Change |
+|------|------|--------|
+| `src/pages/dashboard/Upgrade.tsx` | 28 | Remove `{ icon: <DollarSign ...>, name: 'Find Deals', premiumOnly: true }` from the `features` array |
+| `src/pages/dashboard/Upgrade.tsx` | 6 | Remove `DollarSign` from the icon imports (if no longer used elsewhere in the file) |
 
-With "Find Deals" removed, 4 perks remain (even number), so the grid stays a clean 2x2 layout with no special centering logic needed.
+After removal, the features array goes from 7 pills to 6, which still fits neatly in the 3-column grid layout (two full rows).
 
 No backend or RevenueCat changes.
+
