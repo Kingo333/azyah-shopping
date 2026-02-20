@@ -57,8 +57,11 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
         dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
-      // Get user stats with proper closet item counting using public profiles
-      let userQuery = supabase.from('public_profiles').select('*');
+      // Get user stats — query users table directly to filter by visibility preference
+      let userQuery = supabase
+        .from('users')
+        .select('id, name, username, avatar_url, country, preferences')
+        .or('preferences->visible_on_globe.is.null,preferences->visible_on_globe.eq.true');
       if (type === 'country' && selectedCountry) {
         userQuery = userQuery.eq('country', selectedCountry);
       }

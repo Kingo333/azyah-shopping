@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign, Ruler } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign, Ruler, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { AddYourFitModal } from '@/components/profile/AddYourFitModal';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -61,11 +62,16 @@ const ProfileSettings: React.FC = () => {
   const [showFitModal, setShowFitModal] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   
   // Loading states for each section
   const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
   const [savingSocialLinks, setSavingSocialLinks] = useState(false);
   const [savingShoppingPrefs, setSavingShoppingPrefs] = useState(false);
+  const [savingVisibility, setSavingVisibility] = useState(false);
+
+  // Privacy & Visibility
+  const [isVisibleOnGlobe, setIsVisibleOnGlobe] = useState(true);
   
   // Referral system hooks
   const { data: referralCode } = useUserReferralCode();
@@ -115,6 +121,9 @@ const ProfileSettings: React.FC = () => {
           preferred_currency: data.preferred_currency || '',
           socials: (typeof data.socials === 'object' && data.socials !== null) ? data.socials as any : {}
         });
+        // Load visibility preference (default true if not set)
+        const prefs = (data as any).preferences;
+        setIsVisibleOnGlobe(prefs?.visible_on_globe !== false);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -278,6 +287,34 @@ const ProfileSettings: React.FC = () => {
       return `Currency: Auto (${autoCurrency})`;
     }
     return 'Set your display currency';
+  };
+
+  const saveVisibility = async () => {
+    if (!user) return;
+    setSavingVisibility(true);
+    try {
+      // First get current preferences
+      const { data } = await supabase.from('users').select('preferences').eq('id', user.id).single();
+      const existingPrefs = (data as any)?.preferences || {};
+      const { error } = await supabase
+        .from('users')
+        .update({
+          preferences: { ...existingPrefs, visible_on_globe: isVisibleOnGlobe },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      toast({
+        title: "Privacy Settings Saved",
+        description: isVisibleOnGlobe
+          ? "Your profile is now visible on the Globe and Leaderboard."
+          : "Your profile is now hidden from the Globe and Leaderboard."
+      });
+    } catch (error: any) {
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingVisibility(false);
+    }
   };
 
   const saveShoppingPrefs = async () => {
@@ -768,6 +805,44 @@ const ProfileSettings: React.FC = () => {
               
               <Button onClick={saveShoppingPrefs} disabled={savingShoppingPrefs} className="w-full">
                 {savingShoppingPrefs ? 'Saving...' : 'Save Preferences'}
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Privacy & Visibility - Collapsible */}
+          <Collapsible open={privacyOpen} onOpenChange={setPrivacyOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    {isVisibleOnGlobe ? <Eye className="h-5 w-5 text-primary" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Privacy & Visibility</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isVisibleOnGlobe ? 'Visible on Globe & Leaderboard' : 'Hidden from Globe & Leaderboard'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", privacyOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-4 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {isVisibleOnGlobe ? <Eye className="h-5 w-5 text-primary shrink-0" /> : <EyeOff className="h-5 w-5 text-muted-foreground shrink-0" />}
+                  <span className="font-medium">Show on Globe & Leaderboard</span>
+                </div>
+                <Switch
+                  checked={isVisibleOnGlobe}
+                  onCheckedChange={setIsVisibleOnGlobe}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When on, your profile appears on the Explore globe and in the Fashion Leaderboard on Rewards. Turn off to browse privately.
+              </p>
+              <Button onClick={saveVisibility} disabled={savingVisibility} className="w-full">
+                {savingVisibility ? 'Saving...' : 'Save Privacy Settings'}
               </Button>
             </CollapsibleContent>
           </Collapsible>
