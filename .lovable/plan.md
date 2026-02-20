@@ -1,48 +1,51 @@
 
+## Two Changes: Email Replacement + Legal Consent Checkbox on Signup
 
-## Plan: Post Visibility Overhaul + "Post & Earn" Subtext
+### Change 1: Replace `support@azyahstyle.com` → `team@azyahstyle.com`
 
-### What Changes
+Four files contain the old email address:
 
-**1. Add "Post and earn" subtext to PostsSection**
-Below the "Your posts" heading, add a small motivational line: *"Post and earn when people buy from your post."*
+| File | Occurrences |
+|------|-------------|
+| `src/pages/Terms.tsx` | 1 |
+| `src/pages/Privacy.tsx` | 3 |
+| `src/pages/CookiePolicy.tsx` | 1 |
+| `src/pages/ProfileSettings.tsx` | 2 (href + display text) |
 
-**2. Improve the visibility toggle in CreateStyleLinkPostModal**
-Replace the simple Public on/off toggle with a clearer explanation:
-- **Toggle ON (Public):** Label reads "Public" with subtext: *"Appears in Explore, Feed, and your profile for anyone to see."*
-- **Toggle OFF (Followers only):** Label reads "Followers Only" with subtext: *"Only visible to mutual followers and on your profile."*
+All 7 instances will be swapped from `support@azyahstyle.com` → `team@azyahstyle.com`.
 
-This replaces the old "private" concept. The key distinction:
-- **Public (`public_explore`)**: Visible everywhere -- Explore, Feed (Swipe), and the poster's profile to all visitors.
-- **Followers Only (`followers_only`)**: Visible only on the poster's profile and in feeds/drawers to users who share a **mutual follow** (both users follow each other).
+---
 
-**3. Add new visibility value `followers_only`**
-- Update `useCreateStyleLinkPost.ts` type to include `'followers_only'` alongside `'public_explore'` and `'private'`.
-- In `CreateStyleLinkPostModal`, when toggle is OFF, set visibility to `'followers_only'` instead of `'private'`.
+### Change 2: Legal Consent Checkbox on Shopper Signup
 
-**4. Update Feed (Swipe page) to show followers-only posts from mutual follows**
-In `ProductMasonryGrid.tsx` (which fetches posts for the Feed):
-- Continue fetching `public_explore` posts as-is (anyone can see).
-- Add a second query: fetch `followers_only` posts where the `user_id` is someone the current user mutually follows.
-- Merge both sets, sorted by `created_at` descending.
+The signup form in `src/pages/onboarding/SignUp.tsx` has a two-step flow:
+1. **Initial screen** – "Continue with email" button
+2. **Email-entry screen** – email → then either password (returning user) or username + password fields (new user)
 
-Mutual follow logic: User A and User B mutually follow each other if there exist rows in `follows` where (A follows B) AND (B follows A). This will be checked client-side by:
-1. Fetching the current user's `following` list (already available via `useFollows`).
-2. Fetching who follows the current user back (a new query for `follower_id` where `following_id = currentUser`).
-3. The intersection = mutual follows.
-4. Fetching `followers_only` posts from those mutual follow user IDs.
+The checkbox should only appear at **account creation** time (i.e., when `showUsernameFields` is `true` for new shoppers). It should **not** appear for returning users logging in, nor for brand/retailer signups (they have separate account creation flows which can get the same treatment if needed later).
 
-**5. Update Explore FollowingDrawer to show followers-only posts**
-The Following drawer currently shows fits and brand products from followed users. Add a "Posts" section that shows `followers_only` posts from mutual follows, plus `public_explore` posts from all followed users.
+**What to add in `src/pages/onboarding/SignUp.tsx`:**
 
-**6. Update public profile view to respect followers-only visibility**
-In `UserProfile.tsx`, when viewing someone else's profile:
-- Show `public_explore` posts always.
-- Show `followers_only` posts only if the viewer and profile owner mutually follow each other.
-- Continue showing all posts for own profile.
+1. Add a `termsAccepted` boolean state, defaulting to `false`.
+2. In the `showUsernameFields` block (after the country + referral fields, before the submit button), add a checkbox row:
 
-**7. Update PostsSection (own profile) visibility badge**
-Change the badge from "Private" to "Followers Only" for posts with `followers_only` visibility.
+```
+☐  By creating an account, I agree to the
+   Terms of Service · Privacy Policy · Cookie Policy
+```
+
+Each policy name links to `/terms`, `/privacy`, `/cookies` respectively (opened in a new tab so users don't lose their form state).
+
+3. Add `termsAccepted` as an additional condition that must be `true` for the submit button to be enabled. The existing disabled logic:
+```ts
+disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
+```
+becomes:
+```ts
+disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && (!isUsernameAvailable || !termsAccepted))}
+```
+
+4. The checkbox is styled with the existing `Checkbox` component from `@radix-ui/react-checkbox` (already imported via `@/components/ui/checkbox`).
 
 ---
 
@@ -50,18 +53,10 @@ Change the badge from "Private" to "Followers Only" for posts with `followers_on
 
 | File | Changes |
 |------|---------|
-| `src/components/profile/PostsSection.tsx` | Add "Post and earn when people buy from your post." subtext below heading. Update "Private" badge to "Followers Only" for `followers_only` visibility. |
-| `src/components/stylelink/CreateStyleLinkPostModal.tsx` | Update toggle: ON = "Public" (Explore, Feed, Profile), OFF = "Followers Only" (mutual followers + profile). Change `'private'` to `'followers_only'`. Add descriptive subtext for each state. |
-| `src/hooks/useCreateStyleLinkPost.ts` | Add `'followers_only'` to the visibility type union. |
-| `src/hooks/useMutualFollows.ts` | **New hook**: Returns the set of user IDs that the current user mutually follows (intersection of "I follow them" and "they follow me"). |
-| `src/components/ProductMasonryGrid.tsx` | Fetch both `public_explore` posts AND `followers_only` posts from mutual follows. Merge and sort. |
-| `src/components/explore/FollowingDrawer.tsx` | Add a posts section showing public + followers-only posts from followed/mutual users. |
-| `src/pages/UserProfile.tsx` | When viewing another user's posts, also show `followers_only` posts if mutual follow exists. |
+| `src/pages/Terms.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (1 place) |
+| `src/pages/Privacy.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (3 places) |
+| `src/pages/CookiePolicy.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (1 place) |
+| `src/pages/ProfileSettings.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (2 places: href and display text) |
+| `src/pages/onboarding/SignUp.tsx` | Add `termsAccepted` state; add checkbox with links to `/terms`, `/privacy`, `/cookies`; gate submit button on `termsAccepted` when `showUsernameFields` is true |
 
-### Visibility Logic Summary
-
-| Post Visibility | Shown in Explore | Shown in Feed | Shown on Profile (visitor) | Shown on Profile (owner) | Shown to Mutual Followers |
-|----------------|-----------------|---------------|---------------------------|-------------------------|--------------------------|
-| `public_explore` | Yes | Yes | Yes | Yes | Yes |
-| `followers_only` | No | Only to mutual followers | Only to mutual followers | Yes | Yes |
-
+No database changes are required. The checkbox is purely a frontend gate — Supabase already handles the `signUp()` call when the user proceeds.
