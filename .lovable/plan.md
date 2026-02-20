@@ -1,94 +1,91 @@
 
-## Two Profile Loading Performance Fixes
+## Add "Public Profile" Visibility Toggle in Profile Settings
 
-### The Real Problems Found
+### What This Does
 
-After reading both `src/pages/UserProfile.tsx` (the page you land on when clicking someone's post in the feed) and `src/pages/Profile.tsx` (your own profile in the bottom nav), there are clear, specific bottlenecks in both.
+A single new collapsible section — **"Privacy & Visibility"** — will be added to `ProfileSettings.tsx`. It contains one toggle switch that controls the `preferences.visible_on_globe` field (already used by the Globe). Turning this on means the user appears on:
 
----
+1. **The Globe** (Explore page — already wired to `visible_on_globe`)
+2. **The Fashion Leaderboard** (Rewards page — currently shows everyone; will be filtered)
 
-### Problem 1: Public Profile Page (`/profile/:userId`) — "Posts, Outfits, Items" page
-
-**File:** `src/pages/UserProfile.tsx`
-
-The profile data query has a hidden double-trip built into it:
-
-```
-Step 1: Query public_profiles table → wait for response
-Step 2: If nothing found → query users_public table (fallback)
-```
-
-These two queries run **one after the other** in a single `queryFn`. Only after both potentially complete does React stop showing the full-screen "Loading profile..." spinner and render the page header.
-
-Meanwhile, the three tab queries (posts, outfits, items) all have `enabled: !!id` so they start immediately — but the page still shows a full-screen blank spinner while the profile header query runs its double-trip, even though the tab data is already loading in the background.
-
-**Fix:**
-- Run both `public_profiles` and `users_public` queries simultaneously with `Promise.all` — pick whichever returns data.
-- Show the profile header skeleton immediately (don't block the full page on profile loading — show a skeleton avatar and name placeholder instead of a white spinner screen). The tabs and content appear right away.
+Turning it off hides the user from both places silently.
 
 ---
 
-### Problem 2: Own Profile Page (`/profile`) — Bottom Nav Profile
+### The Two Problems Being Solved
 
-**File:** `src/pages/Profile.tsx`
+**Problem A — The toggle only exists deep inside the Globe drawer**
 
-The `initializeProfile` function runs two awaits in sequence:
+Right now the only way to toggle globe visibility is to open the Explore page, tap your country, go to the Shoppers tab, and find the toggle in "Your Content". Most users will never find it there. It needs to live in **Profile Settings** where users look for privacy controls.
 
-```typescript
-await fetchUserProfile();   // Query 1: users table
-await fetchFeaturedEvent(); // Query 2: retail_events table (with retailer join + date filter)
-```
+**Problem B — The Leaderboard ignores visibility preference**
 
-`fetchFeaturedEvent` queries `retail_events` joined with `retailers`, filtered by status and end date, ordered and limited. This join query can be slow — and right now the **entire page** stays in full-screen spinner mode until this secondary query completes, even though the profile header data is already back.
+`MinimizedLeaderboard.tsx` queries `public_profiles` and includes every user. The `public_profiles` view does not expose the `preferences` column, so the leaderboard cannot currently filter by `visible_on_globe`. There are two ways to fix this:
 
-**Fix:**
-- Run `fetchUserProfile()` and `fetchFeaturedEvent()` in **parallel** using `Promise.allSettled`.
-- Render the page as soon as `fetchUserProfile` resolves — use a separate `eventLoading` state for the Events section only.
-- The Events section shows a small skeleton while loading rather than blocking the whole page.
+- Option 1: Add `preferences` to the `public_profiles` view (requires a DB migration)
+- Option 2: Query the `users` table directly with a filter (no DB change needed)
+
+**Option 2 is chosen** — the leaderboard already has auth-gated access and querying the `users` table with a `preferences` filter is safe and avoids any schema migration.
 
 ---
 
-### What Changes
+### Files Changed
 
-| File | Change | Effect |
-|------|--------|--------|
-| `src/pages/UserProfile.tsx` | Run `public_profiles` + `users_public` fallback in `Promise.all` simultaneously; replace full-screen spinner with inline header skeleton | Profile header appears faster; tabs load in parallel without waiting |
-| `src/pages/Profile.tsx` | Change sequential `await` to `Promise.allSettled`; split `loading` into `profileLoading` + `eventLoading`; Events section gets its own skeleton | Profile page appears after just the users table query; Events section loads independently |
+| File | What Changes |
+|------|-------------|
+| `src/pages/ProfileSettings.tsx` | Add new "Privacy & Visibility" collapsible section with a `Switch` toggle for `visible_on_globe`; load/save from `users.preferences` |
+| `src/components/MinimizedLeaderboard.tsx` | Filter leaderboard query to only include users where `preferences->>'visible_on_globe' != 'false'` (i.e., default is visible) |
 
 ---
 
 ### Technical Details
 
-**UserProfile.tsx — Parallel profile lookup:**
-```typescript
-// Before (sequential fallback):
-const { data } = await supabase.from('public_profiles').select('*').eq('id', id).single();
-if (data) return data;
-const { data: fallback } = await supabase.from('users_public').select(...).eq('id', id).single();
+**ProfileSettings.tsx changes:**
 
-// After (parallel):
-const [profileResult, fallbackResult] = await Promise.all([
-  supabase.from('public_profiles').select('*').eq('id', id).maybeSingle(),
-  supabase.from('users_public').select('id, name, username, avatar_url').eq('id', id).maybeSingle(),
-]);
-return profileResult.data || { ...fallbackResult.data, country: null, bio: null, website: null };
+1. Add state: `visibilityOpen` (collapsible), `isVisibleOnGlobe` (boolean, default `true`), `savingVisibility` (loading state)
+
+2. In `loadUserProfile`, read `(data.preferences as any)?.visible_on_globe !== false` and set it to the state variable.
+
+3. Add a `saveVisibility` function that updates `users.preferences` with `{ ...existingPrefs, visible_on_globe: isVisibleOnGlobe }` — same pattern already used in `CountryDrawer.tsx`.
+
+4. Add a new collapsible section between "Shopping Preferences" and "Your Fit / Measurements" with:
+   - Icon: `Eye` / `EyeOff` from lucide-react (already imported in the file via CountryDrawer; needs to be added to ProfileSettings import)
+   - Title: **"Privacy & Visibility"**
+   - The toggle row:
+     ```
+     [Eye icon]  Show on Globe & Leaderboard     [Switch]
+     ```
+   - Subtext below the toggle:
+     > "When on, your profile appears on the Explore globe and in the Fashion Leaderboard on Rewards. Turn off to browse privately."
+   - A Save button (same pattern as other sections)
+
+**MinimizedLeaderboard.tsx changes:**
+
+The current query:
+```typescript
+let userQuery = supabase.from('public_profiles').select('*');
 ```
 
-Replace the full-screen loading state with an inline skeleton in the profile header so the page shell and tabs appear instantly.
-
-**Profile.tsx — Parallel fetch + split loading state:**
+Change to query the `users` table directly and filter out hidden users:
 ```typescript
-// Before:
-await fetchUserProfile();
-await fetchFeaturedEvent();
-
-// After:
-const [profileResult, eventResult] = await Promise.allSettled([
-  fetchUserProfile(),
-  fetchFeaturedEvent(),
-]);
-// profileLoading controls only the full-page spinner
-// eventLoading controls only the Events section skeleton
+let userQuery = supabase
+  .from('users')
+  .select('id, name, username, avatar_url, country, preferences')
+  .or('preferences->visible_on_globe.is.null,preferences->visible_on_globe.eq.true');
 ```
 
-No database changes. No new files. No schema changes required.
+This keeps users who have never set the preference (null = default visible) and users who explicitly set it to true. Users who set it to false are excluded.
+
+The `LeaderboardUser` interface and scoring logic don't change — the shape of `id, name, avatar_url, country` is the same from both tables.
+
+---
+
+### What the User Sees
+
+**In Profile Settings** — a new "Privacy & Visibility" section appears in the collapsible list, after Shopping Preferences. It has a single clear toggle with explanatory subtext so the user understands exactly what "public" controls.
+
+**In Rewards Leaderboard** — users who have turned off their globe/public visibility will no longer appear in the list. Users who are visible will continue to appear as before.
+
+**In the Globe** — no change; it already correctly reads `visible_on_globe` from the `users` table.
+
+The Globe drawer toggle still works too — since both the drawer and the settings page write to the same `users.preferences.visible_on_globe` field, they stay in sync automatically. The settings page will simply be a more discoverable place to find the same control.
