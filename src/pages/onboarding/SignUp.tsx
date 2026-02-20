@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ export default function SignUp() {
   const [referralCode, setReferralCode] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('');
   const [countryOpen, setCountryOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showUsernameFields, setShowUsernameFields] = useState(false);
@@ -460,6 +462,24 @@ export default function SignUp() {
                       <p className="text-[10px] md:text-xs text-red-600 mt-1">Invalid referral code</p>
                     )}
                   </div>
+
+                  {/* Legal consent checkbox */}
+                  <div className="flex items-start gap-3 pt-1">
+                    <Checkbox
+                      id="terms-accept"
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                      className="mt-0.5 flex-shrink-0"
+                    />
+                    <label htmlFor="terms-accept" className="text-xs md:text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                      By creating an account, I agree to the{' '}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Terms of Service</a>
+                      {' · '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Privacy Policy</a>
+                      {' · '}
+                      <a href="/cookies" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Cookie Policy</a>
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -512,7 +532,7 @@ export default function SignUp() {
               {!isLegacyOAuthUser && (
                 <Button
                   type="submit"
-                  disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
+                  disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && (!isUsernameAvailable || !termsAccepted))}
                   className="w-full h-12 md:h-14 text-base md:text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
                 >
                   {loading || checkingEmail ? (

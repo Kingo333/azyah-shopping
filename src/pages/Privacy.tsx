@@ -133,22 +133,7 @@ const Privacy = () => {
                     <li><strong>Portability:</strong> Export your data in a common format</li>
                     <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
                   </ul>
-                  <p>To exercise these rights, please contact us at <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a> or through your platform settings.</p>
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <h2 className="text-2xl font-cormorant font-bold text-primary">7. Third-Party Services</h2>
-                <div className="space-y-3 text-muted-foreground">
-                  <p>Our platform integrates with third-party services:</p>
-                  <ul className="space-y-2 list-disc list-inside">
-                    <li><strong>Social Media:</strong> Optional login via Google, Apple, etc.</li>
-                    <li><strong>Database & Authentication:</strong> Supabase for user accounts and data storage</li>
-                    <li><strong>Subscription Management:</strong> RevenueCat and Apple In-App Purchases for premium subscription processing</li>
-                    <li><strong>AI Services:</strong> Third-party AI providers for virtual try-on image and video generation</li>
-                    <li><strong>Analytics:</strong> Usage analytics to improve platform performance</li>
-                  </ul>
-                  <p>These services have their own privacy policies, which we encourage you to review.</p>
+                  <p>To exercise these rights, please contact us at <a href="mailto:team@azyahstyle.com" className="text-primary hover:underline">team@azyahstyle.com</a> or through your platform settings.</p>
                 </div>
               </section>
 
@@ -160,7 +145,7 @@ const Privacy = () => {
                     <li>Photos you upload are processed by third-party AI services solely to generate the requested try-on result.</li>
                     <li>Generated try-on outputs are stored temporarily and can be deleted by you at any time through the app.</li>
                     <li>Azyah Style does not use your uploaded photos for purposes other than generating the requested try-on result and improving the service.</li>
-                    <li>You can request deletion of all uploaded photos and generated outputs by contacting <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a>.</li>
+                    <li>You can request deletion of all uploaded photos and generated outputs by contacting <a href="mailto:team@azyahstyle.com" className="text-primary hover:underline">team@azyahstyle.com</a>.</li>
                   </ul>
                 </div>
               </section>
@@ -207,7 +192,7 @@ const Privacy = () => {
                   <ul className="space-y-1 list-disc list-inside mt-2">
                     <li>Through your platform settings</li>
                     <li>Via our support system</li>
-                    <li>Email: <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a></li>
+                    <li>Email: <a href="mailto:team@azyahstyle.com" className="text-primary hover:underline">team@azyahstyle.com</a></li>
                   </ul>
                 </div>
               </section>

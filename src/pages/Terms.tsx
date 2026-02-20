@@ -213,7 +213,7 @@ const Terms = () => {
               <div className="text-center pt-8 border-t border-border">
                 <p className="text-sm text-muted-foreground">
                   If you have any questions about these Terms & Conditions, please contact us at{' '}
-                  <a href="mailto:support@azyahstyle.com" className="text-primary hover:underline">support@azyahstyle.com</a>.
+                  <a href="mailto:team@azyahstyle.com" className="text-primary hover:underline">team@azyahstyle.com</a>.
                 </p>
               </div>
             </div>
