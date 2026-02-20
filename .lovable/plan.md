@@ -1,62 +1,50 @@
 
-## Two Changes: Email Replacement + Legal Consent Checkbox on Signup
+## Fix: Fully Silent Background AI Asset Fetching
 
-### Change 1: Replace `support@azyahstyle.com` → `team@azyahstyle.com`
+### The Problem
 
-Four files contain the old email address:
+`useAiAssets.ts` currently shows 3 different destructive error toasts when `fetchAssets` fails:
 
-| File | Occurrences |
-|------|-------------|
-| `src/pages/Terms.tsx` | 1 |
-| `src/pages/Privacy.tsx` | 3 |
-| `src/pages/CookiePolicy.tsx` | 1 |
-| `src/pages/ProfileSettings.tsx` | 2 (href + display text) |
+1. **Line 77-81** — `"Authentication Error: Please sign in again to view your AI assets."` — fires on JWT errors
+2. **Line 86-91** — `"Error Loading Assets: Unable to fetch your AI assets. Retrying..."` — fires on DB errors
+3. **Line 111-116** — `"Connection Error: Network error while fetching AI assets. Retrying..."` — fires on network errors
 
-All 7 instances will be swapped from `support@azyahstyle.com` → `team@azyahstyle.com`.
+None of these should ever show to the user. `fetchAssets` is a **silent background load** that runs automatically when the AI Studio modal opens. There are two completely normal reasons it can fail or return nothing:
 
----
+- Assets expired and were deleted by the 48-hour cron job — this is expected, not an error
+- A brief auth/network blip on app startup before the session is ready — self-resolves quickly
 
-### Change 2: Legal Consent Checkbox on Shopper Signup
+### What Changes (`src/hooks/useAiAssets.ts` only)
 
-The signup form in `src/pages/onboarding/SignUp.tsx` has a two-step flow:
-1. **Initial screen** – "Continue with email" button
-2. **Email-entry screen** – email → then either password (returning user) or username + password fields (new user)
+**1. Remove all 3 error toasts from `fetchAssets`**
+Replace every `toast({...})` call inside `fetchAssets` with a `console.log(...)` only. The user sees nothing — the Previous Results panel just shows empty or whatever came back.
 
-The checkbox should only appear at **account creation** time (i.e., when `showUsernameFields` is `true` for new shoppers). It should **not** appear for returning users logging in, nor for brand/retailer signups (they have separate account creation flows which can get the same treatment if needed later).
+**2. Fix the retry loop that causes infinite re-renders**
+`retryCount` is currently in `useState` AND listed as a dependency of `useCallback`. This means:
+- `retryCount` increments → `fetchAssets` is recreated → `useEffect` fires again → fetch runs again → increments again → loop
 
-**What to add in `src/pages/onboarding/SignUp.tsx`:**
+Fix: Replace `const [retryCount, setRetryCount] = useState(0)` with `const retryCountRef = useRef(0)`. A ref update does **not** trigger re-renders, so the loop breaks. Update all `retryCount` reads and `setRetryCount` calls to use `retryCountRef.current` and direct assignment instead.
 
-1. Add a `termsAccepted` boolean state, defaulting to `false`.
-2. In the `showUsernameFields` block (after the country + referral fields, before the submit button), add a checkbox row:
+**3. Simplify retry to 1 quiet attempt**
+Since failures are expected (expiry, startup race), reduce from 3 retries to 1 quiet retry after 1.5 seconds. No toast on retry either.
 
-```
-☐  By creating an account, I agree to the
-   Terms of Service · Privacy Policy · Cookie Policy
-```
+**4. Keep toasts for `saveAsset` and `deleteAssets`**
+These are explicit user-triggered actions — users need feedback when those fail. These toasts stay untouched.
 
-Each policy name links to `/terms`, `/privacy`, `/cookies` respectively (opened in a new tab so users don't lose their form state).
+### What the User Experiences
 
-3. Add `termsAccepted` as an additional condition that must be `true` for the submit button to be enabled. The existing disabled logic:
-```ts
-disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
-```
-becomes:
-```ts
-disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && (!isUsernameAvailable || !termsAccepted))}
-```
+| Scenario | Before | After |
+|----------|--------|-------|
+| Assets expired (cron deleted them) | 🔴 "Error Loading Assets" toast | ✅ Empty results panel, no toast |
+| Auth not ready on modal open | 🔴 "Authentication Error" toast | ✅ Silent, 1 quiet retry after 1.5s |
+| Network blip on load | 🔴 "Connection Error" toast | ✅ Silent, 1 quiet retry after 1.5s |
+| Save fails | 🔴 "Save Failed" toast | 🔴 "Save Failed" toast (kept — user action) |
+| Delete fails | 🔴 "Delete Failed" toast | 🔴 "Delete Failed" toast (kept — user action) |
 
-4. The checkbox is styled with the existing `Checkbox` component from `@radix-ui/react-checkbox` (already imported via `@/components/ui/checkbox`).
+### Files Changed
 
----
+| File | Change |
+|------|--------|
+| `src/hooks/useAiAssets.ts` | Remove all 3 error toasts from `fetchAssets`; replace `useState` retry counter with `useRef`; simplify to 1 quiet retry |
 
-### Technical Details
-
-| File | Changes |
-|------|---------|
-| `src/pages/Terms.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (1 place) |
-| `src/pages/Privacy.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (3 places) |
-| `src/pages/CookiePolicy.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (1 place) |
-| `src/pages/ProfileSettings.tsx` | Replace `support@azyahstyle.com` → `team@azyahstyle.com` (2 places: href and display text) |
-| `src/pages/onboarding/SignUp.tsx` | Add `termsAccepted` state; add checkbox with links to `/terms`, `/privacy`, `/cookies`; gate submit button on `termsAccepted` when `showUsernameFields` is true |
-
-No database changes are required. The checkbox is purely a frontend gate — Supabase already handles the `signUp()` call when the user proceeds.
+No other files need changing. This is a pure error-handling fix with no UI or database changes.
