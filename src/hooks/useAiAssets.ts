@@ -17,10 +17,10 @@ export interface AiAsset {
 export const useAiAssets = () => {
   const [assets, setAssets] = useState<AiAsset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
   const isRequestInProgress = useRef(false);
+  const retryCountRef = useRef(0);
   const debouncedUser = useDebounce(user, 300);
 
   const fetchAssets = useCallback(async (isRetry = false) => {
@@ -45,7 +45,7 @@ export const useAiAssets = () => {
         console.log('[useAiAssets] No valid session found, attempting to refresh');
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
-          console.log('[useAiAssets] Session refresh failed');
+          console.log('[useAiAssets] Session refresh failed — assets may have expired or session not ready');
           setAssets([]);
           return;
         }
@@ -63,70 +63,44 @@ export const useAiAssets = () => {
         .limit(50);
 
       if (error) {
-        console.error('[useAiAssets] Database error fetching AI assets:', error);
+        console.log('[useAiAssets] Background fetch failed (assets may have expired or auth not ready):', error.message);
         
-        // Handle auth-related errors with retry
-        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-          if (retryCount < 2 && !isRetry) {
-            console.log('[useAiAssets] Auth error, retrying with session refresh...');
-            setRetryCount(prev => prev + 1);
-            await supabase.auth.refreshSession();
-            setTimeout(() => fetchAssets(true), 1000);
-            return;
-          } else {
-            toast({
-              title: 'Authentication Error',
-              description: 'Please sign in again to view your AI assets.',
-              variant: 'destructive'
-            });
-          }
-        } else {
-          // Only show error toast if it's not a retry attempt
-          if (!isRetry || retryCount === 0) {
-            toast({
-              title: 'Error Loading Assets',
-              description: 'Unable to fetch your AI assets. Retrying...',
-              variant: 'destructive'
-            });
-          }
-          
-          // Retry logic for network errors
-          if (retryCount < 3) {
-            setRetryCount(prev => prev + 1);
-            setTimeout(() => fetchAssets(true), 2000 * (retryCount + 1));
-            return;
-          }
+        // One quiet retry after 1.5s — no toast, completely silent
+        if (retryCountRef.current < 1 && !isRetry) {
+          retryCountRef.current += 1;
+          console.log('[useAiAssets] Scheduling 1 quiet retry in 1.5s...');
+          await supabase.auth.refreshSession();
+          setTimeout(() => fetchAssets(true), 1500);
+          return;
         }
+        
+        // Give up silently — empty panel is fine (assets likely expired)
+        console.log('[useAiAssets] Giving up after retry — showing empty results');
         setAssets([]);
       } else {
         console.log('[useAiAssets] Successfully fetched', data?.length || 0, 'assets');
         setAssets(data || []);
-        setRetryCount(0); // Reset retry count on success
+        retryCountRef.current = 0; // Reset on success
       }
     } catch (error: any) {
-      console.error('[useAiAssets] Network error fetching AI assets:', error);
+      console.log('[useAiAssets] Network error during background asset fetch (silent):', error?.message);
       
-      // Only show error toast and retry for actual network errors
-      if (!isRetry || retryCount === 0) {
-        toast({
-          title: 'Connection Error',
-          description: 'Network error while fetching AI assets. Retrying...',
-          variant: 'destructive'
-        });
-      }
-      
-      if (retryCount < 3) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchAssets(true), 2000 * (retryCount + 1));
+      // One quiet retry after 1.5s — no toast
+      if (retryCountRef.current < 1 && !isRetry) {
+        retryCountRef.current += 1;
+        console.log('[useAiAssets] Scheduling 1 quiet retry in 1.5s...');
+        setTimeout(() => fetchAssets(true), 1500);
         return;
       }
       
+      // Give up silently
+      console.log('[useAiAssets] Giving up after retry — showing empty results');
       setAssets([]);
     } finally {
       setLoading(false);
       isRequestInProgress.current = false;
     }
-  }, [debouncedUser, retryCount, toast]);
+  }, [debouncedUser]); // retryCountRef is a ref — safe to omit from deps
 
   const saveAsset = async (assetUrl: string, jobId?: string, title?: string) => {
     if (!user) {
@@ -158,7 +132,7 @@ export const useAiAssets = () => {
       
       console.log('[useAiAssets] Asset saved successfully:', data);
       setAssets(prev => [data, ...prev]);
-      setRetryCount(0); // Reset retry count on successful save
+      retryCountRef.current = 0;
       return data;
     } catch (error: any) {
       console.error('[useAiAssets] Error saving asset:', error);
@@ -175,6 +149,7 @@ export const useAiAssets = () => {
     let isMounted = true;
     
     if (debouncedUser && isMounted) {
+      retryCountRef.current = 0; // Reset on new user
       fetchAssets();
     }
 
@@ -196,7 +171,7 @@ export const useAiAssets = () => {
         .from('ai_assets')
         .delete()
         .in('id', assetIds)
-        .eq('user_id', user.id); // Ensure users can only delete their own assets
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('[useAiAssets] Database error deleting assets:', error);
