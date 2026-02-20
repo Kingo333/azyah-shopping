@@ -45,6 +45,7 @@ const Profile: React.FC = () => {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [eventLoading, setEventLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [searchInitialTab, setSearchInitialTab] = useState<'products' | 'users' | 'brands'>('products');
@@ -89,11 +90,14 @@ const Profile: React.FC = () => {
     const initializeProfile = async () => {
       if (!user) {
         setLoading(false);
+        setEventLoading(false);
         return;
       }
+      // Fire both fetches in parallel — profile controls the full-page spinner,
+      // event controls only the Events section skeleton.
+      fetchFeaturedEvent().finally(() => setEventLoading(false));
       try {
         await fetchUserProfile();
-        await fetchFeaturedEvent();
       } catch (error) {
         console.error('Error initializing profile:', error);
       } finally {
@@ -282,7 +286,9 @@ const Profile: React.FC = () => {
               </Button>
             </div>
 
-            {!featuredEvent ? (
+            {eventLoading ? (
+              <div className="h-28 rounded-lg bg-muted animate-pulse" />
+            ) : !featuredEvent ? (
               <div className="flex items-center justify-center py-3 text-sm text-muted-foreground">
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 <span>No upcoming events</span>

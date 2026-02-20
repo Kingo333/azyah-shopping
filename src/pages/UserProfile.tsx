@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { GlassPanel } from '@/components/ui/glass-panel';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -58,31 +59,23 @@ const UserProfile: React.FC = () => {
   const unblockUser = useUnblockUser();
   const isBlocked = id ? blockedIds.includes(id) : false;
 
-  // Fetch profile - try public_profiles first, fallback to users_public
+  // Fetch profile - run both queries in parallel, pick whichever has data
   const { data: userProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile-view', id],
     queryFn: async () => {
       if (!id) throw new Error('User ID required');
       
-      const { data } = await supabase
-        .from('public_profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const [profileResult, fallbackResult] = await Promise.all([
+        supabase.from('public_profiles').select('*').eq('id', id).maybeSingle(),
+        supabase.from('users_public').select('id, name, username, avatar_url').eq('id', id).maybeSingle(),
+      ]);
 
-      if (data) return data as UserProfileData;
-
-      // Fallback to users_public view
-      const { data: fallback, error } = await supabase
-        .from('users_public')
-        .select('id, name, username, avatar_url')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return { ...fallback, country: null, bio: null, website: null } as UserProfileData;
+      if (profileResult.data) return profileResult.data as UserProfileData;
+      if (fallbackResult.data) return { ...fallbackResult.data, country: null, bio: null, website: null } as UserProfileData;
+      throw new Error('User not found');
     },
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 60_000,
   });
 
   const isMutual = id ? isMutualFollow(id) : false;
@@ -180,21 +173,7 @@ const UserProfile: React.FC = () => {
     enabled: !!id
   });
 
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto max-w-4xl p-4">
-          <ShopperNavigation />
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading profile...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!userProfile) {
+  if (!profileLoading && !userProfile) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-4xl p-4">
@@ -207,7 +186,7 @@ const UserProfile: React.FC = () => {
     );
   }
 
-  const displayName = userProfile.name || userProfile.username || 'Anonymous User';
+  const displayName = userProfile?.name || userProfile?.username || 'Anonymous User';
 
   return (
     <div className="min-h-screen dashboard-bg">
@@ -226,21 +205,33 @@ const UserProfile: React.FC = () => {
         {/* Profile Header */}
         <GlassPanel variant="premium" className="p-6 mb-6">
           <div className="flex items-start gap-5">
-            <Avatar className="w-20 h-20 border-2 border-border/50">
-              <AvatarImage src={userProfile.avatar_url || undefined} />
-              <AvatarFallback className="text-xl bg-primary/10 text-primary">
-                {displayName[0]?.toUpperCase() || 'A'}
-              </AvatarFallback>
-            </Avatar>
+            {profileLoading ? (
+              <Skeleton className="w-20 h-20 rounded-full flex-shrink-0" />
+            ) : (
+              <Avatar className="w-20 h-20 border-2 border-border/50">
+                <AvatarImage src={userProfile?.avatar_url || undefined} />
+                <AvatarFallback className="text-xl bg-primary/10 text-primary">
+                  {displayName[0]?.toUpperCase() || 'A'}
+                </AvatarFallback>
+              </Avatar>
+            )}
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-serif font-bold text-foreground truncate">{displayName}</h1>
-              
-              {userProfile.bio && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{userProfile.bio}</p>
+              {profileLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-xl font-serif font-bold text-foreground truncate">{displayName}</h1>
+                  {userProfile?.bio && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{userProfile.bio}</p>
+                  )}
+                </>
               )}
 
-              {userProfile.country && (
+              {userProfile?.country && (
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" />
                   <span>{userProfile.country}</span>
@@ -261,12 +252,12 @@ const UserProfile: React.FC = () => {
                   </Button>
                 )}
 
-                {userProfile.website && (
+                {userProfile?.website && (
                   <Button 
                     variant="outline" 
                     size="sm"
                     className="rounded-full text-xs h-8 px-3 gap-1"
-                    onClick={() => window.open(userProfile.website!, '_blank')}
+                    onClick={() => window.open(userProfile!.website!, '_blank')}
                   >
                     <Globe className="h-3 w-3" />
                     Website
