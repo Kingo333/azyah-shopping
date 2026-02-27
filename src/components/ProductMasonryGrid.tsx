@@ -74,6 +74,7 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   }, []);
 
   // Fetch public user posts + followers_only posts from mutual follows
+  const mutualKey = mutualFollowIds.join(',');
   useEffect(() => {
     const fetchUserPosts = async () => {
       // Fetch public posts
@@ -109,7 +110,6 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
           .limit(8);
 
         if (followersOnlyData) {
-          // Merge and deduplicate
           const existingIds = new Set(allPosts.map((p: any) => p.id));
           const newPosts = followersOnlyData.filter((p: any) => !existingIds.has(p.id));
           allPosts = [...allPosts, ...newPosts].sort((a: any, b: any) =>
@@ -120,7 +120,6 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
 
       const postsWithImages = allPosts.filter((p: any) => p.post_images?.length > 0);
       
-      // Collect all internal product_ids to fetch their images
       const allProductIds = postsWithImages
         .flatMap((p: any) => (p.post_products || []))
         .map((pp: any) => pp.product_id)
@@ -155,7 +154,8 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     };
 
     fetchUserPosts();
-  }, [user?.id, mutualFollowIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, mutualKey]);
 
   const handleLikeToggle = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
