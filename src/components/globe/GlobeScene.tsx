@@ -362,7 +362,7 @@ function CountryBorders() {
           for (let i = 0; i < ring.length - 1; i++) {
             const v1 = latLngToVector3(ring[i][1], ring[i][0], 1.003);
             const v2 = latLngToVector3(ring[i + 1][1], ring[i + 1][0], 1.003);
-            positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+            positions.push(v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]);
           }
         };
 
