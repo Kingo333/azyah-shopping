@@ -343,6 +343,77 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// Country borders component - renders TopoJSON borders as line segments on globe surface
+const WORLD_TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+function CountryBorders() {
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(WORLD_TOPO_URL)
+      .then(res => res.json())
+      .then(topoData => {
+        if (cancelled) return;
+        const countries = topojson.feature(topoData, topoData.objects.countries) as any;
+        const positions: number[] = [];
+
+        const processRing = (ring: number[][]) => {
+          for (let i = 0; i < ring.length - 1; i++) {
+            const v1 = latLngToVector3(ring[i][1], ring[i][0], 1.003);
+            const v2 = latLngToVector3(ring[i + 1][1], ring[i + 1][0], 1.003);
+            positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+          }
+        };
+
+        countries.features.forEach((feature: any) => {
+          const geom = feature.geometry;
+          if (!geom) return;
+          if (geom.type === 'Polygon') {
+            geom.coordinates.forEach(processRing);
+          } else if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach((polygon: number[][][]) => {
+              polygon.forEach(processRing);
+            });
+          }
+        });
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        setGeometry(geo);
+      })
+      .catch(err => console.warn('Failed to load country borders:', err));
+
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!geometry) return null;
+
+  return (
+    <lineSegments geometry={geometry}>
+      <lineBasicMaterial
+        color="#aabbcc"
+        transparent
+        opacity={0.35}
+        depthWrite={false}
+      />
+    </lineSegments>
+  );
+}
+
+// Safe wrapper for CountryBorders
+function SafeCountryBorders() {
+  const [hasError, setHasError] = useState(false);
+  if (hasError) return null;
+  return (
+    <ErrorBoundary onError={() => setHasError(true)}>
+      <Suspense fallback={null}>
+        <CountryBorders />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 // Atmosphere glow - subtle for cleaner look
 function AtmosphereGlow() {
   return (
