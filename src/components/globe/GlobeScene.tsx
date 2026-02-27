@@ -3,6 +3,7 @@ import { Canvas, useFrame, extend } from '@react-three/fiber';
 import { OrbitControls, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { COUNTRY_COORDINATES, latLngToVector3, type CountryCoordinates } from '@/lib/countryCoordinates';
+import * as topojson from 'topojson-client';
 
 // Extend THREE classes to avoid lovable-tagger conflicts
 extend({ 
@@ -11,7 +12,10 @@ extend({
   SphereGeometry: THREE.SphereGeometry,
   MeshStandardMaterial: THREE.MeshStandardMaterial,
   MeshBasicMaterial: THREE.MeshBasicMaterial,
-  MeshPhongMaterial: THREE.MeshPhongMaterial
+  MeshPhongMaterial: THREE.MeshPhongMaterial,
+  LineSegments: THREE.LineSegments,
+  LineBasicMaterial: THREE.LineBasicMaterial,
+  BufferGeometry: THREE.BufferGeometry,
 });
 
 // Earth texture URLs - using reliable CDN sources
