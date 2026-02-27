@@ -7,8 +7,10 @@ export function useMutualFollows() {
   const { user } = useAuth();
   const { following } = useFollows();
 
+  const followingKey = [...following].sort().join(',');
+
   const { data: mutualFollowIds = [], isLoading } = useQuery({
-    queryKey: ['mutual-follows', user?.id, following],
+    queryKey: ['mutual-follows', user?.id, followingKey],
     queryFn: async (): Promise<string[]> => {
       if (!user?.id || following.length === 0) return [];
 

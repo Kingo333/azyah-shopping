@@ -155,7 +155,9 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
     };
 
     fetchUserPosts();
-  }, [user?.id, mutualFollowIds]);
+  const mutualKey = mutualFollowIds.join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, mutualKey]);
 
   const handleLikeToggle = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
