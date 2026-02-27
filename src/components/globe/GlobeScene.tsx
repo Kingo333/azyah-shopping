@@ -3,6 +3,7 @@ import { Canvas, useFrame, extend } from '@react-three/fiber';
 import { OrbitControls, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { COUNTRY_COORDINATES, latLngToVector3, type CountryCoordinates } from '@/lib/countryCoordinates';
+import * as topojson from 'topojson-client';
 
 // Extend THREE classes to avoid lovable-tagger conflicts
 extend({ 
@@ -11,7 +12,10 @@ extend({
   SphereGeometry: THREE.SphereGeometry,
   MeshStandardMaterial: THREE.MeshStandardMaterial,
   MeshBasicMaterial: THREE.MeshBasicMaterial,
-  MeshPhongMaterial: THREE.MeshPhongMaterial
+  MeshPhongMaterial: THREE.MeshPhongMaterial,
+  LineSegments: THREE.LineSegments,
+  LineBasicMaterial: THREE.LineBasicMaterial,
+  BufferGeometry: THREE.BufferGeometry,
 });
 
 // Earth texture URLs - using reliable CDN sources
@@ -339,6 +343,77 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// Country borders component - renders TopoJSON borders as line segments on globe surface
+const WORLD_TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+function CountryBorders() {
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(WORLD_TOPO_URL)
+      .then(res => res.json())
+      .then(topoData => {
+        if (cancelled) return;
+        const countries = topojson.feature(topoData, topoData.objects.countries) as any;
+        const positions: number[] = [];
+
+        const processRing = (ring: number[][]) => {
+          for (let i = 0; i < ring.length - 1; i++) {
+            const v1 = latLngToVector3(ring[i][1], ring[i][0], 1.003);
+            const v2 = latLngToVector3(ring[i + 1][1], ring[i + 1][0], 1.003);
+            positions.push(v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]);
+          }
+        };
+
+        countries.features.forEach((feature: any) => {
+          const geom = feature.geometry;
+          if (!geom) return;
+          if (geom.type === 'Polygon') {
+            geom.coordinates.forEach(processRing);
+          } else if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach((polygon: number[][][]) => {
+              polygon.forEach(processRing);
+            });
+          }
+        });
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        setGeometry(geo);
+      })
+      .catch(err => console.warn('Failed to load country borders:', err));
+
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!geometry) return null;
+
+  return (
+    <lineSegments geometry={geometry}>
+      <lineBasicMaterial
+        color="#aabbcc"
+        transparent
+        opacity={0.35}
+        depthWrite={false}
+      />
+    </lineSegments>
+  );
+}
+
+// Safe wrapper for CountryBorders
+function SafeCountryBorders() {
+  const [hasError, setHasError] = useState(false);
+  if (hasError) return null;
+  return (
+    <ErrorBoundary onError={() => setHasError(true)}>
+      <Suspense fallback={null}>
+        <CountryBorders />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 // Atmosphere glow - subtle for cleaner look
 function AtmosphereGlow() {
   return (
@@ -398,6 +473,9 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
     <group ref={globeRef}>
       {/* Realistic Earth with textures - falls back to simple sphere offline */}
       <SafeRealisticEarth />
+      
+      {/* Country borders - subtle lines on globe surface */}
+      <SafeCountryBorders />
       
       {/* Cloud layer - optional, fails gracefully */}
       <SafeCloudLayer />
