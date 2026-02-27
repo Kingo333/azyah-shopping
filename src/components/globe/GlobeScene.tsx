@@ -474,6 +474,9 @@ function Globe({ countriesWithBrands, selectedCountry, onCountrySelect, autoRota
       {/* Realistic Earth with textures - falls back to simple sphere offline */}
       <SafeRealisticEarth />
       
+      {/* Country borders - subtle lines on globe surface */}
+      <SafeCountryBorders />
+      
       {/* Cloud layer - optional, fails gracefully */}
       <SafeCloudLayer />
       
