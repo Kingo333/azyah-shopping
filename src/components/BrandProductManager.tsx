@@ -540,9 +540,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                            }
 
                            try {
-                             setUploadingOutfit(true);
+                              setUploadingARModel(true);
 
-                             const { data: brandData } = await supabase
+                              const { data: brandData } = await supabase
                                .from('event_brands')
                                .select('event_id')
                                .eq('id', brand.id)
