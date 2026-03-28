@@ -40,6 +40,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [editingProduct, setEditingProduct] = useState<EventBrandProduct | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
+  const [uploadingARModel, setUploadingARModel] = useState(false);
   const [forceReupload, setForceReupload] = useState(false);
   const { toast } = useToast();
 
@@ -539,9 +540,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                            }
 
                            try {
-                             setUploadingOutfit(true);
+                              setUploadingARModel(true);
 
-                             const { data: brandData } = await supabase
+                              const { data: brandData } = await supabase
                                .from('event_brands')
                                .select('event_id')
                                .eq('id', brand.id)
@@ -593,12 +594,12 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                variant: "destructive"
                              });
                            } finally {
-                             setUploadingOutfit(false);
-                             e.target.value = '';
-                           }
-                         }}
-                         className="w-full p-2 border rounded"
-                         disabled={uploadingOutfit}
+                              setUploadingARModel(false);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                          disabled={uploadingARModel}
                        />
                      </div>
                    </div>
