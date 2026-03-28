@@ -40,6 +40,8 @@ interface EventProduct {
   event_brand_id: string;
   brand_name: string;
   brand_logo_url?: string;
+  ar_model_url?: string;
+  ar_enabled?: boolean;
 }
 const Events = () => {
   const navigate = useNavigate();
