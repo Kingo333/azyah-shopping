@@ -250,7 +250,7 @@ export default function ARExperience() {
             if (result.landmarks && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
               framesWithoutPose.current = 0;
               setTrackingState('tracking_active');
-              updateModel(result.landmarks[0], offset, vw / vh);
+              updateModel(result.landmarks[0], offset);
             } else {
               framesWithoutPose.current++;
               if (framesWithoutPose.current > 30) {
