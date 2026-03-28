@@ -277,8 +277,13 @@ export default function ARExperience() {
     };
   }, [isLoading, selectedProduct]);
 
-  function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }, aspectRatio: number) {
+  function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }) {
     if (!modelRef.current) return;
+
+    const { w: visW, h: visH } = visibleDimsRef.current;
+    const dims = modelDimsRef.current;
+    const arScale = selectedProduct?.ar_scale || 1;
+
     const ls = landmarks[11]; // left shoulder
     const rs = landmarks[12]; // right shoulder
     const lh = landmarks[23]; // left hip
@@ -290,32 +295,63 @@ export default function ARExperience() {
     modelRef.current.visible = true;
     const hasHips = (lh.visibility ?? 0) > 0.3 && (rh.visibility ?? 0) > 0.3;
 
+    // Mirror X for selfie camera
     const mirrorX = (x: number) => 1 - x;
-    const cx = (mirrorX(ls.x) + mirrorX(rs.x)) / 2;
-    const cy = hasHips
-      ? (ls.y + rs.y + lh.y + rh.y) / 4
-      : (ls.y + rs.y) / 2 + 0.15;
+
+    // ── Shirt anchor points ──
+    // Horizontal: shoulder midpoint
+    const shoulderCX = (mirrorX(ls.x) + mirrorX(rs.x)) / 2;
+    const shoulderCY = (ls.y + rs.y) / 2;
+
+    // Vertical bottom: hip midpoint or estimate
+    let hipCX = shoulderCX;
+    let hipCY = shoulderCY + 0.25; // fallback estimate
+    if (hasHips) {
+      hipCX = (mirrorX(lh.x) + mirrorX(rh.x)) / 2;
+      hipCY = (lh.y + rh.y) / 2;
+    }
+
+    // Torso center = midpoint between shoulder-line and hip-line
+    const centerX = (shoulderCX + hipCX) / 2;
+    const centerY = (shoulderCY + hipCY) / 2;
+
+    // Depth from average z
     const avgZ = hasHips
       ? (ls.z + rs.z + lh.z + rh.z) / 4
       : (ls.z + rs.z) / 2;
 
-    const targetX = (cx - 0.5) * 4 * aspectRatio;
-    const targetY = -(cy - 0.5) * 3;
+    // ── Map normalized coords to world units using FOV ──
+    const targetX = (centerX - 0.5) * visW;
+    const targetY = -(centerY - 0.5) * visH;
     const targetZ = avgZ * 2 - 1;
 
-    const sw = Math.abs(rs.x - ls.x);
-    let bodyW = sw;
-    if (hasHips) bodyW = Math.max(sw, Math.abs(rh.x - lh.x));
-    const targetScale = bodyW * 5 * (selectedProduct?.ar_scale || 1);
+    // ── Body-proportional non-uniform scaling ──
+    const shoulderWidthNorm = Math.abs(mirrorX(rs.x) - mirrorX(ls.x));
+    const torsoHeightNorm = hipCY - shoulderCY;
 
+    const shoulderWidthWorld = shoulderWidthNorm * visW;
+    const torsoHeightWorld = torsoHeightNorm * visH;
+
+    // Scale model to match body proportions
+    // Add 15% horizontal padding so shirt extends past shoulders
+    const targetScaleX = (shoulderWidthWorld / dims.w) * arScale * 1.15;
+    const targetScaleY = (torsoHeightWorld / dims.h) * arScale;
+    const targetScaleZ = (targetScaleX + targetScaleY) / 2; // average for depth
+
+    // Shoulder rotation for body turn
     const shoulderAngle = Math.atan2(rs.z - ls.z, mirrorX(rs.x) - mirrorX(ls.x));
 
+    // ── Apply with smoothing ──
     smoothPos.current = {
       x: lerp(smoothPos.current.x, targetX, SMOOTHING),
       y: lerp(smoothPos.current.y, targetY, SMOOTHING),
       z: lerp(smoothPos.current.z, targetZ, SMOOTHING),
     };
-    smoothScale.current = lerp(smoothScale.current, targetScale, SMOOTHING);
+    smoothScale.current = {
+      x: lerp(smoothScale.current.x, targetScaleX, SMOOTHING),
+      y: lerp(smoothScale.current.y, targetScaleY, SMOOTHING),
+      z: lerp(smoothScale.current.z, targetScaleZ, SMOOTHING),
+    };
     smoothRot.current = lerp(smoothRot.current, shoulderAngle, SMOOTHING * 0.5);
 
     modelRef.current.position.set(
@@ -323,12 +359,16 @@ export default function ARExperience() {
       smoothPos.current.y + offset.y,
       smoothPos.current.z + offset.z
     );
-    modelRef.current.scale.setScalar(smoothScale.current);
+    modelRef.current.scale.set(
+      smoothScale.current.x,
+      smoothScale.current.y,
+      smoothScale.current.z
+    );
     modelRef.current.rotation.y = smoothRot.current;
 
-    // Fade based on confidence
+    // Fade based on landmark confidence
     const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
-    const avgVis = keyVis.reduce((s, l) => s + (l.visibility ?? 0), 0) / keyVis.length;
+    const avgVis = keyVis.reduce((s: number, l: any) => s + (l.visibility ?? 0), 0) / keyVis.length;
     modelRef.current.traverse((child: any) => {
       if (child.isMesh && child.material) {
         child.material.transparent = true;
