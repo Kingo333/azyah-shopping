@@ -363,35 +363,24 @@ const Events = () => {
         </div>
 
         {/* Try-On Results Banner */}
-        {Object.keys(tryOnResults).length > 0 && <div className="mb-8 space-y-4">
-            <h2 className="text-xl font-semibold">Your Try-On Results</h2>
+        {Object.keys(tryOnResults).length > 0 && <div className="mb-8 space-y-3">
+            <h2 className="text-lg font-semibold">Your Try-On Results</h2>
             
-            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).map(([productId, result]) => {
-            const product = eventBrands.flatMap(b => b.products).find(p => p.id === productId);
-            return <Card key={productId} className="overflow-hidden border border-green-500/50 hover:border-green-500 transition-colors cursor-pointer group">
-                          <div className="relative aspect-square">
-                            <Badge className="absolute top-1.5 left-1.5 z-10 bg-green-500 text-white text-xs px-1.5 py-0.5">✨</Badge>
+            return <div key={productId} className="relative flex-shrink-0 w-[90px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="absolute top-1.5 right-1.5 z-10 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 z-10 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => { e.stopPropagation(); if (confirm('Delete this try-on result?')) handleDeleteResult(productId); }}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-2.5 w-2.5" />
                             </Button>
-                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full h-full object-cover" />
-                          </div>
-                          <CardContent className="p-2">
-                            <p className="text-xs font-medium truncate">{product?.brand_name || 'Product'}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{new Date(result.created_at).toLocaleDateString()}</p>
-                          </CardContent>
-                        </Card>;
+                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full aspect-[3/4] object-cover" />
+                        </div>;
           })}
                 </div>}
-            
-            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'failed')}
-            {user && selectedEvent && Object.keys(tryOnResults).length > 0}
           </div>}
 
         <div>
@@ -435,8 +424,8 @@ const Events = () => {
                               </div>
                               
                               {/* Action buttons row */}
-                              <div className="flex gap-1">
-                                <Button size="sm" className="flex-1 text-xs h-7" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
+                              <div className="flex gap-1 w-full">
+                                <Button size="sm" className="flex-1 min-w-0 text-xs h-7 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
                                   if (hasPersonImage && product.try_on_ready) {
                                     setSelectedProduct({
                                       ...product,
@@ -449,12 +438,12 @@ const Events = () => {
                                   {!hasPersonImage ? 'Photo First' : tryOnResults[product.id]?.status === 'processing' ? 'Processing' : tryOnResults[product.id]?.status === 'succeeded' ? 'Try Again' : product.try_on_ready ? 'Try On' : 'Not Ready'}
                                 </Button>
                                 
-                                {/* Per-product AR button */}
+                                {/* Per-product AR button — icon only */}
                                 {product.ar_enabled && product.ar_model_url && (
                                   <Button
-                                    size="sm"
+                                    size="icon"
                                     variant="outline"
-                                    className="h-7 px-2 text-xs border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
+                                    className="w-7 h-7 p-0 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
                                     onClick={() => handleOpenAR({
                                       ...product,
                                       event_brand_id: brand.id,
@@ -462,8 +451,7 @@ const Events = () => {
                                       brand_logo_url: brand.logo_url
                                     })}
                                   >
-                                    <Smartphone className="h-3 w-3 mr-0.5" />
-                                    AR
+                                    <Smartphone className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
                               </div>
@@ -551,45 +539,47 @@ const Events = () => {
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">No upcoming events at the moment. Check back soon!</p>
           </CardContent>
-        </Card> : <div className="grid gap-6">
-          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
-              {event.banner_image_url && (
-                <div className="w-full h-40 sm:h-48 overflow-hidden">
-                  <img src={event.banner_image_url} alt={event.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-4">
-                    {event.retailer.logo_url && <img src={event.retailer.logo_url} alt={event.retailer.name} className="w-12 h-12 rounded-lg object-cover" />}
-                    <div>
-                      <CardTitle className="text-xl mb-2">{event.name}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Store className="w-4 h-4" />
-                          {event.retailer.name}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {format(new Date(event.event_date), 'MMMM d, yyyy')}
-                          {event.end_date && event.end_date !== event.event_date && (
-                            <span> – {format(new Date(event.end_date), 'MMMM d, yyyy')}</span>
-                          )}
-                        </div>
-                        {event.location && <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {event.location}
-                          </div>}
-                      </div>
-                    </div>
+        </Card> : <div className="grid gap-4">
+          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden" onClick={() => selectEvent(event)}>
+              <div className="flex flex-row">
+                {event.banner_image_url && (
+                  <div className="w-28 sm:w-40 flex-shrink-0">
+                    <img src={event.banner_image_url} alt={event.name} className="w-full h-full object-cover rounded-l-lg" />
                   </div>
-                  <Badge variant="secondary">{event.status}</Badge>
+                )}
+                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {event.retailer.logo_url && <img src={event.retailer.logo_url} alt={event.retailer.name} className="w-8 h-8 rounded-md object-cover flex-shrink-0" />}
+                        <h3 className="text-lg font-bold truncate">{event.name}</h3>
+                      </div>
+                      <Badge variant="secondary" className="flex-shrink-0 text-[10px]">{event.status}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+                      <span className="flex items-center gap-1">
+                        <Store className="w-3 h-3" />
+                        {event.retailer.name}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {format(new Date(event.event_date), 'MMM d, yyyy')}
+                        {event.end_date && event.end_date !== event.event_date && (
+                          <span> – {format(new Date(event.end_date), 'MMM d, yyyy')}</span>
+                        )}
+                      </span>
+                      {event.location && <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.location}
+                        </span>}
+                    </div>
+                    {event.description && <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>}
+                  </div>
+                  <div className="mt-3">
+                    <Button size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); selectEvent(event); }}>View Event Catalog</Button>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {event.description && <p className="text-muted-foreground mb-4">{event.description}</p>}
-                <Button onClick={() => selectEvent(event)}>View Event Catalog</Button>
-              </CardContent>
+              </div>
             </Card>)}
         </div>}
     </div>;
