@@ -5,6 +5,10 @@ import { Loader2, CameraOff, AlertTriangle, User, RefreshCw } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
+const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
 interface ARProduct {
   id: string;
@@ -113,7 +117,6 @@ export default function ARExperience() {
     cleanedUpRef.current = false;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    let poseInstance: any = null;
 
     async function init() {
       // ── 1. Camera ──
@@ -192,35 +195,17 @@ export default function ARExperience() {
       framesWithoutPose.current = 0;
 
       try {
-        const { Pose } = await import('@mediapipe/pose');
-        poseInstance = new Pose({
-          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-        });
-        poseInstance.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
+        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+        if (cleanedUpRef.current) return;
+        const landmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: MODEL_URL },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
           minTrackingConfidence: 0.5,
         });
-
-        poseInstance.onResults((results: any) => {
-          if (cleanedUpRef.current) return;
-          if (!results.poseLandmarks || results.poseLandmarks.length === 0) {
-            framesWithoutPose.current++;
-            if (framesWithoutPose.current > 30) {
-              setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
-              if (modelRef.current) modelRef.current.visible = false;
-            }
-            return;
-          }
-
-          framesWithoutPose.current = 0;
-          setTrackingState('tracking_active');
-          const lm = results.poseLandmarks;
-          updateModel(lm, offset, vw / vh);
-        });
-
-        poseRef.current = poseInstance;
+        if (cleanedUpRef.current) { landmarker.close(); return; }
+        poseRef.current = landmarker;
       } catch (err: any) {
         console.error('MediaPipe init error:', err);
         setTrackingState('pose_init_failed');
@@ -230,11 +215,24 @@ export default function ARExperience() {
 
       // ── 5. Render loop ──
       let lastPoseTime = 0;
-      const animate = async (time: number) => {
+      const animate = (time: number) => {
         if (cleanedUpRef.current) return;
-        if (poseRef.current && video.readyState >= 2 && time - lastPoseTime > 100) {
+        if (poseRef.current && video.readyState >= 2 && time - lastPoseTime > 66) {
           lastPoseTime = time;
-          try { await poseRef.current.send({ image: video }); } catch { /* ignore */ }
+          try {
+            const result = (poseRef.current as PoseLandmarker).detectForVideo(video, time);
+            if (result.landmarks && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
+              framesWithoutPose.current = 0;
+              setTrackingState('tracking_active');
+              updateModel(result.landmarks[0], offset, vw / vh);
+            } else {
+              framesWithoutPose.current++;
+              if (framesWithoutPose.current > 30) {
+                setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
+                if (modelRef.current) modelRef.current.visible = false;
+              }
+            }
+          } catch { /* ignore frame errors */ }
         }
         renderer.render(scene, camera);
         animFrameRef.current = requestAnimationFrame(animate);
@@ -248,7 +246,7 @@ export default function ARExperience() {
       cleanedUpRef.current = true;
       cancelAnimationFrame(animFrameRef.current);
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-      if (poseInstance) poseInstance.close?.();
+      if (poseRef.current) { (poseRef.current as PoseLandmarker).close(); poseRef.current = null; }
       rendererRef.current?.dispose();
     };
   }, [isLoading, selectedProduct]);
