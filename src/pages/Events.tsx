@@ -363,35 +363,24 @@ const Events = () => {
         </div>
 
         {/* Try-On Results Banner */}
-        {Object.keys(tryOnResults).length > 0 && <div className="mb-8 space-y-4">
-            <h2 className="text-xl font-semibold">Your Try-On Results</h2>
+        {Object.keys(tryOnResults).length > 0 && <div className="mb-8 space-y-3">
+            <h2 className="text-lg font-semibold">Your Try-On Results</h2>
             
-            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).map(([productId, result]) => {
-            const product = eventBrands.flatMap(b => b.products).find(p => p.id === productId);
-            return <Card key={productId} className="overflow-hidden border border-green-500/50 hover:border-green-500 transition-colors cursor-pointer group">
-                          <div className="relative aspect-square">
-                            <Badge className="absolute top-1.5 left-1.5 z-10 bg-green-500 text-white text-xs px-1.5 py-0.5">✨</Badge>
+            return <div key={productId} className="relative flex-shrink-0 w-[90px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="absolute top-1.5 right-1.5 z-10 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 z-10 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => { e.stopPropagation(); if (confirm('Delete this try-on result?')) handleDeleteResult(productId); }}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-2.5 w-2.5" />
                             </Button>
-                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full h-full object-cover" />
-                          </div>
-                          <CardContent className="p-2">
-                            <p className="text-xs font-medium truncate">{product?.brand_name || 'Product'}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{new Date(result.created_at).toLocaleDateString()}</p>
-                          </CardContent>
-                        </Card>;
+                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full aspect-[3/4] object-cover" />
+                        </div>;
           })}
                 </div>}
-            
-            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'failed')}
-            {user && selectedEvent && Object.keys(tryOnResults).length > 0}
           </div>}
 
         <div>
