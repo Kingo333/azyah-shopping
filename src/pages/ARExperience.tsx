@@ -58,9 +58,11 @@ export default function ARExperience() {
   const streamRef = useRef<MediaStream | null>(null);
   const framesWithoutPose = useRef(0);
   const smoothPos = useRef({ x: 0, y: 0, z: 0 });
-  const smoothScale = useRef(1);
+  const smoothScale = useRef({ x: 1, y: 1, z: 1 });
   const smoothRot = useRef(0);
   const cleanedUpRef = useRef(false);
+  const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
+  const visibleDimsRef = useRef({ w: 4, h: 3 });
 
   // Fetch AR-enabled products and validate context
   useEffect(() => {
