@@ -294,12 +294,17 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     alt="Product"
                     className="w-full h-48 object-cover rounded"
                   />
-                  {product.try_on_data?.outfit_bitstudio_id && (
-                    <Badge variant="outline" className="absolute top-2 right-2 bg-green-50 text-green-700 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Try-On Ready
-                    </Badge>
-                  )}
+                    {product.try_on_data?.outfit_bitstudio_id && (
+                      <Badge variant="outline" className="absolute top-2 right-2 bg-green-50 text-green-700 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Try-On Ready
+                      </Badge>
+                    )}
+                    {product.ar_enabled && product.ar_model_url && (
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
+                        AR
+                      </Badge>
+                    )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Shirt className="w-4 h-4 text-muted-foreground" />
