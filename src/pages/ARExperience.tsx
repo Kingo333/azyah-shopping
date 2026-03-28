@@ -295,7 +295,7 @@ export default function ARExperience() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
         <h1 className="text-white text-lg font-bold">AR Try-On</h1>
-        <p className="text-white/80 text-sm">{selectedProduct?.brand_name}</p>
+        <p className="text-white/80 text-sm">{selectedProduct?.name || selectedProduct?.brand_name}</p>
       </div>
 
       {/* Product selector (bottom) */}
