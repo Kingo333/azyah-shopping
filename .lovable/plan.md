@@ -1,22 +1,60 @@
 
 
-## Adjust Events Page Sizing
+## Fix: AR Tracking Failure — Migrate to New MediaPipe API
 
-Three small tweaks in `src/pages/Events.tsx`:
+### Root Cause
 
-### 1. Try-On Result Thumbnails — Slightly Bigger
-- Line 371: Change `w-[90px]` to `w-[120px]`
+The AR system uses the **deprecated** `@mediapipe/pose` package (v0.5, last updated 2023). This legacy package relies on CDN-hosted WASM/model files that are unreliable and frequently fail to initialize, causing the "AR Tracking Failed — Could not initialize body tracking" error.
 
-### 2. AR Button — Add "AR" Label
-- Lines 443-455: Change from icon-only `size="icon"` to a small button with both icon and text
-- Replace `w-7 h-7 p-0` with `h-7 px-1.5 text-xs gap-0.5` and add "AR" text next to the Smartphone icon
+Google has replaced it with `@mediapipe/tasks-vision`, which uses `PoseLandmarker` — a newer, actively maintained API with better browser support and reliability.
 
-### 3. Try On / Try Again Button — Slightly Shorter
-- Line 428: Change `h-7` to `h-6` and keep `text-xs`
-- Match AR button height to `h-6` as well
+### What Changes
+
+**1. Swap npm dependency**
+- Remove: `@mediapipe/pose`
+- Add: `@mediapipe/tasks-vision`
+
+**2. Rewrite pose initialization in `src/pages/ARExperience.tsx`**
+
+Replace the old `Pose` class with `PoseLandmarker`:
+
+```text
+OLD (broken):
+  import { Pose } from '@mediapipe/pose'
+  new Pose({ locateFile: ... })
+  pose.setOptions(...)
+  pose.onResults(callback)
+  pose.send({ image: video })
+
+NEW (working):
+  import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision'
+  const vision = await FilesetResolver.forVisionTasks(CDN_WASM_PATH)
+  const landmarker = await PoseLandmarker.createFromOptions(vision, {
+    baseOptions: { modelAssetPath: POSE_MODEL_URL },
+    runningMode: 'VIDEO',
+    numPoses: 1
+  })
+  // In render loop:
+  const result = landmarker.detectForVideo(video, timestamp)
+  // result.landmarks[0] contains the 33 pose points
+```
+
+The new API is synchronous per-frame (no callback pattern), so the render loop simplifies: call `detectForVideo()` each frame, read landmarks directly from the return value, and pass them to the existing `updateModel()` function.
+
+**3. Landmark format mapping**
+
+The new API returns landmarks in the same normalized 0-1 coordinate format. The landmark indices (11=left shoulder, 12=right shoulder, 23=left hip, 24=right hip) are identical. The `visibility` field is still present. The existing `updateModel()` function needs no changes.
+
+**4. Model file**
+
+Use the official hosted model: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`
+
+This is hosted by Google on stable infrastructure (unlike the old CDN-dependent WASM files).
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
-| `src/pages/Events.tsx` | Three line-level tweaks for sizing |
+| `package.json` | Remove `@mediapipe/pose`, add `@mediapipe/tasks-vision` |
+| `src/pages/ARExperience.tsx` | Replace Pose init + callback with PoseLandmarker + detectForVideo loop |
 
