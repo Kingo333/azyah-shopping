@@ -1,33 +1,52 @@
 
 
-## Fix: Events Not Showing for Shoppers
+## Fix: Event Brands & Products Not Showing for Shoppers
 
 ### Root Cause
-The RLS policy `"Public can view active events"` on `retail_events` has this condition:
+
+Same bug as the `retail_events` table, but on two child tables. The RLS policies on `event_brands` and `event_brand_products` both check:
 
 ```sql
-(status = 'active') AND (event_date >= CURRENT_DATE)
+e.event_date >= CURRENT_DATE
 ```
 
-`event_date` is the **start date** (Jan 31, 2026). Today is March 28, 2026 — so `Jan 31 >= March 28` is **false**, and the row is invisible to shoppers. The retailer can still see it because they have a separate `ALL` policy.
+Since `event_date` (Jan 31) is in the past, these policies return zero rows — hiding all brands and products from shoppers, even though the parent event is now visible.
 
 ### Fix
-One database migration to update the RLS policy:
+
+One migration to update both policies to use `COALESCE(e.end_date, e.event_date) >= CURRENT_DATE`, matching the fix already applied to `retail_events`.
+
+**Migration SQL:**
 
 ```sql
-DROP POLICY "Public can view active events" ON public.retail_events;
-
-CREATE POLICY "Public can view active events"
-ON public.retail_events
-FOR SELECT
+-- Fix event_brands policy
+DROP POLICY IF EXISTS "Public can view brands for active events" ON public.event_brands;
+CREATE POLICY "Public can view brands for active events"
+ON public.event_brands FOR SELECT
 USING (
-  status = 'active'
-  AND COALESCE(end_date, event_date) >= CURRENT_DATE
+  EXISTS (
+    SELECT 1 FROM retail_events e
+    WHERE e.id = event_brands.event_id
+      AND e.status = 'active'
+      AND COALESCE(e.end_date, e.event_date) >= CURRENT_DATE
+  )
+);
+
+-- Fix event_brand_products policy
+DROP POLICY IF EXISTS "Public can view products for active events" ON public.event_brand_products;
+CREATE POLICY "Public can view products for active events"
+ON public.event_brand_products FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM event_brands eb
+    JOIN retail_events e ON e.id = eb.event_id
+    WHERE eb.id = event_brand_products.event_brand_id
+      AND e.status = 'active'
+      AND COALESCE(e.end_date, e.event_date) >= CURRENT_DATE
+  )
 );
 ```
 
-This uses `end_date` when available (multi-day events stay visible until they end), and falls back to `event_date` for single-day events.
-
 ### Files Changed
-- **Database migration only** — no code changes needed. The queries in `Events.tsx` and `Profile.tsx` already filter by `end_date >= today` at the application level, but the RLS policy was blocking the rows before the app query even ran.
+- Database migration only — no frontend code changes needed.
 
