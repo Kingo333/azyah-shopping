@@ -1,44 +1,61 @@
 
 
-## Audit: AR Try-On Implementation vs. Spec
+## Audit: Dual Upload Flow + MediaPipe AR Functionality
 
-### What's Done Correctly
+### Findings
 
-| Area | Status | Notes |
-|------|--------|-------|
-| **Database migration** | Done | `ar_model_url`, `ar_enabled`, `ar_scale`, `ar_position_offset`, `ar_model_format` columns added to `event_brand_products`. Types file reflects them. |
-| **Storage bucket** | Done | `event-ar-models` bucket created with RLS policies |
-| **Edge function** | Done | `thenewblack-event-tryon` deployed with proper CORS, auth validation, The New Black API call, result storage, job tracking |
-| **EventTryOnModal rewrite** | Done | Polling removed, direct sync call to `thenewblack-event-tryon`, clean upload-then-generate flow |
-| **BrandProductManager 3D upload** | Done | `.glb/.gltf` upload section added, writes to `event-ar-models` bucket, updates `ar_model_url` and `ar_enabled` |
-| **EventARButton + QR** | Done | QR code modal with canvas rendering, correct `/ar/:eventId/:brandId` URL, conditional rendering based on `hasARProducts` |
-| **Events.tsx integration** | Done | AR button added per brand, `hasARProducts` check uses `ar_model_url && ar_enabled` |
-| **ARExperience page** | Done | Camera feed, Three.js overlay, MediaPipe pose tracking, product selector carousel |
-| **App.tsx route** | Done | `/ar/:eventId/:brandId` route added outside ProtectedRoute |
+**1. Shared loading state bug (BrandProductManager.tsx)**
+Both the outfit image upload (line 402) and the 3D model upload (line 542) use the same `uploadingOutfit` state variable. This means:
+- If a retailer is uploading a try-on photo, the AR upload button is disabled (and vice versa)
+- The loading spinner text says "Uploading..." for both, which is confusing for the AR upload
+- Not a data corruption issue (they write to separate DB fields), but a UX bug
 
-### Issues Found
+**Fix:** Add a separate `uploadingARModel` state variable for the 3D upload section.
 
-**1. BrandProductManager still has BitStudio upload logic (lines 433-517)**
-The outfit image upload handler still imports and calls `BitStudioClient.uploadImage()`, sets `try_on_provider: 'bitstudio'`, and saves `outfit_bitstudio_id`. Since the event try-on now uses The New Black, this is dead code that will confuse retailers and waste BitStudio API calls. It should be simplified to just upload to Supabase storage and set the outfit URL — no BitStudio involvement needed.
+**2. Data isolation is correct**
+- Try-on photo upload writes to: `try_on_data`, `try_on_config`, `try_on_provider`, `try_on_ready`
+- AR 3D upload writes to: `ar_model_url`, `ar_enabled`
+- These are completely separate columns — no interference.
 
-**2. Edge function uses `getUser()` instead of `getClaims()`**
-Line 41 uses `await userClient.auth.getUser(token)` which makes a server round-trip. Per Supabase best practices, this should use `getClaims(token)` for faster JWT validation. Not a blocker but a performance issue.
+**3. MediaPipe pose tracking — functional but limited**
+The current implementation:
+- Tracks shoulders only (landmarks 11 and 12) for position and scale
+- Missing hip landmarks (23, 24) which are needed for full-body garments (dresses, pants, full outfits)
+- Missing torso rotation — if the user turns slightly, the 3D model doesn't rotate to match
+- No `ar_position_offset` usage — the column exists in the DB but the AR page ignores it
 
-**3. AR route is inside the Router but accessibility unclear**
-The `/ar/:eventId/:brandId` route is added at line 280 of App.tsx. Need to confirm it's outside `<ProtectedRoute>` wrapper — from the search results it appears to be placed correctly alongside other public routes.
+**Fix:** Add hip tracking for better vertical positioning and body proportion mapping. Use the `ar_position_offset` field. Add model rotation based on shoulder angle.
 
-**4. No `name` field on ARProduct or product selector**
-The `ARExperience.tsx` `ARProduct` interface lacks a `name` field. The product selector thumbnails show images but no product names — minor UX gap.
+**4. Video mirroring mismatch**
+Camera uses `facingMode: 'user'` (front camera) but the video element has no CSS `transform: scaleX(-1)`. The video appears mirrored (natural for selfie), but the Three.js overlay is not mirrored — so the 3D model will move in the opposite direction from the user's body.
 
-### Recommended Fixes
+**Fix:** Mirror the canvas to match the video, or adjust the coordinate mapping.
 
-1. **Remove BitStudio from BrandProductManager outfit upload** — Simplify the outfit upload handler (lines 433-517) to only upload to Supabase storage and save the URL. Remove `BitStudioClient` import, `outfit_bitstudio_id`, and `try_on_provider: 'bitstudio'`. Set `try_on_provider: 'thenewblack'` instead.
+### Implementation Plan
 
-2. **Switch edge function auth to `getClaims()`** — Replace `getUser(token)` with `getClaims(token)` for faster validation.
+**File 1: `src/components/BrandProductManager.tsx`**
+- Add `const [uploadingARModel, setUploadingARModel] = useState(false)` state
+- Replace `setUploadingOutfit` with `setUploadingARModel` in the 3D upload handler (lines 542, 596)
+- Update the AR upload disabled check to use `uploadingARModel`
+- Add a separate loading indicator for AR upload
 
-3. **Add product name to AR experience** — Include `name` in the AR product query and display it below the selected product thumbnail.
+**File 2: `src/pages/ARExperience.tsx`**
+- Add hip landmarks (23, 24) to the pose results handler for better vertical positioning
+- Mirror the video element with `style={{ transform: 'scaleX(-1)' }}` and invert X in the pose callback so overlay matches
+- Use `ar_position_offset` from the product data to apply per-product offset adjustments
+- Add shoulder angle calculation for model Y-rotation so the garment follows body turns
+- Update the `ARProduct` interface to include `ar_position_offset`
+- Fetch `ar_position_offset` in the product query
 
-### Overall Verdict
+### Technical Detail
 
-The implementation is **functionally complete and logically sound**. All 4 spec changes are implemented. The main cleanup needed is removing the leftover BitStudio logic from BrandProductManager's outfit upload flow, which contradicts the "replace BitStudio/Gemini with The New Black" goal.
+Updated pose handler logic:
+```
+Shoulders: landmarks[11], landmarks[12] → horizontal center + width
+Hips: landmarks[23], landmarks[24] → vertical extent
+Torso center: midpoint of shoulders and hips → model Y position
+Shoulder angle: atan2(dy, dx) between shoulders → model Y rotation
+ar_position_offset: applied as additive offset to final position
+Video mirror: scaleX(-1) on video + invert centerX calculation
+```
 
