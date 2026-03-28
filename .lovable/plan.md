@@ -1,91 +1,123 @@
 
-## Add "Public Profile" Visibility Toggle in Profile Settings
 
-### What This Does
+## AR Try-On System for Events — Full Implementation Plan
 
-A single new collapsible section — **"Privacy & Visibility"** — will be added to `ProfileSettings.tsx`. It contains one toggle switch that controls the `preferences.visible_on_globe` field (already used by the Globe). Turning this on means the user appears on:
-
-1. **The Globe** (Explore page — already wired to `visible_on_globe`)
-2. **The Fashion Leaderboard** (Rewards page — currently shows everyone; will be filtered)
-
-Turning it off hides the user from both places silently.
+This is a large build with 4 interconnected changes. Here's the validated plan based on what actually exists in the codebase.
 
 ---
 
-### The Two Problems Being Solved
+### Phase 1: Database & Storage Setup
 
-**Problem A — The toggle only exists deep inside the Globe drawer**
+**Migration SQL:**
+- Add columns to `event_brand_products`: `ar_model_url TEXT`, `ar_model_format TEXT DEFAULT 'glb'`, `ar_enabled BOOLEAN DEFAULT false`, `ar_scale FLOAT DEFAULT 1.0`, `ar_position_offset JSONB DEFAULT '{"x":0,"y":0,"z":0}'`
+- Create `event-ar-models` storage bucket (public) with RLS policy allowing authenticated retailer uploads
+- Add storage RLS for read access (public bucket, so SELECT is open)
 
-Right now the only way to toggle globe visibility is to open the Explore page, tap your country, go to the Shoppers tab, and find the toggle in "Your Content". Most users will never find it there. It needs to live in **Profile Settings** where users look for privacy controls.
-
-**Problem B — The Leaderboard ignores visibility preference**
-
-`MinimizedLeaderboard.tsx` queries `public_profiles` and includes every user. The `public_profiles` view does not expose the `preferences` column, so the leaderboard cannot currently filter by `visible_on_globe`. There are two ways to fix this:
-
-- Option 1: Add `preferences` to the `public_profiles` view (requires a DB migration)
-- Option 2: Query the `users` table directly with a filter (no DB change needed)
-
-**Option 2 is chosen** — the leaderboard already has auth-gated access and querying the `users` table with a `preferences` filter is safe and avoids any schema migration.
+No new tables needed — we extend `event_brand_products`.
 
 ---
 
-### Files Changed
+### Phase 2: Replace BitStudio/Gemini with The New Black for Event Try-On
 
-| File | What Changes |
-|------|-------------|
-| `src/pages/ProfileSettings.tsx` | Add new "Privacy & Visibility" collapsible section with a `Switch` toggle for `visible_on_globe`; load/save from `users.preferences` |
-| `src/components/MinimizedLeaderboard.tsx` | Filter leaderboard query to only include users where `preferences->>'visible_on_globe' != 'false'` (i.e., default is visible) |
+**Current flow:** `EventTryOnModal` → `runTryOn()` → provider select (bitstudio/gemini) → edge function → async polling every 2s for up to 3 minutes
 
----
+**New flow:** `EventTryOnModal` → direct call to `thenewblack-event-tryon` edge function → synchronous result (no polling)
 
-### Technical Details
+**New edge function: `supabase/functions/thenewblack-event-tryon/index.ts`**
+- Accepts `{ event_id, product_id, person_image_url }`
+- Validates auth via JWT
+- Fetches product's outfit image from `event_brand_products`
+- Calls The New Black API (same pattern as existing `thenewblack-picture`) using `THE_NEW_BLACK_API_KEY` (already configured)
+- Downloads result image, uploads to `event-tryon-results` storage
+- Inserts record into `event_tryon_jobs` for history
+- Returns `{ ok, result_url }` synchronously
 
-**ProfileSettings.tsx changes:**
+**Update `src/components/EventTryOnModal.tsx`:**
+- Remove BitStudio upload logic (lines 146-167 — uploading to BitStudio for person image ID)
+- Remove the entire polling mechanism (lines 229-340)
+- Replace `startTryOn` with a direct `supabase.functions.invoke('thenewblack-event-tryon')` call
+- On success, immediately set `resultUrl` and `status: 'done'`
+- Person image upload simplified: just upload to Supabase storage, get public URL, pass it to the edge function
+- Remove `fastTryOn` function (no longer needed — the main flow is now fast)
+- Remove imports: `runTryOn`, `shouldShowNotification`, `markNotified`
 
-1. Add state: `visibilityOpen` (collapsible), `isVisibleOnGlobe` (boolean, default `true`), `savingVisibility` (loading state)
-
-2. In `loadUserProfile`, read `(data.preferences as any)?.visible_on_globe !== false` and set it to the state variable.
-
-3. Add a `saveVisibility` function that updates `users.preferences` with `{ ...existingPrefs, visible_on_globe: isVisibleOnGlobe }` — same pattern already used in `CountryDrawer.tsx`.
-
-4. Add a new collapsible section between "Shopping Preferences" and "Your Fit / Measurements" with:
-   - Icon: `Eye` / `EyeOff` from lucide-react (already imported in the file via CountryDrawer; needs to be added to ProfileSettings import)
-   - Title: **"Privacy & Visibility"**
-   - The toggle row:
-     ```
-     [Eye icon]  Show on Globe & Leaderboard     [Switch]
-     ```
-   - Subtext below the toggle:
-     > "When on, your profile appears on the Explore globe and in the Fashion Leaderboard on Rewards. Turn off to browse privately."
-   - A Save button (same pattern as other sections)
-
-**MinimizedLeaderboard.tsx changes:**
-
-The current query:
-```typescript
-let userQuery = supabase.from('public_profiles').select('*');
-```
-
-Change to query the `users` table directly and filter out hidden users:
-```typescript
-let userQuery = supabase
-  .from('users')
-  .select('id, name, username, avatar_url, country, preferences')
-  .or('preferences->visible_on_globe.is.null,preferences->visible_on_globe.eq.true');
-```
-
-This keeps users who have never set the preference (null = default visible) and users who explicitly set it to true. Users who set it to false are excluded.
-
-The `LeaderboardUser` interface and scoring logic don't change — the shape of `id, name, avatar_url, country` is the same from both tables.
+**Files no longer invoked for events (kept for backward compatibility but not called):**
+- `src/lib/tryon/providers/bitstudio.ts`
+- `src/lib/tryon/providers/gemini.ts`
+- `src/lib/tryon/providers/select.ts`
+- `supabase/functions/bitstudio-tryon/`
+- `supabase/functions/bitstudio-poll-job/`
+- `supabase/functions/vto-gemini/`
 
 ---
 
-### What the User Sees
+### Phase 3: Retailer 3D Upload in BrandProductManager
 
-**In Profile Settings** — a new "Privacy & Visibility" section appears in the collapsible list, after Shopping Preferences. It has a single clear toggle with explanatory subtext so the user understands exactly what "public" controls.
+**Update `src/components/BrandProductManager.tsx`:**
+- Add a "3D Model for AR" upload section in the product edit modal (after the outfit image upload section)
+- Accept `.glb` and `.gltf` files only
+- Upload to `event-ar-models` bucket with path `{event_id}/{brand_id}/{product_id}/{timestamp}.glb`
+- On successful upload, update `event_brand_products` with `ar_model_url`, `ar_enabled: true`
+- Show upload status and a checkmark when AR model is configured
+- Add helper text: "Upload a 3D model (.glb) to enable AR try-on. Use Meshy.ai or Tripo3D to convert product images to 3D."
 
-**In Rewards Leaderboard** — users who have turned off their globe/public visibility will no longer appear in the list. Users who are visible will continue to appear as before.
+---
 
-**In the Globe** — no change; it already correctly reads `visible_on_globe` from the `users` table.
+### Phase 4: AR Button + QR Code on Events Page
 
-The Globe drawer toggle still works too — since both the drawer and the settings page write to the same `users.preferences.visible_on_globe` field, they stay in sync automatically. The settings page will simply be a more discoverable place to find the same control.
+**New component: `src/components/events/EventARButton.tsx`**
+- Props: `eventId`, `brandId`, `brandName`, `hasARProducts`
+- Only renders if `hasARProducts` is true
+- Shows a gradient "AR Try-On" button with smartphone icon
+- On click, opens a dialog with:
+  - QR code (using existing `qrcode` library) pointing to `/ar/{eventId}/{brandId}`
+  - "Scan with your phone" instructions
+  - "Open AR Experience" direct link button for mobile users
+- Uses same QR generation pattern as `SocialSharing.tsx`
+
+**Update `src/pages/Events.tsx`:**
+- Import `EventARButton`
+- In the brand header section (line ~534-538), add the AR button next to the brand name
+- Check if any product in the brand has `ar_model_url` set to determine `hasARProducts`
+- Update `EventProduct` interface to include `ar_model_url` and `ar_enabled`
+- Update the brand products query to select `ar_model_url, ar_enabled`
+
+---
+
+### Phase 5: AR Experience Page
+
+**New page: `src/pages/ARExperience.tsx`**
+- Route: `/ar/:eventId/:brandId` (public, no auth required — accessed via QR scan)
+- Fetches AR-enabled products for the brand from `event_brand_products`
+- Uses device camera via `getUserMedia` as background video feed
+- Loads `.glb` 3D models using Three.js `GLTFLoader`
+- Uses `@mediapipe/pose` for body tracking (shoulder landmarks 11 & 12) to position garment overlay
+- Product selector carousel at bottom to switch between brand products
+- Renders Three.js scene as transparent overlay on camera feed
+- Responsive, mobile-first design
+
+**Dependencies to add:** `three`, `@types/three`, `@mediapipe/pose`
+(`qrcode` already installed)
+
+**Update `src/App.tsx`:**
+- Add route: `<Route path="/ar/:eventId/:brandId" element={<ARExperience />} />`
+- This route should be outside `ProtectedRoute` since it's accessed via QR code scan
+
+---
+
+### Files Summary
+
+| File | Action |
+|------|--------|
+| DB migration | New columns on `event_brand_products`, new storage bucket |
+| `supabase/functions/thenewblack-event-tryon/index.ts` | Create — new sync edge function |
+| `src/components/EventTryOnModal.tsx` | Rewrite — remove polling, use The New Black directly |
+| `src/components/BrandProductManager.tsx` | Edit — add 3D model upload section |
+| `src/components/events/EventARButton.tsx` | Create — AR button + QR modal |
+| `src/pages/Events.tsx` | Edit — add AR button, extend product interface |
+| `src/pages/ARExperience.tsx` | Create — full AR experience page |
+| `src/App.tsx` | Edit — add `/ar/:eventId/:brandId` route |
+| `package.json` | Add `three`, `@types/three`, `@mediapipe/pose` |
+
+No secrets needed — `THE_NEW_BLACK_API_KEY` is already configured.
+
