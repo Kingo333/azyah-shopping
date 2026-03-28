@@ -60,6 +60,7 @@ import PublicItemView from './pages/PublicItemView';
 import StyleLinkPage from './pages/StyleLinkPage';
 import PublicDealsPage from './pages/PublicDealsPage';
 import AffiliateRedirect from './pages/AffiliateRedirect';
+import ARExperience from './pages/ARExperience';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -275,6 +276,8 @@ function AppContent() {
                       <UserDeletionTool />
                     </ProtectedRoute>
                   } />
+                  {/* AR Experience - public, accessed via QR code */}
+                  <Route path="/ar/:eventId/:brandId" element={<ARExperience />} />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>

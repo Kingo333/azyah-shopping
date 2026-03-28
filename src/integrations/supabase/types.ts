@@ -1596,6 +1596,11 @@ export type Database = {
       }
       event_brand_products: {
         Row: {
+          ar_enabled: boolean | null
+          ar_model_format: string | null
+          ar_model_url: string | null
+          ar_position_offset: Json | null
+          ar_scale: number | null
           created_at: string
           event_brand_id: string
           id: string
@@ -1609,6 +1614,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ar_enabled?: boolean | null
+          ar_model_format?: string | null
+          ar_model_url?: string | null
+          ar_position_offset?: Json | null
+          ar_scale?: number | null
           created_at?: string
           event_brand_id: string
           id?: string
@@ -1622,6 +1632,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ar_enabled?: boolean | null
+          ar_model_format?: string | null
+          ar_model_url?: string | null
+          ar_position_offset?: Json | null
+          ar_scale?: number | null
           created_at?: string
           event_brand_id?: string
           id?: string
