@@ -196,35 +196,17 @@ export default function ARExperience() {
       framesWithoutPose.current = 0;
 
       try {
-        const { Pose } = await import('@mediapipe/pose');
-        poseInstance = new Pose({
-          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-        });
-        poseInstance.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
+        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+        if (cleanedUpRef.current) return;
+        const landmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: MODEL_URL },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
           minTrackingConfidence: 0.5,
         });
-
-        poseInstance.onResults((results: any) => {
-          if (cleanedUpRef.current) return;
-          if (!results.poseLandmarks || results.poseLandmarks.length === 0) {
-            framesWithoutPose.current++;
-            if (framesWithoutPose.current > 30) {
-              setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
-              if (modelRef.current) modelRef.current.visible = false;
-            }
-            return;
-          }
-
-          framesWithoutPose.current = 0;
-          setTrackingState('tracking_active');
-          const lm = results.poseLandmarks;
-          updateModel(lm, offset, vw / vh);
-        });
-
-        poseRef.current = poseInstance;
+        if (cleanedUpRef.current) { landmarker.close(); return; }
+        poseRef.current = landmarker;
       } catch (err: any) {
         console.error('MediaPipe init error:', err);
         setTrackingState('pose_init_failed');
@@ -234,11 +216,24 @@ export default function ARExperience() {
 
       // ── 5. Render loop ──
       let lastPoseTime = 0;
-      const animate = async (time: number) => {
+      const animate = (time: number) => {
         if (cleanedUpRef.current) return;
-        if (poseRef.current && video.readyState >= 2 && time - lastPoseTime > 100) {
+        if (poseRef.current && video.readyState >= 2 && time - lastPoseTime > 66) {
           lastPoseTime = time;
-          try { await poseRef.current.send({ image: video }); } catch { /* ignore */ }
+          try {
+            const result = (poseRef.current as PoseLandmarker).detectForVideo(video, time);
+            if (result.landmarks && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
+              framesWithoutPose.current = 0;
+              setTrackingState('tracking_active');
+              updateModel(result.landmarks[0], offset, vw / vh);
+            } else {
+              framesWithoutPose.current++;
+              if (framesWithoutPose.current > 30) {
+                setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
+                if (modelRef.current) modelRef.current.visible = false;
+              }
+            }
+          } catch { /* ignore frame errors */ }
         }
         renderer.render(scene, camera);
         animFrameRef.current = requestAnimationFrame(animate);
