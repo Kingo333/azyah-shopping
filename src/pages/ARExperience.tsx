@@ -11,6 +11,7 @@ interface ARProduct {
   ar_model_url: string;
   ar_scale: number;
   brand_name?: string;
+  name?: string;
 }
 
 export default function ARExperience() {
@@ -294,7 +295,7 @@ export default function ARExperience() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
         <h1 className="text-white text-lg font-bold">AR Try-On</h1>
-        <p className="text-white/80 text-sm">{selectedProduct?.brand_name}</p>
+        <p className="text-white/80 text-sm">{selectedProduct?.name || selectedProduct?.brand_name}</p>
       </div>
 
       {/* Product selector (bottom) */}
@@ -312,9 +313,14 @@ export default function ARExperience() {
             >
               <img
                 src={product.image_url}
-                alt="Product"
+                alt={product.name || 'Product'}
                 className="w-full h-full object-cover"
               />
+              {product.name && (
+                <span className="absolute bottom-0 left-0 right-0 text-[10px] text-white bg-black/60 text-center truncate px-1">
+                  {product.name}
+                </span>
+              )}
             </button>
           ))}
         </div>

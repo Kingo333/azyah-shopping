@@ -430,91 +430,36 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   .from('event-assets')
                                   .getPublicUrl(filePath);
 
-                                // Check if we need to upload to BitStudio
-                                const existingBitstudioId = editingProduct?.try_on_data?.outfit_bitstudio_id;
-                                const needsBitstudioUpload = !existingBitstudioId || forceReupload;
-                                
-                                let updatedTryOnData = {
+                                const updatedTryOnData = {
                                   ...editingProduct.try_on_data,
                                   outfit_image_path: filePath,
                                   outfit_image_url: urlData.publicUrl,
                                 };
-                                
-                                let bitstudioImageId: string | undefined;
-                                
-                                if (needsBitstudioUpload) {
-                                  // Upload to BitStudio to get image ID
-                                  toast({
-                                    title: "Uploading to Try-on AI",
-                                    description: forceReupload ? "Creating new try-on asset..." : "Preparing for virtual try-on...",
-                                  });
-
-                                  const { BitStudioClient } = await import('@/lib/bitstudio-client');
-                                  const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-outfit');
-
-                                  if (!bitstudioImage?.id) {
-                                    throw new Error('Failed to upload to BitStudio');
-                                  }
-                                  
-                                  bitstudioImageId = bitstudioImage.id;
-                                  updatedTryOnData.outfit_bitstudio_id = bitstudioImage.id;
-                                } else {
-                                  // Preserve existing BitStudio ID
-                                  toast({
-                                    title: "Preview Updated",
-                                    description: "Try-on AI assets preserved. Image updated in storage only.",
-                                  });
-                                  bitstudioImageId = existingBitstudioId;
-                                  updatedTryOnData.outfit_bitstudio_id = existingBitstudioId;
-                                }
-                                
-                                // Reset force flag
-                                setForceReupload(false);
                                 
                                 setEditingProduct(prev => prev ? {
                                   ...prev,
                                   try_on_data: updatedTryOnData
                                 } : prev);
 
-                                // Auto-save configuration (populate both try_on_data and try_on_config)
+                                // Save outfit config for The New Black try-on
                                 await supabase
                                   .from('event_brand_products')
                                   .update({
                                     try_on_data: updatedTryOnData,
                                     try_on_config: {
-                                      outfit_image_id: updatedTryOnData.outfit_bitstudio_id,
-                                      outfit_image_url: updatedTryOnData.outfit_image_url,
-                                      outfitImagePath: updatedTryOnData.outfit_image_path
+                                      outfit_image_url: urlData.publicUrl,
+                                      outfitImagePath: filePath
                                     },
-                                    try_on_provider: 'bitstudio',
+                                    try_on_provider: 'thenewblack',
                                     try_on_ready: true,
                                     updated_at: new Date().toISOString()
                                   })
                                   .eq('id', editingProduct.id);
 
-                                // Save to product_outfit_assets for cross-event reuse if product_id exists
-                                if (editingProduct.product_id && bitstudioImageId) {
-                                  const { data: { user } } = await supabase.auth.getUser();
-                                  await supabase
-                                    .from('product_outfit_assets')
-                                    .upsert({
-                                      product_id: editingProduct.product_id,
-                                      brand_id: brand.id,
-                                      outfit_bitstudio_id: bitstudioImageId,
-                                      outfit_image_url: urlData.publicUrl,
-                                      created_by: user?.id
-                                    });
-                                  
-                                  toast({
-                                    title: "Outfit saved for reuse!",
-                                    description: "This outfit will be available for future events"
-                                  });
-                                } else {
-                                  toast({
-                                    title: "Configuration saved",
-                                    description: "Outfit uploaded successfully and ready for virtual try-on"
-                                  });
-                                }
+                                toast({
+                                  title: "Configuration saved",
+                                  description: "Outfit uploaded and ready for virtual try-on"
+                                });
                                 
                                 // Refresh products and close modal
                                 await fetchProducts();

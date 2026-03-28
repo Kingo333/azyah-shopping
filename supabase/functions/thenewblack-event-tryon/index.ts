@@ -38,13 +38,14 @@ serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
-    if (authError || !user) {
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(
         JSON.stringify({ ok: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    const user = { id: claimsData.claims.sub };
 
     // Parse and validate request body
     const body = await req.json();
