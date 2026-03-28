@@ -117,7 +117,6 @@ export default function ARExperience() {
     cleanedUpRef.current = false;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    let poseInstance: any = null;
 
     async function init() {
       // ── 1. Camera ──
