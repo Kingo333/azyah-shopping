@@ -187,10 +187,27 @@ export default function ARExperience() {
         });
         if (cleanedUpRef.current) return;
         const model = gltf.scene;
-        model.scale.setScalar(selectedProduct.ar_scale);
-        model.visible = false;
-        scene.add(model);
-        modelRef.current = model;
+
+        // Normalize model: compute bounding box, center at origin, store dimensions
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center); // re-center model geometry at origin
+
+        // Store natural dimensions for body-proportional scaling
+        modelDimsRef.current = {
+          w: size.x || 1,
+          h: size.y || 1,
+          d: size.z || 1,
+        };
+        console.log('Model normalized dims:', modelDimsRef.current);
+
+        // Wrap in a group so centering offset doesn't conflict with runtime positioning
+        const wrapper = new THREE.Group();
+        wrapper.add(model);
+        wrapper.visible = false;
+        scene.add(wrapper);
+        modelRef.current = wrapper;
       } catch (err: any) {
         console.error('Model load error:', err);
         setTrackingState('model_error');
