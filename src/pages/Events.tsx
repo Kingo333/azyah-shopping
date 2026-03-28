@@ -18,6 +18,7 @@ interface RetailEvent {
   name: string;
   description: string;
   event_date: string;
+  end_date?: string;
   location: string;
   status: string;
   banner_image_url?: string;
