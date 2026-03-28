@@ -600,7 +600,7 @@ const Events = () => {
                           </Card>)}
                       </div>
                     </div>}
-                </div>)}
+                </div>})}
             </div>}
         </div>
 
