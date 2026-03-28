@@ -58,9 +58,11 @@ export default function ARExperience() {
   const streamRef = useRef<MediaStream | null>(null);
   const framesWithoutPose = useRef(0);
   const smoothPos = useRef({ x: 0, y: 0, z: 0 });
-  const smoothScale = useRef(1);
+  const smoothScale = useRef({ x: 1, y: 1, z: 1 });
   const smoothRot = useRef(0);
   const cleanedUpRef = useRef(false);
+  const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
+  const visibleDimsRef = useRef({ w: 4, h: 3 });
 
   // Fetch AR-enabled products and validate context
   useEffect(() => {
@@ -153,9 +155,16 @@ export default function ARExperience() {
       // ── 2. Three.js ──
       const scene = new THREE.Scene();
       sceneRef.current = scene;
-      const camera = new THREE.PerspectiveCamera(75, vw / vh, 0.1, 1000);
+      const aspectRatio = vw / vh;
+      const camera = new THREE.PerspectiveCamera(63, aspectRatio, 0.1, 1000);
       camera.position.z = 2;
       cameraObjRef.current = camera;
+
+      // Compute visible world dimensions at camera z-distance for FOV-based mapping
+      const vFov = (camera.fov * Math.PI) / 180;
+      const visibleHeight = 2 * Math.tan(vFov / 2) * camera.position.z;
+      const visibleWidth = visibleHeight * aspectRatio;
+      visibleDimsRef.current = { w: visibleWidth, h: visibleHeight };
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(dpr);
@@ -178,10 +187,27 @@ export default function ARExperience() {
         });
         if (cleanedUpRef.current) return;
         const model = gltf.scene;
-        model.scale.setScalar(selectedProduct.ar_scale);
-        model.visible = false;
-        scene.add(model);
-        modelRef.current = model;
+
+        // Normalize model: compute bounding box, center at origin, store dimensions
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center); // re-center model geometry at origin
+
+        // Store natural dimensions for body-proportional scaling
+        modelDimsRef.current = {
+          w: size.x || 1,
+          h: size.y || 1,
+          d: size.z || 1,
+        };
+        console.log('Model normalized dims:', modelDimsRef.current);
+
+        // Wrap in a group so centering offset doesn't conflict with runtime positioning
+        const wrapper = new THREE.Group();
+        wrapper.add(model);
+        wrapper.visible = false;
+        scene.add(wrapper);
+        modelRef.current = wrapper;
       } catch (err: any) {
         console.error('Model load error:', err);
         setTrackingState('model_error');
@@ -224,7 +250,7 @@ export default function ARExperience() {
             if (result.landmarks && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
               framesWithoutPose.current = 0;
               setTrackingState('tracking_active');
-              updateModel(result.landmarks[0], offset, vw / vh);
+              updateModel(result.landmarks[0], offset);
             } else {
               framesWithoutPose.current++;
               if (framesWithoutPose.current > 30) {
@@ -251,8 +277,13 @@ export default function ARExperience() {
     };
   }, [isLoading, selectedProduct]);
 
-  function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }, aspectRatio: number) {
+  function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }) {
     if (!modelRef.current) return;
+
+    const { w: visW, h: visH } = visibleDimsRef.current;
+    const dims = modelDimsRef.current;
+    const arScale = selectedProduct?.ar_scale || 1;
+
     const ls = landmarks[11]; // left shoulder
     const rs = landmarks[12]; // right shoulder
     const lh = landmarks[23]; // left hip
@@ -264,32 +295,63 @@ export default function ARExperience() {
     modelRef.current.visible = true;
     const hasHips = (lh.visibility ?? 0) > 0.3 && (rh.visibility ?? 0) > 0.3;
 
+    // Mirror X for selfie camera
     const mirrorX = (x: number) => 1 - x;
-    const cx = (mirrorX(ls.x) + mirrorX(rs.x)) / 2;
-    const cy = hasHips
-      ? (ls.y + rs.y + lh.y + rh.y) / 4
-      : (ls.y + rs.y) / 2 + 0.15;
+
+    // ── Shirt anchor points ──
+    // Horizontal: shoulder midpoint
+    const shoulderCX = (mirrorX(ls.x) + mirrorX(rs.x)) / 2;
+    const shoulderCY = (ls.y + rs.y) / 2;
+
+    // Vertical bottom: hip midpoint or estimate
+    let hipCX = shoulderCX;
+    let hipCY = shoulderCY + 0.25; // fallback estimate
+    if (hasHips) {
+      hipCX = (mirrorX(lh.x) + mirrorX(rh.x)) / 2;
+      hipCY = (lh.y + rh.y) / 2;
+    }
+
+    // Torso center = midpoint between shoulder-line and hip-line
+    const centerX = (shoulderCX + hipCX) / 2;
+    const centerY = (shoulderCY + hipCY) / 2;
+
+    // Depth from average z
     const avgZ = hasHips
       ? (ls.z + rs.z + lh.z + rh.z) / 4
       : (ls.z + rs.z) / 2;
 
-    const targetX = (cx - 0.5) * 4 * aspectRatio;
-    const targetY = -(cy - 0.5) * 3;
+    // ── Map normalized coords to world units using FOV ──
+    const targetX = (centerX - 0.5) * visW;
+    const targetY = -(centerY - 0.5) * visH;
     const targetZ = avgZ * 2 - 1;
 
-    const sw = Math.abs(rs.x - ls.x);
-    let bodyW = sw;
-    if (hasHips) bodyW = Math.max(sw, Math.abs(rh.x - lh.x));
-    const targetScale = bodyW * 5 * (selectedProduct?.ar_scale || 1);
+    // ── Body-proportional non-uniform scaling ──
+    const shoulderWidthNorm = Math.abs(mirrorX(rs.x) - mirrorX(ls.x));
+    const torsoHeightNorm = hipCY - shoulderCY;
 
+    const shoulderWidthWorld = shoulderWidthNorm * visW;
+    const torsoHeightWorld = torsoHeightNorm * visH;
+
+    // Scale model to match body proportions
+    // Add 15% horizontal padding so shirt extends past shoulders
+    const targetScaleX = (shoulderWidthWorld / dims.w) * arScale * 1.15;
+    const targetScaleY = (torsoHeightWorld / dims.h) * arScale;
+    const targetScaleZ = (targetScaleX + targetScaleY) / 2; // average for depth
+
+    // Shoulder rotation for body turn
     const shoulderAngle = Math.atan2(rs.z - ls.z, mirrorX(rs.x) - mirrorX(ls.x));
 
+    // ── Apply with smoothing ──
     smoothPos.current = {
       x: lerp(smoothPos.current.x, targetX, SMOOTHING),
       y: lerp(smoothPos.current.y, targetY, SMOOTHING),
       z: lerp(smoothPos.current.z, targetZ, SMOOTHING),
     };
-    smoothScale.current = lerp(smoothScale.current, targetScale, SMOOTHING);
+    smoothScale.current = {
+      x: lerp(smoothScale.current.x, targetScaleX, SMOOTHING),
+      y: lerp(smoothScale.current.y, targetScaleY, SMOOTHING),
+      z: lerp(smoothScale.current.z, targetScaleZ, SMOOTHING),
+    };
     smoothRot.current = lerp(smoothRot.current, shoulderAngle, SMOOTHING * 0.5);
 
     modelRef.current.position.set(
@@ -297,12 +359,16 @@ export default function ARExperience() {
       smoothPos.current.y + offset.y,
       smoothPos.current.z + offset.z
     );
-    modelRef.current.scale.setScalar(smoothScale.current);
+    modelRef.current.scale.set(
+      smoothScale.current.x,
+      smoothScale.current.y,
+      smoothScale.current.z
+    );
     modelRef.current.rotation.y = smoothRot.current;
 
-    // Fade based on confidence
+    // Fade based on landmark confidence
     const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
-    const avgVis = keyVis.reduce((s, l) => s + (l.visibility ?? 0), 0) / keyVis.length;
+    const avgVis = keyVis.reduce((s: number, l: any) => s + (l.visibility ?? 0), 0) / keyVis.length;
     modelRef.current.traverse((child: any) => {
       if (child.isMesh && child.material) {
         child.material.transparent = true;
