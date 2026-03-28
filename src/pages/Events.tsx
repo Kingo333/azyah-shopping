@@ -424,8 +424,8 @@ const Events = () => {
                               </div>
                               
                               {/* Action buttons row */}
-                              <div className="flex gap-1">
-                                <Button size="sm" className="flex-1 text-xs h-7" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
+                              <div className="flex gap-1 w-full">
+                                <Button size="sm" className="flex-1 min-w-0 text-xs h-7 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
                                   if (hasPersonImage && product.try_on_ready) {
                                     setSelectedProduct({
                                       ...product,
@@ -438,12 +438,12 @@ const Events = () => {
                                   {!hasPersonImage ? 'Photo First' : tryOnResults[product.id]?.status === 'processing' ? 'Processing' : tryOnResults[product.id]?.status === 'succeeded' ? 'Try Again' : product.try_on_ready ? 'Try On' : 'Not Ready'}
                                 </Button>
                                 
-                                {/* Per-product AR button */}
+                                {/* Per-product AR button — icon only */}
                                 {product.ar_enabled && product.ar_model_url && (
                                   <Button
-                                    size="sm"
+                                    size="icon"
                                     variant="outline"
-                                    className="h-7 px-2 text-xs border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
+                                    className="w-7 h-7 p-0 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
                                     onClick={() => handleOpenAR({
                                       ...product,
                                       event_brand_id: brand.id,
@@ -451,8 +451,7 @@ const Events = () => {
                                       brand_logo_url: brand.logo_url
                                     })}
                                   >
-                                    <Smartphone className="h-3 w-3 mr-0.5" />
-                                    AR
+                                    <Smartphone className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
                               </div>
