@@ -17,6 +17,9 @@ interface EventBrandProduct {
   sort_order: number;
   created_at: string;
   product_id?: string;
+  ar_model_url?: string;
+  ar_enabled?: boolean;
+  ar_scale?: number;
 }
 
 interface EventBrand {
