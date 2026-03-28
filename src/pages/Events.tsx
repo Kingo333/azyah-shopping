@@ -425,7 +425,7 @@ const Events = () => {
                               
                               {/* Action buttons row */}
                               <div className="flex gap-1 w-full">
-                                <Button size="sm" className="flex-1 min-w-0 text-xs h-7 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
+                                <Button size="sm" className="flex-1 min-w-0 text-xs h-6 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
                                   if (hasPersonImage && product.try_on_ready) {
                                     setSelectedProduct({
                                       ...product,
