@@ -40,6 +40,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [editingProduct, setEditingProduct] = useState<EventBrandProduct | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
+  const [uploadingARModel, setUploadingARModel] = useState(false);
   const [forceReupload, setForceReupload] = useState(false);
   const { toast } = useToast();
 
