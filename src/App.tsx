@@ -60,6 +60,7 @@ import PublicItemView from './pages/PublicItemView';
 import StyleLinkPage from './pages/StyleLinkPage';
 import PublicDealsPage from './pages/PublicDealsPage';
 import AffiliateRedirect from './pages/AffiliateRedirect';
+import ARExperience from './pages/ARExperience';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
