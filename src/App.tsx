@@ -276,6 +276,8 @@ function AppContent() {
                       <UserDeletionTool />
                     </ProtectedRoute>
                   } />
+                  {/* AR Experience - public, accessed via QR code */}
+                  <Route path="/ar/:eventId/:brandId" element={<ARExperience />} />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>

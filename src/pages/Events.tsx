@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { shouldShowNotification, markNotified } from '@/utils/tryonNotifications';
+import { EventARButton } from '@/components/events/EventARButton';
 interface RetailEvent {
   id: string;
   name: string;

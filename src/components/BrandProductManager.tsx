@@ -560,6 +560,102 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                          </div>
                        )}
                      </div>
+
+                     {/* 3D Model Upload for AR */}
+                     <div className="pt-4 border-t">
+                       <label className="text-sm font-medium">3D Model for AR Try-On</label>
+                       <p className="text-xs text-muted-foreground mb-2">
+                         Upload a .glb file to enable AR try-on for this product.
+                         Use <a href="https://meshy.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Meshy.ai</a> or <a href="https://tripo3d.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Tripo3D</a> to convert product images to 3D.
+                       </p>
+                       
+                       {editingProduct.ar_model_url && editingProduct.ar_enabled && (
+                         <div className="flex items-center gap-2 mb-2 p-2 bg-purple-50 rounded-md">
+                           <CheckCircle className="w-4 h-4 text-purple-600" />
+                           <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
+                         </div>
+                       )}
+                       
+                       <input
+                         type="file"
+                         accept=".glb,.gltf"
+                         onChange={async (e) => {
+                           const file = e.target.files?.[0];
+                           if (!file) return;
+
+                           const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+                           if (!['.glb', '.gltf'].includes(ext)) {
+                             toast({
+                               title: "Invalid file type",
+                               description: "Please upload a .glb or .gltf file",
+                               variant: "destructive"
+                             });
+                             return;
+                           }
+
+                           try {
+                             setUploadingOutfit(true);
+
+                             const { data: brandData } = await supabase
+                               .from('event_brands')
+                               .select('event_id')
+                               .eq('id', brand.id)
+                               .single();
+                             
+                             if (!brandData) throw new Error('Failed to get event_id');
+
+                             const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/${Date.now()}${ext}`;
+                             
+                             const { error: uploadError } = await supabase.storage
+                               .from('event-ar-models')
+                               .upload(fileName, file, {
+                                 contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json',
+                                 upsert: true
+                               });
+                             
+                             if (uploadError) throw uploadError;
+
+                             const { data: urlData } = supabase.storage
+                               .from('event-ar-models')
+                               .getPublicUrl(fileName);
+
+                             await supabase
+                               .from('event_brand_products')
+                               .update({
+                                 ar_model_url: urlData.publicUrl,
+                                 ar_enabled: true,
+                                 updated_at: new Date().toISOString()
+                               })
+                               .eq('id', editingProduct.id);
+
+                             setEditingProduct(prev => prev ? {
+                               ...prev,
+                               ar_model_url: urlData.publicUrl,
+                               ar_enabled: true
+                             } : prev);
+
+                             toast({
+                               title: "3D model uploaded!",
+                               description: "AR try-on is now enabled for this product"
+                             });
+
+                             await fetchProducts();
+                           } catch (error: any) {
+                             console.error('AR model upload error:', error);
+                             toast({
+                               title: "Upload failed",
+                               description: error.message,
+                               variant: "destructive"
+                             });
+                           } finally {
+                             setUploadingOutfit(false);
+                             e.target.value = '';
+                           }
+                         }}
+                         className="w-full p-2 border rounded"
+                         disabled={uploadingOutfit}
+                       />
+                     </div>
                    </div>
                 </div>
               </div>
