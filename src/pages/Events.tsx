@@ -441,9 +441,9 @@ const Events = () => {
                                 {/* Per-product AR button — icon only */}
                                 {product.ar_enabled && product.ar_model_url && (
                                   <Button
-                                    size="icon"
+                                    size="sm"
                                     variant="outline"
-                                    className="w-7 h-7 p-0 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
+                                    className="h-6 px-1.5 text-xs gap-0.5 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
                                     onClick={() => handleOpenAR({
                                       ...product,
                                       event_brand_id: brand.id,
