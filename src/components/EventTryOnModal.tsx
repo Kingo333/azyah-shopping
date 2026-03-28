@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, User, Loader2, Download, Eye, UserCircle } from 'lucide-react';
+import { Upload, User, Loader2, Download, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAiAssets } from '@/hooks/useAiAssets';
-import { runTryOn } from '@/lib/tryon';
-import { shouldShowNotification, markNotified } from '@/utils/tryonNotifications';
 
 interface EventProduct {
   id: string;
@@ -45,7 +43,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
   const [dragActive, setDragActive] = useState(false);
   
   const { toast } = useToast();
-  const { assets, saveAsset } = useAiAssets();
+  const { saveAsset } = useAiAssets();
 
   // Check if user has uploaded person image for this event
   useEffect(() => {
@@ -61,7 +59,6 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           .single();
 
         if (data && !error) {
-          // Store person image path for Gemini try-on
           setPersonImageId(data.photo_url);
         }
       } catch (err) {
@@ -129,7 +126,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
       
-      // Upload directly to Supabase Storage
+      // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `person_${Date.now()}.${fileExt}`;
       const filePath = `${eventId}/${user.user.id}/${fileName}`;
@@ -143,28 +140,14 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       
       if (uploadError) throw uploadError;
 
-      // Upload to BitStudio to get image ID
-      toast({
-        title: "Uploading to BitStudio",
-        description: "Please wait...",
-      });
-
-      const { BitStudioClient } = await import('@/lib/bitstudio-client');
-      const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-person');
-
-      if (!bitstudioImage?.id) {
-        throw new Error('Failed to upload to BitStudio');
-      }
-      
-      // Store storage path AND BitStudio ID in database
+      // Store in database
       const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
           event_id: eventId,
           user_id: user.user.id,
           photo_url: filePath,
-          bitstudio_image_id: bitstudioImage.id,
-          vto_provider: 'bitstudio',
+          vto_provider: 'thenewblack',
           vto_ready: true
         });
       
@@ -174,8 +157,8 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('idle');
       
       toast({
-        title: 'Person photo uploaded!',
-        description: 'Photo uploaded to both Supabase and BitStudio'
+        title: 'Photo uploaded!',
+        description: 'Your photo is ready for virtual try-on'
       });
       
     } catch (err: any) {
@@ -198,149 +181,50 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       });
       return;
     }
-
-    const outfitPath = product.try_on_config?.outfitImagePath || product.try_on_data?.outfit_image_path;
-    const outfitId = product.try_on_config?.outfit_image_id;
-
-    if (!outfitPath && !outfitId) {
-      toast({
-        title: "Product not configured",
-        description: "This product doesn't have try-on configured yet",
-        variant: "destructive"
-      });
-      return;
-    }
     
     try {
       setStatus('generating');
       
-      const result = await runTryOn({
-        eventId: eventId,
-        userId: (await supabase.auth.getUser()).data.user!.id,
-        productId: product.id,
-        personImagePath: personImageId,
-        outfitImagePath: outfitPath
-      });
-
-      if (!result.ok || !result.jobId) {
-        throw new Error(result.error || 'Failed to start try-on');
+      // Resolve person image URL
+      let personImageUrl = personImageId;
+      if (!personImageId.startsWith('http')) {
+        const { data: urlData } = supabase.storage
+          .from('event-user-photos')
+          .getPublicUrl(personImageId);
+        personImageUrl = urlData.publicUrl;
       }
 
-      // Poll for completion using bitstudio-poll-job edge function (per BitStudio docs: 2s polling)
-      console.log('[EventTryOn] Starting polling for job:', result.jobId);
-      
-      let pollAttempts = 0;
-      let hasNotified = false;
-      const maxPollAttempts = 90; // 3 minutes / 2s = 90 attempts
-      
-      const pollInterval = setInterval(async () => {
-        pollAttempts++;
-        console.log('[EventTryOn] Poll attempt', pollAttempts, '/', maxPollAttempts, 'for job:', result.jobId);
-        
-        try {
-          // Call the bitstudio-poll-job edge function
-          const { data: pollData, error: pollError } = await supabase.functions.invoke('bitstudio-poll-job', {
-            body: { jobId: result.jobId }
-          });
-          
-          if (pollError) {
-            console.error('[EventTryOn] Poll error:', pollError);
-            if (pollAttempts >= maxPollAttempts) {
-              clearInterval(pollInterval);
-              setStatus('failed');
-              toast({
-                title: 'Try-on timeout',
-                description: 'Polling timed out after 3 minutes',
-                variant: 'destructive'
-              });
-            }
-            return;
-          }
-          
-          console.log('[EventTryOn] Poll result:', pollData);
-          
-          // Check job status in database
-          const { data: job, error: jobError } = await supabase
-            .from('event_tryon_jobs')
-            .select('status, output_path, error')
-            .eq('id', result.jobId)
-            .single();
-          
-          if (jobError) {
-            console.error('[EventTryOn] Job query error:', jobError);
-            if (pollAttempts >= maxPollAttempts) {
-              clearInterval(pollInterval);
-              setStatus('failed');
-              toast({
-                title: 'Try-on failed',
-                description: 'Could not retrieve job status',
-                variant: 'destructive'
-              });
-            }
-            return;
-          }
-          
-          console.log('[EventTryOn] Job status:', job.status);
-          
-          if (job.status === 'succeeded' && job.output_path) {
-            clearInterval(pollInterval);
-            
-            const { data } = supabase.storage
-              .from('event-tryon-results')
-              .getPublicUrl(job.output_path);
-            
-            setResultUrl(data.publicUrl);
-            setStatus('done');
-            
-            await saveAsset(
-              data.publicUrl,
-              result.jobId,
-              `${eventName} - ${product.brand_name} - Try-On`
-            );
-            
-            if (!hasNotified) {
-              if (shouldShowNotification(result.jobId)) {
-                hasNotified = true;
-                markNotified(result.jobId);
-                toast({
-                  title: 'Try-on complete! ✨',
-                  description: 'Your virtual try-on is ready'
-                });
-              }
-            }
-          } else if (job.status === 'failed') {
-            clearInterval(pollInterval);
-            setStatus('failed');
-            toast({
-              title: 'Try-on failed',
-              description: job.error || 'Generation failed',
-              variant: 'destructive'
-            });
-          } else if (pollAttempts >= maxPollAttempts) {
-            clearInterval(pollInterval);
-            setStatus('failed');
-            toast({
-              title: 'Try-on timeout',
-              description: 'Processing took longer than expected (3 minutes)',
-              variant: 'destructive'
-            });
-          }
-        } catch (err) {
-          console.error('[EventTryOn] Polling exception:', err);
-          if (pollAttempts >= maxPollAttempts) {
-            clearInterval(pollInterval);
-            setStatus('failed');
-            toast({
-              title: 'Try-on error',
-              description: 'An error occurred while checking status',
-              variant: 'destructive'
-            });
-          }
-        }
-      }, 2000); // Poll every 2 seconds per BitStudio docs
-      
-      // Store interval for cleanup
-      return () => clearInterval(pollInterval);
+      // Call The New Black event try-on edge function (synchronous)
+      const { data, error } = await supabase.functions.invoke('thenewblack-event-tryon', {
+        body: {
+          event_id: eventId,
+          product_id: product.id,
+          person_image_url: personImageUrl,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Edge function error');
+      }
+
+      if (!data?.ok) {
+        throw new Error(data?.error || 'Try-on failed');
+      }
+
+      // Immediately show result (no polling needed)
+      setResultUrl(data.result_url);
+      setStatus('done');
+
+      await saveAsset(
+        data.result_url,
+        data.job_id,
+        `${eventName} - ${product.brand_name} - Try-On`
+      );
+
+      toast({
+        title: 'Try-on complete! ✨',
+        description: 'Your virtual try-on is ready'
+      });
       
     } catch (err: any) {
       console.error('Try-on error:', err);
@@ -348,70 +232,6 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       toast({
         title: 'Try-on failed',
         description: err.message || 'Failed to generate try-on. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const fastTryOn = async () => {
-    if (!personImageId) {
-      toast({
-        title: "Missing person image",
-        description: "Please upload your photo first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!product.image_url) {
-      toast({
-        title: "Missing product image",
-        description: "Product image not available",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      setStatus('generating');
-      
-      // Use new provider adapter with product main image
-      const result = await runTryOn({
-        eventId: eventId,
-        userId: (await supabase.auth.getUser()).data.user!.id,
-        productId: product.id,
-        personImagePath: personImageId,
-        outfitImagePath: product.image_url
-      });
-
-      if (result.ok && result.outputPath) {
-        const { data } = supabase.storage
-          .from('event-tryon-results')
-          .getPublicUrl(result.outputPath);
-        
-        setResultUrl(data.publicUrl);
-        setStatus('done');
-        
-        await saveAsset(
-          data.publicUrl,
-          undefined,
-          `${eventName} - ${product.brand_name} - Fast Try-On`
-        );
-        
-        toast({
-          title: 'Fast try-on complete!',
-          description: 'Your virtual try-on is ready'
-        });
-      } else {
-        throw new Error(result.error || 'Try-on failed');
-      }
-      
-    } catch (err: any) {
-      console.error('Fast try-on error:', err);
-      setStatus('failed');
-      toast({
-        title: 'Try-on failed',
-        description: err.message || 'Failed to generate try-on',
         variant: 'destructive'
       });
     }
@@ -580,24 +400,9 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
               <div>
                 <p className="text-sm font-medium">{getStatusText()}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  This may take 30-90 seconds
+                  This may take 15-30 seconds
                 </p>
-                {status === 'generating' && (
-                  <>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      <strong>You can safely close this window.</strong>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Results will appear above the Try On button when complete.
-                    </p>
-                  </>
-                )}
               </div>
-              {status === 'generating' && (
-                <Button variant="outline" onClick={onClose} className="mt-4">
-                  Close & Continue Browsing
-                </Button>
-              )}
             </div>
           )}
 
