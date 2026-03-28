@@ -11,6 +11,7 @@ interface ARProduct {
   ar_model_url: string;
   ar_scale: number;
   brand_name?: string;
+  name?: string;
 }
 
 export default function ARExperience() {
