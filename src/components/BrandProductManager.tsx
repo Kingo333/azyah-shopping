@@ -594,12 +594,12 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                variant: "destructive"
                              });
                            } finally {
-                             setUploadingOutfit(false);
-                             e.target.value = '';
-                           }
-                         }}
-                         className="w-full p-2 border rounded"
-                         disabled={uploadingOutfit}
+                              setUploadingARModel(false);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="w-full p-2 border rounded"
+                          disabled={uploadingARModel}
                        />
                      </div>
                    </div>

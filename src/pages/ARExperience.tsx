@@ -10,6 +10,7 @@ interface ARProduct {
   image_url: string;
   ar_model_url: string;
   ar_scale: number;
+  ar_position_offset?: { x: number; y: number; z: number };
   brand_name?: string;
   name?: string;
 }
@@ -39,7 +40,7 @@ export default function ARExperience() {
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
         .select(`
-          id, image_url, ar_model_url, ar_scale,
+          id, image_url, ar_model_url, ar_scale, ar_position_offset,
           event_brands!inner(brand_name)
         `)
         .eq('event_brand_id', brandId)
@@ -58,7 +59,9 @@ export default function ARExperience() {
         image_url: p.image_url,
         ar_model_url: p.ar_model_url,
         ar_scale: p.ar_scale || 1.0,
-        brand_name: p.event_brands?.brand_name
+        ar_position_offset: p.ar_position_offset || { x: 0, y: 0, z: 0 },
+        brand_name: p.event_brands?.brand_name,
+        name: p.name,
       }));
 
       setProducts(mapped);
@@ -148,6 +151,7 @@ export default function ARExperience() {
 
     // Setup MediaPipe Pose
     let poseInstance: any = null;
+    const offset = selectedProduct.ar_position_offset || { x: 0, y: 0, z: 0 };
 
     async function initPose() {
       try {
@@ -170,18 +174,46 @@ export default function ARExperience() {
           const landmarks = results.poseLandmarks;
           const leftShoulder = landmarks[11];
           const rightShoulder = landmarks[12];
+          const leftHip = landmarks[23];
+          const rightHip = landmarks[24];
 
-          // Convert normalized coords to Three.js space
-          const centerX = ((leftShoulder.x + rightShoulder.x) / 2 - 0.5) * 4;
-          const centerY = -((leftShoulder.y + rightShoulder.y) / 2 - 0.5) * 3;
+          // Mirror X: video is mirrored via CSS scaleX(-1), so invert X for Three.js overlay
+          const mirrorX = (x: number) => 1 - x;
+
+          // Horizontal center from mirrored shoulders
+          const shoulderCenterX = (mirrorX(leftShoulder.x) + mirrorX(rightShoulder.x)) / 2;
+          const centerX = (shoulderCenterX - 0.5) * 4;
+
+          // Vertical center from shoulders + hips for full-body alignment
+          const bodyCenterY = (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) / 4;
+          const centerY = -(bodyCenterY - 0.5) * 3;
+
+          // Depth from shoulders
           const depth = (leftShoulder.z + rightShoulder.z) / 2;
 
-          modelRef.current!.position.set(centerX, centerY, depth * 2);
+          // Apply ar_position_offset from DB
+          modelRef.current!.position.set(
+            centerX + offset.x,
+            centerY + offset.y,
+            depth * 2 + offset.z
+          );
 
           // Scale based on shoulder width
           const shoulderWidth = Math.abs(rightShoulder.x - leftShoulder.x);
-          const scale = shoulderWidth * 5 * (selectedProduct?.ar_scale || 1);
+          const torsoHeight = Math.abs(
+            (leftShoulder.y + rightShoulder.y) / 2 -
+            (leftHip.y + rightHip.y) / 2
+          );
+          const bodyScale = Math.max(shoulderWidth, torsoHeight * 0.8);
+          const scale = bodyScale * 5 * (selectedProduct?.ar_scale || 1);
           modelRef.current!.scale.setScalar(scale);
+
+          // Rotation: follow shoulder angle for body turns
+          const shoulderAngle = Math.atan2(
+            rightShoulder.z - leftShoulder.z,
+            mirrorX(rightShoulder.x) - mirrorX(leftShoulder.x)
+          );
+          modelRef.current!.rotation.y = shoulderAngle;
         });
 
         poseRef.current = poseInstance;
@@ -275,19 +307,21 @@ export default function ARExperience() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Camera feed (background) */}
+      {/* Camera feed (mirrored for natural selfie view) */}
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
+        style={{ transform: 'scaleX(-1)' }}
         playsInline
         muted
         autoPlay
       />
 
-      {/* Three.js canvas (overlay) */}
+      {/* Three.js canvas (mirrored to match video) */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
+        style={{ transform: 'scaleX(-1)' }}
         width={window.innerWidth}
         height={window.innerHeight}
       />
@@ -305,7 +339,7 @@ export default function ARExperience() {
             <button
               key={product.id}
               onClick={() => setSelectedProduct(product)}
-              className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+              className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
                 selectedProduct?.id === product.id
                   ? 'border-purple-500 scale-110'
                   : 'border-white/30'
