@@ -314,6 +314,13 @@ const Profile: React.FC = () => {
                             day: 'numeric',
                             year: 'numeric',
                           })}
+                          {featuredEvent.end_date && featuredEvent.end_date !== featuredEvent.event_date && (
+                            <span> – {new Date(featuredEvent.end_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}</span>
+                          )}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
