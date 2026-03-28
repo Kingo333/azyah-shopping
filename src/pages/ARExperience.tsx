@@ -246,7 +246,7 @@ export default function ARExperience() {
       cleanedUpRef.current = true;
       cancelAnimationFrame(animFrameRef.current);
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-      if (poseInstance) poseInstance.close?.();
+      if (poseRef.current) { (poseRef.current as PoseLandmarker).close(); poseRef.current = null; }
       rendererRef.current?.dispose();
     };
   }, [isLoading, selectedProduct]);
