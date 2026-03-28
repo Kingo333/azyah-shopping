@@ -313,9 +313,14 @@ export default function ARExperience() {
             >
               <img
                 src={product.image_url}
-                alt="Product"
+                alt={product.name || 'Product'}
                 className="w-full h-full object-cover"
               />
+              {product.name && (
+                <span className="absolute bottom-0 left-0 right-0 text-[10px] text-white bg-black/60 text-center truncate px-1">
+                  {product.name}
+                </span>
+              )}
             </button>
           ))}
         </div>
