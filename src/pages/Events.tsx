@@ -533,10 +533,13 @@ const Events = () => {
                 </p>
               </CardContent>
             </Card> : <div className="space-y-8">
-              {eventBrands.map(brand => <div key={brand.id} className="space-y-4">
+              {eventBrands.map(brand => {
+                const hasARProducts = brand.products.some(p => p.ar_model_url && p.ar_enabled);
+                return <div key={brand.id} className="space-y-4">
                   <div className="flex items-center space-x-4">
                     {brand.logo_url && <img src={brand.logo_url} alt={`${brand.brand_name} logo`} className="w-12 h-12 object-contain bg-white rounded-lg p-2 border" />}
                     <h3 className="text-xl font-bold">{brand.brand_name}</h3>
+                    {selectedEvent && <EventARButton eventId={selectedEvent.id} brandId={brand.id} brandName={brand.brand_name} hasARProducts={hasARProducts} />}
                   </div>
                   
                   {brand.products.length === 0 ? <p className="text-muted-foreground text-sm">No products available</p> : <div className="relative">
