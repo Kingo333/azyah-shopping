@@ -368,7 +368,7 @@ const Events = () => {
             
             {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).map(([productId, result]) => {
-            return <div key={productId} className="relative flex-shrink-0 w-[90px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
+            return <div key={productId} className="relative flex-shrink-0 w-[120px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
                             <Button
                               variant="destructive"
                               size="icon"
@@ -425,7 +425,7 @@ const Events = () => {
                               
                               {/* Action buttons row */}
                               <div className="flex gap-1 w-full">
-                                <Button size="sm" className="flex-1 min-w-0 text-xs h-7 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
+                                <Button size="sm" className="flex-1 min-w-0 text-xs h-6 truncate" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
                                   if (hasPersonImage && product.try_on_ready) {
                                     setSelectedProduct({
                                       ...product,
@@ -441,9 +441,9 @@ const Events = () => {
                                 {/* Per-product AR button — icon only */}
                                 {product.ar_enabled && product.ar_model_url && (
                                   <Button
-                                    size="icon"
+                                    size="sm"
                                     variant="outline"
-                                    className="w-7 h-7 p-0 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
+                                    className="h-6 px-1.5 text-xs gap-0.5 flex-shrink-0 border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10"
                                     onClick={() => handleOpenAR({
                                       ...product,
                                       event_brand_id: brand.id,
@@ -451,7 +451,8 @@ const Events = () => {
                                       brand_logo_url: brand.logo_url
                                     })}
                                   >
-                                    <Smartphone className="h-3.5 w-3.5" />
+                                    <Smartphone className="h-3 w-3" />
+                                    AR
                                   </Button>
                                 )}
                               </div>
