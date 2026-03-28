@@ -368,7 +368,7 @@ const Events = () => {
             
             {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).map(([productId, result]) => {
-            return <div key={productId} className="relative flex-shrink-0 w-[90px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
+            return <div key={productId} className="relative flex-shrink-0 w-[120px] rounded-lg overflow-hidden border border-green-500/30 hover:border-green-500 transition-colors cursor-pointer group">
                             <Button
                               variant="destructive"
                               size="icon"
