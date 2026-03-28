@@ -451,7 +451,8 @@ const Events = () => {
                                       brand_logo_url: brand.logo_url
                                     })}
                                   >
-                                    <Smartphone className="h-3.5 w-3.5" />
+                                    <Smartphone className="h-3 w-3" />
+                                    AR
                                   </Button>
                                 )}
                               </div>
