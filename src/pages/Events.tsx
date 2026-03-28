@@ -539,45 +539,47 @@ const Events = () => {
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">No upcoming events at the moment. Check back soon!</p>
           </CardContent>
-        </Card> : <div className="grid gap-6">
-          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
-              {event.banner_image_url && (
-                <div className="w-full h-40 sm:h-48 overflow-hidden">
-                  <img src={event.banner_image_url} alt={event.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-4">
-                    {event.retailer.logo_url && <img src={event.retailer.logo_url} alt={event.retailer.name} className="w-12 h-12 rounded-lg object-cover" />}
-                    <div>
-                      <CardTitle className="text-xl mb-2">{event.name}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Store className="w-4 h-4" />
-                          {event.retailer.name}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {format(new Date(event.event_date), 'MMMM d, yyyy')}
-                          {event.end_date && event.end_date !== event.event_date && (
-                            <span> – {format(new Date(event.end_date), 'MMMM d, yyyy')}</span>
-                          )}
-                        </div>
-                        {event.location && <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {event.location}
-                          </div>}
-                      </div>
-                    </div>
+        </Card> : <div className="grid gap-4">
+          {events.map(event => <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden" onClick={() => selectEvent(event)}>
+              <div className="flex flex-row">
+                {event.banner_image_url && (
+                  <div className="w-28 sm:w-40 flex-shrink-0">
+                    <img src={event.banner_image_url} alt={event.name} className="w-full h-full object-cover rounded-l-lg" />
                   </div>
-                  <Badge variant="secondary">{event.status}</Badge>
+                )}
+                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {event.retailer.logo_url && <img src={event.retailer.logo_url} alt={event.retailer.name} className="w-8 h-8 rounded-md object-cover flex-shrink-0" />}
+                        <h3 className="text-lg font-bold truncate">{event.name}</h3>
+                      </div>
+                      <Badge variant="secondary" className="flex-shrink-0 text-[10px]">{event.status}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+                      <span className="flex items-center gap-1">
+                        <Store className="w-3 h-3" />
+                        {event.retailer.name}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {format(new Date(event.event_date), 'MMM d, yyyy')}
+                        {event.end_date && event.end_date !== event.event_date && (
+                          <span> – {format(new Date(event.end_date), 'MMM d, yyyy')}</span>
+                        )}
+                      </span>
+                      {event.location && <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.location}
+                        </span>}
+                    </div>
+                    {event.description && <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>}
+                  </div>
+                  <div className="mt-3">
+                    <Button size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); selectEvent(event); }}>View Event Catalog</Button>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {event.description && <p className="text-muted-foreground mb-4">{event.description}</p>}
-                <Button onClick={() => selectEvent(event)}>View Event Catalog</Button>
-              </CardContent>
+              </div>
             </Card>)}
         </div>}
     </div>;
