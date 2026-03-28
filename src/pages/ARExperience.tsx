@@ -5,6 +5,10 @@ import { Loader2, CameraOff, AlertTriangle, User, RefreshCw } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
+const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
 interface ARProduct {
   id: string;
