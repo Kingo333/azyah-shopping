@@ -668,6 +668,9 @@ const Events = () => {
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           {format(new Date(event.event_date), 'MMMM d, yyyy')}
+                          {event.end_date && event.end_date !== event.event_date && (
+                            <span> – {format(new Date(event.end_date), 'MMMM d, yyyy')}</span>
+                          )}
                         </div>
                         {event.location && <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
