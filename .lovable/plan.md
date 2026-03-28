@@ -1,123 +1,44 @@
 
 
-## AR Try-On System for Events — Full Implementation Plan
+## Audit: AR Try-On Implementation vs. Spec
 
-This is a large build with 4 interconnected changes. Here's the validated plan based on what actually exists in the codebase.
+### What's Done Correctly
 
----
+| Area | Status | Notes |
+|------|--------|-------|
+| **Database migration** | Done | `ar_model_url`, `ar_enabled`, `ar_scale`, `ar_position_offset`, `ar_model_format` columns added to `event_brand_products`. Types file reflects them. |
+| **Storage bucket** | Done | `event-ar-models` bucket created with RLS policies |
+| **Edge function** | Done | `thenewblack-event-tryon` deployed with proper CORS, auth validation, The New Black API call, result storage, job tracking |
+| **EventTryOnModal rewrite** | Done | Polling removed, direct sync call to `thenewblack-event-tryon`, clean upload-then-generate flow |
+| **BrandProductManager 3D upload** | Done | `.glb/.gltf` upload section added, writes to `event-ar-models` bucket, updates `ar_model_url` and `ar_enabled` |
+| **EventARButton + QR** | Done | QR code modal with canvas rendering, correct `/ar/:eventId/:brandId` URL, conditional rendering based on `hasARProducts` |
+| **Events.tsx integration** | Done | AR button added per brand, `hasARProducts` check uses `ar_model_url && ar_enabled` |
+| **ARExperience page** | Done | Camera feed, Three.js overlay, MediaPipe pose tracking, product selector carousel |
+| **App.tsx route** | Done | `/ar/:eventId/:brandId` route added outside ProtectedRoute |
 
-### Phase 1: Database & Storage Setup
+### Issues Found
 
-**Migration SQL:**
-- Add columns to `event_brand_products`: `ar_model_url TEXT`, `ar_model_format TEXT DEFAULT 'glb'`, `ar_enabled BOOLEAN DEFAULT false`, `ar_scale FLOAT DEFAULT 1.0`, `ar_position_offset JSONB DEFAULT '{"x":0,"y":0,"z":0}'`
-- Create `event-ar-models` storage bucket (public) with RLS policy allowing authenticated retailer uploads
-- Add storage RLS for read access (public bucket, so SELECT is open)
+**1. BrandProductManager still has BitStudio upload logic (lines 433-517)**
+The outfit image upload handler still imports and calls `BitStudioClient.uploadImage()`, sets `try_on_provider: 'bitstudio'`, and saves `outfit_bitstudio_id`. Since the event try-on now uses The New Black, this is dead code that will confuse retailers and waste BitStudio API calls. It should be simplified to just upload to Supabase storage and set the outfit URL — no BitStudio involvement needed.
 
-No new tables needed — we extend `event_brand_products`.
+**2. Edge function uses `getUser()` instead of `getClaims()`**
+Line 41 uses `await userClient.auth.getUser(token)` which makes a server round-trip. Per Supabase best practices, this should use `getClaims(token)` for faster JWT validation. Not a blocker but a performance issue.
 
----
+**3. AR route is inside the Router but accessibility unclear**
+The `/ar/:eventId/:brandId` route is added at line 280 of App.tsx. Need to confirm it's outside `<ProtectedRoute>` wrapper — from the search results it appears to be placed correctly alongside other public routes.
 
-### Phase 2: Replace BitStudio/Gemini with The New Black for Event Try-On
+**4. No `name` field on ARProduct or product selector**
+The `ARExperience.tsx` `ARProduct` interface lacks a `name` field. The product selector thumbnails show images but no product names — minor UX gap.
 
-**Current flow:** `EventTryOnModal` → `runTryOn()` → provider select (bitstudio/gemini) → edge function → async polling every 2s for up to 3 minutes
+### Recommended Fixes
 
-**New flow:** `EventTryOnModal` → direct call to `thenewblack-event-tryon` edge function → synchronous result (no polling)
+1. **Remove BitStudio from BrandProductManager outfit upload** — Simplify the outfit upload handler (lines 433-517) to only upload to Supabase storage and save the URL. Remove `BitStudioClient` import, `outfit_bitstudio_id`, and `try_on_provider: 'bitstudio'`. Set `try_on_provider: 'thenewblack'` instead.
 
-**New edge function: `supabase/functions/thenewblack-event-tryon/index.ts`**
-- Accepts `{ event_id, product_id, person_image_url }`
-- Validates auth via JWT
-- Fetches product's outfit image from `event_brand_products`
-- Calls The New Black API (same pattern as existing `thenewblack-picture`) using `THE_NEW_BLACK_API_KEY` (already configured)
-- Downloads result image, uploads to `event-tryon-results` storage
-- Inserts record into `event_tryon_jobs` for history
-- Returns `{ ok, result_url }` synchronously
+2. **Switch edge function auth to `getClaims()`** — Replace `getUser(token)` with `getClaims(token)` for faster validation.
 
-**Update `src/components/EventTryOnModal.tsx`:**
-- Remove BitStudio upload logic (lines 146-167 — uploading to BitStudio for person image ID)
-- Remove the entire polling mechanism (lines 229-340)
-- Replace `startTryOn` with a direct `supabase.functions.invoke('thenewblack-event-tryon')` call
-- On success, immediately set `resultUrl` and `status: 'done'`
-- Person image upload simplified: just upload to Supabase storage, get public URL, pass it to the edge function
-- Remove `fastTryOn` function (no longer needed — the main flow is now fast)
-- Remove imports: `runTryOn`, `shouldShowNotification`, `markNotified`
+3. **Add product name to AR experience** — Include `name` in the AR product query and display it below the selected product thumbnail.
 
-**Files no longer invoked for events (kept for backward compatibility but not called):**
-- `src/lib/tryon/providers/bitstudio.ts`
-- `src/lib/tryon/providers/gemini.ts`
-- `src/lib/tryon/providers/select.ts`
-- `supabase/functions/bitstudio-tryon/`
-- `supabase/functions/bitstudio-poll-job/`
-- `supabase/functions/vto-gemini/`
+### Overall Verdict
 
----
-
-### Phase 3: Retailer 3D Upload in BrandProductManager
-
-**Update `src/components/BrandProductManager.tsx`:**
-- Add a "3D Model for AR" upload section in the product edit modal (after the outfit image upload section)
-- Accept `.glb` and `.gltf` files only
-- Upload to `event-ar-models` bucket with path `{event_id}/{brand_id}/{product_id}/{timestamp}.glb`
-- On successful upload, update `event_brand_products` with `ar_model_url`, `ar_enabled: true`
-- Show upload status and a checkmark when AR model is configured
-- Add helper text: "Upload a 3D model (.glb) to enable AR try-on. Use Meshy.ai or Tripo3D to convert product images to 3D."
-
----
-
-### Phase 4: AR Button + QR Code on Events Page
-
-**New component: `src/components/events/EventARButton.tsx`**
-- Props: `eventId`, `brandId`, `brandName`, `hasARProducts`
-- Only renders if `hasARProducts` is true
-- Shows a gradient "AR Try-On" button with smartphone icon
-- On click, opens a dialog with:
-  - QR code (using existing `qrcode` library) pointing to `/ar/{eventId}/{brandId}`
-  - "Scan with your phone" instructions
-  - "Open AR Experience" direct link button for mobile users
-- Uses same QR generation pattern as `SocialSharing.tsx`
-
-**Update `src/pages/Events.tsx`:**
-- Import `EventARButton`
-- In the brand header section (line ~534-538), add the AR button next to the brand name
-- Check if any product in the brand has `ar_model_url` set to determine `hasARProducts`
-- Update `EventProduct` interface to include `ar_model_url` and `ar_enabled`
-- Update the brand products query to select `ar_model_url, ar_enabled`
-
----
-
-### Phase 5: AR Experience Page
-
-**New page: `src/pages/ARExperience.tsx`**
-- Route: `/ar/:eventId/:brandId` (public, no auth required — accessed via QR scan)
-- Fetches AR-enabled products for the brand from `event_brand_products`
-- Uses device camera via `getUserMedia` as background video feed
-- Loads `.glb` 3D models using Three.js `GLTFLoader`
-- Uses `@mediapipe/pose` for body tracking (shoulder landmarks 11 & 12) to position garment overlay
-- Product selector carousel at bottom to switch between brand products
-- Renders Three.js scene as transparent overlay on camera feed
-- Responsive, mobile-first design
-
-**Dependencies to add:** `three`, `@types/three`, `@mediapipe/pose`
-(`qrcode` already installed)
-
-**Update `src/App.tsx`:**
-- Add route: `<Route path="/ar/:eventId/:brandId" element={<ARExperience />} />`
-- This route should be outside `ProtectedRoute` since it's accessed via QR code scan
-
----
-
-### Files Summary
-
-| File | Action |
-|------|--------|
-| DB migration | New columns on `event_brand_products`, new storage bucket |
-| `supabase/functions/thenewblack-event-tryon/index.ts` | Create — new sync edge function |
-| `src/components/EventTryOnModal.tsx` | Rewrite — remove polling, use The New Black directly |
-| `src/components/BrandProductManager.tsx` | Edit — add 3D model upload section |
-| `src/components/events/EventARButton.tsx` | Create — AR button + QR modal |
-| `src/pages/Events.tsx` | Edit — add AR button, extend product interface |
-| `src/pages/ARExperience.tsx` | Create — full AR experience page |
-| `src/App.tsx` | Edit — add `/ar/:eventId/:brandId` route |
-| `package.json` | Add `three`, `@types/three`, `@mediapipe/pose` |
-
-No secrets needed — `THE_NEW_BLACK_API_KEY` is already configured.
+The implementation is **functionally complete and logically sound**. All 4 spec changes are implemented. The main cleanup needed is removing the leftover BitStudio logic from BrandProductManager's outfit upload flow, which contradicts the "replace BitStudio/Gemini with The New Black" goal.
 
