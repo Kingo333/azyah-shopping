@@ -44,7 +44,11 @@ export default function ARExperience() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [missingParts, setMissingParts] = useState<string[]>([]);
   const [loadProgress, setLoadProgress] = useState<string>('');
+  const [loadStage, setLoadStage] = useState<string>('');
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
+
+  // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
+  const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
@@ -166,12 +170,26 @@ export default function ARExperience() {
       setProducts(mapped);
 
       // Preselect requested product or fall back to first
-      if (requestedProductId) {
-        const requested = mapped.find(p => p.id === requestedProductId);
-        setSelectedProduct(requested || mapped[0]);
-      } else {
-        setSelectedProduct(mapped[0]);
+      const selected = requestedProductId
+        ? mapped.find(p => p.id === requestedProductId) || mapped[0]
+        : mapped[0];
+      setSelectedProduct(selected);
+
+      // FIX-02: Start GLB download early (don't wait for pose processor to finish)
+      if (selected.ar_model_url && !modelPrefetchRef.current) {
+        modelPrefetchRef.current = {
+          url: selected.ar_model_url,
+          promise: loadModel(selected.ar_model_url, (loaded, total, percent) => {
+            if (percent >= 0) {
+              setLoadProgress(`${percent}%`);
+            } else {
+              const mb = (loaded / (1024 * 1024)).toFixed(1);
+              setLoadProgress(`${mb} MB`);
+            }
+          }),
+        };
       }
+
       setIsLoading(false);
     }
     fetchAndValidate();
@@ -187,24 +205,49 @@ export default function ARExperience() {
     const canvas = canvasRef.current;
 
     async function initPipeline() {
-      // 1. Camera
+      // 1. Camera + Pose in parallel (FIX-01: saves 3-8s)
       setTrackingState('initializing');
-      try {
-        const cam = await startCamera(video);
-        if (cleanedUpRef.current) { stopCamera(cam.stream); return; }
-        streamRef.current = cam.stream;
-        coverCropRef.current = computeCoverCrop(cam.videoWidth, cam.videoHeight, window.innerWidth, window.innerHeight);
-      } catch (err: any) {
+      setLoadStage('Starting camera & body tracking…');
+
+      const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
+      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+
+      const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+
+      if (cleanedUpRef.current) {
+        if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
+        if (poseResult && !('error' in poseResult)) poseResult.close();
+        return;
+      }
+
+      // Handle camera errors
+      if ('error' in camResult) {
+        const err = camResult.error;
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setTrackingState('camera_denied');
         } else {
           setTrackingState('camera_error');
           setTrackingMessage(err.message || 'Camera access failed');
         }
+        // Clean up pose if it succeeded
+        if (poseResult && !('error' in poseResult)) poseResult.close();
         return;
       }
 
+      streamRef.current = camResult.stream;
+      coverCropRef.current = computeCoverCrop(camResult.videoWidth, camResult.videoHeight, window.innerWidth, window.innerHeight);
+
+      // Handle pose errors
+      if ('error' in poseResult) {
+        setTrackingState('pose_init_failed');
+        setTrackingMessage(poseResult.error.message || 'Body tracking failed');
+        return;
+      }
+
+      poseProcessorRef.current = poseResult;
+
       // 2. Scene (persistent -- survives product switches)
+      setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
@@ -213,22 +256,13 @@ export default function ARExperience() {
       resolver.register('shirt', new ShirtAnchor());
       resolver.register('abaya', new AbayaAnchor());
       resolver.register('pants', new PantsAnchor());
-      resolver.register('jacket', new ShirtAnchor());  // Jacket uses shirt strategy with different config
+      resolver.register('jacket', new ShirtAnchor());
       resolver.register('headwear', new AccessoryAnchor());
       resolver.register('accessory', new AccessoryAnchor());
       anchorResolverRef.current = resolver;
 
-      // 3. Pose
       setTrackingState('waiting_for_pose');
-      try {
-        const pp = await createPoseProcessor();
-        if (cleanedUpRef.current) { pp.close(); return; }
-        poseProcessorRef.current = pp;
-      } catch (err: any) {
-        setTrackingState('pose_init_failed');
-        setTrackingMessage(err.message || 'Body tracking failed');
-        return;
-      }
+      setLoadStage('');
 
       // 4. Render loop
       let lastPoseTime = 0;
@@ -393,32 +427,38 @@ export default function ARExperience() {
     pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
 
     setTrackingState('model_loading');
+    setLoadStage('Downloading 3D model…');
     setLoadProgress('');
     setModelLoadFailed(false);
 
     const attemptLoad = (attempt: number) => {
-      loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
-        if (cancelled) return;
-        if (percent >= 0) {
-          setLoadProgress(`${percent}%`);
-        } else {
-          // No Content-Length header — show bytes loaded
-          const mb = (loaded / (1024 * 1024)).toFixed(1);
-          setLoadProgress(`${mb} MB`);
-        }
-      }).then((result) => {
+      // FIX-02: Reuse prefetched promise if URL matches (first product only)
+      const prefetch = modelPrefetchRef.current;
+      const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
+        ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
+        : loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
+            if (cancelled) return;
+            if (percent >= 0) {
+              setLoadProgress(`${percent}%`);
+            } else {
+              const mb = (loaded / (1024 * 1024)).toFixed(1);
+              setLoadProgress(`${mb} MB`);
+            }
+          });
+
+      modelPromise.then((result) => {
         if (cancelled) return;
         modelRef.current = result.wrapper;
         modelDimsRef.current = result.dims;
         sm.swapModel(result.wrapper);
         setTrackingState('waiting_for_pose');
         setLoadProgress('');
+        setLoadStage('');
         sm.dirty = true;
       }).catch((err) => {
         if (cancelled) return;
         console.error(`Model load error (attempt ${attempt}):`, err);
         if (attempt < 2) {
-          // Auto-retry once
           setLoadProgress('Retrying...');
           setTimeout(() => attemptLoad(attempt + 1), 1000);
         } else {
@@ -551,6 +591,7 @@ export default function ARExperience() {
         garmentType={selectedProduct?.garment_type || 'shirt'}
         missingParts={missingParts}
         loadProgress={loadProgress}
+        loadStage={loadStage}
         onRetry={modelLoadFailed ? () => setSelectedProduct(prev => prev ? { ...prev } : prev) : undefined}
       />
 

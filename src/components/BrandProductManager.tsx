@@ -555,11 +555,14 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   {/* GLB upload */}
                   <div>
                     <label className="text-sm font-medium">Upload 3D Model (.glb)</label>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Max 50 MB. For best AR performance, keep models under 10 MB.
+                    </p>
                     <p className="text-xs text-muted-foreground mb-2">
-                      Max 50 MB. Use{' '}
+                      <strong>Tip:</strong> Use <a href="https://gltf-transform.dev/cli" target="_blank" rel="noopener noreferrer" className="underline text-primary">gltf-transform</a> to apply Draco compression (60-90% smaller).
+                      Generate from images with{' '}
                       <a href="https://meshy.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Meshy.ai</a>{' '}or{' '}
-                      <a href="https://tripo3d.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Tripo3D</a>{' '}
-                      to convert product images to 3D.
+                      <a href="https://tripo3d.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Tripo3D</a>.
                     </p>
 
                     <input
