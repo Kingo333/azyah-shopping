@@ -10,10 +10,10 @@ const ROUTE_ACCESS: Record<Exclude<UserRole, 'admin'>, string[]> = {
     '/closets', '/forum', '/ar-tryOn', '/affiliate', '/auth', '/landing', '/settings', '/profile'
   ],
   brand: [
-    '/', '/dashboard', '/brand-portal', '/auth', '/landing', '/settings', '/profile'
+    '/', '/dashboard', '/brand-portal', '/auth', '/landing'
   ],
   retailer: [
-    '/', '/dashboard', '/retailer-portal', '/auth', '/landing', '/settings', '/profile'
+    '/', '/dashboard', '/retailer-portal', '/auth', '/landing'
   ]
 };
 
