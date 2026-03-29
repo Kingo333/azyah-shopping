@@ -191,24 +191,49 @@ export default function ARExperience() {
     const canvas = canvasRef.current;
 
     async function initPipeline() {
-      // 1. Camera
+      // 1. Camera + Pose in parallel (FIX-01: saves 3-8s)
       setTrackingState('initializing');
-      try {
-        const cam = await startCamera(video);
-        if (cleanedUpRef.current) { stopCamera(cam.stream); return; }
-        streamRef.current = cam.stream;
-        coverCropRef.current = computeCoverCrop(cam.videoWidth, cam.videoHeight, window.innerWidth, window.innerHeight);
-      } catch (err: any) {
+      setLoadStage('Starting camera & body tracking…');
+
+      const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
+      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+
+      const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+
+      if (cleanedUpRef.current) {
+        if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
+        if (poseResult && !('error' in poseResult)) poseResult.close();
+        return;
+      }
+
+      // Handle camera errors
+      if ('error' in camResult) {
+        const err = camResult.error;
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setTrackingState('camera_denied');
         } else {
           setTrackingState('camera_error');
           setTrackingMessage(err.message || 'Camera access failed');
         }
+        // Clean up pose if it succeeded
+        if (poseResult && !('error' in poseResult)) poseResult.close();
         return;
       }
 
+      streamRef.current = camResult.stream;
+      coverCropRef.current = computeCoverCrop(camResult.videoWidth, camResult.videoHeight, window.innerWidth, window.innerHeight);
+
+      // Handle pose errors
+      if ('error' in poseResult) {
+        setTrackingState('pose_init_failed');
+        setTrackingMessage(poseResult.error.message || 'Body tracking failed');
+        return;
+      }
+
+      poseProcessorRef.current = poseResult;
+
       // 2. Scene (persistent -- survives product switches)
+      setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
@@ -217,22 +242,13 @@ export default function ARExperience() {
       resolver.register('shirt', new ShirtAnchor());
       resolver.register('abaya', new AbayaAnchor());
       resolver.register('pants', new PantsAnchor());
-      resolver.register('jacket', new ShirtAnchor());  // Jacket uses shirt strategy with different config
+      resolver.register('jacket', new ShirtAnchor());
       resolver.register('headwear', new AccessoryAnchor());
       resolver.register('accessory', new AccessoryAnchor());
       anchorResolverRef.current = resolver;
 
-      // 3. Pose
       setTrackingState('waiting_for_pose');
-      try {
-        const pp = await createPoseProcessor();
-        if (cleanedUpRef.current) { pp.close(); return; }
-        poseProcessorRef.current = pp;
-      } catch (err: any) {
-        setTrackingState('pose_init_failed');
-        setTrackingMessage(err.message || 'Body tracking failed');
-        return;
-      }
+      setLoadStage('');
 
       // 4. Render loop
       let lastPoseTime = 0;

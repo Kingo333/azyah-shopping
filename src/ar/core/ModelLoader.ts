@@ -100,6 +100,12 @@ export async function loadModel(url: string, onProgress?: ModelProgressCallback)
   // Cache miss: load from network with timeout
   const loader = new GLTFLoader();
 
+  // Enable Draco decompression for compressed GLB files (FIX-03)
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+  dracoLoader.setDecoderConfig({ type: 'js' }); // JS fallback works everywhere
+  loader.setDRACOLoader(dracoLoader);
+
   const gltf = await new Promise<any>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       reject(new Error('Model loading timed out. The file may be too large for this connection. Try a smaller model (under 10MB).'));
