@@ -50,6 +50,13 @@ export default function ARExperience() {
   // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
   const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
 
+  // Scene-ready promise: Effect 2 awaits this to avoid the race condition where
+  // selectedProduct arrives before SceneManager is initialized in Effect 1.
+  const sceneReadyResolveRef = useRef<(() => void) | null>(null);
+  const sceneReadyPromiseRef = useRef<Promise<void>>(
+    new Promise<void>((resolve) => { sceneReadyResolveRef.current = resolve; })
+  );
+
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const poseProcessorRef = useRef<PoseProcessor | null>(null);
@@ -210,7 +217,10 @@ export default function ARExperience() {
       setLoadStage('Starting camera & body tracking…');
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
-      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+      const poseTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Body tracking timed out. Check your connection.')), 15000)
+      );
+      const posePromise = Promise.race([createPoseProcessor(), poseTimeout]).catch((err: any) => ({ error: err }));
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
 
@@ -250,6 +260,9 @@ export default function ARExperience() {
       setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
+
+      // Signal Effect 2 that SceneManager is ready (fixes race condition)
+      sceneReadyResolveRef.current?.();
 
       // Initialize anchor resolver with all strategies
       const resolver = new AnchorResolver();
@@ -406,74 +419,82 @@ export default function ARExperience() {
   // ── Effect 2: Model loading (runs when selectedProduct changes) ──
   // Only selectedProduct triggers model reload. Camera, pose, and scene persist.
   useEffect(() => {
-    if (!selectedProduct || !sceneManagerRef.current) return;
-    const sm = sceneManagerRef.current;
+    if (!selectedProduct) return;
     let cancelled = false;
 
-    // Reset smoothing filters for new product
-    filterPosX.current.reset();
-    filterPosY.current.reset();
-    filterScaleX.current.reset();
-    filterScaleY.current.reset();
-    filterScaleZ.current.reset();
-    filterRotY.current.reset();
-    // Reset outlier filters too
-    outlierPosX.current.reset();
-    outlierPosY.current.reset();
-    outlierScX.current.reset();
-    outlierScY.current.reset();
-    outlierRotY.current.reset();
-    lastAnchorRef.current = null;
-    pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
+    async function loadWhenReady() {
+      // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
+      await sceneReadyPromiseRef.current;
+      if (cancelled || !sceneManagerRef.current) return;
+      const sm = sceneManagerRef.current;
 
-    setTrackingState('model_loading');
-    setLoadStage('Downloading 3D model…');
-    setLoadProgress('');
-    setModelLoadFailed(false);
+      // Reset smoothing filters for new product
+      filterPosX.current.reset();
+      filterPosY.current.reset();
+      filterScaleX.current.reset();
+      filterScaleY.current.reset();
+      filterScaleZ.current.reset();
+      filterRotY.current.reset();
+      // Reset outlier filters too
+      outlierPosX.current.reset();
+      outlierPosY.current.reset();
+      outlierScX.current.reset();
+      outlierScY.current.reset();
+      outlierRotY.current.reset();
+      lastAnchorRef.current = null;
+      pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
 
-    const attemptLoad = (attempt: number) => {
-      // FIX-02: Reuse prefetched promise if URL matches (first product only)
-      const prefetch = modelPrefetchRef.current;
-      const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
-        ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
-        : loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
-            if (cancelled) return;
-            if (percent >= 0) {
-              setLoadProgress(`${percent}%`);
-            } else {
-              const mb = (loaded / (1024 * 1024)).toFixed(1);
-              setLoadProgress(`${mb} MB`);
-            }
-          });
+      setTrackingState('model_loading');
+      setLoadStage('Downloading 3D model…');
+      setLoadProgress('');
+      setModelLoadFailed(false);
 
-      modelPromise.then((result) => {
-        if (cancelled) return;
-        modelRef.current = result.wrapper;
-        modelDimsRef.current = result.dims;
-        sm.swapModel(result.wrapper);
-        setTrackingState('waiting_for_pose');
-        setLoadProgress('');
-        setLoadStage('');
-        sm.dirty = true;
-      }).catch((err) => {
-        if (cancelled) return;
-        console.error(`Model load error (attempt ${attempt}):`, err);
-        if (attempt < 2) {
-          setLoadProgress('Retrying...');
-          setTimeout(() => attemptLoad(attempt + 1), 1000);
-        } else {
-          setTrackingState('model_error');
-          setTrackingMessage(
-            err.message?.includes('timed out')
-              ? 'Model is too large to load on this connection. Ask the retailer for a smaller file.'
-              : 'Could not load 3D model. Check your connection and try again.'
-          );
-          setModelLoadFailed(true);
-        }
-      });
-    };
+      const attemptLoad = (attempt: number) => {
+        // FIX-02: Reuse prefetched promise if URL matches (first product only)
+        const prefetch = modelPrefetchRef.current;
+        const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
+          ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
+          : loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
+              if (cancelled) return;
+              if (percent >= 0) {
+                setLoadProgress(`${percent}%`);
+              } else {
+                const mb = (loaded / (1024 * 1024)).toFixed(1);
+                setLoadProgress(`${mb} MB`);
+              }
+            });
 
-    attemptLoad(1);
+        modelPromise.then((result) => {
+          if (cancelled) return;
+          modelRef.current = result.wrapper;
+          modelDimsRef.current = result.dims;
+          sm.swapModel(result.wrapper);
+          setTrackingState('waiting_for_pose');
+          setLoadProgress('');
+          setLoadStage('');
+          sm.dirty = true;
+        }).catch((err) => {
+          if (cancelled) return;
+          console.error(`Model load error (attempt ${attempt}):`, err);
+          if (attempt < 2) {
+            setLoadProgress('Retrying...');
+            setTimeout(() => attemptLoad(attempt + 1), 1000);
+          } else {
+            setTrackingState('model_error');
+            setTrackingMessage(
+              err.message?.includes('timed out')
+                ? 'Model is too large to load on this connection. Ask the retailer for a smaller file.'
+                : 'Could not load 3D model. Check your connection and try again.'
+            );
+            setModelLoadFailed(true);
+          }
+        });
+      };
+
+      attemptLoad(1);
+    }
+
+    loadWhenReady();
 
     return () => { cancelled = true; };
   }, [selectedProduct]); // eslint-disable-line react-hooks/exhaustive-deps
