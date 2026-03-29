@@ -258,6 +258,9 @@ export default function ARExperience() {
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
+      // Signal Effect 2 that SceneManager is ready (fixes race condition)
+      sceneReadyResolveRef.current?.();
+
       // Initialize anchor resolver with all strategies
       const resolver = new AnchorResolver();
       resolver.register('shirt', new ShirtAnchor());
