@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { landmarkToWorld, computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -31,8 +32,6 @@ type TrackingState =
   | 'tracking_lost'
   | 'tracking_active';
 
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const SMOOTHING = 0.3;
 
 export default function ARExperience() {
   const { eventId, brandId } = useParams();
@@ -57,12 +56,10 @@ export default function ARExperience() {
   const poseRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const framesWithoutPose = useRef(0);
-  const smoothPos = useRef({ x: 0, y: 0, z: 0 });
-  const smoothScale = useRef({ x: 1, y: 1, z: 1 });
-  const smoothRot = useRef(0);
   const cleanedUpRef = useRef(false);
   const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
   const visibleDimsRef = useRef({ w: 4, h: 3 });
+  const coverCropRef = useRef<CoverCropInfo>({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 });
 
   // Fetch AR-enabled products and validate context
   useEffect(() => {
@@ -152,18 +149,21 @@ export default function ARExperience() {
       const vh = video.videoHeight || window.innerHeight;
       const dpr = Math.min(window.devicePixelRatio, 2);
 
+      // Compute initial cover crop (video vs. display aspect ratio mismatch)
+      coverCropRef.current = computeCoverCrop(vw, vh, window.innerWidth, window.innerHeight);
+
       // ── 2. Three.js ──
       const scene = new THREE.Scene();
       sceneRef.current = scene;
-      const aspectRatio = vw / vh;
-      const camera = new THREE.PerspectiveCamera(63, aspectRatio, 0.1, 1000);
+      const displayAspect = window.innerWidth / window.innerHeight;
+      const camera = new THREE.PerspectiveCamera(63, displayAspect, 0.1, 1000);
       camera.position.z = 2;
       cameraObjRef.current = camera;
 
       // Compute visible world dimensions at camera z-distance for FOV-based mapping
       const vFov = (camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFov / 2) * camera.position.z;
-      const visibleWidth = visibleHeight * aspectRatio;
+      const visibleWidth = visibleHeight * displayAspect;
       visibleDimsRef.current = { w: visibleWidth, h: visibleHeight };
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -280,7 +280,7 @@ export default function ARExperience() {
   function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }) {
     if (!modelRef.current) return;
 
-    const { w: visW, h: visH } = visibleDimsRef.current;
+    const visDims = visibleDimsRef.current;
     const dims = modelDimsRef.current;
     const arScale = selectedProduct?.ar_scale || 1;
 
@@ -295,76 +295,65 @@ export default function ARExperience() {
     modelRef.current.visible = true;
     const hasHips = (lh.visibility ?? 0) > 0.3 && (rh.visibility ?? 0) > 0.3;
 
-    // Mirror X for selfie camera
-    const mirrorX = (x: number) => 1 - x;
+    // Convert key landmarks to world coordinates (mirror + cover-crop + NDC-to-world in one step)
+    const crop = coverCropRef.current;
 
-    // ── Shirt anchor points ──
-    // Horizontal: shoulder midpoint
-    const shoulderCX = (mirrorX(ls.x) + mirrorX(rs.x)) / 2;
-    const shoulderCY = (ls.y + rs.y) / 2;
+    const lsWorld = landmarkToWorld(ls, crop, visDims, true);
+    const rsWorld = landmarkToWorld(rs, crop, visDims, true);
 
-    // Vertical bottom: hip midpoint or estimate
-    let hipCX = shoulderCX;
-    let hipCY = shoulderCY + 0.25; // fallback estimate
+    let lhWorld = { x: 0, y: 0 };
+    let rhWorld = { x: 0, y: 0 };
     if (hasHips) {
-      hipCX = (mirrorX(lh.x) + mirrorX(rh.x)) / 2;
-      hipCY = (lh.y + rh.y) / 2;
+      lhWorld = landmarkToWorld(lh, crop, visDims, true);
+      rhWorld = landmarkToWorld(rh, crop, visDims, true);
     }
 
-    // Torso center = midpoint between shoulder-line and hip-line
-    const centerX = (shoulderCX + hipCX) / 2;
-    const centerY = (shoulderCY + hipCY) / 2;
-
-    // Depth from average z
-    const avgZ = hasHips
-      ? (ls.z + rs.z + lh.z + rh.z) / 4
-      : (ls.z + rs.z) / 2;
-
-    // ── Map normalized coords to world units using FOV ──
-    const targetX = (centerX - 0.5) * visW;
-    const targetY = -(centerY - 0.5) * visH;
-    const targetZ = avgZ * 2 - 1;
-
-    // ── Body-proportional non-uniform scaling ──
-    const shoulderWidthNorm = Math.abs(mirrorX(rs.x) - mirrorX(ls.x));
-    const torsoHeightNorm = hipCY - shoulderCY;
-
-    const shoulderWidthWorld = shoulderWidthNorm * visW;
-    const torsoHeightWorld = torsoHeightNorm * visH;
-
-    // Scale model to match body proportions
-    // Add 15% horizontal padding so shirt extends past shoulders
-    const targetScaleX = (shoulderWidthWorld / dims.w) * arScale * 1.15;
-    const targetScaleY = (torsoHeightWorld / dims.h) * arScale;
-    const targetScaleZ = (targetScaleX + targetScaleY) / 2; // average for depth
-
-    // Shoulder rotation for body turn
-    const shoulderAngle = Math.atan2(rs.z - ls.z, mirrorX(rs.x) - mirrorX(ls.x));
-
-    // ── Apply with smoothing ──
-    smoothPos.current = {
-      x: lerp(smoothPos.current.x, targetX, SMOOTHING),
-      y: lerp(smoothPos.current.y, targetY, SMOOTHING),
-      z: lerp(smoothPos.current.z, targetZ, SMOOTHING),
+    // Shoulder midpoint in world coords
+    const shoulderCenterWorld = {
+      x: (lsWorld.x + rsWorld.x) / 2,
+      y: (lsWorld.y + rsWorld.y) / 2,
     };
-    smoothScale.current = {
-      x: lerp(smoothScale.current.x, targetScaleX, SMOOTHING),
-      y: lerp(smoothScale.current.y, targetScaleY, SMOOTHING),
-      z: lerp(smoothScale.current.z, targetScaleZ, SMOOTHING),
-    };
-    smoothRot.current = lerp(smoothRot.current, shoulderAngle, SMOOTHING * 0.5);
 
+    // Hip midpoint in world coords (or estimate below shoulders)
+    let hipCenterWorld = {
+      x: shoulderCenterWorld.x,
+      y: shoulderCenterWorld.y - (visDims.h * 0.25),  // fallback: 25% of visible height below shoulders
+    };
+    if (hasHips) {
+      hipCenterWorld = {
+        x: (lhWorld.x + rhWorld.x) / 2,
+        y: (lhWorld.y + rhWorld.y) / 2,
+      };
+    }
+
+    // Torso center
+    const targetX = (shoulderCenterWorld.x + hipCenterWorld.x) / 2;
+    const targetY = (shoulderCenterWorld.y + hipCenterWorld.y) / 2;
+    const targetZ = 0;  // constant depth -- overlay is effectively 2D-on-camera-plane
+
+    // ── Body-proportional non-uniform scaling (world coordinates) ──
+    const shoulderWidthMeasured = Math.abs(rsWorld.x - lsWorld.x);
+    const torsoHeightMeasured = Math.abs(shoulderCenterWorld.y - hipCenterWorld.y);
+
+    const targetScaleX = (shoulderWidthMeasured / dims.w) * arScale * 1.15;
+    const targetScaleY = (torsoHeightMeasured / dims.h) * arScale;
+    const targetScaleZ = (targetScaleX + targetScaleY) / 2;
+
+    // Body-turn rotation from shoulder Z difference (depth hint only)
+    const shoulderWidthWorld = Math.abs(rsWorld.x - lsWorld.x);
+    const shoulderZDiff = landmarks[12].z - landmarks[11].z;  // right - left in raw coords
+    const bodyTurnY = shoulderWidthWorld > 0.01
+      ? Math.atan2(shoulderZDiff, shoulderWidthWorld / visDims.w)
+      : 0;
+
+    // ── Apply position/scale/rotation (no smoothing yet -- Task 2 adds One Euro Filter) ──
     modelRef.current.position.set(
-      smoothPos.current.x + offset.x,
-      smoothPos.current.y + offset.y,
-      smoothPos.current.z + offset.z
+      targetX + offset.x,
+      targetY + offset.y,
+      targetZ + offset.z
     );
-    modelRef.current.scale.set(
-      smoothScale.current.x,
-      smoothScale.current.y,
-      smoothScale.current.z
-    );
-    modelRef.current.rotation.y = smoothRot.current;
+    modelRef.current.scale.set(targetScaleX, targetScaleY, targetScaleZ);
+    modelRef.current.rotation.y = bodyTurnY;
 
     // Fade based on landmark confidence
     const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
@@ -386,6 +375,19 @@ export default function ARExperience() {
         rendererRef.current.setSize(w, h);
         cameraObjRef.current.aspect = w / h;
         cameraObjRef.current.updateProjectionMatrix();
+
+        // FIX COORD-05: recalculate visible world dimensions
+        const vFov = (cameraObjRef.current.fov * Math.PI) / 180;
+        const visibleHeight = 2 * Math.tan(vFov / 2) * cameraObjRef.current.position.z;
+        const visibleWidth = visibleHeight * cameraObjRef.current.aspect;
+        visibleDimsRef.current = { w: visibleWidth, h: visibleHeight };
+
+        // FIX COORD-05: recalculate cover crop with new display dimensions
+        if (videoRef.current && videoRef.current.videoWidth > 0) {
+          coverCropRef.current = computeCoverCrop(
+            videoRef.current.videoWidth, videoRef.current.videoHeight, w, h
+          );
+        }
       }
     };
     window.addEventListener('resize', handleResize);
@@ -433,7 +435,6 @@ export default function ARExperience() {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ transform: 'scaleX(-1)' }}
         width={window.innerWidth}
         height={window.innerHeight}
       />
