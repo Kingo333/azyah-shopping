@@ -7,8 +7,18 @@ import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle } f
 import { Checkbox } from '@/components/ui/checkbox';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+const GARMENT_TYPES = [
+  { value: 'shirt', label: 'Shirt / Top' },
+  { value: 'abaya', label: 'Abaya / Dress' },
+  { value: 'pants', label: 'Pants / Bottoms' },
+  { value: 'jacket', label: 'Jacket / Outerwear' },
+  { value: 'headwear', label: 'Headwear' },
+  { value: 'accessory', label: 'Accessory' },
+] as const;
 
 interface EventBrandProduct {
   id: string;
@@ -307,6 +317,11 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                         AR
                       </Badge>
                     )}
+                    {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
+                      <Badge variant="outline" className="absolute top-8 left-2 bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
+                        {GARMENT_TYPES.find(t => t.value === product.garment_type)?.label || product.garment_type}
+                      </Badge>
+                    )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Shirt className="w-4 h-4 text-muted-foreground" />
@@ -522,7 +537,49 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                            <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
                          </div>
                        )}
-                       
+
+                       <div className="mb-3">
+                         <label className="text-sm font-medium">Garment Type</label>
+                         <p className="text-xs text-muted-foreground mb-2">
+                           Select the type of garment to optimize AR placement.
+                         </p>
+                         <Select
+                           value={editingProduct.garment_type || 'shirt'}
+                           onValueChange={async (value) => {
+                             try {
+                               await supabase
+                                 .from('event_brand_products')
+                                 .update({ garment_type: value, updated_at: new Date().toISOString() })
+                                 .eq('id', editingProduct.id);
+
+                               setEditingProduct(prev => prev ? { ...prev, garment_type: value } : prev);
+
+                               toast({
+                                 title: "Garment type updated",
+                                 description: `Set to ${GARMENT_TYPES.find(t => t.value === value)?.label || value}`
+                               });
+
+                               fetchProducts();
+                             } catch (error: any) {
+                               toast({
+                                 title: "Error",
+                                 description: error.message || "Failed to update garment type",
+                                 variant: "destructive"
+                               });
+                             }
+                           }}
+                         >
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select garment type" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {GARMENT_TYPES.map(t => (
+                               <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+
                        <input
                          type="file"
                          accept=".glb,.gltf"
