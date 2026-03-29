@@ -48,7 +48,7 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(63, aspect, 0.1, 1000);
     this.camera.position.z = 2;
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, preserveDrawingBuffer: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     // PERF-01: Cap DPR at 1.0 on mobile to reduce pixel fill rate.
