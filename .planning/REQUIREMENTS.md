@@ -94,47 +94,47 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COORD-01 | — | Pending |
-| COORD-02 | — | Pending |
-| COORD-03 | — | Pending |
-| COORD-04 | — | Pending |
-| COORD-05 | — | Pending |
-| ARCH-01 | — | Pending |
-| ARCH-02 | — | Pending |
-| ARCH-03 | — | Pending |
-| ARCH-04 | — | Pending |
-| ANCH-01 | — | Pending |
-| ANCH-02 | — | Pending |
-| ANCH-03 | — | Pending |
-| ANCH-04 | — | Pending |
-| ANCH-05 | — | Pending |
-| ANCH-06 | — | Pending |
-| ANCH-07 | — | Pending |
-| ANCH-08 | — | Pending |
-| ANCH-09 | — | Pending |
-| ANCH-10 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| RETL-01 | — | Pending |
-| RETL-02 | — | Pending |
-| RETL-03 | — | Pending |
-| RETL-04 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| PERF-03 | — | Pending |
-| PERF-04 | — | Pending |
-| VIS-01 | — | Pending |
-| VIS-02 | — | Pending |
-| VIS-03 | — | Pending |
-| VIS-04 | — | Pending |
-| VIS-05 | — | Pending |
+| COORD-01 | Phase 1 | Pending |
+| COORD-02 | Phase 1 | Pending |
+| COORD-03 | Phase 1 | Pending |
+| COORD-04 | Phase 1 | Pending |
+| COORD-05 | Phase 1 | Pending |
+| ARCH-01 | Phase 2 | Pending |
+| ARCH-02 | Phase 1 | Pending |
+| ARCH-03 | Phase 2 | Pending |
+| ARCH-04 | Phase 2 | Pending |
+| ANCH-01 | Phase 3 | Pending |
+| ANCH-02 | Phase 3 | Pending |
+| ANCH-03 | Phase 3 | Pending |
+| ANCH-04 | Phase 3 | Pending |
+| ANCH-05 | Phase 3 | Pending |
+| ANCH-06 | Phase 3 | Pending |
+| ANCH-07 | Phase 3 | Pending |
+| ANCH-08 | Phase 3 | Pending |
+| ANCH-09 | Phase 3 | Pending |
+| ANCH-10 | Phase 3 | Pending |
+| UX-01 | Phase 4 | Pending |
+| UX-02 | Phase 4 | Pending |
+| UX-03 | Phase 4 | Pending |
+| RETL-01 | Phase 2 | Pending |
+| RETL-02 | Phase 2 | Pending |
+| RETL-03 | Phase 5 | Pending |
+| RETL-04 | Phase 2 | Pending |
+| PERF-01 | Phase 2 | Pending |
+| PERF-02 | Phase 2 | Pending |
+| PERF-03 | Phase 2 | Pending |
+| PERF-04 | Phase 5 | Pending |
+| VIS-01 | Phase 5 | Pending |
+| VIS-02 | Phase 5 | Pending |
+| VIS-03 | Phase 4 | Pending |
+| VIS-04 | Phase 4 | Pending |
+| VIS-05 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 35 total
-- Mapped to phases: 0
-- Unmapped: 35 ⚠️
+- Mapped to phases: 35
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-29 after initial definition*
+*Last updated: 2026-03-29 after roadmap phase mapping*
