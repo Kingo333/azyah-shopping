@@ -342,6 +342,10 @@ export default function ARExperience() {
             }
           }
         }
+        // VIS-02: Adaptive lighting from camera brightness (self-throttles to 500ms)
+        if (video.readyState >= 2) {
+          sm.updateLightingFromVideo(video);
+        }
         sm.renderIfDirty();  // PERF-02: only render when pose updated or dirty
         animFrameRef.current = requestAnimationFrame(animate);
       };

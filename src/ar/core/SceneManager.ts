@@ -4,10 +4,11 @@
  * Owns the WebGLRenderer, Scene, PerspectiveCamera, and lighting. Persists
  * across product switches -- only the loaded 3D model swaps via swapModel().
  *
- * Implements three performance requirements:
+ * Implements three performance requirements and adaptive lighting:
  * - PERF-01: DPR capped at 1.0 on mobile to reduce GPU pixel fill
  * - PERF-02: Render-on-dirty -- only calls renderer.render() when dirty flag is set
  * - PERF-03: Cached material array for O(1) per-frame opacity updates
+ * - VIS-02: Adaptive lighting from camera feed brightness (500ms sampling)
  *
  * Extracted from ARExperience.tsx lines 173-195 (scene setup) and the
  * resize handler at lines 396-421.
@@ -32,6 +33,16 @@ export class SceneManager {
   private currentModel: THREE.Object3D | null = null;
   /** PERF-03: Cached material references for fast per-frame opacity updates. */
   private cachedMaterials: THREE.Material[] = [];
+
+  /** VIS-02: Stored light references for adaptive brightness adjustments. */
+  private ambientLight: THREE.AmbientLight;
+  private dirLight: THREE.DirectionalLight;
+
+  /** VIS-02: Small canvas for sampling video frame brightness (32x16). */
+  private brightnessCanvas: HTMLCanvasElement;
+  private brightnessCtx: CanvasRenderingContext2D;
+  /** VIS-02: Timestamp of last brightness sample for 500ms throttle. */
+  private lastBrightnessSample = 0;
 
   /**
    * Create a new SceneManager bound to a canvas element.
@@ -60,11 +71,18 @@ export class SceneManager {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    // Lighting
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(0, 1, 1);
-    this.scene.add(dirLight);
+    // Lighting -- stored as fields for VIS-02 adaptive brightness
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    this.scene.add(this.ambientLight);
+    this.dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.dirLight.position.set(0, 1, 1);
+    this.scene.add(this.dirLight);
+
+    // VIS-02: Small canvas for video brightness sampling (32x16 is cheap to sample)
+    this.brightnessCanvas = document.createElement('canvas');
+    this.brightnessCanvas.width = 32;
+    this.brightnessCanvas.height = 16;
+    this.brightnessCtx = this.brightnessCanvas.getContext('2d')!;
   }
 
   /**
@@ -140,6 +158,39 @@ export class SceneManager {
     for (const mat of this.cachedMaterials) {
       (mat as any).opacity = opacity;
     }
+  }
+
+  /**
+   * VIS-02: Update lighting intensity based on camera feed brightness.
+   *
+   * Samples the video frame at low resolution (32x16), computes average
+   * luminance, and maps it to ambient (0.3-1.0) and directional (0.4-1.2)
+   * light intensities. Self-throttles to every 500ms since brightness
+   * changes slowly -- safe to call every frame.
+   *
+   * @param video - The camera feed HTMLVideoElement.
+   */
+  updateLightingFromVideo(video: HTMLVideoElement): void {
+    const now = performance.now();
+    if (now - this.lastBrightnessSample < 500) return;
+    this.lastBrightnessSample = now;
+
+    // Draw video frame at tiny resolution for cheap pixel sampling
+    this.brightnessCtx.drawImage(video, 0, 0, 32, 16);
+    const imageData = this.brightnessCtx.getImageData(0, 0, 32, 16).data;
+
+    // Compute average luminance (ITU-R BT.601 luma coefficients)
+    let totalLuminance = 0;
+    const pixelCount = 32 * 16;
+    for (let i = 0; i < imageData.length; i += 4) {
+      totalLuminance += (0.299 * imageData[i] + 0.587 * imageData[i + 1] + 0.114 * imageData[i + 2]) / 255;
+    }
+    const brightness = totalLuminance / pixelCount; // 0-1
+
+    // Map brightness to light intensities
+    this.ambientLight.intensity = 0.3 + brightness * 0.7;   // Range: 0.3 - 1.0
+    this.dirLight.intensity = 0.4 + brightness * 0.8;       // Range: 0.4 - 1.2
+    this.dirty = true;
   }
 
   /**
