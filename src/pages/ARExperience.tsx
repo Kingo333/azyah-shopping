@@ -427,32 +427,38 @@ export default function ARExperience() {
     pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
 
     setTrackingState('model_loading');
+    setLoadStage('Downloading 3D model…');
     setLoadProgress('');
     setModelLoadFailed(false);
 
     const attemptLoad = (attempt: number) => {
-      loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
-        if (cancelled) return;
-        if (percent >= 0) {
-          setLoadProgress(`${percent}%`);
-        } else {
-          // No Content-Length header — show bytes loaded
-          const mb = (loaded / (1024 * 1024)).toFixed(1);
-          setLoadProgress(`${mb} MB`);
-        }
-      }).then((result) => {
+      // FIX-02: Reuse prefetched promise if URL matches (first product only)
+      const prefetch = modelPrefetchRef.current;
+      const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
+        ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
+        : loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
+            if (cancelled) return;
+            if (percent >= 0) {
+              setLoadProgress(`${percent}%`);
+            } else {
+              const mb = (loaded / (1024 * 1024)).toFixed(1);
+              setLoadProgress(`${mb} MB`);
+            }
+          });
+
+      modelPromise.then((result) => {
         if (cancelled) return;
         modelRef.current = result.wrapper;
         modelDimsRef.current = result.dims;
         sm.swapModel(result.wrapper);
         setTrackingState('waiting_for_pose');
         setLoadProgress('');
+        setLoadStage('');
         sm.dirty = true;
       }).catch((err) => {
         if (cancelled) return;
         console.error(`Model load error (attempt ${attempt}):`, err);
         if (attempt < 2) {
-          // Auto-retry once
           setLoadProgress('Retrying...');
           setTimeout(() => attemptLoad(attempt + 1), 1000);
         } else {
