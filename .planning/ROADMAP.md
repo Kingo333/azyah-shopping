@@ -45,12 +45,12 @@ Plans:
   2. The retailer can select a garment type (shirt, abaya, pants, jacket, headwear, accessory) when uploading a product in BrandProductManager
   3. All existing AR products continue working without manual migration -- they default to garment type "shirt"
   4. The AR experience renders at a stable frame rate on mid-range phones without thermal throttle (DPR capped, render-on-dirty, no redundant material traversal)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Extract core AR modules (CameraManager, PoseProcessor, SceneManager, ModelLoader, types) with PERF-01/02/03
+- [ ] 02-02-PLAN.md -- Rewrite ARExperience.tsx as slim orchestrator with three independent effects
+- [ ] 02-03-PLAN.md -- Add garment_type database column, TypeScript types, and retailer dropdown UI
 
 ### Phase 3: Garment Anchor System
 **Goal**: Each garment type is positioned on the user's body using its own anchor strategy with full-body landmark utilization
