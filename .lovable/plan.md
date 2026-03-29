@@ -1,52 +1,37 @@
 
 
-# Fix Edge Function Build Errors + Apply Garment Type Migration
+# Optimize Edit Try-On Modal + Increase 3D Upload Limit
 
-## Overview
-Two things to do: (1) apply the garment_type SQL migration to your database, and (2) fix 31 TypeScript errors across ~20 edge functions that prevent the build from succeeding.
+## Problem
+The "Edit Try-On" modal (lines 351-742 in `BrandProductManager.tsx`) is dense and overwhelming — it crams product preview, outfit image upload, force-reupload checkbox, 3D model upload, garment type selector, validation feedback, and action buttons into one scrollable dialog. The 3D model upload also caps at ~10MB implicitly (no explicit check, but outfit images are capped at 10MB), and needs to support 50MB files.
 
-## 1. Apply Garment Type Migration
-Run this SQL via the migration tool to add the `garment_type` column to `event_brand_products`:
+## Changes (single file: `src/components/BrandProductManager.tsx`)
 
-```sql
-ALTER TABLE public.event_brand_products
-ADD COLUMN garment_type TEXT NOT NULL DEFAULT 'shirt'
-CHECK (garment_type IN ('shirt', 'abaya', 'pants', 'jacket', 'headwear', 'accessory'));
+### A. Restructure Modal into Tabs/Sections
+Replace the current side-by-side layout with a cleaner **tabbed layout** using two tabs:
+1. **Image Try-On** — outfit image upload, preview, force-reupload option
+2. **3D AR Model** — garment type selector, GLB upload, validation feedback
 
-COMMENT ON COLUMN public.event_brand_products.garment_type IS
-  'Type of garment for AR anchor strategy selection.';
-```
+This halves the visible content at any given time. The product image thumbnail + brand info stays as a compact header above the tabs.
 
-## 2. Fix Edge Function TypeScript Errors
+### B. Increase 3D File Size Limit to 50MB
+- Currently there's no explicit size check for GLB files (outfit images have a 10MB check at line 419)
+- Add explicit validation: allow up to 50MB for `.glb`/`.gltf` files
+- Show clear error if file exceeds 50MB
 
-There are three categories of errors:
+### C. UI Polish
+- Compact the product preview (smaller image, inline with title)
+- Remove the legacy BitStudio force-reupload checkbox (lines 388-399) since the system now uses The New Black — this is dead UI
+- Cleaner upload areas with drag-and-drop styling consistent with `EventTryOnModal`
+- Move Save/Cancel buttons into each tab context so the user flow is linear
 
-### A. `'error' is of type 'unknown'` (25 errors across ~15 functions)
-Every `catch (error)` block accesses `error.message` without type narrowing. Fix: change `catch (error)` to `catch (error: any)` in each affected function:
-- admin-delete-user, auto-tag, beauty-consultation, bg-remove, bitstudio-health, bitstudio-status, bitstudio-upload, create-stripe-checkout, delete-account, enhance-wardrobe-item, extract-link-metadata, generate-toy-replica, moderation-flag, public-fits, realtime-session, render-fit, revenuecat-webhook, stripe-webhook, thenewblack-picture-free
+## Technical Details
 
-### B. Missing properties on `PipelineLog` in `deals-from-image` (2 errors)
-The `PipelineLog` interface (line 34-48) is missing `pattern_mode` and `visual_filtered_count`. Add them:
-```typescript
-pattern_mode?: boolean;
-visual_filtered_count?: number;
-```
+**File**: `src/components/BrandProductManager.tsx` (lines ~349-742)
 
-### C. `deals-unified` `.catch()` issue (2 errors)
-Line 1784: Supabase `.insert()` returns `PromiseLike<void>` which lacks `.catch()`. Fix by wrapping in `Promise.resolve()`:
-```typescript
-Promise.resolve(supabase.from('deals_search_runs').insert({...}))
-  .then(() => {})
-  .catch((err: any) => console.warn(...));
-```
-
-### D. `generate-toy-replica` undefined `toyReplicaId` (2 errors)
-The outer `catch` at line 288 references `toyReplicaId` which is defined inside the `try` block (line 61) and not in scope. Fix: declare `let toyReplicaId: string | undefined;` before the try block, then assign inside. Guard usage in catch with `if (toyReplicaId)`.
-
-## Files Modified
-- ~20 edge function `index.ts` files (catch type annotations)
-- `supabase/functions/deals-from-image/index.ts` (PipelineLog interface)
-- `supabase/functions/deals-unified/index.ts` (Promise.resolve wrapper)
-- `supabase/functions/generate-toy-replica/index.ts` (hoist variable)
-- Database: new `garment_type` column on `event_brand_products`
+- Add `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs`
+- Split modal content into two `TabsContent` blocks
+- Add `file.size > 50 * 1024 * 1024` guard in the GLB upload handler (around line 598)
+- Remove the `forceReupload` checkbox block (lines 388-399) and related state if unused elsewhere
+- Reduce product preview image from `h-64` to a small `w-16 h-16` thumbnail in a compact header row
 
