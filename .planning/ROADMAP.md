@@ -78,11 +78,11 @@ Plans:
   2. When some but not all required landmarks are visible, the user sees which body parts they need to show (partial_tracking state)
   3. The user can take a screenshot that composites the camera feed and the 3D model overlay into a single image
   4. The user can share the captured AR image via the device's native share sheet
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- Garment-aware tracking guidance with partial_tracking state and per-garment body part instructions
+- [ ] 04-02-PLAN.md -- Screenshot capture compositor and native share functionality with capture UI
 
 ### Phase 5: Performance, Visual Quality, and Retailer Tools
 **Goal**: The AR experience is visually polished, performant on mobile, and retailers can validate their 3D models on upload
