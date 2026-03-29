@@ -39,8 +39,8 @@ export interface ModelResult {
  */
 export type ModelProgressCallback = (loaded: number, total: number, percent: number) => void;
 
-/** Default timeout for model loading (30 seconds). */
-const MODEL_LOAD_TIMEOUT_MS = 30_000;
+/** Default timeout for model loading (60 seconds — large GLBs need time on mobile). */
+const MODEL_LOAD_TIMEOUT_MS = 60_000;
 
 /**
  * Module-level cache: URL -> pristine ModelResult.

@@ -37,13 +37,13 @@ export async function validateGLBModel(file: File): Promise<ModelValidationResul
 
   // --- File size checks (run before parsing) ---
   const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-  if (file.size > 25 * 1024 * 1024) {
+  if (file.size > 50 * 1024 * 1024) {
     errors.push(
-      `Model file is ${sizeMB}MB — too large for mobile AR (max 25MB). Reduce polygon count or compress textures. Use https://gltf.report/ to optimize.`
+      `Model file is ${sizeMB}MB — exceeds 50MB limit. Reduce polygon count or compress textures at https://gltf.report/`
     );
-  } else if (file.size > 10 * 1024 * 1024) {
+  } else if (file.size > 15 * 1024 * 1024) {
     warnings.push(
-      `Model file is ${sizeMB}MB. Files over 10MB load slowly on mobile. Consider optimizing at https://gltf.report/`
+      `Model file is large (${sizeMB}MB). This may cause slow loading on mobile devices. Consider optimizing at https://gltf.report/`
     );
   }
 
