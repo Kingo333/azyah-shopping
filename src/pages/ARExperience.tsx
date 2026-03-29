@@ -423,6 +423,49 @@ export default function ARExperience() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ── Effect 4: Pinch-to-zoom gesture handling (VIS-01) ──
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let initialDistance = 0;
+    let initialScale = 1;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        initialScale = pinchScaleRef.current;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && initialDistance > 0) {
+        e.preventDefault(); // Prevent page zoom
+        const newDist = getTouchDistance(e.touches[0], e.touches[1]);
+        const ratio = newDist / initialDistance;
+        // Clamp pinch scale to [0.5, 2.0]
+        pinchScaleRef.current = Math.max(0.5, Math.min(2.0, initialScale * ratio));
+        if (sceneManagerRef.current) {
+          sceneManagerRef.current.dirty = true;
+        }
+      }
+    };
+
+    const onTouchEnd = () => {
+      initialDistance = 0;
+    };
+
+    canvas.addEventListener('touchstart', onTouchStart);
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
   // ── Render ──
 
   if (isLoading) {
@@ -569,4 +612,11 @@ export default function ARExperience() {
       )}
     </div>
   );
+}
+
+/** VIS-01: Compute Euclidean distance between two touch points for pinch gesture. */
+function getTouchDistance(t1: Touch, t2: Touch): number {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
 }
