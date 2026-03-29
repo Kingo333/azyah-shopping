@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 01-02-PLAN.md (Phase 1 complete)
-last_updated: "2026-03-29T01:23:35.301Z"
-last_activity: 2026-03-29 -- Completed 01-02 coordinate pipeline integration (all 5 coordinate bugs fixed, LERP replaced with One Euro Filter)
+status: executing
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-29T02:02:16.903Z"
+last_activity: 2026-03-29 -- Completed 02-03 garment type schema and retailer UI (SQL migration, TypeScript types, dropdown in BrandProductManager)
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_plans: 5
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -21,35 +21,37 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** When a shopper points their camera at themselves, the 3D garment must look like they're actually wearing it -- properly anchored, proportional, and moving naturally.
-**Current focus:** Phase 1: Coordinate Pipeline and Stability
+**Current focus:** Phase 2: Architecture Decomposition and Schema
 
 ## Current Position
 
-Phase: 1 of 5 (Coordinate Pipeline and Stability) -- COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase 1 complete -- ready for Phase 2
-Last activity: 2026-03-29 -- Completed 01-02 coordinate pipeline integration (all 5 coordinate bugs fixed, LERP replaced with One Euro Filter)
+Phase: 2 of 5 (Architecture Decomposition and Schema)
+Plan: 3 of 3 in current phase (02-03 complete)
+Status: Executing Phase 2 plans
+Last activity: 2026-03-29 -- Completed 02-03 garment type schema and retailer UI (SQL migration, TypeScript types, dropdown in BrandProductManager)
 
-Progress: [██████████] 100% (Phase 1)
+Progress: [██████░░░░] 60% (3/5 plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 10 min
-- Total execution time: 0.33 hours
+- Total execution time: 0.50 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 2 | 20 min | 10 min |
+| 02 | 1 | 10 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (12 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 02-03 (10 min)
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 02 P03 | 10min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,12 @@ Recent decisions affecting current work:
 - [01-02]: Camera PerspectiveCamera uses display aspect (window dims) not video aspect -- coverCrop handles video-to-display transform
 - [01-02]: Z-depth set to constant 0 -- AR overlay is 2D on camera plane, body-turn uses shoulder Z difference only
 - [01-02]: Six independent OneEuroFilter refs per smoothed axis with axis-appropriate presets
+- [02-03]: Used SQL DEFAULT clause to backfill existing rows to 'shirt' -- no separate data migration needed
+- [02-03]: Garment type dropdown saves immediately on selection (no Save button) for faster UX
+- [02-03]: Badge only shown for non-default garment types to reduce visual noise
+- [Phase 02]: Used SQL DEFAULT clause to backfill existing rows to 'shirt' -- no separate data migration needed
+- [Phase 02]: Garment type dropdown saves immediately on selection (no Save button) for faster UX
+- [Phase 02]: Badge only shown for non-default garment types to reduce visual noise
 
 ### Pending Todos
 
@@ -80,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T01:17:36Z
-Stopped at: Completed 01-02-PLAN.md (Phase 1 complete)
+Last session: 2026-03-29T02:02:01.861Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

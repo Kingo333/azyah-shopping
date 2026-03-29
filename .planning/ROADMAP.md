@@ -50,7 +50,7 @@ Plans:
 Plans:
 - [ ] 02-01-PLAN.md -- Extract core AR modules (CameraManager, PoseProcessor, SceneManager, ModelLoader, types) with PERF-01/02/03
 - [ ] 02-02-PLAN.md -- Rewrite ARExperience.tsx as slim orchestrator with three independent effects
-- [ ] 02-03-PLAN.md -- Add garment_type database column, TypeScript types, and retailer dropdown UI
+- [x] 02-03-PLAN.md -- Add garment_type database column, TypeScript types, and retailer dropdown UI
 
 ### Phase 3: Garment Anchor System
 **Goal**: Each garment type is positioned on the user's body using its own anchor strategy with full-body landmark utilization
@@ -107,7 +107,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Coordinate Pipeline and Stability | 2/2 | Complete | 2026-03-29 |
-| 2. Architecture Decomposition and Schema | 0/3 | Not started | - |
+| 2. Architecture Decomposition and Schema | 1/3 | In Progress | - |
 | 3. Garment Anchor System | 0/3 | Not started | - |
 | 4. User Experience and Capture | 0/2 | Not started | - |
 | 5. Performance, Visual Quality, and Retailer Tools | 0/2 | Not started | - |
