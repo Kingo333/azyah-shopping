@@ -32,6 +32,17 @@ export interface ModelResult {
 }
 
 /**
+ * Progress callback for model loading.
+ * @param loaded - Bytes loaded so far.
+ * @param total - Total bytes (0 if unknown).
+ * @param percent - Percentage complete (0-100, or -1 if total is unknown).
+ */
+export type ModelProgressCallback = (loaded: number, total: number, percent: number) => void;
+
+/** Default timeout for model loading (30 seconds). */
+const MODEL_LOAD_TIMEOUT_MS = 30_000;
+
+/**
  * Module-level cache: URL -> pristine ModelResult.
  * The cached wrapper is never added to a scene directly; clones are returned.
  */
@@ -74,20 +85,43 @@ function cloneModelResult(cached: ModelResult): ModelResult {
  * instances.
  *
  * @param url - The URL of the .glb or .gltf model to load.
+ * @param onProgress - Optional callback for download progress updates.
  * @returns A ModelResult with the wrapper Group and bounding box dimensions.
- * @throws Error if the model fails to load (network error, invalid file, etc.).
+ * @throws Error if the model fails to load (network error, invalid file, timeout).
  */
-export async function loadModel(url: string): Promise<ModelResult> {
+export async function loadModel(url: string, onProgress?: ModelProgressCallback): Promise<ModelResult> {
   // Cache hit: return a clone immediately
   if (modelCache.has(url)) {
+    onProgress?.(1, 1, 100);
     return cloneModelResult(modelCache.get(url)!);
   }
 
-  // Cache miss: load from network
+  // Cache miss: load from network with timeout
   const loader = new GLTFLoader();
 
   const gltf = await new Promise<any>((resolve, reject) => {
-    loader.load(url, resolve, undefined, reject);
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Model loading timed out. The file may be too large for this connection. Try a smaller model (under 10MB).'));
+    }, MODEL_LOAD_TIMEOUT_MS);
+
+    loader.load(
+      url,
+      (result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      },
+      (event) => {
+        // Progress callback — event.total may be 0 if server doesn't send Content-Length
+        if (onProgress) {
+          const percent = event.total > 0 ? Math.round((event.loaded / event.total) * 100) : -1;
+          onProgress(event.loaded, event.total, percent);
+        }
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
   });
 
   const model = gltf.scene;

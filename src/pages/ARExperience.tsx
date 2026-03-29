@@ -43,6 +43,8 @@ export default function ARExperience() {
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [missingParts, setMissingParts] = useState<string[]>([]);
+  const [loadProgress, setLoadProgress] = useState<string>('');
+  const [modelLoadFailed, setModelLoadFailed] = useState(false);
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
@@ -391,20 +393,47 @@ export default function ARExperience() {
     pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
 
     setTrackingState('model_loading');
+    setLoadProgress('');
+    setModelLoadFailed(false);
 
-    loadModel(selectedProduct.ar_model_url).then((result) => {
-      if (cancelled) return;
-      modelRef.current = result.wrapper;
-      modelDimsRef.current = result.dims;
-      sm.swapModel(result.wrapper);
-      setTrackingState('waiting_for_pose');
-      sm.dirty = true; // Trigger re-render with new model
-    }).catch((err) => {
-      if (cancelled) return;
-      console.error('Model load error:', err);
-      setTrackingState('model_error');
-      setTrackingMessage('Could not load 3D model');
-    });
+    const attemptLoad = (attempt: number) => {
+      loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
+        if (cancelled) return;
+        if (percent >= 0) {
+          setLoadProgress(`${percent}%`);
+        } else {
+          // No Content-Length header — show bytes loaded
+          const mb = (loaded / (1024 * 1024)).toFixed(1);
+          setLoadProgress(`${mb} MB`);
+        }
+      }).then((result) => {
+        if (cancelled) return;
+        modelRef.current = result.wrapper;
+        modelDimsRef.current = result.dims;
+        sm.swapModel(result.wrapper);
+        setTrackingState('waiting_for_pose');
+        setLoadProgress('');
+        sm.dirty = true;
+      }).catch((err) => {
+        if (cancelled) return;
+        console.error(`Model load error (attempt ${attempt}):`, err);
+        if (attempt < 2) {
+          // Auto-retry once
+          setLoadProgress('Retrying...');
+          setTimeout(() => attemptLoad(attempt + 1), 1000);
+        } else {
+          setTrackingState('model_error');
+          setTrackingMessage(
+            err.message?.includes('timed out')
+              ? 'Model is too large to load on this connection. Ask the retailer for a smaller file.'
+              : 'Could not load 3D model. Check your connection and try again.'
+          );
+          setModelLoadFailed(true);
+        }
+      });
+    };
+
+    attemptLoad(1);
 
     return () => { cancelled = true; };
   }, [selectedProduct]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -521,6 +550,8 @@ export default function ARExperience() {
         message={trackingMessage}
         garmentType={selectedProduct?.garment_type || 'shirt'}
         missingParts={missingParts}
+        loadProgress={loadProgress}
+        onRetry={modelLoadFailed ? () => setSelectedProduct(prev => prev ? { ...prev } : prev) : undefined}
       />
 
       {/* Header */}

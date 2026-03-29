@@ -20,9 +20,13 @@ interface TrackingGuidanceProps {
   message: string;
   garmentType: GarmentType;
   missingParts: string[];
+  /** Download progress text (e.g. "45%" or "2.3 MB") shown during model_loading. */
+  loadProgress?: string;
+  /** Called when user taps retry after model_error. */
+  onRetry?: () => void;
 }
 
-export function TrackingGuidance({ state, message, garmentType, missingParts }: TrackingGuidanceProps) {
+export function TrackingGuidance({ state, message, garmentType, missingParts, loadProgress, onRetry }: TrackingGuidanceProps) {
   if (state === 'tracking_active') return null;
 
   const content = (() => {
@@ -65,14 +69,15 @@ export function TrackingGuidance({ state, message, garmentType, missingParts }: 
         return {
           icon: <Loader2 className="h-10 w-10 text-white animate-spin" />,
           title: 'Loading outfit...',
-          sub: '',
+          sub: loadProgress || 'Downloading 3D model',
         };
 
       case 'model_error':
         return {
           icon: <AlertTriangle className="h-10 w-10 text-yellow-400" />,
           title: "Couldn't Load 3D Model",
-          sub: 'Try selecting a different item',
+          sub: message || 'The model file may be too large or your connection is slow.',
+          action: onRetry ? <Button variant="secondary" onClick={onRetry}>Try Again</Button> : undefined,
         };
 
       case 'waiting_for_pose':
