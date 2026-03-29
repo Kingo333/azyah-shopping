@@ -53,7 +53,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const [uploadingARModel, setUploadingARModel] = useState(false);
-  const [forceReupload, setForceReupload] = useState(false);
+  // forceReupload removed — legacy BitStudio UI
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const { toast } = useToast();
