@@ -17,8 +17,8 @@
 
 - [x] **ARCH-01**: Decompose ARExperience.tsx monolith into bounded components (CameraManager, PoseProcessor, LandmarkSmoother, AnchorResolver, SceneManager)
 - [x] **ARCH-02**: Implement One Euro Filter for adaptive landmark smoothing — per-landmark filtering before anchor computation
-- [ ] **ARCH-03**: Implement scene persistence — reuse Three.js scene/renderer when switching products instead of full teardown/rebuild
-- [ ] **ARCH-04**: Separate pose detection effect from model loading effect — prevent re-initializing camera when only the product changes
+- [x] **ARCH-03**: Implement scene persistence — reuse Three.js scene/renderer when switching products instead of full teardown/rebuild
+- [x] **ARCH-04**: Separate pose detection effect from model loading effect — prevent re-initializing camera when only the product changes
 
 ### Garment Anchor System
 
@@ -101,8 +101,8 @@
 | COORD-05 | Phase 1 | Complete |
 | ARCH-01 | Phase 2 | Complete |
 | ARCH-02 | Phase 1 | Complete |
-| ARCH-03 | Phase 2 | Pending |
-| ARCH-04 | Phase 2 | Pending |
+| ARCH-03 | Phase 2 | Complete |
+| ARCH-04 | Phase 2 | Complete |
 | ANCH-01 | Phase 3 | Pending |
 | ANCH-02 | Phase 3 | Pending |
 | ANCH-03 | Phase 3 | Pending |
