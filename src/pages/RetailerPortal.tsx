@@ -145,6 +145,8 @@ const RetailerPortal = () => {
             description: "Failed to create your retailer portal. Please try again.",
             variant: "destructive",
           });
+          setLoading(false);
+          setSetupError(createError.message || 'Failed to create retailer portal');
           return;
         }
 

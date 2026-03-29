@@ -144,6 +144,12 @@ export const BottomNavigation: React.FC = () => {
   // Show bottom nav for logged in users, guest mode, or landing page (to preview nav)
   const isGuest = isGuestMode();
   
+  // Hide bottom nav for brand/retailer users — they have their own portal navigation
+  const userRole = user?.user_metadata?.role;
+  if (userRole === 'brand' || userRole === 'retailer') {
+    return null;
+  }
+
   if ((!user && !isGuest && !isLandingPage) || isExcludedPage || isSwipeListView) {
     return null;
   }
