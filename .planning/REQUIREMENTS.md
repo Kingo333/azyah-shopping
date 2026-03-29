@@ -51,12 +51,12 @@
 - [x] **PERF-01**: Cap DPR at 1.0 on mobile devices to prevent thermal throttling
 - [x] **PERF-02**: Implement render-on-dirty — only render Three.js frame when pose data changes, not every animation frame
 - [x] **PERF-03**: Cache material traversal — avoid traversing model tree every frame for opacity updates
-- [ ] **PERF-04**: Implement model caching — cache loaded GLB models for faster product switching
+- [x] **PERF-04**: Implement model caching — cache loaded GLB models for faster product switching
 
 ### Visual Quality
 
-- [ ] **VIS-01**: Implement gesture support — pinch-to-zoom for manual scale adjustment
-- [ ] **VIS-02**: Implement adaptive lighting — adjust Three.js scene lighting based on camera feed brightness
+- [x] **VIS-01**: Implement gesture support — pinch-to-zoom for manual scale adjustment
+- [x] **VIS-02**: Implement adaptive lighting — adjust Three.js scene lighting based on camera feed brightness
 - [x] **VIS-03**: Implement screenshot/capture — composite video feed + Three.js overlay into a single image
 - [x] **VIS-04**: Implement share functionality — native share API for captured AR images
 - [x] **VIS-05**: Improve depth-aware rendering — proper model sorting and depth placement relative to body
@@ -123,9 +123,9 @@
 | PERF-01 | Phase 2 | Complete |
 | PERF-02 | Phase 2 | Complete |
 | PERF-03 | Phase 2 | Complete |
-| PERF-04 | Phase 5 | Pending |
-| VIS-01 | Phase 5 | Pending |
-| VIS-02 | Phase 5 | Pending |
+| PERF-04 | Phase 5 | Complete |
+| VIS-01 | Phase 5 | Complete |
+| VIS-02 | Phase 5 | Complete |
 | VIS-03 | Phase 4 | Complete |
 | VIS-04 | Phase 4 | Complete |
 | VIS-05 | Phase 3 | Complete |

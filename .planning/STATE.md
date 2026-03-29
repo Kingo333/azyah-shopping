@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-03-29T05:37:08Z"
-last_activity: 2026-03-29 -- Completed 05-02 3D model validation on retailer upload
+status: completed
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-29T05:39:53Z"
+last_activity: 2026-03-29 -- Completed 05-01 AR runtime polish (caching, gestures, adaptive lighting)
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
   completed_plans: 12
-  percent: 92
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** When a shopper points their camera at themselves, the 3D garment must look like they're actually wearing it -- properly anchored, proportional, and moving naturally.
-**Current focus:** Phase 5 in progress -- 05-02 complete, 05-01 remaining
+**Current focus:** All phases complete -- v1.0 milestone delivered
 
 ## Current Position
 
-Phase: 5 of 5 (Performance, Visual Quality, and Retailer Tools) -- IN PROGRESS
-Plan: 2 of 2 in current phase (05-02 complete, 05-01 remaining)
-Status: 05-02 model validation complete -- 05-01 (caching, gestures, lighting) remaining
-Last activity: 2026-03-29 -- Completed 05-02 3D model validation on retailer upload
+Phase: 5 of 5 (Performance, Visual Quality, and Retailer Tools) -- COMPLETE
+Plan: 2 of 2 in current phase (05-01 complete, 05-02 complete)
+Status: All phases complete -- v1.0 milestone delivered
+Last activity: 2026-03-29 -- Completed 05-01 AR runtime polish (caching, gestures, adaptive lighting)
 
-Progress: [█████████░] 92% (11/12 plans across all phases)
+Progress: [██████████] 100% (12/12 plans across all phases)
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [█████████░] 92% (11/12 plans across all phases)
 | Phase 04 P02 | 5min | 2 tasks | 4 files |
 | Phase 04 P01 | 8min | 2 tasks | 4 files |
 | Phase 05 P02 | 8min | 2 tasks | 2 files |
+| Phase 05 P01 | 12min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,10 @@ Recent decisions affecting current work:
 - [Phase 05-02]: File size checked before GLTFLoader parse to give immediate feedback on oversized files
 - [Phase 05-02]: Inverted normals detected via face-normal-vs-outward-vector sampling heuristic (20 faces, 60% threshold)
 - [Phase 05-02]: AlertTriangleIcon alias used for lucide-react import to avoid naming conflicts
+- [Phase 05-01]: Model cache returns clones with cloned materials to prevent opacity bleed between instances
+- [Phase 05-01]: Pinch scale clamped to [0.5, 2.0] range to prevent absurdly small/large garments
+- [Phase 05-01]: Brightness sampling uses ITU-R BT.601 luma coefficients for perceptual accuracy
+- [Phase 05-01]: Ambient light floors at 0.3 intensity -- model never goes completely dark
 
 ### Pending Todos
 
@@ -123,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T05:37:08Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-03-29T05:39:53Z
+Stopped at: Completed 05-01-PLAN.md -- all plans complete
 Resume file: None
