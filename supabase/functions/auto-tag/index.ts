@@ -142,7 +142,7 @@ serve(async (req) => {
       category: 'clothing',
       color_primary: 'unknown',
       suggested_tags: [],
-      error: error.message
+      error: (error as any).message
     }), {
       status: 200, // Return 200 with defaults to not block workflow
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
