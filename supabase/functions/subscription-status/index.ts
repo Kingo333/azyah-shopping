@@ -135,7 +135,7 @@ serve(async (req) => {
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in subscription-status:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),

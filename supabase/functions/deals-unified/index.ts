@@ -1811,7 +1811,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[deals-unified] ${traceId} ERROR:`, error);
     debug.timing_ms.total = Date.now() - startTime;
     
