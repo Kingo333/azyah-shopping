@@ -38,7 +38,7 @@ export interface ARProduct {
  * Transitions follow this general flow:
  *   initializing -> camera_denied | camera_error
  *   initializing -> model_loading -> model_error
- *   model_loading -> waiting_for_pose -> tracking_active <-> tracking_lost
+ *   model_loading -> waiting_for_pose -> partial_tracking -> tracking_active <-> tracking_lost
  *   initializing -> pose_init_failed
  */
 export type TrackingState =
@@ -49,5 +49,6 @@ export type TrackingState =
   | 'model_loading'
   | 'model_error'
   | 'waiting_for_pose'
+  | 'partial_tracking'
   | 'tracking_lost'
   | 'tracking_active';
