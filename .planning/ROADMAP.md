@@ -93,11 +93,11 @@ Plans:
   2. The user can pinch-to-zoom to manually adjust garment scale as an escape hatch when auto-tracking is imperfect
   3. The 3D model lighting adapts to the camera feed brightness -- a model in a dark room does not glow unnaturally bright
   4. When a retailer uploads a .glb file, the system validates its structure, bounding box, normals, and scale -- and reports issues before publishing
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md -- Model caching, pinch-to-zoom gesture support, and adaptive lighting
+- [ ] 05-02-PLAN.md -- 3D model validation on retailer upload with structure, normals, and scale checks
 
 ## Progress
 
