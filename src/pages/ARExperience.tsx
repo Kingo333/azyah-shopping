@@ -419,9 +419,14 @@ export default function ARExperience() {
   // ── Effect 2: Model loading (runs when selectedProduct changes) ──
   // Only selectedProduct triggers model reload. Camera, pose, and scene persist.
   useEffect(() => {
-    if (!selectedProduct || !sceneManagerRef.current) return;
-    const sm = sceneManagerRef.current;
+    if (!selectedProduct) return;
     let cancelled = false;
+
+    async function loadWhenReady() {
+      // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
+      await sceneReadyPromiseRef.current;
+      if (cancelled || !sceneManagerRef.current) return;
+      const sm = sceneManagerRef.current;
 
     // Reset smoothing filters for new product
     filterPosX.current.reset();
