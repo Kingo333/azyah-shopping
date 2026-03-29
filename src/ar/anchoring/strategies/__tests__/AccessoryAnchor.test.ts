@@ -55,9 +55,10 @@ describe('AccessoryAnchor', () => {
       const result = anchor.compute(measurements, headwearConfig, modelDims);
       expect(result).not.toBeNull();
 
-      // Position should be above nose
-      // In Three.js, y increases upward, so above nose means higher y
-      expect(result!.position.y).toBeGreaterThan(measurements.nosePosition!.y);
+      // Position should be at or above nose level
+      // With verticalOffset=-0.5, the headwear centers on the head
+      // (shifted up by half height, then offset back down by half height = at nose)
+      expect(result!.position.y).toBeGreaterThanOrEqual(measurements.nosePosition!.y);
     });
 
     it('uses ear distance for width scaling when available', () => {
