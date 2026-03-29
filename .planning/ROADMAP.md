@@ -30,12 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The 3D model tracks the user's body smoothly without visible jitter or frame-rate-dependent swimming lag
   4. The AR system does not silently break when MediaPipe publishes a new WASM version
   5. Resizing the browser window or rotating the device does not break model placement
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md -- Create coordinate utility functions (OneEuroFilter, landmarkToWorld, computeCoverCrop) and pin WASM version
+- [ ] 01-02-PLAN.md -- Integrate all coordinate fixes into ARExperience.tsx and replace LERP smoothing with One Euro Filter
 
 ### Phase 2: Architecture Decomposition and Schema
 **Goal**: The AR codebase is decomposed into bounded modules and the database supports garment-type metadata
@@ -107,7 +106,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Coordinate Pipeline and Stability | 0/3 | Not started | - |
+| 1. Coordinate Pipeline and Stability | 0/2 | Planning complete | - |
 | 2. Architecture Decomposition and Schema | 0/3 | Not started | - |
 | 3. Garment Anchor System | 0/3 | Not started | - |
 | 4. User Experience and Capture | 0/2 | Not started | - |
