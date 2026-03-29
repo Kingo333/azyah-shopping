@@ -170,12 +170,26 @@ export default function ARExperience() {
       setProducts(mapped);
 
       // Preselect requested product or fall back to first
-      if (requestedProductId) {
-        const requested = mapped.find(p => p.id === requestedProductId);
-        setSelectedProduct(requested || mapped[0]);
-      } else {
-        setSelectedProduct(mapped[0]);
+      const selected = requestedProductId
+        ? mapped.find(p => p.id === requestedProductId) || mapped[0]
+        : mapped[0];
+      setSelectedProduct(selected);
+
+      // FIX-02: Start GLB download early (don't wait for pose processor to finish)
+      if (selected.ar_model_url && !modelPrefetchRef.current) {
+        modelPrefetchRef.current = {
+          url: selected.ar_model_url,
+          promise: loadModel(selected.ar_model_url, (loaded, total, percent) => {
+            if (percent >= 0) {
+              setLoadProgress(`${percent}%`);
+            } else {
+              const mb = (loaded / (1024 * 1024)).toFixed(1);
+              setLoadProgress(`${mb} MB`);
+            }
+          }),
+        };
       }
+
       setIsLoading(false);
     }
     fetchAndValidate();
