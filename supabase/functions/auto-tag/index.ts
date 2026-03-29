@@ -134,7 +134,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in auto-tag function:', error);
     
     // Return default values instead of error to not block upload
