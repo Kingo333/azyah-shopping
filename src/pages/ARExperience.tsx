@@ -44,7 +44,11 @@ export default function ARExperience() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [missingParts, setMissingParts] = useState<string[]>([]);
   const [loadProgress, setLoadProgress] = useState<string>('');
+  const [loadStage, setLoadStage] = useState<string>('');
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
+
+  // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
+  const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
