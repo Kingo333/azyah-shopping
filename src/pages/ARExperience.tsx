@@ -216,15 +216,22 @@ export default function ARExperience() {
     const canvas = canvasRef.current;
 
     async function initPipeline() {
-      // 1. Camera + Pose in parallel (FIX-01: saves 3-8s)
+      try {
+      // 1. Check WebGL availability before anything else
+      const testCanvas = document.createElement('canvas');
+      const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+      if (!gl) {
+        setTrackingState('camera_error');
+        setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+        return;
+      }
+
+      // 2. Camera + Pose in parallel (FIX-01: saves 3-8s)
       setTrackingState('initializing');
       setLoadStage('Starting camera & body tracking…');
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
-      const poseTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Body tracking timed out. Check your connection.')), 15000)
-      );
-      const posePromise = Promise.race([createPoseProcessor(), poseTimeout]).catch((err: any) => ({ error: err }));
+      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
 
@@ -243,7 +250,6 @@ export default function ARExperience() {
           setTrackingState('camera_error');
           setTrackingMessage(err.message || 'Camera access failed');
         }
-        // Clean up pose if it succeeded
         if (poseResult && !('error' in poseResult)) poseResult.close();
         return;
       }
@@ -254,13 +260,13 @@ export default function ARExperience() {
       // Handle pose errors
       if ('error' in poseResult) {
         setTrackingState('pose_init_failed');
-        setTrackingMessage(poseResult.error.message || 'Body tracking failed');
+        setTrackingMessage(poseResult.error.message || 'Body tracking failed. Try refreshing.');
         return;
       }
 
       poseProcessorRef.current = poseResult;
 
-      // 2. Scene (persistent -- survives product switches)
+      // 3. Scene (persistent -- survives product switches)
       setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
@@ -403,6 +409,14 @@ export default function ARExperience() {
         animFrameRef.current = requestAnimationFrame(animate);
       };
       animFrameRef.current = requestAnimationFrame(animate);
+
+      } catch (err: any) {
+        // CRITICAL: Catch any unhandled error in the pipeline so the UI never freezes
+        console.error('AR initPipeline crashed:', err);
+        setTrackingState('camera_error');
+        setTrackingMessage(err.message || 'AR failed to initialize. Try refreshing.');
+        setLoadStage('');
+      }
     }
 
     initPipeline();
@@ -428,7 +442,16 @@ export default function ARExperience() {
 
     async function loadWhenReady() {
       // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
-      await sceneReadyPromiseRef.current;
+      try {
+        await sceneReadyPromiseRef.current;
+      } catch {
+        // sceneReady timed out or Effect 1 failed — cannot load model
+        if (!cancelled) {
+          setTrackingState('camera_error');
+          setTrackingMessage('AR scene failed to initialize. Try refreshing.');
+        }
+        return;
+      }
       if (cancelled || !sceneManagerRef.current) return;
       const sm = sceneManagerRef.current;
 

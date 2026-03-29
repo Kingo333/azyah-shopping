@@ -83,6 +83,16 @@ export class SceneManager {
     this.brightnessCanvas.width = 32;
     this.brightnessCanvas.height = 16;
     this.brightnessCtx = this.brightnessCanvas.getContext('2d')!;
+
+    // Handle WebGL context loss gracefully (mobile devices under memory pressure)
+    canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      console.warn('WebGL context lost — AR rendering paused');
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      console.info('WebGL context restored — AR rendering resumed');
+      this.dirty = true;
+    });
   }
 
   /**
