@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CameraOff, AlertTriangle, User, RefreshCw, Camera, Share2 } from 'lucide-react';
+import { Loader2, AlertTriangle, Camera, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TrackingGuidance } from '@/ar/guidance/TrackingGuidance';
+import { getMissingBodyParts } from '@/ar/guidance/garmentGuidance';
 import { compositeCapture } from '@/ar/capture/captureCompositor';
 import { shareImage } from '@/ar/capture/shareHandler';
 import { startCamera, stopCamera } from '@/ar/core/CameraManager';
 import { createPoseProcessor, PoseProcessor } from '@/ar/core/PoseProcessor';
 import { SceneManager } from '@/ar/core/SceneManager';
-import { loadModel } from '@/ar/core/ModelLoader';
+import { loadModel, clearModelCache } from '@/ar/core/ModelLoader';
 import { ARProduct, TrackingState } from '@/ar/types';
 import { computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
 import { OneEuroFilter, FILTER_PRESETS } from '@/ar/utils/OneEuroFilter';
@@ -40,6 +42,7 @@ export default function ARExperience() {
   const [trackingMessage, setTrackingMessage] = useState('');
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [missingParts, setMissingParts] = useState<string[]>([]);
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
@@ -74,9 +77,15 @@ export default function ARExperience() {
   // Last known good anchor result for outlier fallback
   const lastAnchorRef = useRef<AnchorResult | null>(null);
 
+  // VIS-01: Pinch-to-zoom manual scale multiplier (persists across frames, no re-render)
+  const pinchScaleRef = useRef(1.0);
+
   // Ref to access selectedProduct inside the render loop without stale closures
   const selectedProductRef = useRef<ARProduct | null>(null);
   selectedProductRef.current = selectedProduct;
+
+  // Missing body parts tracking for partial_tracking state (throttled to avoid re-render storms)
+  const lastMissingPartsJson = useRef<string>('[]');
 
   // Preview URL management -- revoke old URLs to prevent memory leaks
   const previewUrlRef = useRef<string | null>(null);
@@ -229,7 +238,6 @@ export default function ARExperience() {
           const result = pp.detectForVideo(video, time);
           if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
             framesWithoutPose.current = 0;
-            setTrackingState('tracking_active');
 
             const product = selectedProductRef.current;
             const garmentType = product?.garment_type || 'shirt';
@@ -244,6 +252,33 @@ export default function ARExperience() {
               coverCropRef.current,
               sm.visibleDims,
             );
+
+            // Check required landmark visibility for partial_tracking detection (UX-01)
+            const requiredVisible = config.requiredLandmarks.filter(
+              idx => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold
+            );
+            const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
+            const someRequiredVisible = requiredVisible.length > 0;
+
+            if (allRequiredVisible) {
+              setTrackingState('tracking_active');
+              // Clear missing parts when fully tracking
+              if (lastMissingPartsJson.current !== '[]') {
+                lastMissingPartsJson.current = '[]';
+                setMissingParts([]);
+              }
+            } else if (someRequiredVisible) {
+              setTrackingState('partial_tracking');
+              // Compute and throttle missing parts updates
+              const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
+              const partsJson = JSON.stringify(parts);
+              if (partsJson !== lastMissingPartsJson.current) {
+                lastMissingPartsJson.current = partsJson;
+                setMissingParts(parts);
+              }
+            } else {
+              setTrackingState('waiting_for_pose');
+            }
 
             // Resolve anchor for garment type (ANCH-01: strategy dispatch)
             const anchor = anchorResolverRef.current!.resolve(
@@ -276,7 +311,12 @@ export default function ARExperience() {
                 smoothY + offset.y,
                 anchor.position.z + offset.z,
               );
-              modelRef.current.scale.set(smoothScX, smoothScY, smoothScZ);
+              // VIS-01: Apply pinch-to-zoom manual scale multiplier
+              modelRef.current.scale.set(
+                smoothScX * pinchScaleRef.current,
+                smoothScY * pinchScaleRef.current,
+                smoothScZ * pinchScaleRef.current,
+              );
               modelRef.current.rotation.y = smoothRotY;
 
               // Opacity from anchor confidence
@@ -295,7 +335,7 @@ export default function ARExperience() {
           } else {
             framesWithoutPose.current++;
             if (framesWithoutPose.current > 30) {
-              setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
+              setTrackingState(prev => (prev === 'tracking_active' || prev === 'partial_tracking') ? 'tracking_lost' : 'waiting_for_pose');
               // Hide model without disposing -- just toggle visibility
               if (modelRef.current) modelRef.current.visible = false;
               sm.dirty = true;
@@ -319,6 +359,7 @@ export default function ARExperience() {
       poseProcessorRef.current = null;
       sceneManagerRef.current?.dispose();
       sceneManagerRef.current = null;
+      clearModelCache(); // PERF-04: Free cached GPU resources on unmount
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -343,6 +384,7 @@ export default function ARExperience() {
     outlierScY.current.reset();
     outlierRotY.current.reset();
     lastAnchorRef.current = null;
+    pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
 
     setTrackingState('model_loading');
 
@@ -427,7 +469,12 @@ export default function ARExperience() {
       />
 
       {/* Tracking guidance overlay */}
-      <TrackingGuidance state={trackingState} message={trackingMessage} />
+      <TrackingGuidance
+        state={trackingState}
+        message={trackingMessage}
+        garmentType={selectedProduct?.garment_type || 'shirt'}
+        missingParts={missingParts}
+      />
 
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
@@ -520,46 +567,6 @@ export default function ARExperience() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function TrackingGuidance({ state, message }: { state: TrackingState; message: string }) {
-  if (state === 'tracking_active') return null;
-
-  const content = (() => {
-    switch (state) {
-      case 'initializing':
-        return { icon: <Loader2 className="h-10 w-10 text-white animate-spin" />, title: 'Starting AR...', sub: 'Preparing camera and tracking' };
-      case 'camera_denied':
-        return { icon: <CameraOff className="h-10 w-10 text-red-400" />, title: 'Camera Access Required', sub: 'Please allow camera access to use AR try-on', action: <Button variant="secondary" onClick={() => window.location.reload()}>Try Again</Button> };
-      case 'camera_error':
-        return { icon: <CameraOff className="h-10 w-10 text-red-400" />, title: 'Camera Error', sub: message || 'Could not access camera', action: <Button variant="secondary" onClick={() => window.location.reload()}>Retry</Button> };
-      case 'pose_init_failed':
-        return { icon: <AlertTriangle className="h-10 w-10 text-yellow-400" />, title: 'AR Tracking Failed', sub: 'Could not initialize body tracking. Try refreshing or use a different browser.', action: <Button variant="secondary" onClick={() => window.location.reload()}>Refresh</Button> };
-      case 'model_loading':
-        return { icon: <Loader2 className="h-10 w-10 text-white animate-spin" />, title: 'Loading outfit...', sub: '' };
-      case 'model_error':
-        return { icon: <AlertTriangle className="h-10 w-10 text-yellow-400" />, title: "Couldn't Load 3D Model", sub: 'Try selecting a different item' };
-      case 'waiting_for_pose':
-        return { icon: <User className="h-10 w-10 text-white/70" />, title: 'Position Yourself', sub: 'Stand back so your shoulders and hips are visible' };
-      case 'tracking_lost':
-        return { icon: <RefreshCw className="h-10 w-10 text-yellow-400" />, title: 'Tracking Lost', sub: 'Move back into frame — show shoulders and hips' };
-      default:
-        return null;
-    }
-  })();
-
-  if (!content) return null;
-
-  return (
-    <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-      <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 max-w-xs text-center space-y-3 pointer-events-auto">
-        <div className="flex justify-center">{content.icon}</div>
-        <p className="text-white font-semibold">{content.title}</p>
-        {content.sub && <p className="text-white/60 text-sm">{content.sub}</p>}
-        {content.action && <div>{content.action}</div>}
-      </div>
     </div>
   );
 }
