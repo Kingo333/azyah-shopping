@@ -12,7 +12,7 @@ This milestone transforms the AR try-on system from a broken single-strategy "sh
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Coordinate Pipeline and Stability** - Fix the three verified coordinate bugs and stabilize the foundation so all subsequent positioning work produces correct results
+- [x] **Phase 1: Coordinate Pipeline and Stability** - Fix the three verified coordinate bugs and stabilize the foundation so all subsequent positioning work produces correct results
 - [ ] **Phase 2: Architecture Decomposition and Schema** - Break up the ARExperience monolith into bounded components and add garment_type to the database
 - [ ] **Phase 3: Garment Anchor System** - Implement garment-type-aware anchor strategies for shirt, abaya, pants, and accessories with full-body landmark utilization
 - [ ] **Phase 4: User Experience and Capture** - Add garment-aware tracking guidance, screenshot/share functionality, and scene persistence for fast product switching
@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Create coordinate utility functions (OneEuroFilter, landmarkToWorld, computeCoverCrop) and pin WASM version
-- [ ] 01-02-PLAN.md -- Integrate all coordinate fixes into ARExperience.tsx and replace LERP smoothing with One Euro Filter
+- [x] 01-01-PLAN.md -- Create coordinate utility functions (OneEuroFilter, landmarkToWorld, computeCoverCrop) and pin WASM version
+- [x] 01-02-PLAN.md -- Integrate all coordinate fixes into ARExperience.tsx and replace LERP smoothing with One Euro Filter
 
 ### Phase 2: Architecture Decomposition and Schema
 **Goal**: The AR codebase is decomposed into bounded modules and the database supports garment-type metadata
@@ -106,7 +106,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Coordinate Pipeline and Stability | 0/2 | Planning complete | - |
+| 1. Coordinate Pipeline and Stability | 2/2 | Complete | 2026-03-29 |
 | 2. Architecture Decomposition and Schema | 0/3 | Not started | - |
 | 3. Garment Anchor System | 0/3 | Not started | - |
 | 4. User Experience and Capture | 0/2 | Not started | - |
