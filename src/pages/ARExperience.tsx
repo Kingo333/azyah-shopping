@@ -3,35 +3,14 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CameraOff, AlertTriangle, User, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { startCamera, stopCamera } from '@/ar/core/CameraManager';
+import { createPoseProcessor, PoseProcessor } from '@/ar/core/PoseProcessor';
+import { SceneManager } from '@/ar/core/SceneManager';
+import { loadModel } from '@/ar/core/ModelLoader';
+import { ARProduct, TrackingState } from '@/ar/types';
 import { landmarkToWorld, computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
 import { OneEuroFilter, FILTER_PRESETS } from '@/ar/utils/OneEuroFilter';
-
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
-const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-
-interface ARProduct {
-  id: string;
-  image_url: string;
-  ar_model_url: string;
-  ar_scale: number;
-  ar_position_offset?: { x: number; y: number; z: number };
-  brand_name?: string;
-  name?: string;
-}
-
-type TrackingState =
-  | 'initializing'
-  | 'camera_denied'
-  | 'camera_error'
-  | 'pose_init_failed'
-  | 'model_loading'
-  | 'model_error'
-  | 'waiting_for_pose'
-  | 'tracking_lost'
-  | 'tracking_active';
+import type { Object3D } from 'three';
 
 
 export default function ARExperience() {
@@ -49,17 +28,16 @@ export default function ARExperience() {
   const [trackingState, setTrackingState] = useState<TrackingState>('initializing');
   const [trackingMessage, setTrackingMessage] = useState('');
 
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraObjRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const modelRef = useRef<THREE.Object3D | null>(null);
+  // Module refs -- SceneManager and PoseProcessor persist for component lifetime
+  const sceneManagerRef = useRef<SceneManager | null>(null);
+  const poseProcessorRef = useRef<PoseProcessor | null>(null);
+
+  const modelRef = useRef<Object3D | null>(null);
   const animFrameRef = useRef<number>(0);
-  const poseRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const framesWithoutPose = useRef(0);
   const cleanedUpRef = useRef(false);
   const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
-  const visibleDimsRef = useRef({ w: 4, h: 3 });
   const coverCropRef = useRef<CoverCropInfo>({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 });
 
   // One Euro Filter instances -- one per smoothed axis for independent adaptive smoothing
@@ -69,6 +47,10 @@ export default function ARExperience() {
   const filterScaleY = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterScaleZ = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterRotY = useRef(new OneEuroFilter(FILTER_PRESETS.rotation.minCutoff, FILTER_PRESETS.rotation.beta, FILTER_PRESETS.rotation.dCutoff));
+
+  // Ref to access selectedProduct inside the render loop without stale closures
+  const selectedProductRef = useRef<ARProduct | null>(null);
+  selectedProductRef.current = selectedProduct;
 
   // Fetch AR-enabled products and validate context
   useEffect(() => {
@@ -118,34 +100,23 @@ export default function ARExperience() {
     fetchAndValidate();
   }, [brandId, eventId, requestedProductId]);
 
-  // Main AR init effect — camera, pose, model, render loop
+  // ── Effect 1: Camera + Pose + Scene + Render loop (runs once on mount) ──
+  // Empty deps: camera, pose, scene, and render loop persist for component lifetime.
+  // Product switches only swap the 3D model (Effect 2), never restart this pipeline.
   useEffect(() => {
-    if (isLoading || !selectedProduct || !canvasRef.current || !videoRef.current) return;
-
+    if (!canvasRef.current || !videoRef.current) return;
     cleanedUpRef.current = false;
-
-    // Reset smoothing filters for new product
-    filterPosX.current.reset();
-    filterPosY.current.reset();
-    filterScaleX.current.reset();
-    filterScaleY.current.reset();
-    filterScaleZ.current.reset();
-    filterRotY.current.reset();
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    async function init() {
-      // ── 1. Camera ──
+    async function initPipeline() {
+      // 1. Camera
       setTrackingState('initializing');
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        if (cleanedUpRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
-        streamRef.current = stream;
-        video.srcObject = stream;
-        await video.play();
+        const cam = await startCamera(video);
+        if (cleanedUpRef.current) { stopCamera(cam.stream); return; }
+        streamRef.current = cam.stream;
+        coverCropRef.current = computeCoverCrop(cam.videoWidth, cam.videoHeight, window.innerWidth, window.innerHeight);
       } catch (err: any) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setTrackingState('camera_denied');
@@ -156,151 +127,125 @@ export default function ARExperience() {
         return;
       }
 
-      // Wait for video metadata to properly size renderer
-      await new Promise<void>(resolve => {
-        if (video.videoWidth > 0) { resolve(); return; }
-        video.onloadedmetadata = () => resolve();
-      });
-      if (cleanedUpRef.current) return;
+      // 2. Scene (persistent -- survives product switches)
+      const sm = new SceneManager(canvas);
+      sceneManagerRef.current = sm;
 
-      const vw = video.videoWidth || window.innerWidth;
-      const vh = video.videoHeight || window.innerHeight;
-      const dpr = Math.min(window.devicePixelRatio, 2);
-
-      // Compute initial cover crop (video vs. display aspect ratio mismatch)
-      coverCropRef.current = computeCoverCrop(vw, vh, window.innerWidth, window.innerHeight);
-
-      // ── 2. Three.js ──
-      const scene = new THREE.Scene();
-      sceneRef.current = scene;
-      const displayAspect = window.innerWidth / window.innerHeight;
-      const camera = new THREE.PerspectiveCamera(63, displayAspect, 0.1, 1000);
-      camera.position.z = 2;
-      cameraObjRef.current = camera;
-
-      // Compute visible world dimensions at camera z-distance for FOV-based mapping
-      const vFov = (camera.fov * Math.PI) / 180;
-      const visibleHeight = 2 * Math.tan(vFov / 2) * camera.position.z;
-      const visibleWidth = visibleHeight * displayAspect;
-      visibleDimsRef.current = { w: visibleWidth, h: visibleHeight };
-      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(dpr);
-      renderer.setClearColor(0x000000, 0);
-      rendererRef.current = renderer;
-
-      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(0, 1, 1);
-      scene.add(dirLight);
-
-      // ── 3. Load 3D model ──
-      setTrackingState('model_loading');
-      if (modelRef.current) { scene.remove(modelRef.current); modelRef.current = null; }
-
-      try {
-        const loader = new GLTFLoader();
-        const gltf: any = await new Promise((resolve, reject) => {
-          loader.load(selectedProduct.ar_model_url, resolve, undefined, reject);
-        });
-        if (cleanedUpRef.current) return;
-        const model = gltf.scene;
-
-        // Normalize model: compute bounding box, center at origin, store dimensions
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center); // re-center model geometry at origin
-
-        // Store natural dimensions for body-proportional scaling
-        modelDimsRef.current = {
-          w: size.x || 1,
-          h: size.y || 1,
-          d: size.z || 1,
-        };
-        console.log('Model normalized dims:', modelDimsRef.current);
-
-        // Wrap in a group so centering offset doesn't conflict with runtime positioning
-        const wrapper = new THREE.Group();
-        wrapper.add(model);
-        wrapper.visible = false;
-        scene.add(wrapper);
-        modelRef.current = wrapper;
-      } catch (err: any) {
-        console.error('Model load error:', err);
-        setTrackingState('model_error');
-        setTrackingMessage('Could not load 3D model');
-        return;
-      }
-
-      // ── 4. MediaPipe Pose ──
+      // 3. Pose
       setTrackingState('waiting_for_pose');
-      const offset = selectedProduct.ar_position_offset || { x: 0, y: 0, z: 0 };
-      framesWithoutPose.current = 0;
-
       try {
-        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-        if (cleanedUpRef.current) return;
-        const landmarker = await PoseLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_URL },
-          runningMode: 'VIDEO',
-          numPoses: 1,
-          minPoseDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-        if (cleanedUpRef.current) { landmarker.close(); return; }
-        poseRef.current = landmarker;
+        const pp = await createPoseProcessor();
+        if (cleanedUpRef.current) { pp.close(); return; }
+        poseProcessorRef.current = pp;
       } catch (err: any) {
-        console.error('MediaPipe init error:', err);
         setTrackingState('pose_init_failed');
         setTrackingMessage(err.message || 'Body tracking failed');
         return;
       }
 
-      // ── 5. Render loop ──
+      // 4. Render loop
       let lastPoseTime = 0;
       const animate = (time: number) => {
         if (cleanedUpRef.current) return;
-        if (poseRef.current && video.readyState >= 2 && time - lastPoseTime > 66) {
+        const pp = poseProcessorRef.current;
+        if (pp && video.readyState >= 2 && time - lastPoseTime > 66) {
           lastPoseTime = time;
-          try {
-            const result = (poseRef.current as PoseLandmarker).detectForVideo(video, time);
-            if (result.landmarks && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
-              framesWithoutPose.current = 0;
-              setTrackingState('tracking_active');
-              updateModel(result.landmarks[0], offset);
-            } else {
-              framesWithoutPose.current++;
-              if (framesWithoutPose.current > 30) {
-                setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
-                if (modelRef.current) modelRef.current.visible = false;
-              }
+          const result = pp.detectForVideo(video, time);
+          if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
+            framesWithoutPose.current = 0;
+            setTrackingState('tracking_active');
+            const product = selectedProductRef.current;
+            const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
+            updateModel(result.landmarks[0], offset);
+          } else {
+            framesWithoutPose.current++;
+            if (framesWithoutPose.current > 30) {
+              setTrackingState(prev => prev === 'tracking_active' ? 'tracking_lost' : 'waiting_for_pose');
+              // Hide model without disposing -- just toggle visibility
+              if (modelRef.current) modelRef.current.visible = false;
+              sm.dirty = true;
             }
-          } catch { /* ignore frame errors */ }
+          }
         }
-        renderer.render(scene, camera);
+        sm.renderIfDirty();  // PERF-02: only render when pose updated or dirty
         animFrameRef.current = requestAnimationFrame(animate);
       };
       animFrameRef.current = requestAnimationFrame(animate);
     }
 
-    init();
+    initPipeline();
 
     return () => {
       cleanedUpRef.current = true;
       cancelAnimationFrame(animFrameRef.current);
-      if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-      if (poseRef.current) { (poseRef.current as PoseLandmarker).close(); poseRef.current = null; }
-      rendererRef.current?.dispose();
+      stopCamera(streamRef.current);
+      streamRef.current = null;
+      poseProcessorRef.current?.close();
+      poseProcessorRef.current = null;
+      sceneManagerRef.current?.dispose();
+      sceneManagerRef.current = null;
     };
-  }, [isLoading, selectedProduct]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 2: Model loading (runs when selectedProduct changes) ──
+  // Only selectedProduct triggers model reload. Camera, pose, and scene persist.
+  useEffect(() => {
+    if (!selectedProduct || !sceneManagerRef.current) return;
+    const sm = sceneManagerRef.current;
+    let cancelled = false;
+
+    // Reset smoothing filters for new product
+    filterPosX.current.reset();
+    filterPosY.current.reset();
+    filterScaleX.current.reset();
+    filterScaleY.current.reset();
+    filterScaleZ.current.reset();
+    filterRotY.current.reset();
+
+    setTrackingState('model_loading');
+
+    loadModel(selectedProduct.ar_model_url).then((result) => {
+      if (cancelled) return;
+      modelRef.current = result.wrapper;
+      modelDimsRef.current = result.dims;
+      sm.swapModel(result.wrapper);
+      setTrackingState('waiting_for_pose');
+      sm.dirty = true; // Trigger re-render with new model
+    }).catch((err) => {
+      if (cancelled) return;
+      console.error('Model load error:', err);
+      setTrackingState('model_error');
+      setTrackingMessage('Could not load 3D model');
+    });
+
+    return () => { cancelled = true; };
+  }, [selectedProduct]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 3: Resize handler (runs once) ──
+  useEffect(() => {
+    const handleResize = () => {
+      const sm = sceneManagerRef.current;
+      if (!sm) return;
+      sm.handleResize();
+      // Recalculate cover crop with new display dimensions
+      if (videoRef.current && videoRef.current.videoWidth > 0) {
+        coverCropRef.current = computeCoverCrop(
+          videoRef.current.videoWidth, videoRef.current.videoHeight,
+          window.innerWidth, window.innerHeight
+        );
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }) {
-    if (!modelRef.current) return;
+    if (!modelRef.current || !sceneManagerRef.current) return;
 
-    const visDims = visibleDimsRef.current;
+    const sm = sceneManagerRef.current;
+    const visDims = sm.visibleDims;
     const dims = modelDimsRef.current;
-    const arScale = selectedProduct?.ar_scale || 1;
+    const arScale = selectedProductRef.current?.ar_scale || 1;
 
     const ls = landmarks[11]; // left shoulder
     const rs = landmarks[12]; // right shoulder
@@ -308,7 +253,7 @@ export default function ARExperience() {
     const rh = landmarks[24]; // right hip
 
     const hasShoulders = (ls.visibility ?? 0) > 0.5 && (rs.visibility ?? 0) > 0.5;
-    if (!hasShoulders) { modelRef.current.visible = false; return; }
+    if (!hasShoulders) { modelRef.current.visible = false; sm.dirty = true; return; }
 
     modelRef.current.visible = true;
     const hasHips = (lh.visibility ?? 0) > 0.3 && (rh.visibility ?? 0) > 0.3;
@@ -349,7 +294,7 @@ export default function ARExperience() {
     const targetY = (shoulderCenterWorld.y + hipCenterWorld.y) / 2;
     const targetZ = 0;  // constant depth -- overlay is effectively 2D-on-camera-plane
 
-    // ── Body-proportional non-uniform scaling (world coordinates) ──
+    // Body-proportional non-uniform scaling (world coordinates)
     const shoulderWidthMeasured = Math.abs(rsWorld.x - lsWorld.x);
     const torsoHeightMeasured = Math.abs(shoulderCenterWorld.y - hipCenterWorld.y);
 
@@ -381,44 +326,14 @@ export default function ARExperience() {
     modelRef.current.scale.set(smoothScX, smoothScY, smoothScZ);
     modelRef.current.rotation.y = smoothRotY;
 
-    // Fade based on landmark confidence
+    // PERF-03: Fade based on landmark confidence using cached materials (no traversal)
     const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
     const avgVis = keyVis.reduce((s: number, l: any) => s + (l.visibility ?? 0), 0) / keyVis.length;
-    modelRef.current.traverse((child: any) => {
-      if (child.isMesh && child.material) {
-        child.material.transparent = true;
-        child.material.opacity = Math.min(1, avgVis * 1.5);
-      }
-    });
+    sm.updateOpacity(Math.min(1, avgVis * 1.5));
+
+    // Mark scene dirty so renderIfDirty() renders this frame
+    sm.dirty = true;
   }
-
-  // Resize handler
-  useEffect(() => {
-    const handleResize = () => {
-      if (rendererRef.current && cameraObjRef.current) {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        rendererRef.current.setSize(w, h);
-        cameraObjRef.current.aspect = w / h;
-        cameraObjRef.current.updateProjectionMatrix();
-
-        // FIX COORD-05: recalculate visible world dimensions
-        const vFov = (cameraObjRef.current.fov * Math.PI) / 180;
-        const visibleHeight = 2 * Math.tan(vFov / 2) * cameraObjRef.current.position.z;
-        const visibleWidth = visibleHeight * cameraObjRef.current.aspect;
-        visibleDimsRef.current = { w: visibleWidth, h: visibleHeight };
-
-        // FIX COORD-05: recalculate cover crop with new display dimensions
-        if (videoRef.current && videoRef.current.videoWidth > 0) {
-          coverCropRef.current = computeCoverCrop(
-            videoRef.current.videoWidth, videoRef.current.videoHeight, w, h
-          );
-        }
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // ── Render ──
 
