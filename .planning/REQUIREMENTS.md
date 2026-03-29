@@ -7,16 +7,16 @@
 
 ### Coordinate Foundation
 
-- [ ] **COORD-01**: Fix double-mirror bug — resolve CSS scaleX(-1) and programmatic mirrorX() conflict so left/right landmarks map correctly
-- [ ] **COORD-02**: Fix renderer/video aspect ratio mismatch — align Three.js camera dimensions with actual video feed dimensions accounting for object-fit:cover crop
-- [ ] **COORD-03**: Fix Z-depth formula — correct the avgZ * 2 - 1 mapping to use proper MediaPipe Z-coordinate interpretation
-- [ ] **COORD-04**: Pin MediaPipe WASM version — replace @latest with specific version to prevent silent breakage
+- [x] **COORD-01**: Fix double-mirror bug — resolve CSS scaleX(-1) and programmatic mirrorX() conflict so left/right landmarks map correctly
+- [x] **COORD-02**: Fix renderer/video aspect ratio mismatch — align Three.js camera dimensions with actual video feed dimensions accounting for object-fit:cover crop
+- [x] **COORD-03**: Fix Z-depth formula — correct the avgZ * 2 - 1 mapping to use proper MediaPipe Z-coordinate interpretation
+- [x] **COORD-04**: Pin MediaPipe WASM version — replace @latest with specific version to prevent silent breakage
 - [ ] **COORD-05**: Fix resize handler — recalculate visible world dimensions when window resizes, not just renderer size
 
 ### Architecture Decomposition
 
 - [ ] **ARCH-01**: Decompose ARExperience.tsx monolith into bounded components (CameraManager, PoseProcessor, LandmarkSmoother, AnchorResolver, SceneManager)
-- [ ] **ARCH-02**: Implement One Euro Filter for adaptive landmark smoothing — per-landmark filtering before anchor computation
+- [x] **ARCH-02**: Implement One Euro Filter for adaptive landmark smoothing — per-landmark filtering before anchor computation
 - [ ] **ARCH-03**: Implement scene persistence — reuse Three.js scene/renderer when switching products instead of full teardown/rebuild
 - [ ] **ARCH-04**: Separate pose detection effect from model loading effect — prevent re-initializing camera when only the product changes
 
@@ -94,13 +94,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COORD-01 | Phase 1 | Pending |
-| COORD-02 | Phase 1 | Pending |
-| COORD-03 | Phase 1 | Pending |
-| COORD-04 | Phase 1 | Pending |
+| COORD-01 | Phase 1 | Complete |
+| COORD-02 | Phase 1 | Complete |
+| COORD-03 | Phase 1 | Complete |
+| COORD-04 | Phase 1 | Complete |
 | COORD-05 | Phase 1 | Pending |
 | ARCH-01 | Phase 2 | Pending |
-| ARCH-02 | Phase 1 | Pending |
+| ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 2 | Pending |
 | ARCH-04 | Phase 2 | Pending |
 | ANCH-01 | Phase 3 | Pending |
