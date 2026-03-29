@@ -331,6 +331,7 @@ serve(async (req) => {
     } catch (updateError) {
       console.error('❌ Failed to update error status:', updateError);
     }
+    }
     
     return new Response(
       JSON.stringify({ 
