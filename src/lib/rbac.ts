@@ -20,8 +20,8 @@ const ROUTE_ACCESS: Record<Exclude<UserRole, 'admin'>, string[]> = {
 // Blocked routes for each role
 const BLOCKED_ROUTES: Record<Exclude<UserRole, 'admin'>, string[]> = {
   shopper: ['/brand-portal', '/retailer-portal'],
-  brand: ['/retailer-portal', '/swipe', '/feed', '/wishlist', '/closets', '/forum', '/ar-tryOn'],
-  retailer: ['/brand-portal', '/swipe', '/feed', '/wishlist', '/closets', '/forum', '/ar-tryOn']
+  brand: ['/retailer-portal', '/swipe', '/feed', '/wishlist', '/closets', '/forum', '/ar-tryOn', '/explore', '/profile', '/settings'],
+  retailer: ['/brand-portal', '/swipe', '/feed', '/wishlist', '/closets', '/forum', '/ar-tryOn', '/explore', '/profile', '/settings']
 };
 
 export const canAccessRoute = (userRole: UserRole, route: string): boolean => {
