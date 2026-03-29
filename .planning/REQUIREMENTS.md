@@ -15,7 +15,7 @@
 
 ### Architecture Decomposition
 
-- [ ] **ARCH-01**: Decompose ARExperience.tsx monolith into bounded components (CameraManager, PoseProcessor, LandmarkSmoother, AnchorResolver, SceneManager)
+- [x] **ARCH-01**: Decompose ARExperience.tsx monolith into bounded components (CameraManager, PoseProcessor, LandmarkSmoother, AnchorResolver, SceneManager)
 - [x] **ARCH-02**: Implement One Euro Filter for adaptive landmark smoothing — per-landmark filtering before anchor computation
 - [ ] **ARCH-03**: Implement scene persistence — reuse Three.js scene/renderer when switching products instead of full teardown/rebuild
 - [ ] **ARCH-04**: Separate pose detection effect from model loading effect — prevent re-initializing camera when only the product changes
@@ -48,9 +48,9 @@
 
 ### Performance & Mobile
 
-- [ ] **PERF-01**: Cap DPR at 1.0 on mobile devices to prevent thermal throttling
-- [ ] **PERF-02**: Implement render-on-dirty — only render Three.js frame when pose data changes, not every animation frame
-- [ ] **PERF-03**: Cache material traversal — avoid traversing model tree every frame for opacity updates
+- [x] **PERF-01**: Cap DPR at 1.0 on mobile devices to prevent thermal throttling
+- [x] **PERF-02**: Implement render-on-dirty — only render Three.js frame when pose data changes, not every animation frame
+- [x] **PERF-03**: Cache material traversal — avoid traversing model tree every frame for opacity updates
 - [ ] **PERF-04**: Implement model caching — cache loaded GLB models for faster product switching
 
 ### Visual Quality
@@ -99,7 +99,7 @@
 | COORD-03 | Phase 1 | Complete |
 | COORD-04 | Phase 1 | Complete |
 | COORD-05 | Phase 1 | Complete |
-| ARCH-01 | Phase 2 | Pending |
+| ARCH-01 | Phase 2 | Complete |
 | ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 2 | Pending |
 | ARCH-04 | Phase 2 | Pending |
@@ -120,9 +120,9 @@
 | RETL-02 | Phase 2 | Complete |
 | RETL-03 | Phase 5 | Pending |
 | RETL-04 | Phase 2 | Complete |
-| PERF-01 | Phase 2 | Pending |
-| PERF-02 | Phase 2 | Pending |
-| PERF-03 | Phase 2 | Pending |
+| PERF-01 | Phase 2 | Complete |
+| PERF-02 | Phase 2 | Complete |
+| PERF-03 | Phase 2 | Complete |
 | PERF-04 | Phase 5 | Pending |
 | VIS-01 | Phase 5 | Pending |
 | VIS-02 | Phase 5 | Pending |
