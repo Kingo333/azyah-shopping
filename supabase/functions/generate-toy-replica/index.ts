@@ -58,7 +58,8 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { toyReplicaId } = await req.json();
+    const { toyReplicaId: _toyReplicaId } = await req.json();
+    const toyReplicaId: string | undefined = _toyReplicaId;
     if (!toyReplicaId) {
       console.error('❌ Missing toyReplicaId in request');
       return new Response(
