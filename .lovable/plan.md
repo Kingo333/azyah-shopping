@@ -1,99 +1,52 @@
 
 
-# In-Depth AR System Analysis + ZERO10 Comparison
+# Fix Retailer Portal Loading Error + AR Loading Issues
 
-## Current AR System Architecture
+## Two Issues Found
 
-Your AR system is a **client-side, browser-based** AR experience built with:
-- **MediaPipe PoseLandmarker** (WASM) for 2D/3D body pose detection
-- **Three.js** for 3D model rendering (WebGLRenderer with alpha overlay)
-- **GLTFLoader** for loading `.glb` models from Supabase Storage
-- Camera feed via `getUserMedia` displayed as a `<video>` background
+### Issue 1: Retailer Portal Stuck on Loading
+**Root cause:** In `RetailerPortal.tsx`, `loading` starts as `true` and is only set to `false` inside `fetchProducts()` (line 265). But `fetchRetailer()` (lines 85-166) can throw an error — when it does, it shows a toast ("Failed to load your retailer portal") but **never sets `loading = false`**. The page stays stuck on the "Setting up your Retailer Portal..." spinner forever.
 
-### Initialization Pipeline (Sequential — This Is the Bottleneck)
+**Fix:** Add `setLoading(false)` in the catch block of `fetchRetailer()` (after line 164). Also set `setSetupError(error.message)` so the retry UI appears instead of an eternal spinner.
 
-The `initPipeline()` function in `ARExperience.tsx` runs these steps **one after another**:
+### Issue 2: AR Experience — Long Loading + Potential Stuck States
+The AR page flow is: fetch products → init camera + pose in parallel → load 3D model. Several issues remain:
+
+**A. Effect 2 (model loading) has a race condition with Effect 1 (pipeline init).** Effect 2 checks `if (!sceneManagerRef.current) return;` — but Effect 1 is async. If the product selection resolves before the pipeline finishes initializing SceneManager, Effect 2 silently bails out and never retries. The model never loads, and the user sees "Downloading 3D model…" forever.
+
+**B. `loadStage` gets stuck.** During the `initializing` state, `loadStage` shows "Starting camera & body tracking…". But once the pipeline finishes, if Effect 2 hasn't fired yet (because SceneManager wasn't ready), there's a gap where `trackingState` becomes `model_loading` but `loadStage` may be stale.
+
+**C. No error boundary for WASM download failures.** If the MediaPipe WASM CDN is slow or blocked (common on restricted networks), `createPoseProcessor()` can hang for 30+ seconds before timing out. There's no timeout wrapper on this promise.
+
+## Plan
+
+### File 1: `src/pages/RetailerPortal.tsx`
+- In `fetchRetailer()` catch block (~line 159): add `setLoading(false)` and `setSetupError(error.message || 'Unknown error')` so the page shows the retry UI instead of spinning forever.
+
+### File 2: `src/pages/ARExperience.tsx`
+- **Fix the Effect 2 race condition:** Instead of bailing when `sceneManagerRef.current` is null, wait for it. Add a small polling interval or use a ref-based signal that Effect 1 sets when SceneManager is ready, so Effect 2 can await it.
+- **Add a timeout to `createPoseProcessor()`:** Wrap the pose promise with a 15-second timeout so users aren't stuck if the WASM CDN is unreachable.
+- **Ensure `loadStage` stays accurate:** Clear `loadStage` transitions so no stale messages persist between states.
+
+### File 3: `src/ar/core/PoseProcessor.ts`
+- No changes needed — the timeout is applied at the call site in ARExperience.
+
+## Technical Details
+
+**Effect 2 race fix approach:** Create a `sceneReadyPromise` ref that Effect 1 resolves when SceneManager is initialized. Effect 2 awaits this promise before checking `sceneManagerRef.current`, ensuring the model load always proceeds once the scene is ready.
 
 ```text
-Step 1: startCamera()          — getUserMedia + wait for metadata  (~1-3s)
-Step 2: new SceneManager()     — WebGL renderer + lights           (~instant)
-Step 3: createPoseProcessor()  — Download WASM (~4MB) + ML model   (~3-8s on mobile)
-Step 4: [waiting for product selection, then Effect 2 fires]
-Step 5: loadModel()            — Download GLB from Supabase Storage (~2-30s for 30MB)
+Effect 1 (mount):
+  startCamera + createPoseProcessor (parallel)
+  → SceneManager created
+  → resolve sceneReadyPromise  ← NEW
+  → start render loop
+
+Effect 2 (product change):
+  → await sceneReadyPromise    ← NEW (ensures SceneManager exists)
+  → load model (reuse prefetch if available)
+  → swapModel into scene
 ```
 
-**Total wall-clock time: 6-40+ seconds**, during which the user sees "Starting AR... Preparing camera and tracking".
-
-### Critical Issues Found
-
-**1. Sequential initialization (biggest problem)**
-Steps 1 and 3 are independent but run sequentially. Camera acquisition and WASM/model download could run in parallel, saving 3-8 seconds.
-
-**2. 3D model download starts LATE**
-The GLB download (Effect 2) only begins after `selectedProduct` state is set AND `sceneManagerRef.current` exists. But the product data is fetched in a separate effect that completes before `initPipeline` finishes. This means the model download waits for the entire pose processor initialization before starting.
-
-**3. Large GLB files on mobile networks**
-You allow up to 50MB GLB files. A 30MB file on a mobile 4G connection (5 Mbps) takes ~48 seconds. The 60-second timeout in ModelLoader will barely catch this.
-
-**4. No model compression (Draco/meshopt)**
-The `GLTFLoader` is used without `DRACOLoader` or `MeshoptDecoder` extensions. These can reduce GLB file sizes by 60-90%, dramatically cutting download times.
-
-**5. No preloading or CDN optimization**
-Models are served from Supabase Storage without CDN edge caching, `Content-Length` headers (progress shows "X MB" instead of "%"), or preloading hints.
-
-**6. Pose detection at 15fps cap**
-The render loop throttles pose detection to every 66ms (~15fps). This is intentional for performance but creates visible lag in garment tracking compared to 30fps systems.
-
----
-
-## How This Compares to ZERO10 AR Mirror
-
-| Aspect | Your System | ZERO10 AR Mirror |
-|--------|------------|-----------------|
-| **Platform** | Browser (WebGL + WASM) | Dedicated hardware (GPU-accelerated) |
-| **Tracking** | MediaPipe PoseLandmarker Lite (33 landmarks, 2D+3D) | Custom CV pipeline, likely full body mesh with dense vertices |
-| **Rendering** | Three.js WebGLRenderer, GLB models overlaid on video | Real-time 3D cloth simulation with physics, lighting matching |
-| **Frame rate** | ~15fps pose, 60fps render (skip when clean) | 30-60fps full pipeline |
-| **Cloth physics** | None — static 3D model positioned on landmarks | Full cloth simulation (draping, folding, movement) |
-| **Body mesh** | No body mesh — landmarks only (33 points) | Dense body mesh for realistic garment wrapping |
-| **Occlusion** | None — model always renders on top | Body-aware occlusion (arms in front of garment) |
-| **Lighting** | Basic adaptive (ambient + directional from video brightness) | Environment map matching, PBR with scene-matched reflections |
-| **Latency** | 6-40s cold start | Near-instant (pre-loaded, dedicated hardware) |
-| **Sizing** | Landmark-distance scaling (shoulder width, torso height) | Likely volumetric body scan |
-
-### Key Gaps vs ZERO10
-
-1. **No cloth simulation** — Your garments are rigid GLB meshes positioned/scaled on landmarks. ZERO10 simulates fabric draping in real-time.
-2. **No body mesh/occlusion** — Your model renders on top of everything. ZERO10 handles arm-over-garment occlusion.
-3. **No environment matching** — Your lighting is a simple brightness-mapped ambient/directional pair. ZERO10 matches store lighting and reflections.
-4. **Browser constraints** — You're limited by WASM execution speed, WebGL capabilities, and network-dependent model loading. ZERO10 runs on dedicated GPU hardware with pre-loaded assets.
-
-### What's Realistic to Fix (Browser-Based)
-
-Closing the gap to ZERO10 fully is **not possible** in a browser — they use dedicated hardware with custom CV pipelines. However, the **loading time** issue is absolutely fixable, and tracking quality can be improved.
-
----
-
-## Proposed Fixes (Priority Order)
-
-### Fix 1: Parallelize Initialization
-Run camera acquisition and WASM/pose model download simultaneously instead of sequentially. This alone saves 3-8 seconds.
-
-### Fix 2: Start GLB Download Early  
-Begin downloading the GLB model as soon as product data is fetched (in Effect 1), don't wait for the pose processor to finish. Store the promise and await it in Effect 2.
-
-### Fix 3: Add Draco/Meshopt Decompression
-Add `DRACOLoader` to the `GLTFLoader` pipeline. Retailers should be guided to upload Draco-compressed GLBs. A 30MB uncompressed GLB becomes ~5-8MB compressed.
-
-### Fix 4: Better Progress UX
-Show granular progress stages: "Starting camera..." → "Loading body tracking..." → "Downloading outfit (45%)..." instead of one generic spinner.
-
-### Fix 5: Recommend Model Size Limits
-Add guidance in the retailer upload modal: warn above 10MB, suggest Draco compression, and link to tools like `gltf-transform` for optimization.
-
-### Files Changed
-- `src/pages/ARExperience.tsx` — Parallelize init, early model prefetch, granular progress
-- `src/ar/core/ModelLoader.ts` — Add DRACOLoader support
-- `src/ar/core/PoseProcessor.ts` — No changes needed
-- `src/components/BrandProductManager.tsx` — Add compression guidance in upload UI
+**Pose processor timeout:** Wrap `createPoseProcessor()` with `Promise.race([createPoseProcessor(), timeout(15000)])` in `initPipeline`. If it times out, show `pose_init_failed` state with a retry button.
 
