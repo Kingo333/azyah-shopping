@@ -43,7 +43,7 @@
 
 - [x] **RETL-01**: Add garment_type column to event_brand_products database table (enum: shirt, abaya, pants, jacket, headwear, accessory)
 - [x] **RETL-02**: Add garment type dropdown selector in BrandProductManager upload UI
-- [ ] **RETL-03**: Implement 3D model validation on upload — check file structure, bounding box, normals orientation, and reasonable scale
+- [x] **RETL-03**: Implement 3D model validation on upload — check file structure, bounding box, normals orientation, and reasonable scale
 - [x] **RETL-04**: Migrate existing AR products — default garment_type to 'shirt' for backward compatibility
 
 ### Performance & Mobile
@@ -118,7 +118,7 @@
 | UX-03 | Phase 4 | Complete |
 | RETL-01 | Phase 2 | Complete |
 | RETL-02 | Phase 2 | Complete |
-| RETL-03 | Phase 5 | Pending |
+| RETL-03 | Phase 5 | Complete |
 | RETL-04 | Phase 2 | Complete |
 | PERF-01 | Phase 2 | Complete |
 | PERF-02 | Phase 2 | Complete |

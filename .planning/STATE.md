@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** When a shopper points their camera at themselves, the 3D garment must look like they're actually wearing it -- properly anchored, proportional, and moving naturally.
-**Current focus:** Phase 4 complete -- ready for Phase 5 (Polish and Performance)
+**Current focus:** Phase 5 in progress -- 05-02 complete, 05-01 remaining
 
 ## Current Position
 
-Phase: 4 of 5 (User Experience and Capture) -- COMPLETE
-Plan: 2 of 2 in current phase (04-01, 04-02 both complete)
-Status: Phase 4 complete -- garment-aware guidance and capture/share both done
-Last activity: 2026-03-29 -- Completed 04-01 garment-aware tracking guidance
+Phase: 5 of 5 (Performance, Visual Quality, and Retailer Tools) -- IN PROGRESS
+Plan: 2 of 2 in current phase (05-02 complete, 05-01 remaining)
+Status: 05-02 model validation complete -- 05-01 (caching, gestures, lighting) remaining
+Last activity: 2026-03-29 -- Completed 05-02 3D model validation on retailer upload
 
-Progress: [████████░░] 83% (10/12 plans across all phases)
+Progress: [█████████░] 92% (11/12 plans across all phases)
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [████████░░] 83% (10/12 plans across all phases)
 | Phase 02 P02 | 8min | 1 tasks | 1 files |
 | Phase 04 P02 | 5min | 2 tasks | 4 files |
 | Phase 04 P01 | 8min | 2 tasks | 4 files |
+| Phase 05 P02 | 8min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 04]: getTrackingGuidance returns null for unhandled states, component uses own defaults
 - [Phase 04]: Partial tracking fires when 1+ but not all required landmarks visible; zero visible stays waiting_for_pose
 - [Phase 04]: Missing parts throttled via JSON.stringify comparison to prevent re-render storms
+- [Phase 05-02]: File size checked before GLTFLoader parse to give immediate feedback on oversized files
+- [Phase 05-02]: Inverted normals detected via face-normal-vs-outward-vector sampling heuristic (20 faces, 60% threshold)
+- [Phase 05-02]: AlertTriangleIcon alias used for lucide-react import to avoid naming conflicts
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T05:38:06.709Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-29T05:37:08Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
