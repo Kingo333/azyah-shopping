@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-29T04:33:21.000Z"
-last_activity: 2026-03-29 -- Completed 03-01 anchor foundation (type contracts, garment presets, OutlierFilter, worldLandmarks, vitest)
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-29T04:50:35.000Z"
+last_activity: 2026-03-29 -- Completed 03-02 anchor strategies (BodyMeasurement, AnchorResolver, ShirtAnchor, AbayaAnchor, PantsAnchor, AccessoryAnchor)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 87
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Position
 
 Phase: 3 of 5 (Garment Anchor System)
-Plan: 1 of 3 in current phase (03-01 complete, 03-02 and 03-03 remaining)
-Status: Plan 03-01 complete -- ready for Plan 03-02
-Last activity: 2026-03-29 -- Completed 03-01 anchor foundation (type contracts, garment presets, OutlierFilter, worldLandmarks, vitest)
+Plan: 2 of 3 in current phase (03-01, 03-02 complete, 03-03 remaining)
+Status: Plan 03-02 complete -- ready for Plan 03-03
+Last activity: 2026-03-29 -- Completed 03-02 anchor strategies (BodyMeasurement, AnchorResolver, ShirtAnchor, AbayaAnchor, PantsAnchor, AccessoryAnchor)
 
-Progress: [███████░░░] 75% (6/8 plans across all phases)
+Progress: [████████░░] 87% (7/8 plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 11 min
-- Total execution time: 0.72 hours
+- Total execution time: 0.94 hours
 
 **By Phase:**
 
@@ -45,13 +45,14 @@ Progress: [███████░░░] 75% (6/8 plans across all phases)
 |-------|-------|-------|----------|
 | 01 | 2 | 20 min | 10 min |
 | 02 | 1 | 10 min | 10 min |
-| 03 | 1 | 13 min | 13 min |
+| 03 | 2 | 26 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 02-03 (10 min), 03-01 (13 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 02-03 (10 min), 03-01 (13 min), 03-02 (13 min)
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 03 P02 | 13min | 3 tasks | 12 files |
 | Phase 03 P01 | 13min | 3 tasks | 10 files |
 | Phase 02 P03 | 10min | 3 tasks | 3 files |
 | Phase 02 P01 | 18min | 3 tasks | 5 files |
@@ -88,6 +89,10 @@ Recent decisions affecting current work:
 - [Phase 02-02]: type-only import of Object3D from three keeps ARExperience free of runtime THREE dependency
 - [Phase 03-01]: GarmentConfig interface co-located with AnchorStrategy in anchoring/types.ts rather than config/ directory
 - [Phase 03-01]: OutlierFilter uses 3-sigma default with 15-sample window -- balances spike rejection with fast movement tolerance
+- [Phase 03-02]: Visibility-weighted midpoints floor at 0.3 to prevent asymmetric drift (ANCH-09)
+- [Phase 03-02]: PantsAnchor uses bodyTurnY from shoulders (most reliable) rather than computing hip-based rotation
+- [Phase 03-02]: AbayaAnchor Tier 4 estimates full-length from shoulderWidth*1.3*2.5 when only shoulders visible
+- [Phase 03-02]: Headwear verticalOffset=-0.5 centers model on head rather than placing strictly above nose
 
 ### Pending Todos
 
@@ -101,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T04:33:21Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-29T04:50:35Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None

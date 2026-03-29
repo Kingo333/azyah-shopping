@@ -65,8 +65,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Foundation: install vitest, create type contracts (AnchorStrategy, AnchorResult, BodyMeasurements), config presets, landmark indices, OutlierFilter, and PoseProcessor worldLandmarks support
-- [ ] 03-02-PLAN.md -- Core: BodyMeasurement computation layer, AnchorResolver dispatch, and all four anchor strategies (ShirtAnchor, AbayaAnchor, PantsAnchor, AccessoryAnchor)
+- [x] 03-01-PLAN.md -- Foundation: install vitest, create type contracts (AnchorStrategy, AnchorResult, BodyMeasurements), config presets, landmark indices, OutlierFilter, and PoseProcessor worldLandmarks support
+- [x] 03-02-PLAN.md -- Core: BodyMeasurement computation layer, AnchorResolver dispatch, and all four anchor strategies (ShirtAnchor, AbayaAnchor, PantsAnchor, AccessoryAnchor)
 - [ ] 03-03-PLAN.md -- Integration: replace updateModel with AnchorResolver pipeline in ARExperience, add depth-aware rendering to SceneManager
 
 ### Phase 4: User Experience and Capture
@@ -108,6 +108,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Coordinate Pipeline and Stability | 2/2 | Complete | 2026-03-29 |
 | 2. Architecture Decomposition and Schema | 1/3 | In Progress | - |
-| 3. Garment Anchor System | 0/3 | Not started | - |
+| 3. Garment Anchor System | 2/3 | In Progress | - |
 | 4. User Experience and Capture | 0/2 | Not started | - |
 | 5. Performance, Visual Quality, and Retailer Tools | 0/2 | Not started | - |

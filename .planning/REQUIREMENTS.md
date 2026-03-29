@@ -25,12 +25,12 @@
 - [x] **ANCH-01**: Implement garment-type-aware anchor strategy pattern — different anchor logic per garment type (shirt, abaya, pants, jacket, headwear, accessory)
 - [x] **ANCH-02**: Use MediaPipe world landmarks for metric-scale body measurement — replace normalized coordinates for sizing calculations
 - [x] **ANCH-03**: Implement per-garment anchor configuration: each type specifies primary landmarks, width reference, height reference, padding multipliers, and offset ratios
-- [ ] **ANCH-04**: Shirt anchor strategy — shoulders (11,12) to hips (23,24), shoulder width * 1.15 horizontal, shoulder-to-hip vertical
-- [ ] **ANCH-05**: Abaya/dress anchor strategy — shoulders (11,12) to ankles (27,28), shoulder width * 1.2 horizontal (wider drape), shoulder-to-ankle vertical
-- [ ] **ANCH-06**: Pants anchor strategy — hips (23,24) to ankles (27,28), hip width * 1.1 horizontal, hip-to-ankle vertical
-- [ ] **ANCH-07**: Accessory anchor strategies — headwear (nose 0, ears 7,8), necklace (shoulders 11,12 neckline offset)
-- [ ] **ANCH-08**: Implement landmark fallback chain — graceful estimation when landmarks are occluded (e.g., estimate ankles from hip-to-knee extrapolation)
-- [ ] **ANCH-09**: Implement visibility-weighted positioning — landmarks with low visibility scores contribute less to anchor calculations
+- [x] **ANCH-04**: Shirt anchor strategy — shoulders (11,12) to hips (23,24), shoulder width * 1.15 horizontal, shoulder-to-hip vertical
+- [x] **ANCH-05**: Abaya/dress anchor strategy — shoulders (11,12) to ankles (27,28), shoulder width * 1.2 horizontal (wider drape), shoulder-to-ankle vertical
+- [x] **ANCH-06**: Pants anchor strategy — hips (23,24) to ankles (27,28), hip width * 1.1 horizontal, hip-to-ankle vertical
+- [x] **ANCH-07**: Accessory anchor strategies — headwear (nose 0, ears 7,8), necklace (shoulders 11,12 neckline offset)
+- [x] **ANCH-08**: Implement landmark fallback chain — graceful estimation when landmarks are occluded (e.g., estimate ankles from hip-to-knee extrapolation)
+- [x] **ANCH-09**: Implement visibility-weighted positioning — landmarks with low visibility scores contribute less to anchor calculations
 - [x] **ANCH-10**: Implement outlier rejection — discard landmark jumps beyond N standard deviations from recent history
 
 ### Garment-Aware UX Guidance
@@ -106,12 +106,12 @@
 | ANCH-01 | Phase 3 | Complete |
 | ANCH-02 | Phase 3 | Complete |
 | ANCH-03 | Phase 3 | Complete |
-| ANCH-04 | Phase 3 | Pending |
-| ANCH-05 | Phase 3 | Pending |
-| ANCH-06 | Phase 3 | Pending |
-| ANCH-07 | Phase 3 | Pending |
-| ANCH-08 | Phase 3 | Pending |
-| ANCH-09 | Phase 3 | Pending |
+| ANCH-04 | Phase 3 | Complete |
+| ANCH-05 | Phase 3 | Complete |
+| ANCH-06 | Phase 3 | Complete |
+| ANCH-07 | Phase 3 | Complete |
+| ANCH-08 | Phase 3 | Complete |
+| ANCH-09 | Phase 3 | Complete |
 | ANCH-10 | Phase 3 | Complete |
 | UX-01 | Phase 4 | Pending |
 | UX-02 | Phase 4 | Pending |
