@@ -19,6 +19,19 @@ const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
 /**
+ * Result of a single pose detection frame.
+ *
+ * Contains both normalized landmarks (0-1 video coordinates) for screen-space
+ * positioning and world landmarks (metric-scale meters) for body measurement.
+ */
+export interface PoseResult {
+  /** Normalized landmarks in video coordinate space (0-1). Used for screen positioning. */
+  landmarks: any[][];
+  /** World landmarks in metric scale (meters). Used for body dimension measurement. */
+  worldLandmarks: any[][];
+}
+
+/**
  * Clean interface for pose detection that wraps MediaPipe internals.
  *
  * The detectForVideo method catches errors internally so that a single
@@ -30,12 +43,12 @@ export interface PoseProcessor {
    *
    * @param video - The HTMLVideoElement with an active camera stream.
    * @param timestamp - The current animation frame timestamp (from requestAnimationFrame).
-   * @returns Detection result with landmarks array, or null if detection failed.
+   * @returns Detection result with landmarks and worldLandmarks, or null if detection failed.
    */
   detectForVideo(
     video: HTMLVideoElement,
     timestamp: number,
-  ): { landmarks: any[][] } | null;
+  ): PoseResult | null;
 
   /**
    * Close the underlying PoseLandmarker and release WASM resources.
@@ -67,10 +80,13 @@ export async function createPoseProcessor(): Promise<PoseProcessor> {
     detectForVideo(
       video: HTMLVideoElement,
       timestamp: number,
-    ): { landmarks: any[][] } | null {
+    ): PoseResult | null {
       try {
         const result = landmarker.detectForVideo(video, timestamp);
-        return result as { landmarks: any[][] };
+        return {
+          landmarks: result.landmarks,
+          worldLandmarks: result.worldLandmarks,
+        } as PoseResult;
       } catch {
         // Swallow frame-level errors to prevent render loop crash
         return null;

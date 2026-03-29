@@ -37,14 +37,14 @@ describe('OutlierFilter', () => {
   describe('outlier rejection', () => {
     it('returns null for value beyond 3 sigma', () => {
       const filter = new OutlierFilter();
-      // Feed consistent values to establish baseline
+      // Feed values with slight variance to establish baseline with stdDev > 0.0001
       filter.filter(1.0);
+      filter.filter(1.01);
+      filter.filter(0.99);
       filter.filter(1.0);
-      filter.filter(1.0);
-      filter.filter(1.0);
-      filter.filter(1.0);
+      filter.filter(1.01);
 
-      // Huge spike should be rejected
+      // Huge spike should be rejected (100.0 is far beyond 3 sigma of ~1.0 mean)
       const result = filter.filter(100.0);
       expect(result).toBeNull();
     });
