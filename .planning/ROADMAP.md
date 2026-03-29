@@ -62,12 +62,12 @@ Plans:
   3. Pants anchor from hips to ankles with hip-width scaling -- they do not float above the waist or extend above the hips
   4. Accessories (headwear, necklace) anchor to the correct body region (head landmarks for headwear, shoulder neckline for necklace)
   5. Garment positioning uses metric-space world landmarks so the model scales correctly regardless of camera distance
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md -- Foundation: install vitest, create type contracts (AnchorStrategy, AnchorResult, BodyMeasurements), config presets, landmark indices, OutlierFilter, and PoseProcessor worldLandmarks support
+- [ ] 03-02-PLAN.md -- Core: BodyMeasurement computation layer, AnchorResolver dispatch, and all four anchor strategies (ShirtAnchor, AbayaAnchor, PantsAnchor, AccessoryAnchor)
+- [ ] 03-03-PLAN.md -- Integration: replace updateModel with AnchorResolver pipeline in ARExperience, add depth-aware rendering to SceneManager
 
 ### Phase 4: User Experience and Capture
 **Goal**: Users receive garment-appropriate tracking guidance and can capture and share their AR try-on
