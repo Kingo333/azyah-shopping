@@ -40,7 +40,7 @@ export function TrackingGuidance({ state, message, garmentType, missingParts, lo
         return {
           icon: <Loader2 className="h-10 w-10 text-white animate-spin" />,
           title: 'Starting AR...',
-          sub: 'Preparing camera and tracking',
+          sub: loadStage || 'Preparing camera and tracking',
         };
 
       case 'camera_denied':
