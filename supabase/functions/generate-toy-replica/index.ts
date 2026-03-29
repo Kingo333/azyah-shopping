@@ -297,8 +297,8 @@ serve(async (req) => {
     );
     
     // Try to update the record with failure status and retry logic
+    if (toyReplicaId) {
     try {
-      // toyReplicaId is already available from the top of the function
       // Get current retry count
       const { data: currentReplica } = await errorSupabase
         .from('toy_replicas')
