@@ -1603,6 +1603,7 @@ export type Database = {
           ar_scale: number | null
           created_at: string
           event_brand_id: string
+          garment_type: string // MANUAL: Added for garment_type migration. Will be auto-generated on next Supabase sync. Values: 'shirt' | 'abaya' | 'pants' | 'jacket' | 'headwear' | 'accessory'
           id: string
           image_url: string
           product_id: string | null
@@ -1621,6 +1622,7 @@ export type Database = {
           ar_scale?: number | null
           created_at?: string
           event_brand_id: string
+          garment_type?: string // MANUAL: Added for garment_type migration. Will be auto-generated on next Supabase sync.
           id?: string
           image_url: string
           product_id?: string | null
@@ -1639,6 +1641,7 @@ export type Database = {
           ar_scale?: number | null
           created_at?: string
           event_brand_id?: string
+          garment_type?: string // MANUAL: Added for garment_type migration. Will be auto-generated on next Supabase sync.
           id?: string
           image_url?: string
           product_id?: string | null

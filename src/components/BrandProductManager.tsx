@@ -20,6 +20,7 @@ interface EventBrandProduct {
   ar_model_url?: string;
   ar_enabled?: boolean;
   ar_scale?: number;
+  garment_type?: string;
 }
 
 interface EventBrand {
