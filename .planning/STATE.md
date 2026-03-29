@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-29T02:53:13.271Z"
-last_activity: 2026-03-29 -- Completed 02-02 ARExperience orchestrator rewrite (three independent effects, persistent camera/pose/scene)
+status: in-progress
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-29T04:33:21.000Z"
+last_activity: 2026-03-29 -- Completed 03-01 anchor foundation (type contracts, garment presets, OutlierFilter, worldLandmarks, vitest)
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 8
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** When a shopper points their camera at themselves, the 3D garment must look like they're actually wearing it -- properly anchored, proportional, and moving naturally.
-**Current focus:** Phase 2: Architecture Decomposition and Schema
+**Current focus:** Phase 3: Garment Anchor System
 
 ## Current Position
 
-Phase: 2 of 5 (Architecture Decomposition and Schema) -- COMPLETE
-Plan: 3 of 3 in current phase (all plans complete: 02-01, 02-02, 02-03)
-Status: Phase 2 complete -- ready for Phase 3
-Last activity: 2026-03-29 -- Completed 02-02 ARExperience orchestrator rewrite (three independent effects, persistent camera/pose/scene)
+Phase: 3 of 5 (Garment Anchor System)
+Plan: 1 of 3 in current phase (03-01 complete, 03-02 and 03-03 remaining)
+Status: Plan 03-01 complete -- ready for Plan 03-02
+Last activity: 2026-03-29 -- Completed 03-01 anchor foundation (type contracts, garment presets, OutlierFilter, worldLandmarks, vitest)
 
-Progress: [██████████] 100% (5/5 plans across all phases)
+Progress: [███████░░░] 75% (6/8 plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 10 min
-- Total execution time: 0.50 hours
+- Total plans completed: 4
+- Average duration: 11 min
+- Total execution time: 0.72 hours
 
 **By Phase:**
 
@@ -45,12 +45,14 @@ Progress: [██████████] 100% (5/5 plans across all phases)
 |-------|-------|-------|----------|
 | 01 | 2 | 20 min | 10 min |
 | 02 | 1 | 10 min | 10 min |
+| 03 | 1 | 13 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 02-03 (10 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 02-03 (10 min), 03-01 (13 min)
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 03 P01 | 13min | 3 tasks | 10 files |
 | Phase 02 P03 | 10min | 3 tasks | 3 files |
 | Phase 02 P01 | 18min | 3 tasks | 5 files |
 | Phase 02 P02 | 8min | 1 tasks | 1 files |
@@ -84,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 02-02]: selectedProductRef pattern used to avoid stale closures in render loop without adding selectedProduct to Effect 1 deps
 - [Phase 02-02]: Model visibility toggled via modelRef.visible on tracking loss instead of swapModel(null) to avoid disposing the model
 - [Phase 02-02]: type-only import of Object3D from three keeps ARExperience free of runtime THREE dependency
+- [Phase 03-01]: GarmentConfig interface co-located with AnchorStrategy in anchoring/types.ts rather than config/ directory
+- [Phase 03-01]: OutlierFilter uses 3-sigma default with 15-sample window -- balances spike rejection with fast movement tolerance
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T02:22:32.231Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-29T04:33:21Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
