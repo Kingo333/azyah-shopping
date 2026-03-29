@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CameraOff, AlertTriangle, User, RefreshCw } from 'lucide-react';
+import { Loader2, CameraOff, AlertTriangle, User, RefreshCw, Camera, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { compositeCapture } from '@/ar/capture/captureCompositor';
+import { shareImage } from '@/ar/capture/shareHandler';
 import { startCamera, stopCamera } from '@/ar/core/CameraManager';
 import { createPoseProcessor, PoseProcessor } from '@/ar/core/PoseProcessor';
 import { SceneManager } from '@/ar/core/SceneManager';
@@ -36,6 +38,8 @@ export default function ARExperience() {
   const [isValidContext, setIsValidContext] = useState(true);
   const [trackingState, setTrackingState] = useState<TrackingState>('initializing');
   const [trackingMessage, setTrackingMessage] = useState('');
+  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
@@ -73,6 +77,45 @@ export default function ARExperience() {
   // Ref to access selectedProduct inside the render loop without stale closures
   const selectedProductRef = useRef<ARProduct | null>(null);
   selectedProductRef.current = selectedProduct;
+
+  // Preview URL management -- revoke old URLs to prevent memory leaks
+  const previewUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = capturedBlob ? URL.createObjectURL(capturedBlob) : null;
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, [capturedBlob]);
+
+  // Capture handler: composites video + Three.js overlay into a single image
+  const handleCapture = async () => {
+    if (!videoRef.current || !canvasRef.current || isCapturing) return;
+    setIsCapturing(true);
+    try {
+      // Force a render so the overlay canvas has the current frame
+      sceneManagerRef.current?.renderIfDirty();
+      const blob = await compositeCapture(videoRef.current, canvasRef.current);
+      setCapturedBlob(blob);
+    } catch (err) {
+      console.error('Capture failed:', err);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  // Share handler: uses Web Share API with download fallback
+  const handleShare = async () => {
+    if (!capturedBlob) return;
+    try {
+      await shareImage(capturedBlob);
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
 
   // Fetch AR-enabled products and validate context
   useEffect(() => {
@@ -409,6 +452,48 @@ export default function ARExperience() {
         <div className="absolute top-16 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-white/80">Tracking</span>
+        </div>
+      )}
+
+      {/* Capture button -- visible when tracking is active or partial */}
+      {(trackingState === 'tracking_active' || trackingState === 'partial_tracking') && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
+          <button
+            onClick={handleCapture}
+            disabled={isCapturing}
+            className="w-14 h-14 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+            aria-label="Take photo"
+          >
+            <Camera className="h-6 w-6 text-gray-800" />
+          </button>
+        </div>
+      )}
+
+      {/* Capture preview overlay */}
+      {capturedBlob && previewUrlRef.current && (
+        <div className="absolute inset-0 z-30 bg-black/80 flex flex-col items-center justify-center gap-4 p-6">
+          <img
+            src={previewUrlRef.current}
+            alt="AR capture preview"
+            className="max-w-full max-h-[70vh] rounded-xl shadow-2xl object-contain"
+          />
+          <div className="flex gap-4">
+            <Button
+              variant="secondary"
+              className="gap-2"
+              onClick={handleShare}
+            >
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20"
+              onClick={() => setCapturedBlob(null)}
+            >
+              Dismiss
+            </Button>
+          </div>
         </div>
       )}
 
