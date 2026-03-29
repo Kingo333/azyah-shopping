@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { landmarkToWorld, computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
+import { OneEuroFilter, FILTER_PRESETS } from '@/ar/utils/OneEuroFilter';
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -61,6 +62,14 @@ export default function ARExperience() {
   const visibleDimsRef = useRef({ w: 4, h: 3 });
   const coverCropRef = useRef<CoverCropInfo>({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 });
 
+  // One Euro Filter instances -- one per smoothed axis for independent adaptive smoothing
+  const filterPosX = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
+  const filterPosY = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
+  const filterScaleX = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
+  const filterScaleY = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
+  const filterScaleZ = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
+  const filterRotY = useRef(new OneEuroFilter(FILTER_PRESETS.rotation.minCutoff, FILTER_PRESETS.rotation.beta, FILTER_PRESETS.rotation.dCutoff));
+
   // Fetch AR-enabled products and validate context
   useEffect(() => {
     async function fetchAndValidate() {
@@ -114,6 +123,15 @@ export default function ARExperience() {
     if (isLoading || !selectedProduct || !canvasRef.current || !videoRef.current) return;
 
     cleanedUpRef.current = false;
+
+    // Reset smoothing filters for new product
+    filterPosX.current.reset();
+    filterPosY.current.reset();
+    filterScaleX.current.reset();
+    filterScaleY.current.reset();
+    filterScaleZ.current.reset();
+    filterRotY.current.reset();
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -346,14 +364,22 @@ export default function ARExperience() {
       ? Math.atan2(shoulderZDiff, shoulderWidthWorld / visDims.w)
       : 0;
 
-    // ── Apply position/scale/rotation (no smoothing yet -- Task 2 adds One Euro Filter) ──
+    // Adaptive smoothing via One Euro Filter (timestamp in seconds)
+    const t = performance.now() / 1000;
+    const smoothX = filterPosX.current.filter(targetX, t);
+    const smoothY = filterPosY.current.filter(targetY, t);
+    const smoothScX = filterScaleX.current.filter(targetScaleX, t);
+    const smoothScY = filterScaleY.current.filter(targetScaleY, t);
+    const smoothScZ = filterScaleZ.current.filter(targetScaleZ, t);
+    const smoothRotY = filterRotY.current.filter(bodyTurnY, t);
+
     modelRef.current.position.set(
-      targetX + offset.x,
-      targetY + offset.y,
-      targetZ + offset.z
+      smoothX + offset.x,
+      smoothY + offset.y,
+      targetZ + offset.z   // Z is constant 0, no smoothing needed
     );
-    modelRef.current.scale.set(targetScaleX, targetScaleY, targetScaleZ);
-    modelRef.current.rotation.y = bodyTurnY;
+    modelRef.current.scale.set(smoothScX, smoothScY, smoothScZ);
+    modelRef.current.rotation.y = smoothRotY;
 
     // Fade based on landmark confidence
     const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
