@@ -15,6 +15,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let toyReplicaId: string | undefined;
   try {
     // 🔒 SECURITY: Verify JWT authentication
     const authHeader = req.headers.get('Authorization');
