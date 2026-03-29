@@ -217,7 +217,10 @@ export default function ARExperience() {
       setLoadStage('Starting camera & body tracking…');
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
-      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+      const poseTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Body tracking timed out. Check your connection.')), 15000)
+      );
+      const posePromise = Promise.race([createPoseProcessor(), poseTimeout]).catch((err: any) => ({ error: err }));
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
 
