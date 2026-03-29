@@ -1,52 +1,32 @@
 
 
-# Fix Retailer Portal Loading Error + AR Loading Issues
+# Fix Retailer Portal: Loading Failures + Block Shopper Pages
 
-## Two Issues Found
+## Problems
 
-### Issue 1: Retailer Portal Stuck on Loading
-**Root cause:** In `RetailerPortal.tsx`, `loading` starts as `true` and is only set to `false` inside `fetchProducts()` (line 265). But `fetchRetailer()` (lines 85-166) can throw an error — when it does, it shows a toast ("Failed to load your retailer portal") but **never sets `loading = false`**. The page stays stuck on the "Setting up your Retailer Portal..." spinner forever.
+1. **Retailer portal loading failures**: The `fetchRetailer()` function at lines 140-148 has a path where auto-creation fails (`createError`) but doesn't set `setLoading(false)` — the page stays stuck on the loading spinner.
 
-**Fix:** Add `setLoading(false)` in the catch block of `fetchRetailer()` (after line 164). Also set `setSetupError(error.message)` so the retry UI appears instead of an eternal spinner.
+2. **Retailers can access shopper pages**: While the RBAC rules in `rbac.ts` correctly limit retailer routes, some routes like `/explore`, `/profile`, `/settings` are defined with `<ProtectedRoute>` **without role restrictions** in `App.tsx`. The `canAccessRoute` check catches `/explore` (not in retailer's ROUTE_ACCESS), but `/profile` and `/settings` ARE in the retailer's allowed routes — yet these render shopper-oriented UI (profile insights, shopper settings). Retailers should stay within `/retailer-portal` for everything.
 
-### Issue 2: AR Experience — Long Loading + Potential Stuck States
-The AR page flow is: fetch products → init camera + pose in parallel → load 3D model. Several issues remain:
-
-**A. Effect 2 (model loading) has a race condition with Effect 1 (pipeline init).** Effect 2 checks `if (!sceneManagerRef.current) return;` — but Effect 1 is async. If the product selection resolves before the pipeline finishes initializing SceneManager, Effect 2 silently bails out and never retries. The model never loads, and the user sees "Downloading 3D model…" forever.
-
-**B. `loadStage` gets stuck.** During the `initializing` state, `loadStage` shows "Starting camera & body tracking…". But once the pipeline finishes, if Effect 2 hasn't fired yet (because SceneManager wasn't ready), there's a gap where `trackingState` becomes `model_loading` but `loadStage` may be stale.
-
-**C. No error boundary for WASM download failures.** If the MediaPipe WASM CDN is slow or blocked (common on restricted networks), `createPoseProcessor()` can hang for 30+ seconds before timing out. There's no timeout wrapper on this promise.
+3. **BottomNavigation still renders for retailers on some routes**: The `EXCLUDED_ROUTES` list hides it on `/retailer-portal`, but if a retailer somehow lands on `/profile` or `/settings`, they'd see the shopper bottom nav with Feed/Explore/UGC/Profile tabs.
 
 ## Plan
 
-### File 1: `src/pages/RetailerPortal.tsx`
-- In `fetchRetailer()` catch block (~line 159): add `setLoading(false)` and `setSetupError(error.message || 'Unknown error')` so the page shows the retry UI instead of spinning forever.
+### File 1: `src/pages/RetailerPortal.tsx` (~line 148)
+- Add `setLoading(false)` and `setSetupError(...)` in the `createError` block (line 142-148) — currently it returns early without clearing the loading state, causing an infinite spinner when auto-creation fails.
 
-### File 2: `src/pages/ARExperience.tsx`
-- **Fix the Effect 2 race condition:** Instead of bailing when `sceneManagerRef.current` is null, wait for it. Add a small polling interval or use a ref-based signal that Effect 1 sets when SceneManager is ready, so Effect 2 can await it.
-- **Add a timeout to `createPoseProcessor()`:** Wrap the pose promise with a 15-second timeout so users aren't stuck if the WASM CDN is unreachable.
-- **Ensure `loadStage` stays accurate:** Clear `loadStage` transitions so no stale messages persist between states.
+### File 2: `src/components/BottomNavigation.tsx`
+- Hide the entire bottom navigation for `brand` and `retailer` users. Add a role check: if the user's metadata role is `brand` or `retailer`, return `null` early. These users have their own portal navigation and should never see the shopper bottom nav.
 
-### File 3: `src/ar/core/PoseProcessor.ts`
-- No changes needed — the timeout is applied at the call site in ARExperience.
+### File 3: `src/lib/rbac.ts`
+- Remove `/settings` and `/profile` from the retailer and brand `ROUTE_ACCESS` lists. These users manage settings inside their portals. Keeping them in the allowed list lets retailers wander into shopper-oriented pages.
+- Add `/explore` to retailer and brand `BLOCKED_ROUTES` to be explicit.
 
-## Technical Details
+### File 4: `src/components/ProtectedRoute.tsx`
+- No changes needed — the existing `canAccessRoute` check will automatically redirect retailers away from `/profile` and `/settings` once `ROUTE_ACCESS` is updated. They'll land on `/retailer-portal` (via `getRedirectRoute`).
 
-**Effect 2 race fix approach:** Create a `sceneReadyPromise` ref that Effect 1 resolves when SceneManager is initialized. Effect 2 awaits this promise before checking `sceneManagerRef.current`, ensuring the model load always proceeds once the scene is ready.
-
-```text
-Effect 1 (mount):
-  startCamera + createPoseProcessor (parallel)
-  → SceneManager created
-  → resolve sceneReadyPromise  ← NEW
-  → start render loop
-
-Effect 2 (product change):
-  → await sceneReadyPromise    ← NEW (ensures SceneManager exists)
-  → load model (reuse prefetch if available)
-  → swapModel into scene
-```
-
-**Pose processor timeout:** Wrap `createPoseProcessor()` with `Promise.race([createPoseProcessor(), timeout(15000)])` in `initPipeline`. If it times out, show `pose_init_failed` state with a retry button.
+## Summary
+- Fix the create-error loading bug in RetailerPortal
+- Hide shopper bottom nav entirely for retailer/brand users
+- Tighten RBAC so retailers can only access `/retailer-portal` (+ its sub-routes), `/dashboard`, `/auth`, `/landing`
 
