@@ -59,7 +59,7 @@
 - [ ] **VIS-02**: Implement adaptive lighting — adjust Three.js scene lighting based on camera feed brightness
 - [ ] **VIS-03**: Implement screenshot/capture — composite video feed + Three.js overlay into a single image
 - [ ] **VIS-04**: Implement share functionality — native share API for captured AR images
-- [ ] **VIS-05**: Improve depth-aware rendering — proper model sorting and depth placement relative to body
+- [x] **VIS-05**: Improve depth-aware rendering — proper model sorting and depth placement relative to body
 
 ## v2 Requirements
 
@@ -128,7 +128,7 @@
 | VIS-02 | Phase 5 | Pending |
 | VIS-03 | Phase 4 | Pending |
 | VIS-04 | Phase 4 | Pending |
-| VIS-05 | Phase 3 | Pending |
+| VIS-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 35 total
