@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { validateGLBModel } from '@/ar/utils/modelValidator';
+import { AlertTriangle as AlertTriangleIcon } from 'lucide-react';
 
 const GARMENT_TYPES = [
   { value: 'shirt', label: 'Shirt / Top' },
@@ -53,6 +55,8 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const [uploadingARModel, setUploadingARModel] = useState(false);
   const [forceReupload, setForceReupload] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -345,7 +349,13 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
       )}
 
       {/* Edit Try-on Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+        setIsEditModalOpen(open);
+        if (!open) {
+          setValidationErrors([]);
+          setValidationWarnings([]);
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Configure Virtual Try-On</DialogTitle>
@@ -600,6 +610,29 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                            try {
                               setUploadingARModel(true);
 
+                              // Validate model before upload
+                              const validation = await validateGLBModel(file);
+                              setValidationErrors(validation.errors);
+                              setValidationWarnings(validation.warnings);
+
+                              if (!validation.valid) {
+                                toast({
+                                  title: "Model validation failed",
+                                  description: validation.errors[0] || "The 3D model has structural issues",
+                                  variant: "destructive"
+                                });
+                                setUploadingARModel(false);
+                                e.target.value = '';
+                                return;
+                              }
+
+                              if (validation.warnings.length > 0) {
+                                toast({
+                                  title: "Model uploaded with warnings",
+                                  description: `${validation.warnings.length} warning(s) detected. Check details below.`,
+                                });
+                              }
+
                               const { data: brandData } = await supabase
                                .from('event_brands')
                                .select('event_id')
@@ -643,6 +676,10 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                description: "AR try-on is now enabled for this product"
                              });
 
+                             // Clear validation state on success
+                             setValidationErrors([]);
+                             setValidationWarnings([]);
+
                              await fetchProducts();
                            } catch (error: any) {
                              console.error('AR model upload error:', error);
@@ -659,6 +696,28 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           className="w-full p-2 border rounded"
                           disabled={uploadingARModel}
                        />
+                       {validationErrors.length > 0 && (
+                         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                           <p className="text-sm font-medium text-red-800 flex items-center gap-1">
+                             <AlertTriangleIcon className="w-4 h-4" />
+                             Model validation failed:
+                           </p>
+                           <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                             {validationErrors.map((err, i) => <li key={i}>{err}</li>)}
+                           </ul>
+                         </div>
+                       )}
+                       {validationWarnings.length > 0 && validationErrors.length === 0 && (
+                         <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                           <p className="text-sm font-medium text-yellow-800 flex items-center gap-1">
+                             <AlertTriangleIcon className="w-4 h-4" />
+                             Model warnings:
+                           </p>
+                           <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside">
+                             {validationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                           </ul>
+                         </div>
+                       )}
                      </div>
                    </div>
                 </div>
