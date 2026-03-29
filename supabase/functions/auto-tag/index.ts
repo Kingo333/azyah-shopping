@@ -134,7 +134,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in auto-tag function:', error);
     
     // Return default values instead of error to not block upload
@@ -142,7 +142,7 @@ serve(async (req) => {
       category: 'clothing',
       color_primary: 'unknown',
       suggested_tags: [],
-      error: error.message
+      error: (error as any).message
     }), {
       status: 200, // Return 200 with defaults to not block workflow
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -308,7 +308,7 @@ The scores array must have exactly ${validResults.length} objects, one for each 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[visual-rerank] Error:', error);
     return new Response(
       JSON.stringify({

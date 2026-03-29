@@ -15,6 +15,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let toyReplicaId: string | undefined;
   try {
     // 🔒 SECURITY: Verify JWT authentication
     const authHeader = req.headers.get('Authorization');
@@ -58,7 +59,8 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { toyReplicaId } = await req.json();
+    const { toyReplicaId: _toyReplicaId } = await req.json();
+    toyReplicaId = _toyReplicaId;
     if (!toyReplicaId) {
       console.error('❌ Missing toyReplicaId in request');
       return new Response(
@@ -285,7 +287,7 @@ serve(async (req) => {
       throw timeoutOrOpenAIError;
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Fatal error during generation:', error);
     
     // Re-create supabase client for error handling (was out of scope)
@@ -295,8 +297,8 @@ serve(async (req) => {
     );
     
     // Try to update the record with failure status and retry logic
+    if (toyReplicaId) {
     try {
-      // toyReplicaId is already available from the top of the function
       // Get current retry count
       const { data: currentReplica } = await errorSupabase
         .from('toy_replicas')
@@ -328,6 +330,7 @@ serve(async (req) => {
       );
     } catch (updateError) {
       console.error('❌ Failed to update error status:', updateError);
+    }
     }
     
     return new Response(

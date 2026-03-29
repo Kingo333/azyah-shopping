@@ -1770,7 +1770,7 @@ serve(async (req) => {
     debug.timing_ms.total = Date.now() - startTime;
 
     // ============ Store search run (async) ============
-    supabase.from('deals_search_runs').insert({
+    Promise.resolve(supabase.from('deals_search_runs').insert({
       user_id: user.id,
       source: input.source,
       input_image_url: signedImageUrl,
@@ -1781,7 +1781,7 @@ serve(async (req) => {
       results_count: allShoppingResults.length,
       exact_match_found: !!exactMatch,
       pipeline_timing_ms: debug.timing_ms,
-    }).then(() => {}).catch(err => console.warn(`[deals-unified] ${traceId} Failed to log search run:`, err));
+    })).then(() => {}).catch((err: any) => console.warn(`[deals-unified] ${traceId} Failed to log search run:`, err));
 
     // ============ Build Response ============
     const response = {
@@ -1811,7 +1811,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[deals-unified] ${traceId} ERROR:`, error);
     debug.timing_ms.total = Date.now() - startTime;
     

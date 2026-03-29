@@ -45,6 +45,8 @@ interface PipelineLog {
   visual_rerank_applied?: boolean;
   azyah_similar_count?: number;
   top_5_results?: Array<{ title: string; thumb: string; final_score: number }>;
+  pattern_mode?: boolean;
+  visual_filtered_count?: number;
 }
 
 interface DealsResponse {
@@ -910,7 +912,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[deals-from-image] Error:', error);
     return new Response(
       JSON.stringify({ 

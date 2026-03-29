@@ -70,7 +70,7 @@ serve(async (req) => {
       JSON.stringify(mappedResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload error:', error);
     return new Response(
       JSON.stringify({ 

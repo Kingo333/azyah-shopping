@@ -277,7 +277,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error extracting metadata:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message || 'Unknown error' }),

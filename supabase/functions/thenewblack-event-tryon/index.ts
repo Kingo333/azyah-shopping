@@ -238,7 +238,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TNB Event TryOn] Error:', error);
     return new Response(
       JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }),

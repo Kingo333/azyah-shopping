@@ -220,7 +220,7 @@ Return as JSON:
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[analyze-product-image] Error:', error);
     return new Response(
       JSON.stringify({

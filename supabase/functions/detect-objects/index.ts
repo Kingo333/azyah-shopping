@@ -244,7 +244,7 @@ primary_index = the index of the most important/prominent item to search for.`
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[detect-objects] Error:', error);
     
     // Return fallback on error

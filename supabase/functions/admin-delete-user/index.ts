@@ -210,7 +210,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error in admin-delete-user:', error);
     return new Response(
       JSON.stringify({ error: error.message, success: false }),

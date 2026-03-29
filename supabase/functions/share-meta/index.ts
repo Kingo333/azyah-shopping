@@ -159,7 +159,7 @@ serve(async (req) => {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[share-meta] Error:', error);
     // Fallback redirect to home using env var
     const baseUrl = Deno.env.get('PUBLIC_WEB_URL') || 'https://azyahstyle.com';
