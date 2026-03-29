@@ -22,11 +22,13 @@ interface TrackingGuidanceProps {
   missingParts: string[];
   /** Download progress text (e.g. "45%" or "2.3 MB") shown during model_loading. */
   loadProgress?: string;
+  /** Granular stage label (e.g. "Starting camera & body tracking…") shown during initializing/model_loading. */
+  loadStage?: string;
   /** Called when user taps retry after model_error. */
   onRetry?: () => void;
 }
 
-export function TrackingGuidance({ state, message, garmentType, missingParts, loadProgress, onRetry }: TrackingGuidanceProps) {
+export function TrackingGuidance({ state, message, garmentType, missingParts, loadProgress, loadStage, onRetry }: TrackingGuidanceProps) {
   if (state === 'tracking_active') return null;
 
   const content = (() => {
