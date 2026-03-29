@@ -8,8 +8,17 @@ import { createPoseProcessor, PoseProcessor } from '@/ar/core/PoseProcessor';
 import { SceneManager } from '@/ar/core/SceneManager';
 import { loadModel } from '@/ar/core/ModelLoader';
 import { ARProduct, TrackingState } from '@/ar/types';
-import { landmarkToWorld, computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
+import { computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
 import { OneEuroFilter, FILTER_PRESETS } from '@/ar/utils/OneEuroFilter';
+import { AnchorResolver } from '@/ar/anchoring/AnchorResolver';
+import { computeBodyMeasurements } from '@/ar/anchoring/BodyMeasurement';
+import { GARMENT_PRESETS } from '@/ar/config/garmentPresets';
+import { ShirtAnchor } from '@/ar/anchoring/strategies/ShirtAnchor';
+import { AbayaAnchor } from '@/ar/anchoring/strategies/AbayaAnchor';
+import { PantsAnchor } from '@/ar/anchoring/strategies/PantsAnchor';
+import { AccessoryAnchor } from '@/ar/anchoring/strategies/AccessoryAnchor';
+import { OutlierFilter } from '@/ar/utils/OutlierFilter';
+import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
 
@@ -47,6 +56,19 @@ export default function ARExperience() {
   const filterScaleY = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterScaleZ = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterRotY = useRef(new OneEuroFilter(FILTER_PRESETS.rotation.minCutoff, FILTER_PRESETS.rotation.beta, FILTER_PRESETS.rotation.dCutoff));
+
+  // Outlier rejection filters -- run BEFORE One Euro smoothing (ANCH-10)
+  const outlierPosX = useRef(new OutlierFilter(15, 3.0));
+  const outlierPosY = useRef(new OutlierFilter(15, 3.0));
+  const outlierScX = useRef(new OutlierFilter(15, 3.0));
+  const outlierScY = useRef(new OutlierFilter(15, 3.0));
+  const outlierRotY = useRef(new OutlierFilter(15, 3.0));
+
+  // AnchorResolver -- created once, persists for component lifetime
+  const anchorResolverRef = useRef<AnchorResolver | null>(null);
+
+  // Last known good anchor result for outlier fallback
+  const lastAnchorRef = useRef<AnchorResult | null>(null);
 
   // Ref to access selectedProduct inside the render loop without stale closures
   const selectedProductRef = useRef<ARProduct | null>(null);
@@ -132,6 +154,16 @@ export default function ARExperience() {
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
+      // Initialize anchor resolver with all strategies
+      const resolver = new AnchorResolver();
+      resolver.register('shirt', new ShirtAnchor());
+      resolver.register('abaya', new AbayaAnchor());
+      resolver.register('pants', new PantsAnchor());
+      resolver.register('jacket', new ShirtAnchor());  // Jacket uses shirt strategy with different config
+      resolver.register('headwear', new AccessoryAnchor());
+      resolver.register('accessory', new AccessoryAnchor());
+      anchorResolverRef.current = resolver;
+
       // 3. Pose
       setTrackingState('waiting_for_pose');
       try {
@@ -155,9 +187,68 @@ export default function ARExperience() {
           if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
             framesWithoutPose.current = 0;
             setTrackingState('tracking_active');
+
             const product = selectedProductRef.current;
+            const garmentType = product?.garment_type || 'shirt';
+            const config = GARMENT_PRESETS[garmentType];
             const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
-            updateModel(result.landmarks[0], offset);
+            const arScale = product?.ar_scale || 1;
+
+            // Compute body measurements from landmarks (ANCH-02: uses worldLandmarks for metric)
+            const measurements = computeBodyMeasurements(
+              result.landmarks[0],
+              result.worldLandmarks[0],
+              coverCropRef.current,
+              sm.visibleDims,
+            );
+
+            // Resolve anchor for garment type (ANCH-01: strategy dispatch)
+            const anchor = anchorResolverRef.current!.resolve(
+              garmentType, measurements, config, modelDimsRef.current
+            );
+
+            if (anchor && modelRef.current) {
+              modelRef.current.visible = true;
+
+              // Outlier rejection (ANCH-10): filter before smoothing
+              const px = outlierPosX.current.filter(anchor.position.x) ?? lastAnchorRef.current?.position.x ?? anchor.position.x;
+              const py = outlierPosY.current.filter(anchor.position.y) ?? lastAnchorRef.current?.position.y ?? anchor.position.y;
+              const sx = outlierScX.current.filter(anchor.scale.x * arScale) ?? lastAnchorRef.current?.scale.x ?? anchor.scale.x * arScale;
+              const sy = outlierScY.current.filter(anchor.scale.y * arScale) ?? lastAnchorRef.current?.scale.y ?? anchor.scale.y * arScale;
+              const ry = outlierRotY.current.filter(anchor.rotationY) ?? lastAnchorRef.current?.rotationY ?? anchor.rotationY;
+              const sz = (sx + sy) / 2;  // Z scale is average of X and Y
+
+              // Adaptive smoothing via One Euro Filter
+              const t = performance.now() / 1000;
+              const smoothX = filterPosX.current.filter(px, t);
+              const smoothY = filterPosY.current.filter(py, t);
+              const smoothScX = filterScaleX.current.filter(sx, t);
+              const smoothScY = filterScaleY.current.filter(sy, t);
+              const smoothScZ = filterScaleZ.current.filter(sz, t);
+              const smoothRotY = filterRotY.current.filter(ry, t);
+
+              // Apply position with per-product offset
+              modelRef.current.position.set(
+                smoothX + offset.x,
+                smoothY + offset.y,
+                anchor.position.z + offset.z,
+              );
+              modelRef.current.scale.set(smoothScX, smoothScY, smoothScZ);
+              modelRef.current.rotation.y = smoothRotY;
+
+              // Opacity from anchor confidence
+              sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
+              sm.dirty = true;
+
+              // Store for outlier fallback
+              lastAnchorRef.current = {
+                ...anchor,
+                scale: { x: sx, y: sy, z: sz },
+              };
+            } else if (modelRef.current) {
+              modelRef.current.visible = false;
+              sm.dirty = true;
+            }
           } else {
             framesWithoutPose.current++;
             if (framesWithoutPose.current > 30) {
@@ -202,6 +293,13 @@ export default function ARExperience() {
     filterScaleY.current.reset();
     filterScaleZ.current.reset();
     filterRotY.current.reset();
+    // Reset outlier filters too
+    outlierPosX.current.reset();
+    outlierPosY.current.reset();
+    outlierScX.current.reset();
+    outlierScY.current.reset();
+    outlierRotY.current.reset();
+    lastAnchorRef.current = null;
 
     setTrackingState('model_loading');
 
@@ -239,102 +337,6 @@ export default function ARExperience() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  function updateModel(landmarks: any[], offset: { x: number; y: number; z: number }) {
-    if (!modelRef.current || !sceneManagerRef.current) return;
-
-    const sm = sceneManagerRef.current;
-    const visDims = sm.visibleDims;
-    const dims = modelDimsRef.current;
-    const arScale = selectedProductRef.current?.ar_scale || 1;
-
-    const ls = landmarks[11]; // left shoulder
-    const rs = landmarks[12]; // right shoulder
-    const lh = landmarks[23]; // left hip
-    const rh = landmarks[24]; // right hip
-
-    const hasShoulders = (ls.visibility ?? 0) > 0.5 && (rs.visibility ?? 0) > 0.5;
-    if (!hasShoulders) { modelRef.current.visible = false; sm.dirty = true; return; }
-
-    modelRef.current.visible = true;
-    const hasHips = (lh.visibility ?? 0) > 0.3 && (rh.visibility ?? 0) > 0.3;
-
-    // Convert key landmarks to world coordinates (mirror + cover-crop + NDC-to-world in one step)
-    const crop = coverCropRef.current;
-
-    const lsWorld = landmarkToWorld(ls, crop, visDims, true);
-    const rsWorld = landmarkToWorld(rs, crop, visDims, true);
-
-    let lhWorld = { x: 0, y: 0 };
-    let rhWorld = { x: 0, y: 0 };
-    if (hasHips) {
-      lhWorld = landmarkToWorld(lh, crop, visDims, true);
-      rhWorld = landmarkToWorld(rh, crop, visDims, true);
-    }
-
-    // Shoulder midpoint in world coords
-    const shoulderCenterWorld = {
-      x: (lsWorld.x + rsWorld.x) / 2,
-      y: (lsWorld.y + rsWorld.y) / 2,
-    };
-
-    // Hip midpoint in world coords (or estimate below shoulders)
-    let hipCenterWorld = {
-      x: shoulderCenterWorld.x,
-      y: shoulderCenterWorld.y - (visDims.h * 0.25),  // fallback: 25% of visible height below shoulders
-    };
-    if (hasHips) {
-      hipCenterWorld = {
-        x: (lhWorld.x + rhWorld.x) / 2,
-        y: (lhWorld.y + rhWorld.y) / 2,
-      };
-    }
-
-    // Torso center
-    const targetX = (shoulderCenterWorld.x + hipCenterWorld.x) / 2;
-    const targetY = (shoulderCenterWorld.y + hipCenterWorld.y) / 2;
-    const targetZ = 0;  // constant depth -- overlay is effectively 2D-on-camera-plane
-
-    // Body-proportional non-uniform scaling (world coordinates)
-    const shoulderWidthMeasured = Math.abs(rsWorld.x - lsWorld.x);
-    const torsoHeightMeasured = Math.abs(shoulderCenterWorld.y - hipCenterWorld.y);
-
-    const targetScaleX = (shoulderWidthMeasured / dims.w) * arScale * 1.15;
-    const targetScaleY = (torsoHeightMeasured / dims.h) * arScale;
-    const targetScaleZ = (targetScaleX + targetScaleY) / 2;
-
-    // Body-turn rotation from shoulder Z difference (depth hint only)
-    const shoulderWidthWorld = Math.abs(rsWorld.x - lsWorld.x);
-    const shoulderZDiff = landmarks[12].z - landmarks[11].z;  // right - left in raw coords
-    const bodyTurnY = shoulderWidthWorld > 0.01
-      ? Math.atan2(shoulderZDiff, shoulderWidthWorld / visDims.w)
-      : 0;
-
-    // Adaptive smoothing via One Euro Filter (timestamp in seconds)
-    const t = performance.now() / 1000;
-    const smoothX = filterPosX.current.filter(targetX, t);
-    const smoothY = filterPosY.current.filter(targetY, t);
-    const smoothScX = filterScaleX.current.filter(targetScaleX, t);
-    const smoothScY = filterScaleY.current.filter(targetScaleY, t);
-    const smoothScZ = filterScaleZ.current.filter(targetScaleZ, t);
-    const smoothRotY = filterRotY.current.filter(bodyTurnY, t);
-
-    modelRef.current.position.set(
-      smoothX + offset.x,
-      smoothY + offset.y,
-      targetZ + offset.z   // Z is constant 0, no smoothing needed
-    );
-    modelRef.current.scale.set(smoothScX, smoothScY, smoothScZ);
-    modelRef.current.rotation.y = smoothRotY;
-
-    // PERF-03: Fade based on landmark confidence using cached materials (no traversal)
-    const keyVis = [ls, rs, ...(hasHips ? [lh, rh] : [])];
-    const avgVis = keyVis.reduce((s: number, l: any) => s + (l.visibility ?? 0), 0) / keyVis.length;
-    sm.updateOpacity(Math.min(1, avgVis * 1.5));
-
-    // Mark scene dirty so renderIfDirty() renders this frame
-    sm.dirty = true;
-  }
 
   // ── Render ──
 
