@@ -57,8 +57,8 @@
 
 - [ ] **VIS-01**: Implement gesture support — pinch-to-zoom for manual scale adjustment
 - [ ] **VIS-02**: Implement adaptive lighting — adjust Three.js scene lighting based on camera feed brightness
-- [ ] **VIS-03**: Implement screenshot/capture — composite video feed + Three.js overlay into a single image
-- [ ] **VIS-04**: Implement share functionality — native share API for captured AR images
+- [x] **VIS-03**: Implement screenshot/capture — composite video feed + Three.js overlay into a single image
+- [x] **VIS-04**: Implement share functionality — native share API for captured AR images
 - [x] **VIS-05**: Improve depth-aware rendering — proper model sorting and depth placement relative to body
 
 ## v2 Requirements
@@ -126,8 +126,8 @@
 | PERF-04 | Phase 5 | Pending |
 | VIS-01 | Phase 5 | Pending |
 | VIS-02 | Phase 5 | Pending |
-| VIS-03 | Phase 4 | Pending |
-| VIS-04 | Phase 4 | Pending |
+| VIS-03 | Phase 4 | Complete |
+| VIS-04 | Phase 4 | Complete |
 | VIS-05 | Phase 3 | Complete |
 
 **Coverage:**
