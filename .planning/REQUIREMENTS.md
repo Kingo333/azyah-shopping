@@ -35,9 +35,9 @@
 
 ### Garment-Aware UX Guidance
 
-- [ ] **UX-01**: Adapt tracking guidance per garment type — "Show full body" for abayas vs "Show upper body" for shirts vs "Show your legs" for pants
-- [ ] **UX-02**: Add partial_tracking state — when some but not all required landmarks for the garment type are visible
-- [ ] **UX-03**: Display which body parts need to be visible for the selected garment type
+- [x] **UX-01**: Adapt tracking guidance per garment type — "Show full body" for abayas vs "Show upper body" for shirts vs "Show your legs" for pants
+- [x] **UX-02**: Add partial_tracking state — when some but not all required landmarks for the garment type are visible
+- [x] **UX-03**: Display which body parts need to be visible for the selected garment type
 
 ### Retailer Tools
 
@@ -113,9 +113,9 @@
 | ANCH-08 | Phase 3 | Complete |
 | ANCH-09 | Phase 3 | Complete |
 | ANCH-10 | Phase 3 | Complete |
-| UX-01 | Phase 4 | Pending |
-| UX-02 | Phase 4 | Pending |
-| UX-03 | Phase 4 | Pending |
+| UX-01 | Phase 4 | Complete |
+| UX-02 | Phase 4 | Complete |
+| UX-03 | Phase 4 | Complete |
 | RETL-01 | Phase 2 | Complete |
 | RETL-02 | Phase 2 | Complete |
 | RETL-03 | Phase 5 | Pending |
