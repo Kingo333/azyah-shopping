@@ -50,6 +50,13 @@ export default function ARExperience() {
   // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
   const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
 
+  // Scene-ready promise: Effect 2 awaits this to avoid the race condition where
+  // selectedProduct arrives before SceneManager is initialized in Effect 1.
+  const sceneReadyResolveRef = useRef<(() => void) | null>(null);
+  const sceneReadyPromiseRef = useRef<Promise<void>>(
+    new Promise<void>((resolve) => { sceneReadyResolveRef.current = resolve; })
+  );
+
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const poseProcessorRef = useRef<PoseProcessor | null>(null);

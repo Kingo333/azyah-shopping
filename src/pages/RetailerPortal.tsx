@@ -163,6 +163,8 @@ const RetailerPortal = () => {
         description: "Failed to load your retailer portal.",
         variant: "destructive",
       });
+      setLoading(false);
+      setSetupError(error.message || 'Failed to load retailer portal');
     }
   };
 
