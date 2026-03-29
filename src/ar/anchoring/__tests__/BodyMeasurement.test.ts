@@ -7,7 +7,13 @@
  */
 import { describe, it, expect } from 'vitest';
 import { computeBodyMeasurements } from '../BodyMeasurement';
-import { STANDING_POSE, UPPER_BODY_ONLY, SHOULDERS_ONLY } from './fixtures';
+import {
+  STANDING_POSE,
+  UPPER_BODY_ONLY,
+  SHOULDERS_ONLY,
+  createMockLandmarks,
+  createMockWorldLandmarks,
+} from './fixtures';
 import type { CoverCropInfo } from '../../utils/coordinateUtils';
 
 // Simple coverCrop and visibleDims for easy math verification
@@ -218,7 +224,6 @@ describe('computeBodyMeasurements', () => {
     it('with one low-vis landmark does NOT drift significantly (floor at 0.3)', () => {
       // Create landmarks where one shoulder has very low visibility
       // The floor at 0.3 should prevent extreme drift
-      const { createMockLandmarks, createMockWorldLandmarks } = require('./fixtures');
       const normalized = createMockLandmarks({
         11: { x: 0.6, y: 0.35, visibility: 0.95 },
         12: { x: 0.4, y: 0.35, visibility: 0.05 }, // Very low vis
