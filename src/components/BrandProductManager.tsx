@@ -355,386 +355,330 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
           setValidationWarnings([]);
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Configure Virtual Try-On</DialogTitle>
           </DialogHeader>
           {editingProduct && (
             <div className="space-y-4">
-              <div className="flex space-x-4">
-                <div className="w-1/2">
-                  <img
-                    src={editingProduct.image_url}
-                    alt="Product"
-                    className="w-full h-64 object-cover rounded"
-                  />
-                </div>
-                <div className="w-1/2 space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Try-On Configuration</h4>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Configure how this product should appear in virtual try-on
-                    </p>
+              {/* Compact product header */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <img
+                  src={editingProduct.image_url}
+                  alt="Product"
+                  className="w-14 h-14 object-cover rounded-md border"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Product Image</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {editingProduct.try_on_data?.outfit_image_url && (
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Try-On Ready
+                      </Badge>
+                    )}
+                    {editingProduct.ar_enabled && editingProduct.ar_model_url && (
+                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        AR
+                      </Badge>
+                    )}
                   </div>
-                  
-                   <div className="space-y-3">
-                     <div>
-                       <label className="text-sm font-medium">Upload Outfit Image</label>
-                       <p className="text-xs text-muted-foreground mb-2">
-                         Upload the product outfit image for virtual try-on
-                       </p>
-                       
-                       {editingProduct?.try_on_data?.outfit_bitstudio_id && (
-                         <div className="flex items-center gap-2 mb-2 p-3 bg-blue-50 rounded-md">
-                           <Checkbox
-                             id="forceReupload"
-                             checked={forceReupload}
-                             onCheckedChange={(checked) => setForceReupload(checked as boolean)}
-                           />
-                           <label htmlFor="forceReupload" className="text-sm text-gray-700 cursor-pointer flex-1">
-                             Force re-upload to Try-on AI (creates new try-on assets)
-                           </label>
-                           <InfoTooltip content="Only check this if you need to regenerate Try-on AI assets. This will use API credits." />
-                         </div>
-                       )}
-                       
-                       <div className="relative">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-
-                              if (!file.type.startsWith('image/')) {
-                                toast({
-                                  title: "Invalid file type",
-                                  description: "Please select an image file",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              
-                              if (file.size > 10 * 1024 * 1024) {
-                                toast({
-                                  title: "File too large",
-                                  description: "Please select an image under 10MB",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-
-                              try {
-                                setUploadingOutfit(true);
-                                console.log('[BrandProductManager] Uploading outfit to storage and BitStudio');
-
-                                // Get event_id from brand
-                                const { data: brandData } = await supabase
-                                  .from('event_brands')
-                                  .select('event_id')
-                                  .eq('id', brand.id)
-                                  .single();
-                                
-                                if (!brandData) throw new Error('Failed to get event_id');
-
-                                // Upload directly to Supabase Storage
-                                const fileExt = file.name.split('.').pop();
-                                const fileName = `outfit_${editingProduct.id}_${Date.now()}.${fileExt}`;
-                                const filePath = `${brandData.event_id}/${brand.id}/${fileName}`;
-                                
-                                const { error: uploadError } = await supabase.storage
-                                  .from('event-assets')
-                                  .upload(filePath, file, {
-                                    contentType: file.type,
-                                    upsert: true
-                                  });
-                                
-                                if (uploadError) throw uploadError;
-                                
-                                // Get public URL for preview
-                                const { data: urlData } = supabase.storage
-                                  .from('event-assets')
-                                  .getPublicUrl(filePath);
-
-                                const updatedTryOnData = {
-                                  ...editingProduct.try_on_data,
-                                  outfit_image_path: filePath,
-                                  outfit_image_url: urlData.publicUrl,
-                                };
-                                
-                                setEditingProduct(prev => prev ? {
-                                  ...prev,
-                                  try_on_data: updatedTryOnData
-                                } : prev);
-
-                                // Save outfit config for The New Black try-on
-                                await supabase
-                                  .from('event_brand_products')
-                                  .update({
-                                    try_on_data: updatedTryOnData,
-                                    try_on_config: {
-                                      outfit_image_url: urlData.publicUrl,
-                                      outfitImagePath: filePath
-                                    },
-                                    try_on_provider: 'thenewblack',
-                                    try_on_ready: true,
-                                    updated_at: new Date().toISOString()
-                                  })
-                                  .eq('id', editingProduct.id);
-
-                                toast({
-                                  title: "Configuration saved",
-                                  description: "Outfit uploaded and ready for virtual try-on"
-                                });
-                                
-                                // Refresh products and close modal
-                                await fetchProducts();
-                                setIsEditModalOpen(false);
-                                setEditingProduct(null);
-                                
-                              } catch (error: any) {
-                                console.error('[BrandProductManager] Upload error:', error);
-                                toast({
-                                  title: "Upload failed",
-                                  description: error.message,
-                                  variant: "destructive"
-                                });
-                              } finally {
-                                setUploadingOutfit(false);
-                                e.target.value = '';
-                              }
-                            }}
-                           className="w-full p-2 border rounded"
-                           disabled={uploadingOutfit}
-                         />
-                         
-                         {uploadingOutfit && (
-                           <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded">
-                             <div className="flex items-center gap-2 text-sm">
-                               <Loader2 className="h-4 w-4 animate-spin" />
-                               Uploading...
-                             </div>
-                           </div>
-                         )}
-                       </div>
-                       
-                       {editingProduct.try_on_data?.outfit_image_url && (
-                         <div className="mt-2">
-                           <img
-                             src={editingProduct.try_on_data.outfit_image_url}
-                             alt="Outfit preview"
-                             className="w-20 h-20 object-cover rounded"
-                           />
-                           <p className="text-xs text-green-600 mt-1">
-                             Outfit configured for try-on
-                           </p>
-                         </div>
-                       )}
-                     </div>
-
-                     {/* 3D Model Upload for AR */}
-                     <div className="pt-4 border-t">
-                       <label className="text-sm font-medium">3D Model for AR Try-On</label>
-                       <p className="text-xs text-muted-foreground mb-2">
-                         Upload a .glb file to enable AR try-on for this product.
-                         Use <a href="https://meshy.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Meshy.ai</a> or <a href="https://tripo3d.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Tripo3D</a> to convert product images to 3D.
-                       </p>
-                       
-                       {editingProduct.ar_model_url && editingProduct.ar_enabled && (
-                         <div className="flex items-center gap-2 mb-2 p-2 bg-purple-50 rounded-md">
-                           <CheckCircle className="w-4 h-4 text-purple-600" />
-                           <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
-                         </div>
-                       )}
-
-                       <div className="mb-3">
-                         <label className="text-sm font-medium">Garment Type</label>
-                         <p className="text-xs text-muted-foreground mb-2">
-                           Select the type of garment to optimize AR placement.
-                         </p>
-                         <Select
-                           value={editingProduct.garment_type || 'shirt'}
-                           onValueChange={async (value) => {
-                             try {
-                               await supabase
-                                 .from('event_brand_products')
-                                 .update({ garment_type: value, updated_at: new Date().toISOString() })
-                                 .eq('id', editingProduct.id);
-
-                               setEditingProduct(prev => prev ? { ...prev, garment_type: value } : prev);
-
-                               toast({
-                                 title: "Garment type updated",
-                                 description: `Set to ${GARMENT_TYPES.find(t => t.value === value)?.label || value}`
-                               });
-
-                               fetchProducts();
-                             } catch (error: any) {
-                               toast({
-                                 title: "Error",
-                                 description: error.message || "Failed to update garment type",
-                                 variant: "destructive"
-                               });
-                             }
-                           }}
-                         >
-                           <SelectTrigger>
-                             <SelectValue placeholder="Select garment type" />
-                           </SelectTrigger>
-                           <SelectContent>
-                             {GARMENT_TYPES.map(t => (
-                               <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
-                       </div>
-
-                       <input
-                         type="file"
-                         accept=".glb,.gltf"
-                         onChange={async (e) => {
-                           const file = e.target.files?.[0];
-                           if (!file) return;
-
-                           const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-                           if (!['.glb', '.gltf'].includes(ext)) {
-                             toast({
-                               title: "Invalid file type",
-                               description: "Please upload a .glb or .gltf file",
-                               variant: "destructive"
-                             });
-                             return;
-                           }
-
-                           try {
-                              setUploadingARModel(true);
-
-                              // Validate model before upload
-                              const validation = await validateGLBModel(file);
-                              setValidationErrors(validation.errors);
-                              setValidationWarnings(validation.warnings);
-
-                              if (!validation.valid) {
-                                toast({
-                                  title: "Model validation failed",
-                                  description: validation.errors[0] || "The 3D model has structural issues",
-                                  variant: "destructive"
-                                });
-                                setUploadingARModel(false);
-                                e.target.value = '';
-                                return;
-                              }
-
-                              if (validation.warnings.length > 0) {
-                                toast({
-                                  title: "Model uploaded with warnings",
-                                  description: `${validation.warnings.length} warning(s) detected. Check details below.`,
-                                });
-                              }
-
-                              const { data: brandData } = await supabase
-                               .from('event_brands')
-                               .select('event_id')
-                               .eq('id', brand.id)
-                               .single();
-                             
-                             if (!brandData) throw new Error('Failed to get event_id');
-
-                             const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/${Date.now()}${ext}`;
-                             
-                             const { error: uploadError } = await supabase.storage
-                               .from('event-ar-models')
-                               .upload(fileName, file, {
-                                 contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json',
-                                 upsert: true
-                               });
-                             
-                             if (uploadError) throw uploadError;
-
-                             const { data: urlData } = supabase.storage
-                               .from('event-ar-models')
-                               .getPublicUrl(fileName);
-
-                             await supabase
-                               .from('event_brand_products')
-                               .update({
-                                 ar_model_url: urlData.publicUrl,
-                                 ar_enabled: true,
-                                 updated_at: new Date().toISOString()
-                               })
-                               .eq('id', editingProduct.id);
-
-                             setEditingProduct(prev => prev ? {
-                               ...prev,
-                               ar_model_url: urlData.publicUrl,
-                               ar_enabled: true
-                             } : prev);
-
-                             toast({
-                               title: "3D model uploaded!",
-                               description: "AR try-on is now enabled for this product"
-                             });
-
-                             // Clear validation state on success
-                             setValidationErrors([]);
-                             setValidationWarnings([]);
-
-                             await fetchProducts();
-                           } catch (error: any) {
-                             console.error('AR model upload error:', error);
-                             toast({
-                               title: "Upload failed",
-                               description: error.message,
-                               variant: "destructive"
-                             });
-                           } finally {
-                              setUploadingARModel(false);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="w-full p-2 border rounded"
-                          disabled={uploadingARModel}
-                       />
-                       {validationErrors.length > 0 && (
-                         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                           <p className="text-sm font-medium text-red-800 flex items-center gap-1">
-                             <AlertTriangleIcon className="w-4 h-4" />
-                             Model validation failed:
-                           </p>
-                           <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
-                             {validationErrors.map((err, i) => <li key={i}>{err}</li>)}
-                           </ul>
-                         </div>
-                       )}
-                       {validationWarnings.length > 0 && validationErrors.length === 0 && (
-                         <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                           <p className="text-sm font-medium text-yellow-800 flex items-center gap-1">
-                             <AlertTriangleIcon className="w-4 h-4" />
-                             Model warnings:
-                           </p>
-                           <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside">
-                             {validationWarnings.map((w, i) => <li key={i}>{w}</li>)}
-                           </ul>
-                         </div>
-                       )}
-                     </div>
-                   </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsEditModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => handleUpdateTryOnData(editingProduct.try_on_data)}
-                >
-                  Save Try-On Data
-                </Button>
-              </div>
+
+              {/* Tabbed content */}
+              <Tabs defaultValue="image" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="image" className="flex-1 gap-1.5">
+                    <Shirt className="w-4 h-4" />
+                    Image Try-On
+                  </TabsTrigger>
+                  <TabsTrigger value="ar" className="flex-1 gap-1.5">
+                    <Box className="w-4 h-4" />
+                    3D AR Model
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* ── Tab 1: Image Try-On ── */}
+                <TabsContent value="image" className="space-y-4 pt-2">
+                  <div>
+                    <label className="text-sm font-medium">Upload Outfit Image</label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Upload the product outfit image for virtual try-on
+                    </p>
+
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          if (!file.type.startsWith('image/')) {
+                            toast({ title: "Invalid file type", description: "Please select an image file", variant: "destructive" });
+                            return;
+                          }
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: "File too large", description: "Please select an image under 10MB", variant: "destructive" });
+                            return;
+                          }
+
+                          try {
+                            setUploadingOutfit(true);
+                            const { data: brandData } = await supabase
+                              .from('event_brands')
+                              .select('event_id')
+                              .eq('id', brand.id)
+                              .single();
+                            if (!brandData) throw new Error('Failed to get event_id');
+
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `outfit_${editingProduct.id}_${Date.now()}.${fileExt}`;
+                            const filePath = `${brandData.event_id}/${brand.id}/${fileName}`;
+
+                            const { error: uploadError } = await supabase.storage
+                              .from('event-assets')
+                              .upload(filePath, file, { contentType: file.type, upsert: true });
+                            if (uploadError) throw uploadError;
+
+                            const { data: urlData } = supabase.storage
+                              .from('event-assets')
+                              .getPublicUrl(filePath);
+
+                            const updatedTryOnData = {
+                              ...editingProduct.try_on_data,
+                              outfit_image_path: filePath,
+                              outfit_image_url: urlData.publicUrl,
+                            };
+
+                            setEditingProduct(prev => prev ? { ...prev, try_on_data: updatedTryOnData } : prev);
+
+                            await supabase
+                              .from('event_brand_products')
+                              .update({
+                                try_on_data: updatedTryOnData,
+                                try_on_config: { outfit_image_url: urlData.publicUrl, outfitImagePath: filePath },
+                                try_on_provider: 'thenewblack',
+                                try_on_ready: true,
+                                updated_at: new Date().toISOString()
+                              })
+                              .eq('id', editingProduct.id);
+
+                            toast({ title: "Configuration saved", description: "Outfit uploaded and ready for virtual try-on" });
+                            await fetchProducts();
+                            setIsEditModalOpen(false);
+                            setEditingProduct(null);
+                          } catch (error: any) {
+                            console.error('[BrandProductManager] Upload error:', error);
+                            toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                          } finally {
+                            setUploadingOutfit(false);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="w-full p-2 border rounded"
+                        disabled={uploadingOutfit}
+                      />
+                      {uploadingOutfit && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Uploading…
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {editingProduct.try_on_data?.outfit_image_url && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <img
+                          src={editingProduct.try_on_data.outfit_image_url}
+                          alt="Outfit preview"
+                          className="w-16 h-16 object-cover rounded border"
+                        />
+                        <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* ── Tab 2: 3D AR Model ── */}
+                <TabsContent value="ar" className="space-y-4 pt-2">
+                  {/* Garment type */}
+                  <div>
+                    <label className="text-sm font-medium">Garment Type</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Select the type of garment to optimize AR placement.
+                    </p>
+                    <Select
+                      value={editingProduct.garment_type || 'shirt'}
+                      onValueChange={async (value) => {
+                        try {
+                          await supabase
+                            .from('event_brand_products')
+                            .update({ garment_type: value, updated_at: new Date().toISOString() })
+                            .eq('id', editingProduct.id);
+                          setEditingProduct(prev => prev ? { ...prev, garment_type: value } : prev);
+                          toast({ title: "Garment type updated", description: `Set to ${GARMENT_TYPES.find(t => t.value === value)?.label || value}` });
+                          fetchProducts();
+                        } catch (error: any) {
+                          toast({ title: "Error", description: error.message || "Failed to update garment type", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select garment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GARMENT_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status */}
+                  {editingProduct.ar_model_url && editingProduct.ar_enabled && (
+                    <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-md">
+                      <CheckCircle className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
+                    </div>
+                  )}
+
+                  {/* GLB upload */}
+                  <div>
+                    <label className="text-sm font-medium">Upload 3D Model (.glb)</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Max 50 MB. Use{' '}
+                      <a href="https://meshy.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Meshy.ai</a>{' '}or{' '}
+                      <a href="https://tripo3d.ai" target="_blank" rel="noopener noreferrer" className="underline text-primary">Tripo3D</a>{' '}
+                      to convert product images to 3D.
+                    </p>
+
+                    <input
+                      type="file"
+                      accept=".glb,.gltf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+                        if (!['.glb', '.gltf'].includes(ext)) {
+                          toast({ title: "Invalid file type", description: "Please upload a .glb or .gltf file", variant: "destructive" });
+                          return;
+                        }
+
+                        if (file.size > 50 * 1024 * 1024) {
+                          toast({ title: "File too large", description: "Please select a 3D model under 50 MB", variant: "destructive" });
+                          return;
+                        }
+
+                        try {
+                          setUploadingARModel(true);
+
+                          const validation = await validateGLBModel(file);
+                          setValidationErrors(validation.errors);
+                          setValidationWarnings(validation.warnings);
+
+                          if (!validation.valid) {
+                            toast({ title: "Model validation failed", description: validation.errors[0] || "The 3D model has structural issues", variant: "destructive" });
+                            setUploadingARModel(false);
+                            e.target.value = '';
+                            return;
+                          }
+
+                          if (validation.warnings.length > 0) {
+                            toast({ title: "Model uploaded with warnings", description: `${validation.warnings.length} warning(s) detected. Check details below.` });
+                          }
+
+                          const { data: brandData } = await supabase
+                            .from('event_brands')
+                            .select('event_id')
+                            .eq('id', brand.id)
+                            .single();
+                          if (!brandData) throw new Error('Failed to get event_id');
+
+                          const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/${Date.now()}${ext}`;
+
+                          const { error: uploadError } = await supabase.storage
+                            .from('event-ar-models')
+                            .upload(fileName, file, {
+                              contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json',
+                              upsert: true
+                            });
+                          if (uploadError) throw uploadError;
+
+                          const { data: urlData } = supabase.storage
+                            .from('event-ar-models')
+                            .getPublicUrl(fileName);
+
+                          await supabase
+                            .from('event_brand_products')
+                            .update({ ar_model_url: urlData.publicUrl, ar_enabled: true, updated_at: new Date().toISOString() })
+                            .eq('id', editingProduct.id);
+
+                          setEditingProduct(prev => prev ? { ...prev, ar_model_url: urlData.publicUrl, ar_enabled: true } : prev);
+                          toast({ title: "3D model uploaded!", description: "AR try-on is now enabled for this product" });
+                          setValidationErrors([]);
+                          setValidationWarnings([]);
+                          await fetchProducts();
+                        } catch (error: any) {
+                          console.error('AR model upload error:', error);
+                          toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                        } finally {
+                          setUploadingARModel(false);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full p-2 border rounded"
+                      disabled={uploadingARModel}
+                    />
+
+                    {uploadingARModel && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Validating & uploading…
+                      </div>
+                    )}
+
+                    {validationErrors.length > 0 && (
+                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm font-medium text-red-800 flex items-center gap-1">
+                          <AlertTriangleIcon className="w-4 h-4" />
+                          Model validation failed:
+                        </p>
+                        <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                          {validationErrors.map((err, i) => <li key={i}>{err}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {validationWarnings.length > 0 && validationErrors.length === 0 && (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm font-medium text-yellow-800 flex items-center gap-1">
+                          <AlertTriangleIcon className="w-4 h-4" />
+                          Model warnings:
+                        </p>
+                        <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside">
+                          {validationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </DialogContent>
