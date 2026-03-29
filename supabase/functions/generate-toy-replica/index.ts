@@ -286,7 +286,7 @@ serve(async (req) => {
       throw timeoutOrOpenAIError;
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Fatal error during generation:', error);
     
     // Re-create supabase client for error handling (was out of scope)

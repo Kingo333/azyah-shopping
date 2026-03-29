@@ -171,7 +171,7 @@ Provide a compatibility score (0-100) and specific recommendations for this ${re
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in beauty-consultation function:', error);
     return new Response(
       JSON.stringify({

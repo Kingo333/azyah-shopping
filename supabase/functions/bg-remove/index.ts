@@ -205,7 +205,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] Error in bg-remove:`, error);
     console.error('Error details:', {

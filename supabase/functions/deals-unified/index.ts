@@ -1781,7 +1781,7 @@ serve(async (req) => {
       results_count: allShoppingResults.length,
       exact_match_found: !!exactMatch,
       pipeline_timing_ms: debug.timing_ms,
-    }).then(() => {}).catch(err => console.warn(`[deals-unified] ${traceId} Failed to log search run:`, err));
+    }).then(() => {}).catch((err: any) => console.warn(`[deals-unified] ${traceId} Failed to log search run:`, err));
 
     // ============ Build Response ============
     const response = {
