@@ -59,7 +59,7 @@ export default function ARExperience() {
 
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
-        .select(`id, image_url, ar_model_url, ar_scale, ar_position_offset, event_brands!inner(brand_name, event_id)`)
+        .select(`id, image_url, ar_model_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
         .eq('event_brand_id', brandId)
         .eq('ar_enabled', true)
         .not('ar_model_url', 'is', null);
@@ -84,6 +84,7 @@ export default function ARExperience() {
         ar_position_offset: p.ar_position_offset as any || { x: 0, y: 0, z: 0 },
         brand_name: p.event_brands?.brand_name,
         name: (p as any).name,
+        garment_type: (p as any).garment_type || 'shirt',
       }));
 
       setProducts(mapped);
