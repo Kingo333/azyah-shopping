@@ -58,6 +58,7 @@ export class SceneManager {
       (navigator.maxTouchPoints > 0 && screen.width < 1024);
     this.renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x000000, 0);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // Lighting
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -112,11 +113,15 @@ export class SceneManager {
       // Cache material references for fast per-frame opacity updates
       newModel.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
-          const mat = (child as THREE.Mesh).material as THREE.Material;
+          const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
           mat.transparent = true;
+          mat.depthWrite = true;           // VIS-05: Keep depth write for self-occlusion within the garment
+          mat.side = THREE.DoubleSide;     // VIS-05: Render both sides for better visual quality
           this.cachedMaterials.push(mat);
         }
       });
+      // VIS-05: Set renderOrder on the model so garment renders after scene background
+      newModel.renderOrder = 1;
     }
 
     this.currentModel = newModel;
