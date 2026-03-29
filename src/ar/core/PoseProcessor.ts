@@ -65,16 +65,34 @@ export interface PoseProcessor {
  * @returns A PoseProcessor ready for per-frame detection.
  * @throws Error if WASM or model loading fails (network error, incompatible browser, etc.).
  */
-export async function createPoseProcessor(): Promise<PoseProcessor> {
-  const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+/** Race a promise against a timeout. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s. Check your connection.`)), ms)
+    ),
+  ]);
+}
 
-  const landmarker = await PoseLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: MODEL_URL },
-    runningMode: 'VIDEO',
-    numPoses: 1,
-    minPoseDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
+export async function createPoseProcessor(): Promise<PoseProcessor> {
+  const vision = await withTimeout(
+    FilesetResolver.forVisionTasks(WASM_URL),
+    15_000,
+    'WASM runtime download',
+  );
+
+  const landmarker = await withTimeout(
+    PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: MODEL_URL },
+      runningMode: 'VIDEO',
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    }),
+    15_000,
+    'Pose model download',
+  );
 
   return {
     detectForVideo(

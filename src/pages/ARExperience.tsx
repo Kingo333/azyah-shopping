@@ -10,7 +10,7 @@ import { shareImage } from '@/ar/capture/shareHandler';
 import { startCamera, stopCamera } from '@/ar/core/CameraManager';
 import { createPoseProcessor, PoseProcessor } from '@/ar/core/PoseProcessor';
 import { SceneManager } from '@/ar/core/SceneManager';
-import { loadModel, clearModelCache } from '@/ar/core/ModelLoader';
+import { loadModel, prefetchModel, clearModelCache } from '@/ar/core/ModelLoader';
 import { ARProduct, TrackingState } from '@/ar/types';
 import { computeCoverCrop, CoverCropInfo } from '@/ar/utils/coordinateUtils';
 import { OneEuroFilter, FILTER_PRESETS } from '@/ar/utils/OneEuroFilter';
@@ -52,9 +52,13 @@ export default function ARExperience() {
 
   // Scene-ready promise: Effect 2 awaits this to avoid the race condition where
   // selectedProduct arrives before SceneManager is initialized in Effect 1.
+  // Has a 20s timeout to prevent hanging if Effect 1 fails before resolving.
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
-    new Promise<void>((resolve) => { sceneReadyResolveRef.current = resolve; })
+    new Promise<void>((resolve, reject) => {
+      sceneReadyResolveRef.current = resolve;
+      setTimeout(() => reject(new Error('AR initialization timed out. Please reload.')), 20_000);
+    })
   );
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
@@ -186,7 +190,7 @@ export default function ARExperience() {
       if (selected.ar_model_url && !modelPrefetchRef.current) {
         modelPrefetchRef.current = {
           url: selected.ar_model_url,
-          promise: loadModel(selected.ar_model_url, (loaded, total, percent) => {
+          promise: prefetchModel(selected.ar_model_url, (loaded, _total, percent) => {
             if (percent >= 0) {
               setLoadProgress(`${percent}%`);
             } else {
@@ -454,7 +458,7 @@ export default function ARExperience() {
         const prefetch = modelPrefetchRef.current;
         const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
           ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
-          : loadModel(selectedProduct.ar_model_url, (loaded, total, percent) => {
+          : loadModel(selectedProduct.ar_model_url, (loaded, _total, percent) => {
               if (cancelled) return;
               if (percent >= 0) {
                 setLoadProgress(`${percent}%`);

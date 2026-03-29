@@ -47,13 +47,17 @@ export async function startCamera(
   video.srcObject = stream;
   await video.play();
 
-  // Wait for video metadata so dimensions are available
-  await new Promise<void>((resolve) => {
+  // Wait for video metadata so dimensions are available (with 10s timeout)
+  await new Promise<void>((resolve, reject) => {
     if (video.videoWidth > 0) {
       resolve();
       return;
     }
-    video.onloadedmetadata = () => resolve();
+    const timeout = setTimeout(() => reject(new Error('Camera metadata timeout — device took too long to initialize.')), 10_000);
+    video.onloadedmetadata = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
   });
 
   return {
