@@ -591,6 +591,7 @@ export default function ARExperience() {
         garmentType={selectedProduct?.garment_type || 'shirt'}
         missingParts={missingParts}
         loadProgress={loadProgress}
+        loadStage={loadStage}
         onRetry={modelLoadFailed ? () => setSelectedProduct(prev => prev ? { ...prev } : prev) : undefined}
       />
 
