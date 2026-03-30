@@ -54,9 +54,11 @@ export default function ARExperience() {
   // selectedProduct arrives before SceneManager is initialized in Effect 1.
   // Has a 20s timeout to prevent hanging if Effect 1 fails before resolving.
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
+  const sceneReadyRejectRef = useRef<((err: Error) => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
     new Promise<void>((resolve, reject) => {
       sceneReadyResolveRef.current = resolve;
+      sceneReadyRejectRef.current = reject;
       setTimeout(() => reject(new Error('AR initialization timed out. Please reload.')), 20_000);
     })
   );
