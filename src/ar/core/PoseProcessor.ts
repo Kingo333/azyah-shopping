@@ -93,9 +93,10 @@ export async function createPoseProcessor(): Promise<PoseProcessor> {
       minPoseDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     }),
-    15_000,
+    30_000,
     'Pose model download',
   );
+  console.log('[PoseProcessor] Pose model loaded OK');
 
   return {
     detectForVideo(
