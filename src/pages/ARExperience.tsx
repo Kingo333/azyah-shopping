@@ -432,10 +432,12 @@ export default function ARExperience() {
 
       } catch (err: any) {
         // CRITICAL: Catch any unhandled error in the pipeline so the UI never freezes
-        console.error('AR initPipeline crashed:', err);
+        console.error('[AR] initPipeline crashed:', err);
         setTrackingState('camera_error');
         setTrackingMessage(err.message || 'AR failed to initialize. Try refreshing.');
         setLoadStage('');
+        // Reject so Effect 2 doesn't hang forever
+        sceneReadyRejectRef.current?.(err instanceof Error ? err : new Error(String(err)));
       }
     }
 
