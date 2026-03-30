@@ -56,11 +56,15 @@ export default function ARExperience() {
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
   const sceneReadyRejectRef = useRef<((err: Error) => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
-    new Promise<void>((resolve, reject) => {
-      sceneReadyResolveRef.current = resolve;
-      sceneReadyRejectRef.current = reject;
-      setTimeout(() => reject(new Error('AR initialization timed out. Please reload.')), 20_000);
-    })
+    (() => {
+      const p = new Promise<void>((resolve, reject) => {
+        sceneReadyResolveRef.current = resolve;
+        sceneReadyRejectRef.current = reject;
+        // No timeout — promise resolves/rejects only on explicit success/failure
+      });
+      p.catch(() => {}); // Prevent unhandled rejection warnings
+      return p;
+    })()
   );
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
@@ -223,22 +227,29 @@ export default function ARExperience() {
     async function initPipeline() {
       try {
       // 1. Check WebGL availability before anything else
+      console.log('[AR] Step 1: Checking WebGL support…');
       const testCanvas = document.createElement('canvas');
       const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
       if (!gl) {
+        console.error('[AR] WebGL not available');
         setTrackingState('camera_error');
         setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+        sceneReadyRejectRef.current?.(new Error('webgl_unavailable'));
         return;
       }
+      console.log('[AR] WebGL OK');
 
       // 2. Camera + Pose in parallel (FIX-01: saves 3-8s)
       setTrackingState('initializing');
       setLoadStage('Starting camera & body tracking…');
+      console.log('[AR] Step 2: Starting camera + pose in parallel…');
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
       const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+      console.log('[AR] Camera result:', 'error' in camResult ? `ERROR: ${camResult.error.message}` : 'OK');
+      console.log('[AR] Pose result:', 'error' in poseResult ? `ERROR: ${poseResult.error.message}` : 'OK');
 
       if (cleanedUpRef.current) {
         if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
@@ -274,11 +285,13 @@ export default function ARExperience() {
       poseProcessorRef.current = poseResult;
 
       // 3. Scene (persistent -- survives product switches)
+      console.log('[AR] Step 3: Creating SceneManager…');
       setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
       // Signal Effect 2 that SceneManager is ready (fixes race condition)
+      console.log('[AR] Scene ready — resolving sceneReadyPromise');
       sceneReadyResolveRef.current?.();
 
       // Initialize anchor resolver with all strategies
@@ -419,10 +432,12 @@ export default function ARExperience() {
 
       } catch (err: any) {
         // CRITICAL: Catch any unhandled error in the pipeline so the UI never freezes
-        console.error('AR initPipeline crashed:', err);
+        console.error('[AR] initPipeline crashed:', err);
         setTrackingState('camera_error');
         setTrackingMessage(err.message || 'AR failed to initialize. Try refreshing.');
         setLoadStage('');
+        // Reject so Effect 2 doesn't hang forever
+        sceneReadyRejectRef.current?.(err instanceof Error ? err : new Error(String(err)));
       }
     }
 
@@ -451,15 +466,26 @@ export default function ARExperience() {
       // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
       try {
         await sceneReadyPromiseRef.current;
-      } catch {
-        // sceneReady timed out or Effect 1 failed — don't overwrite specific errors
+      } catch (sceneErr: any) {
+        // Effect 1 failed — show specific error based on rejection reason
+        console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
         if (!cancelled) {
           setTrackingState(prev => {
             const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
-            if (errorStates.includes(prev)) return prev; // keep specific error
+            if (errorStates.includes(prev)) return prev; // keep specific error already set
             return 'camera_error';
           });
-          setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
+          // Parse rejection to show helpful message
+          const msg = sceneErr?.message || '';
+          if (msg.includes('camera') || msg.includes('Camera')) {
+            setTrackingMessage('Camera access failed. Please allow camera permissions and reload.');
+          } else if (msg.includes('pose') || msg.includes('Pose') || msg.includes('WASM')) {
+            setTrackingMessage('Body tracking failed to load. Check your internet connection and reload.');
+          } else if (msg.includes('webgl') || msg.includes('WebGL')) {
+            setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+          } else {
+            setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
+          }
         }
         return;
       }
