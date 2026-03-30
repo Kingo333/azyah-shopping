@@ -449,10 +449,14 @@ export default function ARExperience() {
       try {
         await sceneReadyPromiseRef.current;
       } catch {
-        // sceneReady timed out or Effect 1 failed — cannot load model
+        // sceneReady timed out or Effect 1 failed — don't overwrite specific errors
         if (!cancelled) {
-          setTrackingState('camera_error');
-          setTrackingMessage('AR scene failed to initialize. Try refreshing.');
+          setTrackingState(prev => {
+            const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
+            if (errorStates.includes(prev)) return prev; // keep specific error
+            return 'camera_error';
+          });
+          setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
         }
         return;
       }
