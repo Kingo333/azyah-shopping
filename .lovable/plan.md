@@ -1,32 +1,50 @@
 
 
-# Fix Retailer Portal: Loading Failures + Block Shopper Pages
+# Fix AR Loading Failures + Improve Error Handling
 
-## Problems
+## Root Cause Analysis
 
-1. **Retailer portal loading failures**: The `fetchRetailer()` function at lines 140-148 has a path where auto-creation fails (`createError`) but doesn't set `setLoading(false)` — the page stays stuck on the loading spinner.
+The AR gets stuck on "Starting AR... Preparing camera and tracking" and then shows "AR scene failed to initialize" because of a **sceneReadyPromise race condition with early rejection**:
 
-2. **Retailers can access shopper pages**: While the RBAC rules in `rbac.ts` correctly limit retailer routes, some routes like `/explore`, `/profile`, `/settings` are defined with `<ProtectedRoute>` **without role restrictions** in `App.tsx`. The `canAccessRoute` check catches `/explore` (not in retailer's ROUTE_ACCESS), but `/profile` and `/settings` ARE in the retailer's allowed routes — yet these render shopper-oriented UI (profile insights, shopper settings). Retailers should stay within `/retailer-portal` for everything.
+1. `initPipeline()` runs camera + pose in parallel
+2. If **either** fails (camera denied, WASM timeout, no camera on desktop), the function returns early at lines 245-264 **without resolving** `sceneReadyPromiseRef`
+3. Effect 2 (model loading) awaits `sceneReadyPromiseRef.current`, which has a 20-second timeout (line 60)
+4. After 20s, the timeout fires and shows "AR scene failed to initialize" — even though the actual error was "camera denied" or "pose init failed" and was already displayed
 
-3. **BottomNavigation still renders for retailers on some routes**: The `EXCLUDED_ROUTES` list hides it on `/retailer-portal`, but if a retailer somehow lands on `/profile` or `/settings`, they'd see the shopper bottom nav with Feed/Explore/UGC/Profile tabs.
+Additionally, the console shows **JWT expired errors** across all Supabase queries, meaning the auth session expired. The product fetch in Effect 1 (line 151) likely fails silently, setting `isValidContext = false` and showing "AR Experience Unavailable" instead of refreshing the session.
 
 ## Plan
 
-### File 1: `src/pages/RetailerPortal.tsx` (~line 148)
-- Add `setLoading(false)` and `setSetupError(...)` in the `createError` block (line 142-148) — currently it returns early without clearing the loading state, causing an infinite spinner when auto-creation fails.
+### File 1: `src/pages/ARExperience.tsx`
 
-### File 2: `src/components/BottomNavigation.tsx`
-- Hide the entire bottom navigation for `brand` and `retailer` users. Add a role check: if the user's metadata role is `brand` or `retailer`, return `null` early. These users have their own portal navigation and should never see the shopper bottom nav.
+**Fix A — Reject sceneReadyPromise on pipeline failure (prevents 20s hang)**
+When `initPipeline` exits early due to camera/pose error (lines 245-264), immediately reject the sceneReadyPromise so Effect 2 doesn't wait 20 seconds before showing the error. Store the reject function alongside the resolve function in a ref, and call it in every early-return path.
 
-### File 3: `src/lib/rbac.ts`
-- Remove `/settings` and `/profile` from the retailer and brand `ROUTE_ACCESS` lists. These users manage settings inside their portals. Keeping them in the allowed list lets retailers wander into shopper-oriented pages.
-- Add `/explore` to retailer and brand `BLOCKED_ROUTES` to be explicit.
+**Fix B — Effect 2 should not overwrite specific error states**
+Currently line 450-452 always sets `camera_error` + "AR scene failed to initialize" when the scene promise rejects. Instead, check if `trackingState` is already set to a specific error (like `camera_denied` or `pose_init_failed`) and skip overwriting it.
 
-### File 4: `src/components/ProtectedRoute.tsx`
-- No changes needed — the existing `canAccessRoute` check will automatically redirect retailers away from `/profile` and `/settings` once `ROUTE_ACCESS` is updated. They'll land on `/retailer-portal` (via `getRedirectRoute`).
+**Fix C — Add session refresh before product fetch**
+Before the Supabase query at line 151, call `supabase.auth.getSession()` to auto-refresh an expired JWT. This prevents the "JWT expired" errors that cause the product fetch to fail.
 
-## Summary
-- Fix the create-error loading bug in RetailerPortal
-- Hide shopper bottom nav entirely for retailer/brand users
-- Tighten RBAC so retailers can only access `/retailer-portal` (+ its sub-routes), `/dashboard`, `/auth`, `/landing`
+### File 2: `src/ar/guidance/TrackingGuidance.tsx`
+
+**Fix D — Show loadStage during model_loading too**
+Line 74 shows `loadProgress` but not `loadStage`. Add `loadStage` display so users see "Downloading 3D model…" with progress underneath.
+
+## Technical Details
+
+```text
+Current failure flow:
+  Camera fails → setTrackingState('camera_denied') → return
+  [20 seconds pass...]
+  sceneReadyPromise rejects → overwrites to 'camera_error' + wrong message
+
+Fixed flow:
+  Camera fails → setTrackingState('camera_denied') → reject sceneReadyPromise → return
+  Effect 2 catches rejection → sees trackingState already has error → skips overwrite
+```
+
+### Changes Summary
+- `ARExperience.tsx`: Store sceneReady reject ref, reject on early returns, guard Effect 2 overwrite, add session refresh
+- `TrackingGuidance.tsx`: Show loadStage in model_loading state
 
