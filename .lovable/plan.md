@@ -1,50 +1,44 @@
 
 
-# Fix AR Loading Failures + Improve Error Handling
+# Fix AR Camera/Loading Failure — Rewrite Init Architecture
 
-## Root Cause Analysis
+## Root Cause
 
-The AR gets stuck on "Starting AR... Preparing camera and tracking" and then shows "AR scene failed to initialize" because of a **sceneReadyPromise race condition with early rejection**:
+The "Camera Error — AR scene failed to initialize" happens because of a **20-second timeout race condition**:
 
-1. `initPipeline()` runs camera + pose in parallel
-2. If **either** fails (camera denied, WASM timeout, no camera on desktop), the function returns early at lines 245-264 **without resolving** `sceneReadyPromiseRef`
-3. Effect 2 (model loading) awaits `sceneReadyPromiseRef.current`, which has a 20-second timeout (line 60)
-4. After 20s, the timeout fires and shows "AR scene failed to initialize" — even though the actual error was "camera denied" or "pose init failed" and was already displayed
+1. At component mount (line 62), a `setTimeout` starts a 20s countdown to reject `sceneReadyPromise`
+2. `initPipeline` (Effect 1) downloads MediaPipe WASM runtime (~3MB) + pose model (~4MB), each with their own 15s timeout — total worst case is 30s
+3. If the downloads take longer than 20s combined, the sceneReadyPromise timeout fires first
+4. Effect 2 catches the rejection, sees `trackingState` is still `initializing` (not a specific error), and overwrites it to `camera_error` with "AR scene failed to initialize"
 
-Additionally, the console shows **JWT expired errors** across all Supabase queries, meaning the auth session expired. The product fetch in Effect 1 (line 151) likely fails silently, setting `isValidContext = false` and showing "AR Experience Unavailable" instead of refreshing the session.
+The camera permission is granted and working fine — the error message is misleading. The real failure is the pose model download timing out or the arbitrary 20s limit being hit.
 
 ## Plan
 
-### File 1: `src/pages/ARExperience.tsx`
+### File 1: `src/pages/ARExperience.tsx` — Rewrite init synchronization
 
-**Fix A — Reject sceneReadyPromise on pipeline failure (prevents 20s hang)**
-When `initPipeline` exits early due to camera/pose error (lines 245-264), immediately reject the sceneReadyPromise so Effect 2 doesn't wait 20 seconds before showing the error. Store the reject function alongside the resolve function in a ref, and call it in every early-return path.
+**Change A: Remove the 20s timeout from sceneReadyPromise**
+The promise should only resolve (on success) or reject (on explicit failure). Every failure path already calls `sceneReadyRejectRef.current?.()`, so the timeout is redundant and causes false failures. Replace with a promise that has no timeout.
 
-**Fix B — Effect 2 should not overwrite specific error states**
-Currently line 450-452 always sets `camera_error` + "AR scene failed to initialize" when the scene promise rejects. Instead, check if `trackingState` is already set to a specific error (like `camera_denied` or `pose_init_failed`) and skip overwriting it.
+**Change B: Add diagnostic logging throughout initPipeline**
+Add `console.log('[AR]')` at every step: WebGL check, camera start, pose start, camera result, pose result, scene creation, render loop start. This lets us diagnose exactly which step fails when users report issues.
 
-**Fix C — Add session refresh before product fetch**
-Before the Supabase query at line 151, call `supabase.auth.getSession()` to auto-refresh an expired JWT. This prevents the "JWT expired" errors that cause the product fetch to fail.
+**Change C: Make the catch block in initPipeline also reject the sceneReadyPromise**
+Currently if the outer `catch` at line 420 fires (unexpected error), it sets `camera_error` but doesn't reject sceneReadyPromise — leaving Effect 2 hanging forever. Add `sceneReadyRejectRef.current?.(err)` in the catch block.
 
-### File 2: `src/ar/guidance/TrackingGuidance.tsx`
+**Change D: Fix Effect 2's error handling**
+When sceneReadyPromise rejects, check the rejection error message to display something useful instead of the generic "AR scene failed to initialize". If the error says "camera" show camera guidance, if "pose" show pose guidance, etc.
 
-**Fix D — Show loadStage during model_loading too**
-Line 74 shows `loadProgress` but not `loadStage`. Add `loadStage` display so users see "Downloading 3D model…" with progress underneath.
+**Change E: Add an unhandled promise rejection catcher on the sceneReadyPromise**
+Add `.catch(() => {})` to prevent unhandled promise rejection warnings in the console (the rejection is handled by Effect 2, but the promise itself can fire before Effect 2 attaches its handler).
 
-## Technical Details
+### File 2: `src/ar/core/PoseProcessor.ts` — Add logging
 
-```text
-Current failure flow:
-  Camera fails → setTrackingState('camera_denied') → return
-  [20 seconds pass...]
-  sceneReadyPromise rejects → overwrites to 'camera_error' + wrong message
+Add `console.log('[PoseProcessor]')` before WASM download and before model download so we can see which step is slow/failing.
 
-Fixed flow:
-  Camera fails → setTrackingState('camera_denied') → reject sceneReadyPromise → return
-  Effect 2 catches rejection → sees trackingState already has error → skips overwrite
-```
-
-### Changes Summary
-- `ARExperience.tsx`: Store sceneReady reject ref, reject on early returns, guard Effect 2 overwrite, add session refresh
-- `TrackingGuidance.tsx`: Show loadStage in model_loading state
+### Summary of changes
+- Remove the race-condition-causing 20s timeout (the actual root cause)
+- Add console logging at every init step for debuggability
+- Ensure all failure paths properly reject the scene-ready promise
+- Show meaningful error messages instead of generic "AR scene failed to initialize"
 
