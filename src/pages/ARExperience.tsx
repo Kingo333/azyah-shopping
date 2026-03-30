@@ -253,6 +253,7 @@ export default function ARExperience() {
           setTrackingMessage(err.message || 'Camera access failed');
         }
         if (poseResult && !('error' in poseResult)) poseResult.close();
+        sceneReadyRejectRef.current?.(new Error('camera_failed'));
         return;
       }
 
