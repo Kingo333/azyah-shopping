@@ -248,6 +248,8 @@ export default function ARExperience() {
       const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+      console.log('[AR] Camera result:', 'error' in camResult ? `ERROR: ${camResult.error.message}` : 'OK');
+      console.log('[AR] Pose result:', 'error' in poseResult ? `ERROR: ${poseResult.error.message}` : 'OK');
 
       if (cleanedUpRef.current) {
         if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
