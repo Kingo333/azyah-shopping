@@ -466,15 +466,26 @@ export default function ARExperience() {
       // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
       try {
         await sceneReadyPromiseRef.current;
-      } catch {
-        // sceneReady timed out or Effect 1 failed — don't overwrite specific errors
+      } catch (sceneErr: any) {
+        // Effect 1 failed — show specific error based on rejection reason
+        console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
         if (!cancelled) {
           setTrackingState(prev => {
             const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
-            if (errorStates.includes(prev)) return prev; // keep specific error
+            if (errorStates.includes(prev)) return prev; // keep specific error already set
             return 'camera_error';
           });
-          setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
+          // Parse rejection to show helpful message
+          const msg = sceneErr?.message || '';
+          if (msg.includes('camera') || msg.includes('Camera')) {
+            setTrackingMessage('Camera access failed. Please allow camera permissions and reload.');
+          } else if (msg.includes('pose') || msg.includes('Pose') || msg.includes('WASM')) {
+            setTrackingMessage('Body tracking failed to load. Check your internet connection and reload.');
+          } else if (msg.includes('webgl') || msg.includes('WebGL')) {
+            setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+          } else {
+            setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
+          }
         }
         return;
       }

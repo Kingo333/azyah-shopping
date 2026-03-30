@@ -76,12 +76,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export async function createPoseProcessor(): Promise<PoseProcessor> {
+  console.log('[PoseProcessor] Downloading WASM runtime from CDN…');
   const vision = await withTimeout(
     FilesetResolver.forVisionTasks(WASM_URL),
-    15_000,
+    30_000,
     'WASM runtime download',
   );
+  console.log('[PoseProcessor] WASM runtime loaded OK');
 
+  console.log('[PoseProcessor] Downloading pose model…');
   const landmarker = await withTimeout(
     PoseLandmarker.createFromOptions(vision, {
       baseOptions: { modelAssetPath: MODEL_URL },
