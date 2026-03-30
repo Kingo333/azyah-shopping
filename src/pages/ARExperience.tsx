@@ -227,17 +227,22 @@ export default function ARExperience() {
     async function initPipeline() {
       try {
       // 1. Check WebGL availability before anything else
+      console.log('[AR] Step 1: Checking WebGL support…');
       const testCanvas = document.createElement('canvas');
       const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
       if (!gl) {
+        console.error('[AR] WebGL not available');
         setTrackingState('camera_error');
         setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+        sceneReadyRejectRef.current?.(new Error('webgl_unavailable'));
         return;
       }
+      console.log('[AR] WebGL OK');
 
       // 2. Camera + Pose in parallel (FIX-01: saves 3-8s)
       setTrackingState('initializing');
       setLoadStage('Starting camera & body tracking…');
+      console.log('[AR] Step 2: Starting camera + pose in parallel…');
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
       const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
