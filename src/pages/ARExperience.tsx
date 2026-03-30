@@ -56,11 +56,15 @@ export default function ARExperience() {
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
   const sceneReadyRejectRef = useRef<((err: Error) => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
-    new Promise<void>((resolve, reject) => {
-      sceneReadyResolveRef.current = resolve;
-      sceneReadyRejectRef.current = reject;
-      setTimeout(() => reject(new Error('AR initialization timed out. Please reload.')), 20_000);
-    })
+    (() => {
+      const p = new Promise<void>((resolve, reject) => {
+        sceneReadyResolveRef.current = resolve;
+        sceneReadyRejectRef.current = reject;
+        // No timeout — promise resolves/rejects only on explicit success/failure
+      });
+      p.catch(() => {}); // Prevent unhandled rejection warnings
+      return p;
+    })()
   );
 
   // Module refs -- SceneManager and PoseProcessor persist for component lifetime
