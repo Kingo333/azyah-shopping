@@ -285,11 +285,13 @@ export default function ARExperience() {
       poseProcessorRef.current = poseResult;
 
       // 3. Scene (persistent -- survives product switches)
+      console.log('[AR] Step 3: Creating SceneManager…');
       setLoadStage('Setting up 3D scene…');
       const sm = new SceneManager(canvas);
       sceneManagerRef.current = sm;
 
       // Signal Effect 2 that SceneManager is ready (fixes race condition)
+      console.log('[AR] Scene ready — resolving sceneReadyPromise');
       sceneReadyResolveRef.current?.();
 
       // Initialize anchor resolver with all strategies
