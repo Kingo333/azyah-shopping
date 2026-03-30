@@ -264,6 +264,7 @@ export default function ARExperience() {
       if ('error' in poseResult) {
         setTrackingState('pose_init_failed');
         setTrackingMessage(poseResult.error.message || 'Body tracking failed. Try refreshing.');
+        sceneReadyRejectRef.current?.(new Error('pose_failed'));
         return;
       }
 
