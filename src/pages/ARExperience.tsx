@@ -150,6 +150,9 @@ export default function ARExperience() {
     async function fetchAndValidate() {
       if (!brandId) { setIsValidContext(false); setIsLoading(false); return; }
 
+      // Refresh session to avoid JWT expired errors
+      await supabase.auth.getSession();
+
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
         .select(`id, image_url, ar_model_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
