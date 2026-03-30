@@ -54,9 +54,11 @@ export default function ARExperience() {
   // selectedProduct arrives before SceneManager is initialized in Effect 1.
   // Has a 20s timeout to prevent hanging if Effect 1 fails before resolving.
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
+  const sceneReadyRejectRef = useRef<((err: Error) => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
     new Promise<void>((resolve, reject) => {
       sceneReadyResolveRef.current = resolve;
+      sceneReadyRejectRef.current = reject;
       setTimeout(() => reject(new Error('AR initialization timed out. Please reload.')), 20_000);
     })
   );
@@ -147,6 +149,9 @@ export default function ARExperience() {
   useEffect(() => {
     async function fetchAndValidate() {
       if (!brandId) { setIsValidContext(false); setIsLoading(false); return; }
+
+      // Refresh session to avoid JWT expired errors
+      await supabase.auth.getSession();
 
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
@@ -251,6 +256,7 @@ export default function ARExperience() {
           setTrackingMessage(err.message || 'Camera access failed');
         }
         if (poseResult && !('error' in poseResult)) poseResult.close();
+        sceneReadyRejectRef.current?.(new Error('camera_failed'));
         return;
       }
 
@@ -261,6 +267,7 @@ export default function ARExperience() {
       if ('error' in poseResult) {
         setTrackingState('pose_init_failed');
         setTrackingMessage(poseResult.error.message || 'Body tracking failed. Try refreshing.');
+        sceneReadyRejectRef.current?.(new Error('pose_failed'));
         return;
       }
 
@@ -445,10 +452,14 @@ export default function ARExperience() {
       try {
         await sceneReadyPromiseRef.current;
       } catch {
-        // sceneReady timed out or Effect 1 failed — cannot load model
+        // sceneReady timed out or Effect 1 failed — don't overwrite specific errors
         if (!cancelled) {
-          setTrackingState('camera_error');
-          setTrackingMessage('AR scene failed to initialize. Try refreshing.');
+          setTrackingState(prev => {
+            const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
+            if (errorStates.includes(prev)) return prev; // keep specific error
+            return 'camera_error';
+          });
+          setTrackingMessage(prev => prev || 'AR scene failed to initialize. Try refreshing.');
         }
         return;
       }

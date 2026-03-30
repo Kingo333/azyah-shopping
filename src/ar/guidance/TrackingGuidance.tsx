@@ -71,7 +71,9 @@ export function TrackingGuidance({ state, message, garmentType, missingParts, lo
         return {
           icon: <Loader2 className="h-10 w-10 text-white animate-spin" />,
           title: 'Loading outfit...',
-          sub: loadProgress || 'Downloading 3D model',
+          sub: loadProgress
+            ? `${loadStage || 'Downloading 3D model'} — ${loadProgress}`
+            : loadStage || 'Downloading 3D model',
         };
 
       case 'model_error':
