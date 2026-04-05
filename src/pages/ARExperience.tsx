@@ -226,10 +226,12 @@ export default function ARExperience() {
     fetchAndValidate();
   }, [brandId, eventId, requestedProductId]);
 
-  // ── Effect 1: Camera + Pose + Scene + Render loop (runs once on mount) ──
-  // Empty deps: camera, pose, scene, and render loop persist for component lifetime.
+  // ── Effect 1: Camera + Pose + Scene + Render loop ──
+  // Depends on isLoading: when isLoading flips to false, video/canvas elements
+  // appear in the DOM and this effect can initialize the AR pipeline.
   // Product switches only swap the 3D model (Effect 2), never restart this pipeline.
   useEffect(() => {
+    if (isLoading) return; // Wait for product data + DOM elements
     if (!canvasRef.current || !videoRef.current) return;
     cleanedUpRef.current = false;
     const video = videoRef.current;
@@ -502,7 +504,7 @@ export default function ARExperience() {
       segmenterRef.current?.close();
       segmenterRef.current = null;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Effect 2: Model loading (runs when selectedProduct changes) ──
   // Only selectedProduct triggers model reload. Camera, pose, and scene persist.
