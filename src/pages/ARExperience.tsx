@@ -400,6 +400,10 @@ export default function ARExperience() {
 
               // Opacity from anchor confidence
               sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
+
+              // Shadow ground plane at floor level
+              const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
+              sm.updateShadowPlane(floorY, garmentType);
               sm.dirty = true;
 
               // Store for outlier fallback

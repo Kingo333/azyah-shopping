@@ -45,6 +45,8 @@ export class SceneManager {
   private brightnessCtx: CanvasRenderingContext2D;
   /** VIS-02: Timestamp of last brightness sample for 500ms throttle. */
   private lastBrightnessSample = 0;
+  /** Shadow-receiving ground plane (transparent except where shadows fall). */
+  private shadowPlane: THREE.Mesh | null = null;
 
   /**
    * Create a new SceneManager bound to a canvas element.
@@ -84,11 +86,25 @@ export class SceneManager {
     this.scene.environment = envTexture;
     pmrem.dispose();
 
+    // Shadow map setup
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
     // Lighting -- stored as fields for VIS-02 adaptive brightness
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(this.ambientLight);
     this.dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    this.dirLight.position.set(0, 1, 1);
+    this.dirLight.position.set(0, 2, 1);
+    this.dirLight.castShadow = true;
+    this.dirLight.shadow.mapSize.width = 512;
+    this.dirLight.shadow.mapSize.height = 512;
+    this.dirLight.shadow.camera.near = 0.1;
+    this.dirLight.shadow.camera.far = 10;
+    this.dirLight.shadow.camera.left = -2;
+    this.dirLight.shadow.camera.right = 2;
+    this.dirLight.shadow.camera.top = 2;
+    this.dirLight.shadow.camera.bottom = -2;
+    this.dirLight.shadow.bias = -0.001;
     this.scene.add(this.dirLight);
 
     // VIS-02: Small canvas for video brightness sampling (32x16 is cheap to sample)
@@ -163,6 +179,8 @@ export class SceneManager {
       });
       // VIS-05: Set renderOrder on the model so garment renders after scene background
       newModel.renderOrder = 1;
+      // Enable shadow casting on all meshes
+      newModel.traverse((c) => { if ((c as THREE.Mesh).isMesh) c.castShadow = true; });
     }
 
     this.currentModel = newModel;
@@ -211,6 +229,44 @@ export class SceneManager {
         stdMat.envMapIntensity = 0.4;
         stdMat.needsUpdate = true;
       }
+    }
+    this.dirty = true;
+  }
+
+  /**
+   * Update the shadow-receiving ground plane position.
+   *
+   * Always positioned at floor level (ankleY). Opacity and scale vary by garment type:
+   * - Full-body (abaya/pants): 0.3 opacity, 6-unit plane
+   * - Upper-body (shirt/jacket): 0.15 opacity, 4-unit plane
+   * - Accessories: no shadow plane
+   */
+  updateShadowPlane(floorY: number, garmentType: GarmentType): void {
+    if (garmentType === 'headwear' || garmentType === 'accessory') {
+      // No shadow for accessories
+      if (this.shadowPlane) { this.shadowPlane.visible = false; }
+      return;
+    }
+
+    if (!this.shadowPlane) {
+      const geo = new THREE.PlaneGeometry(6, 6);
+      const mat = new THREE.ShadowMaterial({ opacity: 0.25 });
+      this.shadowPlane = new THREE.Mesh(geo, mat);
+      this.shadowPlane.rotation.x = -Math.PI / 2;
+      this.shadowPlane.receiveShadow = true;
+      this.shadowPlane.renderOrder = 0;
+      this.scene.add(this.shadowPlane);
+    }
+
+    this.shadowPlane.visible = true;
+    this.shadowPlane.position.y = floorY;
+
+    // Adjust opacity by garment type
+    const mat = this.shadowPlane.material as THREE.ShadowMaterial;
+    if (garmentType === 'abaya' || garmentType === 'pants') {
+      mat.opacity = 0.3;
+    } else {
+      mat.opacity = 0.15;
     }
     this.dirty = true;
   }
