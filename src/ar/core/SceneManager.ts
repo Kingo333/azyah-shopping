@@ -70,6 +70,8 @@ export class SceneManager {
     this.renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.1;
 
     // Lighting -- stored as fields for VIS-02 adaptive brightness
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);

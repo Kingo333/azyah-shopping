@@ -27,6 +27,9 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: 0,
     widthRef: 'shoulder',
     heightRef: 'torso',
+    defaultOffset: { x: 0, y: 0, z: 0 },
+    scaleMultiplier: 1.0,
+    maxScaleDeltaPerFrame: 0.05,
   },
   abaya: {
     type: 'abaya',
@@ -38,6 +41,9 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: -0.05,
     widthRef: 'shoulder',
     heightRef: 'shoulder_to_ankle',
+    defaultOffset: { x: 0, y: -0.02, z: 0 },
+    scaleMultiplier: 1.05,
+    maxScaleDeltaPerFrame: 0.03,
   },
   pants: {
     type: 'pants',
@@ -49,6 +55,9 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: 0,
     widthRef: 'hip',
     heightRef: 'hip_to_ankle',
+    defaultOffset: { x: 0, y: 0, z: 0 },
+    scaleMultiplier: 1.0,
+    maxScaleDeltaPerFrame: 0.04,
   },
   jacket: {
     type: 'jacket',
@@ -60,6 +69,9 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: 0,
     widthRef: 'shoulder',
     heightRef: 'torso',
+    defaultOffset: { x: 0, y: 0, z: 0 },
+    scaleMultiplier: 1.05,
+    maxScaleDeltaPerFrame: 0.05,
   },
   headwear: {
     type: 'headwear',
@@ -71,6 +83,9 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: -0.5,
     widthRef: 'ear',
     heightRef: 'head',
+    defaultOffset: { x: 0, y: 0, z: 0 },
+    scaleMultiplier: 1.0,
+    maxScaleDeltaPerFrame: 0.06,
   },
   accessory: {
     type: 'accessory',
@@ -82,5 +97,8 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     verticalOffset: -0.15,
     widthRef: 'shoulder',
     heightRef: 'torso',
+    defaultOffset: { x: 0, y: 0, z: 0 },
+    scaleMultiplier: 1.0,
+    maxScaleDeltaPerFrame: 0.06,
   },
 };

@@ -105,4 +105,10 @@ export interface GarmentConfig {
   widthRef: 'shoulder' | 'hip' | 'ear';
   /** Which body measurement to use as height reference. */
   heightRef: 'torso' | 'shoulder_to_ankle' | 'hip_to_ankle' | 'head';
+  /** Baseline position offset applied after anchor computation. */
+  defaultOffset: { x: number; y: number; z: number };
+  /** Per-type scale multiplier on top of body-proportional scaling. */
+  scaleMultiplier: number;
+  /** Max scale change per frame to prevent "swimming" garments. 0 = no clamping. */
+  maxScaleDeltaPerFrame: number;
 }
