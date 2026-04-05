@@ -533,6 +533,7 @@ export default function ARExperience() {
           modelRef.current = result.wrapper;
           modelDimsRef.current = result.dims;
           sm.swapModel(result.wrapper);
+          sm.enhanceMaterials(selectedProduct.garment_type || 'shirt');
           setTrackingState('waiting_for_pose');
           setLoadProgress('');
           setLoadStage('');

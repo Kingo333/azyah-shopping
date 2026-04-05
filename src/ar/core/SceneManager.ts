@@ -14,6 +14,8 @@
  * resize handler at lines 396-421.
  */
 import * as THREE from 'three';
+import { MATERIAL_PRESETS } from '../config/materialPresets';
+import type { GarmentType } from '../types';
 
 export class SceneManager {
   /** The WebGLRenderer instance. Public for direct ref access by orchestrator. */
@@ -72,6 +74,15 @@ export class SceneManager {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
+
+    // PBR environment map — neutral gradient for subtle reflections on all materials
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    pmrem.compileCubemapShader();
+    const envScene = new THREE.Scene();
+    envScene.background = new THREE.Color(0x888888);
+    const envTexture = pmrem.fromScene(envScene, 0, 0.1, 100).texture;
+    this.scene.environment = envTexture;
+    pmrem.dispose();
 
     // Lighting -- stored as fields for VIS-02 adaptive brightness
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -170,6 +181,38 @@ export class SceneManager {
     for (const mat of this.cachedMaterials) {
       (mat as any).opacity = opacity;
     }
+  }
+
+  /**
+   * Enhance garment materials with PBR presets for the given garment type.
+   *
+   * Only overrides materials that still have Three.js defaults (roughness=1.0
+   * AND metalness=0.0), meaning the original GLB had no PBR authoring.
+   * Hand-authored PBR materials are left untouched.
+   *
+   * @param garmentType - The garment type to apply material presets for.
+   */
+  enhanceMaterials(garmentType: GarmentType): void {
+    const preset = MATERIAL_PRESETS[garmentType];
+    if (!preset) return;
+
+    for (const mat of this.cachedMaterials) {
+      const stdMat = mat as THREE.MeshStandardMaterial;
+      if (stdMat.isMeshStandardMaterial) {
+        // Only override default (unauthored) materials
+        if (stdMat.roughness === 1.0 && stdMat.metalness === 0.0) {
+          stdMat.roughness = preset.roughness;
+          stdMat.metalness = preset.metalness;
+        }
+        // Ensure sRGB on base color maps
+        if (stdMat.map) {
+          stdMat.map.colorSpace = THREE.SRGBColorSpace;
+        }
+        stdMat.envMapIntensity = 0.4;
+        stdMat.needsUpdate = true;
+      }
+    }
+    this.dirty = true;
   }
 
   /**
