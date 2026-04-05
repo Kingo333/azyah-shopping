@@ -343,8 +343,11 @@ export default function ARExperience() {
           lastPoseTime = time;
           const now = performance.now();
           const result = pp.detectForVideo(video, now);
-          if (framesWithoutPose.current < 3 || framesWithoutPose.current % 90 === 0) {
-            console.log('[AR] Pose detect:', result ? `${result.landmarks.length} poses, ${result.landmarks[0]?.length ?? 0} landmarks` : 'null');
+          if (framesWithoutPose.current < 5 || framesWithoutPose.current % 60 === 0) {
+            const lmCount = result?.landmarks?.[0]?.length ?? 0;
+            const wlmCount = result?.worldLandmarks?.[0]?.length ?? 0;
+            const modelLoaded = !!modelRef.current;
+            console.log(`[AR] Frame: poses=${result?.landmarks?.length ?? 0} lm=${lmCount} wlm=${wlmCount} model=${modelLoaded} state=${trackingState}`);
           }
           if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
             framesWithoutPose.current = 0;
@@ -610,6 +613,7 @@ export default function ARExperience() {
 
         modelPromise.then((result) => {
           if (cancelled) return;
+          console.log('[AR] Model loaded OK:', { dims: result.dims, isRigged: result.isRigged, boneCount: result.boneNames.length });
           modelRef.current = result.wrapper;
           modelDimsRef.current = result.dims;
           sm.swapModel(result.wrapper);
