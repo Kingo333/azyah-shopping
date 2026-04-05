@@ -13,10 +13,17 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 export interface ModelResult {
   wrapper: THREE.Group;
   dims: { w: number; h: number; d: number };
+  /** Whether the model contains a skeleton (SkinnedMesh). */
+  isRigged: boolean;
+  /** The skeleton from the first SkinnedMesh, or null for static models. */
+  skeleton: THREE.Skeleton | null;
+  /** Bone names for debug/mapping. */
+  boneNames: string[];
 }
 
 export type ModelProgressCallback = (loaded: number, total: number, percent: number) => void;
@@ -45,7 +52,16 @@ const modelCache = new Map<string, ModelResult>();
 const prefetchPromises = new Map<string, Promise<ModelResult>>();
 
 function cloneModelResult(cached: ModelResult): ModelResult {
-  const clonedWrapper = cached.wrapper.clone(true);
+  let clonedWrapper: THREE.Group;
+
+  if (cached.isRigged) {
+    // SkeletonUtils.clone properly handles SkinnedMesh skeleton references
+    clonedWrapper = SkeletonUtils.clone(cached.wrapper) as THREE.Group;
+  } else {
+    clonedWrapper = cached.wrapper.clone(true);
+  }
+
+  // Clone materials so per-instance changes don't bleed across copies
   clonedWrapper.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh;
@@ -56,7 +72,24 @@ function cloneModelResult(cached: ModelResult): ModelResult {
       }
     }
   });
-  return { wrapper: clonedWrapper, dims: { ...cached.dims } };
+
+  // Extract skeleton from clone (SkeletonUtils creates new skeleton references)
+  let skeleton: THREE.Skeleton | null = null;
+  if (cached.isRigged) {
+    clonedWrapper.traverse((child) => {
+      if ((child as THREE.SkinnedMesh).isSkinnedMesh && !skeleton) {
+        skeleton = (child as THREE.SkinnedMesh).skeleton;
+      }
+    });
+  }
+
+  return {
+    wrapper: clonedWrapper,
+    dims: { ...cached.dims },
+    isRigged: cached.isRigged,
+    skeleton,
+    boneNames: cached.boneNames,
+  };
 }
 
 /**
@@ -98,7 +131,23 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
         wrapper.add(model);
         wrapper.visible = false;
 
-        const pristineResult: ModelResult = { wrapper, dims };
+        // Detect rigged model (SkinnedMesh with skeleton)
+        let skeleton: THREE.Skeleton | null = null;
+        const boneNames: string[] = [];
+        model.traverse((child) => {
+          if ((child as THREE.SkinnedMesh).isSkinnedMesh && !skeleton) {
+            skeleton = (child as THREE.SkinnedMesh).skeleton;
+            if (skeleton) {
+              skeleton.bones.forEach((b) => boneNames.push(b.name));
+            }
+          }
+        });
+        const isRigged = skeleton !== null && boneNames.length > 0;
+        if (isRigged) {
+          console.info(`[ModelLoader] Rigged model detected: ${boneNames.length} bones [${boneNames.slice(0, 5).join(', ')}${boneNames.length > 5 ? '...' : ''}]`);
+        }
+
+        const pristineResult: ModelResult = { wrapper, dims, isRigged, skeleton, boneNames };
         modelCache.set(url, pristineResult);
         prefetchPromises.delete(url);
 

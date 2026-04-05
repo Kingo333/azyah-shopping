@@ -22,6 +22,7 @@ import { AbayaAnchor } from '@/ar/anchoring/strategies/AbayaAnchor';
 import { PantsAnchor } from '@/ar/anchoring/strategies/PantsAnchor';
 import { AccessoryAnchor } from '@/ar/anchoring/strategies/AccessoryAnchor';
 import { OutlierFilter } from '@/ar/utils/OutlierFilter';
+import { BoneMapper } from '@/ar/core/BoneMapper';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
@@ -96,6 +97,9 @@ export default function ARExperience() {
 
   // AnchorResolver -- created once, persists for component lifetime
   const anchorResolverRef = useRef<AnchorResolver | null>(null);
+
+  // BoneMapper -- created per rigged model, null for static models
+  const boneMapperRef = useRef<BoneMapper | null>(null);
 
   // Last known good anchor result for outlier fallback
   const lastAnchorRef = useRef<AnchorResult | null>(null);
@@ -401,6 +405,11 @@ export default function ARExperience() {
               // Opacity from anchor confidence
               sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
 
+              // Bone deformation for rigged models (Phase 3)
+              if (boneMapperRef.current && result.worldLandmarks[0]) {
+                boneMapperRef.current.update(result.worldLandmarks[0]);
+              }
+
               // Shadow ground plane at floor level
               const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
               sm.updateShadowPlane(floorY, garmentType);
@@ -511,6 +520,8 @@ export default function ARExperience() {
       outlierRotY.current.reset();
       lastAnchorRef.current = null;
       pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
+      boneMapperRef.current?.reset();
+      boneMapperRef.current = null;
 
       setTrackingState('model_loading');
       setLoadStage('Downloading 3D model…');
@@ -538,6 +549,14 @@ export default function ARExperience() {
           modelDimsRef.current = result.dims;
           sm.swapModel(result.wrapper);
           sm.enhanceMaterials(selectedProduct.garment_type || 'shirt');
+
+          // Phase 3: Create BoneMapper for rigged models
+          if (result.isRigged && result.skeleton) {
+            boneMapperRef.current = BoneMapper.create(result.skeleton);
+          } else {
+            boneMapperRef.current = null;
+          }
+
           setTrackingState('waiting_for_pose');
           setLoadProgress('');
           setLoadStage('');
