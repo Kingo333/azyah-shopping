@@ -24,6 +24,8 @@ import { AccessoryAnchor } from '@/ar/anchoring/strategies/AccessoryAnchor';
 import { OutlierFilter } from '@/ar/utils/OutlierFilter';
 import { BoneMapper } from '@/ar/core/BoneMapper';
 import { BodySegmenter } from '@/ar/core/BodySegmenter';
+import { DebugOverlay } from '@/ar/debug/DebugOverlay';
+import { applyClothSway, updateClothSwayTime } from '@/ar/core/ClothSway';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
@@ -48,6 +50,7 @@ export default function ARExperience() {
   const [loadProgress, setLoadProgress] = useState<string>('');
   const [loadStage, setLoadStage] = useState<string>('');
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
   const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
@@ -104,6 +107,10 @@ export default function ARExperience() {
 
   // BodySegmenter -- optional, for arm occlusion. null if unavailable.
   const segmenterRef = useRef<BodySegmenter | null>(null);
+  // DebugOverlay -- enabled via ?debug=true URL param
+  const debugRef = useRef<DebugOverlay | null>(null);
+  // Last detected landmarks for debug overlay (avoids double detectForVideo)
+  const lastLandmarksRef = useRef<any[] | null>(null);
   // FPS tracking for auto quality tier switching
   const fpsFrames = useRef(0);
   const fpsLastCheck = useRef(0);
@@ -311,6 +318,9 @@ export default function ARExperience() {
       console.log('[AR] Scene ready — resolving sceneReadyPromise');
       sceneReadyResolveRef.current?.();
 
+      // Debug overlay (enabled via ?debug=true URL param)
+      debugRef.current = new DebugOverlay(canvas.parentElement!);
+
       // Initialize anchor resolver with all strategies
       const resolver = new AnchorResolver();
       resolver.register('shirt', new ShirtAnchor());
@@ -338,6 +348,7 @@ export default function ARExperience() {
           }
           if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
             framesWithoutPose.current = 0;
+            lastLandmarksRef.current = result.landmarks[0]; // Store for debug overlay
 
             const product = selectedProductRef.current;
             const garmentType = product?.garment_type || 'shirt';
@@ -428,9 +439,11 @@ export default function ARExperience() {
               }
 
               // Phase 4: Body segmentation for occlusion (arms in front of garment)
+              // Frame budgeting: only run segmentation if we have time budget left (<20ms spent so far)
+              const frameBudgetMs = performance.now() - now;
               const seg = segmenterRef.current;
-              if (seg?.isEnabled) {
-                const mask = seg.segment(video, time);
+              if (seg?.isEnabled && frameBudgetMs < 20) {
+                const mask = seg.segment(video, performance.now());
                 if (mask) {
                   sm.updateOcclusionMask(mask.data, mask.width, mask.height);
                 }
@@ -460,11 +473,20 @@ export default function ARExperience() {
             }
           }
         }
+        // Cloth sway animation (procedural vertex displacement)
+        if (modelRef.current?.visible) {
+          updateClothSwayTime(modelRef.current, time / 1000);
+          sm.dirty = true; // Sway changes vertices, need re-render
+        }
+
         // VIS-02: Adaptive lighting from camera brightness (self-throttles to 500ms)
         if (video.readyState >= 2) {
           sm.updateLightingFromVideo(video);
         }
         sm.renderIfDirty();  // PERF-02: only render when pose updated or dirty
+
+        // Debug overlay (draws landmarks, skeleton, FPS when ?debug=true)
+        debugRef.current?.draw(lastLandmarksRef.current, trackingState, segmenterRef.current?.isEnabled ?? false, time);
 
         // Quality tier auto-detection: disable segmentation if fps drops below 20
         fpsFrames.current++;
@@ -507,6 +529,8 @@ export default function ARExperience() {
       clearModelCache(); // PERF-04: Free cached GPU resources on unmount
       segmenterRef.current?.close();
       segmenterRef.current = null;
+      debugRef.current?.dispose();
+      debugRef.current = null;
     };
   }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -590,6 +614,7 @@ export default function ARExperience() {
           modelDimsRef.current = result.dims;
           sm.swapModel(result.wrapper);
           sm.enhanceMaterials(selectedProduct.garment_type || 'shirt');
+          applyClothSway(result.wrapper, selectedProduct.garment_type || 'shirt');
 
           // Phase 3: Create BoneMapper for rigged models
           if (result.isRigged && result.skeleton) {
@@ -634,7 +659,8 @@ export default function ARExperience() {
       const sm = sceneManagerRef.current;
       if (!sm) return;
       sm.handleResize();
-      // Recalculate cover crop with new display dimensions
+      setCanvasSize({ w: window.innerWidth, h: window.innerHeight });
+      debugRef.current?.resize(window.innerWidth, window.innerHeight);
       if (videoRef.current && videoRef.current.videoWidth > 0) {
         coverCropRef.current = computeCoverCrop(
           videoRef.current.videoWidth, videoRef.current.videoHeight,
@@ -730,8 +756,8 @@ export default function ARExperience() {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={canvasSize.w}
+        height={canvasSize.h}
       />
 
       {/* Tracking guidance overlay */}

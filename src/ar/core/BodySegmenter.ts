@@ -11,9 +11,8 @@
  * - Enable/disable toggle for quality tiers (auto-disable when fps drops)
  * - Graceful failure: if segmentation model can't load, AR works without occlusion
  */
-import { ImageSegmenter, FilesetResolver } from '@mediapipe/tasks-vision';
-
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
+import { ImageSegmenter } from '@mediapipe/tasks-vision';
+import { getVisionResolver } from './MediaPipeRuntime';
 const SEGMENTER_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
 
@@ -38,8 +37,8 @@ export class BodySegmenter {
    */
   static async create(): Promise<BodySegmenter | null> {
     try {
-      console.log('[BodySegmenter] Downloading segmentation model…');
-      const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+      console.log('[BodySegmenter] Getting shared WASM runtime…');
+      const vision = await getVisionResolver();
       const segmenter = await ImageSegmenter.createFromOptions(vision, {
         baseOptions: { modelAssetPath: SEGMENTER_MODEL_URL },
         runningMode: 'VIDEO',

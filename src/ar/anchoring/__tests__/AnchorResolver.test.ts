@@ -49,6 +49,9 @@ const mockConfig: GarmentConfig = {
   verticalOffset: 0,
   widthRef: 'shoulder',
   heightRef: 'torso',
+  defaultOffset: { x: 0, y: 0, z: 0 },
+  scaleMultiplier: 1.0,
+  maxScaleDeltaPerFrame: 0.05,
 };
 
 const mockModelDims = { w: 1, h: 2, d: 0.5 };

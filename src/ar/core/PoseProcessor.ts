@@ -9,10 +9,8 @@
  *
  * Extracted from ARExperience.tsx lines 237-258.
  */
-import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-
-/** CDN URL for MediaPipe WASM runtime. Pinned to @0.10.34 matching package.json. */
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm';
+import { PoseLandmarker } from '@mediapipe/tasks-vision';
+import { getVisionResolver } from './MediaPipeRuntime';
 
 /** CDN URL for the PoseLandmarker Lite model (float16). */
 const MODEL_URL =
@@ -76,9 +74,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export async function createPoseProcessor(): Promise<PoseProcessor> {
-  console.log('[PoseProcessor] Downloading WASM runtime from CDN…');
+  console.log('[PoseProcessor] Getting shared WASM runtime…');
   const vision = await withTimeout(
-    FilesetResolver.forVisionTasks(WASM_URL),
+    getVisionResolver(),
     30_000,
     'WASM runtime download',
   );
