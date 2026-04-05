@@ -331,7 +331,11 @@ export default function ARExperience() {
         const pp = poseProcessorRef.current;
         if (pp && video.readyState >= 2 && time - lastPoseTime > 66) {
           lastPoseTime = time;
-          const result = pp.detectForVideo(video, time);
+          const now = performance.now();
+          const result = pp.detectForVideo(video, now);
+          if (framesWithoutPose.current < 3 || framesWithoutPose.current % 90 === 0) {
+            console.log('[AR] Pose detect:', result ? `${result.landmarks.length} poses, ${result.landmarks[0]?.length ?? 0} landmarks` : 'null');
+          }
           if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
             framesWithoutPose.current = 0;
 

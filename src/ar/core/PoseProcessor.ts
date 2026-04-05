@@ -109,8 +109,8 @@ export async function createPoseProcessor(): Promise<PoseProcessor> {
           landmarks: result.landmarks,
           worldLandmarks: result.worldLandmarks,
         } as PoseResult;
-      } catch {
-        // Swallow frame-level errors to prevent render loop crash
+      } catch (e) {
+        console.warn('[PoseProcessor] Frame detection error:', e);
         return null;
       }
     },
