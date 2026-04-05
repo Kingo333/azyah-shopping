@@ -23,6 +23,7 @@ import { PantsAnchor } from '@/ar/anchoring/strategies/PantsAnchor';
 import { AccessoryAnchor } from '@/ar/anchoring/strategies/AccessoryAnchor';
 import { OutlierFilter } from '@/ar/utils/OutlierFilter';
 import { BoneMapper } from '@/ar/core/BoneMapper';
+import { BodySegmenter } from '@/ar/core/BodySegmenter';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
@@ -100,6 +101,12 @@ export default function ARExperience() {
 
   // BoneMapper -- created per rigged model, null for static models
   const boneMapperRef = useRef<BoneMapper | null>(null);
+
+  // BodySegmenter -- optional, for arm occlusion. null if unavailable.
+  const segmenterRef = useRef<BodySegmenter | null>(null);
+  // FPS tracking for auto quality tier switching
+  const fpsFrames = useRef(0);
+  const fpsLastCheck = useRef(0);
 
   // Last known good anchor result for outlier fallback
   const lastAnchorRef = useRef<AnchorResult | null>(null);
@@ -250,8 +257,12 @@ export default function ARExperience() {
 
       const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
       const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+      // Phase 4: Start segmenter in parallel (optional — graceful failure)
+      const segPromise = BodySegmenter.create();
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+      // Segmenter completes independently — don't block on it
+      segPromise.then((seg) => { if (!cleanedUpRef.current) segmenterRef.current = seg; });
       console.log('[AR] Camera result:', 'error' in camResult ? `ERROR: ${camResult.error.message}` : 'OK');
       console.log('[AR] Pose result:', 'error' in poseResult ? `ERROR: ${poseResult.error.message}` : 'OK');
 
@@ -410,6 +421,15 @@ export default function ARExperience() {
                 boneMapperRef.current.update(result.worldLandmarks[0]);
               }
 
+              // Phase 4: Body segmentation for occlusion (arms in front of garment)
+              const seg = segmenterRef.current;
+              if (seg?.isEnabled) {
+                const mask = seg.segment(video, time);
+                if (mask) {
+                  sm.updateOcclusionMask(mask.data, mask.width, mask.height);
+                }
+              }
+
               // Shadow ground plane at floor level
               const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
               sm.updateShadowPlane(floorY, garmentType);
@@ -439,6 +459,19 @@ export default function ARExperience() {
           sm.updateLightingFromVideo(video);
         }
         sm.renderIfDirty();  // PERF-02: only render when pose updated or dirty
+
+        // Quality tier auto-detection: disable segmentation if fps drops below 20
+        fpsFrames.current++;
+        if (time - fpsLastCheck.current > 2000) { // Check every 2s
+          const fps = (fpsFrames.current / ((time - fpsLastCheck.current) / 1000));
+          fpsFrames.current = 0;
+          fpsLastCheck.current = time;
+          if (fps < 20 && segmenterRef.current?.isEnabled) {
+            console.warn(`[AR] FPS dropped to ${fps.toFixed(0)} — disabling body segmentation`);
+            segmenterRef.current.setEnabled(false);
+          }
+        }
+
         animFrameRef.current = requestAnimationFrame(animate);
       };
       animFrameRef.current = requestAnimationFrame(animate);
@@ -466,6 +499,8 @@ export default function ARExperience() {
       sceneManagerRef.current?.dispose();
       sceneManagerRef.current = null;
       clearModelCache(); // PERF-04: Free cached GPU resources on unmount
+      segmenterRef.current?.close();
+      segmenterRef.current = null;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
