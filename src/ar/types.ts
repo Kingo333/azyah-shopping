@@ -29,7 +29,12 @@ export interface ARProduct {
   name?: string;
   /** Garment type for anchor strategy selection. Optional for backward compatibility. */
   garment_type?: GarmentType;
+  /** 2D garment overlay image URL (PNG/WebP with transparent background). */
+  ar_overlay_url?: string;
 }
+
+/** Which AR rendering mode to use for a product. */
+export type ARMode = '2d' | '3d' | 'none';
 
 /**
  * Tracking state machine for the AR experience.

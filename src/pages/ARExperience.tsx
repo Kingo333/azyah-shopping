@@ -26,6 +26,8 @@ import { BoneMapper } from '@/ar/core/BoneMapper';
 import { BodySegmenter } from '@/ar/core/BodySegmenter';
 import { DebugOverlay } from '@/ar/debug/DebugOverlay';
 import { applyClothSway, updateClothSwayTime } from '@/ar/core/ClothSway';
+import { ImageOverlay } from '@/ar/core/ImageOverlay';
+import type { ARMode } from '@/ar/types';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
@@ -51,6 +53,12 @@ export default function ARExperience() {
   const [loadStage, setLoadStage] = useState<string>('');
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [arMode, setArMode] = useState<ARMode>('none');
+
+  // 2D image overlay engine (used when ar_overlay_url is present)
+  const imageOverlayRef = useRef<ImageOverlay | null>(null);
+  // Separate 2D canvas for image overlay (renders video + garment together)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
   const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
@@ -177,10 +185,9 @@ export default function ARExperience() {
 
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
-        .select(`id, image_url, ar_model_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
+        .select(`id, image_url, ar_model_url, ar_overlay_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
         .eq('event_brand_id', brandId)
-        .eq('ar_enabled', true)
-        .not('ar_model_url', 'is', null);
+        .eq('ar_enabled', true);
 
       if (fetchError || !data?.length) {
         setIsValidContext(false);
@@ -203,6 +210,7 @@ export default function ARExperience() {
         brand_name: p.event_brands?.brand_name,
         name: (p as any).name,
         garment_type: (p as any).garment_type || 'shirt',
+        ar_overlay_url: (p as any).ar_overlay_url || undefined,
       }));
 
       setProducts(mapped);
@@ -353,6 +361,18 @@ export default function ARExperience() {
             framesWithoutPose.current = 0;
             lastLandmarksRef.current = result.landmarks[0]; // Store for debug overlay
 
+            // ── 2D IMAGE OVERLAY PATH ──
+            // When product has ar_overlay_url, use simple 2D canvas overlay
+            if (imageOverlayRef.current) {
+              imageOverlayRef.current.updateFrame(video, result.landmarks[0]);
+              setTrackingState('tracking_active');
+              // Skip the entire 3D pipeline — 2D handles everything
+              sm.renderIfDirty();
+              animFrameRef.current = requestAnimationFrame(animate);
+              return;
+            }
+
+            // ── 3D GLB PATH (original pipeline) ──
             const product = selectedProductRef.current;
             const garmentType = product?.garment_type || 'shirt';
             const config = GARMENT_PRESETS[garmentType];
@@ -534,6 +554,8 @@ export default function ARExperience() {
       segmenterRef.current = null;
       debugRef.current?.dispose();
       debugRef.current = null;
+      imageOverlayRef.current?.dispose();
+      imageOverlayRef.current = null;
     };
   }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -591,6 +613,40 @@ export default function ARExperience() {
       boneMapperRef.current?.reset();
       boneMapperRef.current = null;
 
+      // ── Determine AR mode: 2D overlay or 3D GLB ──
+      const use2D = !!selectedProduct.ar_overlay_url;
+      setArMode(use2D ? '2d' : selectedProduct.ar_model_url ? '3d' : 'none');
+
+      // Dispose previous 2D overlay if switching to 3D
+      imageOverlayRef.current?.dispose();
+      imageOverlayRef.current = null;
+
+      if (use2D) {
+        // ── 2D IMAGE OVERLAY PATH ──
+        setTrackingState('model_loading');
+        setLoadStage('Loading garment image…');
+        try {
+          const overlayCanvas = overlayCanvasRef.current;
+          if (!overlayCanvas) { setTrackingState('model_error'); return; }
+          overlayCanvas.width = window.innerWidth;
+          overlayCanvas.height = window.innerHeight;
+          const overlay = new ImageOverlay(overlayCanvas);
+          await overlay.loadGarment(selectedProduct.ar_overlay_url!, selectedProduct.garment_type || 'shirt');
+          if (cancelled) return;
+          imageOverlayRef.current = overlay;
+          setTrackingState('waiting_for_pose');
+          setLoadStage('');
+        } catch (err: any) {
+          if (!cancelled) {
+            console.error('[AR] 2D overlay load error:', err);
+            setTrackingState('model_error');
+            setTrackingMessage('Could not load garment image.');
+          }
+        }
+        return;
+      }
+
+      // ── 3D GLB PATH ──
       setTrackingState('model_loading');
       setLoadStage('Downloading 3D model…');
       setLoadProgress('');
@@ -756,10 +812,20 @@ export default function ARExperience() {
         playsInline muted autoPlay
       />
 
-      {/* Three.js canvas */}
+      {/* 2D garment overlay canvas (used when ar_overlay_url present) */}
+      <canvas
+        ref={overlayCanvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ display: arMode === '2d' ? 'block' : 'none' }}
+        width={canvasSize.w}
+        height={canvasSize.h}
+      />
+
+      {/* Three.js canvas (used for 3D GLB models) */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
+        style={{ display: arMode === '3d' || arMode === 'none' ? 'block' : 'none' }}
         width={canvasSize.w}
         height={canvasSize.h}
       />
