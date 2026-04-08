@@ -121,18 +121,16 @@ describe('computeCoverCropRect', () => {
 
 // ── Capture path logic ──
 describe('capture path selection', () => {
+  function shouldUse2DCapture(mode: string, hasOverlayCanvas: boolean): boolean {
+    return mode === '2d' && hasOverlayCanvas;
+  }
+
   it('should use overlay canvas for 2D mode', () => {
-    const arMode = '2d';
-    const hasOverlayCanvas = true;
-    const shouldUse2D = arMode === '2d' && hasOverlayCanvas;
-    expect(shouldUse2D).toBe(true);
+    expect(shouldUse2DCapture('2d', true)).toBe(true);
   });
 
   it('should use compositor for 3D mode', () => {
-    const arMode = '3d';
-    const hasOverlayCanvas = true;
-    const shouldUse2D = arMode === '2d' && hasOverlayCanvas;
-    expect(shouldUse2D).toBe(false);
+    expect(shouldUse2DCapture('3d', true)).toBe(false);
   });
 
   it('should use compositor when no overlay canvas', () => {
