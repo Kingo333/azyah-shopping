@@ -33,6 +33,7 @@ interface EventBrandProduct {
   ar_enabled?: boolean;
   ar_scale?: number;
   garment_type?: string;
+  ar_preferred_mode?: 'auto' | '2d' | '3d';
 }
 
 interface EventBrand {

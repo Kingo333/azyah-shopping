@@ -185,7 +185,7 @@ export default function ARExperience() {
 
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
-        .select(`id, image_url, ar_model_url, ar_overlay_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
+        .select(`id, image_url, ar_model_url, ar_overlay_url, ar_scale, ar_position_offset, garment_type, ar_preferred_mode, event_brands!inner(brand_name, event_id)`)
         .eq('event_brand_id', brandId)
         .eq('ar_enabled', true);
 
@@ -613,9 +613,10 @@ export default function ARExperience() {
       boneMapperRef.current?.reset();
       boneMapperRef.current = null;
 
-      // ── Determine AR mode: 2D overlay or 3D GLB ──
-      const use2D = !!selectedProduct.ar_overlay_url;
-      setArMode(use2D ? '2d' : selectedProduct.ar_model_url ? '3d' : 'none');
+      // ── Determine AR mode respecting retailer preference ──
+      const resolvedMode = resolveARMode(selectedProduct);
+      const use2D = resolvedMode === '2d';
+      setArMode(resolvedMode);
 
       // Dispose previous 2D overlay if switching to 3D
       imageOverlayRef.current?.dispose();
