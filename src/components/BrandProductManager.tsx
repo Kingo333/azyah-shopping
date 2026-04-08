@@ -59,7 +59,85 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   // forceReupload removed — legacy BitStudio UI
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [removingAsset, setRemovingAsset] = useState<string | null>(null);
   const { toast } = useToast();
+
+  /** Extract storage path from a Supabase public URL */
+  const extractStoragePath = (publicUrl: string, bucket: string): string | null => {
+    const marker = `/object/public/${bucket}/`;
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(publicUrl.slice(idx + marker.length));
+  };
+
+  /** Remove an AR asset (try-on, 2D overlay, or 3D model) */
+  const handleRemoveAsset = async (product: EventBrandProduct, type: 'tryon' | 'overlay' | 'model') => {
+    const labels = { tryon: 'try-on image', overlay: '2D overlay', model: '3D model' };
+    if (!confirm(`Remove the ${labels[type]}? This will affect the shopper AR experience.`)) return;
+
+    setRemovingAsset(type);
+    try {
+      // 1. Delete file from storage
+      if (type === 'tryon') {
+        const path = product.try_on_data?.outfit_image_path;
+        if (path) {
+          await supabase.storage.from('event-assets').remove([path]);
+        }
+      } else if (type === 'overlay') {
+        const path = product.ar_overlay_url ? extractStoragePath(product.ar_overlay_url, 'event-ar-overlays') : null;
+        if (path) {
+          await supabase.storage.from('event-ar-overlays').remove([path]);
+        }
+      } else if (type === 'model') {
+        const path = product.ar_model_url ? extractStoragePath(product.ar_model_url, 'event-ar-models') : null;
+        if (path) {
+          await supabase.storage.from('event-ar-models').remove([path]);
+        }
+      }
+
+      // 2. Build DB update
+      const update: Record<string, any> = { updated_at: new Date().toISOString() };
+
+      if (type === 'tryon') {
+        update.try_on_data = {};
+        update.try_on_ready = false;
+        update.try_on_config = null;
+      } else if (type === 'overlay') {
+        update.ar_overlay_url = null;
+        if (!product.ar_model_url) update.ar_enabled = false;
+        if (product.ar_preferred_mode === '2d') update.ar_preferred_mode = 'auto';
+      } else if (type === 'model') {
+        update.ar_model_url = null;
+        if (!product.ar_overlay_url) update.ar_enabled = false;
+        if (product.ar_preferred_mode === '3d') update.ar_preferred_mode = 'auto';
+      }
+
+      const { error } = await supabase
+        .from('event_brand_products')
+        .update(update)
+        .eq('id', product.id);
+      if (error) throw error;
+
+      toast({ title: "Removed", description: `${labels[type]} has been removed` });
+
+      // 3. Refresh
+      if (editingProduct?.id === product.id) {
+        setEditingProduct(prev => {
+          if (!prev) return prev;
+          if (type === 'tryon') return { ...prev, try_on_data: {} };
+          if (type === 'overlay') return { ...prev, ar_overlay_url: undefined, ar_enabled: update.ar_enabled ?? prev.ar_enabled, ar_preferred_mode: update.ar_preferred_mode ?? prev.ar_preferred_mode };
+          if (type === 'model') return { ...prev, ar_model_url: undefined, ar_enabled: update.ar_enabled ?? prev.ar_enabled, ar_preferred_mode: update.ar_preferred_mode ?? prev.ar_preferred_mode };
+          return prev;
+        });
+      }
+      await fetchProducts();
+    } catch (error: any) {
+      console.error(`Error removing ${type}:`, error);
+      toast({ title: "Error", description: error.message || `Failed to remove ${labels[type]}`, variant: "destructive" });
+    } finally {
+      setRemovingAsset(null);
+    }
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -543,13 +621,24 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     </div>
 
                     {editingProduct.try_on_data?.outfit_image_url && (
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex items-center gap-3 p-2 rounded-md bg-muted/50">
                         <img
                           src={editingProduct.try_on_data.outfit_image_url}
                           alt="Outfit preview"
                           className="w-16 h-16 object-cover rounded border"
                         />
-                        <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={removingAsset === 'tryon'}
+                          onClick={() => handleRemoveAsset(editingProduct, 'tryon')}
+                        >
+                          {removingAsset === 'tryon' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          <span className="ml-1 text-xs">Remove</span>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -684,10 +773,19 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           alt="2D overlay preview"
                           className="w-16 h-16 object-contain rounded border bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)_0_0/20px_20px]"
                         />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
                           <p className="text-xs text-muted-foreground">Set preferred mode above to control which AR path shoppers see</p>
                         </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={removingAsset === 'overlay'}
+                          onClick={() => handleRemoveAsset(editingProduct, 'overlay')}
+                        >
+                          {removingAsset === 'overlay' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          <span className="ml-1 text-xs">Remove</span>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -738,7 +836,16 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   {editingProduct.ar_model_url && editingProduct.ar_enabled && (
                     <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-md">
                       <CheckCircle className="w-4 h-4 text-purple-600" />
-                      <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
+                      <span className="text-sm text-purple-700 flex-1">AR model uploaded — AR enabled</span>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={removingAsset === 'model'}
+                        onClick={() => handleRemoveAsset(editingProduct, 'model')}
+                      >
+                        {removingAsset === 'model' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        <span className="ml-1 text-xs">Remove</span>
+                      </Button>
                     </div>
                   )}
 
