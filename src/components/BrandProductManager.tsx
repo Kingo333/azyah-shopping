@@ -686,7 +686,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                         />
                         <div>
                           <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
-                          <p className="text-xs text-muted-foreground">This takes priority over 3D models in AR</p>
+                          <p className="text-xs text-muted-foreground">Set preferred mode above to control which AR path shoppers see</p>
                         </div>
                       </div>
                     )}
