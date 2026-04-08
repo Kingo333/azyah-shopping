@@ -400,6 +400,10 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     <Shirt className="w-4 h-4" />
                     Image Try-On
                   </TabsTrigger>
+                  <TabsTrigger value="overlay" className="flex-1 gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    2D AR Overlay
+                  </TabsTrigger>
                   <TabsTrigger value="ar" className="flex-1 gap-1.5">
                     <Box className="w-4 h-4" />
                     3D AR Model
