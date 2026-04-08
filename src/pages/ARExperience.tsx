@@ -32,15 +32,46 @@ import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
 /** Resolve which AR rendering mode to use, respecting retailer preference. */
-function resolveARMode(product: ARProduct): ARMode {
+export function resolveARMode(product: ARProduct): ARMode {
   const pref = product.ar_preferred_mode || 'auto';
   if (pref === '2d' && product.ar_overlay_url) return '2d';
   if (pref === '3d' && product.ar_model_url) return '3d';
-  // Auto: 2D first if available, then 3D
   if (product.ar_overlay_url) return '2d';
   if (product.ar_model_url) return '3d';
   return 'none';
 }
+
+// ── Fix 6: Camera error mapping ──
+function mapCameraError(err: any): { state: TrackingState; message: string; retry?: boolean } {
+  const name = err.name || '';
+  switch (name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+      return { state: 'camera_denied', message: 'Camera permission denied.' };
+    case 'NotFoundError':
+      return { state: 'camera_error', message: 'No camera found. Please check your device has a camera.' };
+    case 'NotReadableError':
+      return { state: 'camera_error', message: 'Camera is in use by another app. Close other apps and try again.' };
+    case 'OverconstrainedError':
+      return { state: 'camera_error', message: 'Camera settings not supported. Retrying…', retry: true };
+    case 'AbortError':
+      return { state: 'camera_error', message: 'Camera initialization was interrupted. Please try again.' };
+    default:
+      return { state: 'camera_error', message: err.message || 'Camera access failed.' };
+  }
+}
+
+// ── Fix 5: Performance tier system ──
+type PerformanceTier = 'A' | 'B' | 'C';
+
+const TIER_THRESHOLDS = {
+  downToB: 22,  // FPS < 22 for 2s → Tier B
+  downToC: 15,  // FPS < 15 for 2s → Tier C
+  upFromB: 25,  // FPS > 25 for 5s → Tier A
+  upFromC: 20,  // FPS > 20 for 5s → Tier B
+};
+
+const POSE_INTERVAL_MS = { A: 66, B: 66, C: 100 }; // ~15fps, ~15fps, ~10fps
 
 export default function ARExperience() {
   const { eventId, brandId } = useParams();
@@ -65,17 +96,10 @@ export default function ARExperience() {
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arMode, setArMode] = useState<ARMode>('none');
 
-  // 2D image overlay engine (used when ar_overlay_url is present)
   const imageOverlayRef = useRef<ImageOverlay | null>(null);
-  // Separate 2D canvas for image overlay (renders video + garment together)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Early model prefetch: stores the promise so Effect 2 can await it without re-triggering download
   const modelPrefetchRef = useRef<{ url: string; promise: Promise<any> } | null>(null);
 
-  // Scene-ready promise: Effect 2 awaits this to avoid the race condition where
-  // selectedProduct arrives before SceneManager is initialized in Effect 1.
-  // Has a 20s timeout to prevent hanging if Effect 1 fails before resolving.
   const sceneReadyResolveRef = useRef<(() => void) | null>(null);
   const sceneReadyRejectRef = useRef<((err: Error) => void) | null>(null);
   const sceneReadyPromiseRef = useRef<Promise<void>>(
@@ -83,17 +107,14 @@ export default function ARExperience() {
       const p = new Promise<void>((resolve, reject) => {
         sceneReadyResolveRef.current = resolve;
         sceneReadyRejectRef.current = reject;
-        // No timeout — promise resolves/rejects only on explicit success/failure
       });
-      p.catch(() => {}); // Prevent unhandled rejection warnings
+      p.catch(() => {});
       return p;
     })()
   );
 
-  // Module refs -- SceneManager and PoseProcessor persist for component lifetime
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const poseProcessorRef = useRef<PoseProcessor | null>(null);
-
   const modelRef = useRef<Object3D | null>(null);
   const animFrameRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
@@ -102,7 +123,7 @@ export default function ARExperience() {
   const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
   const coverCropRef = useRef<CoverCropInfo>({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 });
 
-  // One Euro Filter instances -- one per smoothed axis for independent adaptive smoothing
+  // One Euro Filters (3D path)
   const filterPosX = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
   const filterPosY = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
   const filterScaleX = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
@@ -110,43 +131,34 @@ export default function ARExperience() {
   const filterScaleZ = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterRotY = useRef(new OneEuroFilter(FILTER_PRESETS.rotation.minCutoff, FILTER_PRESETS.rotation.beta, FILTER_PRESETS.rotation.dCutoff));
 
-  // Outlier rejection filters -- run BEFORE One Euro smoothing (ANCH-10)
+  // Outlier filters (3D path)
   const outlierPosX = useRef(new OutlierFilter(15, 3.0));
   const outlierPosY = useRef(new OutlierFilter(15, 3.0));
   const outlierScX = useRef(new OutlierFilter(15, 3.0));
   const outlierScY = useRef(new OutlierFilter(15, 3.0));
   const outlierRotY = useRef(new OutlierFilter(15, 3.0));
 
-  // AnchorResolver -- created once, persists for component lifetime
   const anchorResolverRef = useRef<AnchorResolver | null>(null);
-
-  // BoneMapper -- created per rigged model, null for static models
   const boneMapperRef = useRef<BoneMapper | null>(null);
-
-  // BodySegmenter -- optional, for arm occlusion. null if unavailable.
   const segmenterRef = useRef<BodySegmenter | null>(null);
-  // DebugOverlay -- enabled via ?debug=true URL param
   const debugRef = useRef<DebugOverlay | null>(null);
-  // Last detected landmarks for debug overlay (avoids double detectForVideo)
   const lastLandmarksRef = useRef<any[] | null>(null);
-  // FPS tracking for auto quality tier switching
+
+  // Fix 5: Performance tier state
   const fpsFrames = useRef(0);
   const fpsLastCheck = useRef(0);
+  const currentTier = useRef<PerformanceTier>('A');
+  const tierStableStart = useRef(0); // timestamp when FPS crossed recovery threshold
 
-  // Last known good anchor result for outlier fallback
   const lastAnchorRef = useRef<AnchorResult | null>(null);
-
-  // VIS-01: Pinch-to-zoom manual scale multiplier (persists across frames, no re-render)
   const pinchScaleRef = useRef(1.0);
-
-  // Ref to access selectedProduct inside the render loop without stale closures
   const selectedProductRef = useRef<ARProduct | null>(null);
   selectedProductRef.current = selectedProduct;
-
-  // Missing body parts tracking for partial_tracking state (throttled to avoid re-render storms)
   const lastMissingPartsJson = useRef<string>('[]');
 
-  // Preview URL management -- revoke old URLs to prevent memory leaks
+  // Ref to track current arMode inside animation loop without stale closure
+  const arModeRef = useRef<ARMode>('none');
+
   const previewUrlRef = useRef<string | null>(null);
   useEffect(() => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -159,14 +171,41 @@ export default function ARExperience() {
     };
   }, [capturedBlob]);
 
-  // Capture handler: composites video + Three.js overlay into a single image
+  // ── Fix 1: Mode-aware capture ──
   const handleCapture = async () => {
-    if (!videoRef.current || !canvasRef.current || isCapturing) return;
+    if (!videoRef.current || isCapturing) return;
     setIsCapturing(true);
     try {
-      // Force a render so the overlay canvas has the current frame
-      sceneManagerRef.current?.renderIfDirty();
-      const blob = await compositeCapture(videoRef.current, canvasRef.current);
+      let blob: Blob;
+      if (arModeRef.current === '2d' && overlayCanvasRef.current) {
+        // 2D mode: overlay canvas already contains video + garment composite
+        blob = await new Promise<Blob>((resolve, reject) => {
+          overlayCanvasRef.current!.toBlob(
+            (b) => {
+              if (b) resolve(b);
+              else {
+                // iOS Safari fallback: use toDataURL
+                try {
+                  const dataUrl = overlayCanvasRef.current!.toDataURL('image/png');
+                  const byteStr = atob(dataUrl.split(',')[1]);
+                  const arr = new Uint8Array(byteStr.length);
+                  for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+                  resolve(new Blob([arr], { type: 'image/png' }));
+                } catch (fallbackErr) {
+                  reject(fallbackErr);
+                }
+              }
+            },
+            'image/png',
+          );
+        });
+      } else if (canvasRef.current) {
+        // 3D mode: composite video + Three.js canvas
+        sceneManagerRef.current?.renderIfDirty();
+        blob = await compositeCapture(videoRef.current, canvasRef.current);
+      } else {
+        throw new Error('No canvas available for capture');
+      }
       setCapturedBlob(blob);
     } catch (err) {
       console.error('Capture failed:', err);
@@ -175,7 +214,6 @@ export default function ARExperience() {
     }
   };
 
-  // Share handler: uses Web Share API with download fallback
   const handleShare = async () => {
     if (!capturedBlob) return;
     try {
@@ -185,12 +223,11 @@ export default function ARExperience() {
     }
   };
 
-  // Fetch AR-enabled products and validate context
+  // ── Effect 0: Fetch products ──
   useEffect(() => {
     async function fetchAndValidate() {
       if (!brandId) { setIsValidContext(false); setIsLoading(false); return; }
 
-      // Refresh session to avoid JWT expired errors
       await supabase.auth.getSession();
 
       const { data, error: fetchError } = await supabase
@@ -205,7 +242,6 @@ export default function ARExperience() {
         return;
       }
 
-      // Validate eventId matches
       if (eventId) {
         const belongsToEvent = data.some((p: any) => p.event_brands?.event_id === eventId);
         if (!belongsToEvent) { setIsValidContext(false); setIsLoading(false); return; }
@@ -226,23 +262,17 @@ export default function ARExperience() {
 
       setProducts(mapped);
 
-      // Preselect requested product or fall back to first
       const selected = requestedProductId
         ? mapped.find(p => p.id === requestedProductId) || mapped[0]
         : mapped[0];
       setSelectedProduct(selected);
 
-      // FIX-02: Start GLB download early (don't wait for pose processor to finish)
       if (selected.ar_model_url && !modelPrefetchRef.current) {
         modelPrefetchRef.current = {
           url: selected.ar_model_url,
           promise: prefetchModel(selected.ar_model_url, (loaded, _total, percent) => {
-            if (percent >= 0) {
-              setLoadProgress(`${percent}%`);
-            } else {
-              const mb = (loaded / (1024 * 1024)).toFixed(1);
-              setLoadProgress(`${mb} MB`);
-            }
+            if (percent >= 0) setLoadProgress(`${percent}%`);
+            else setLoadProgress(`${(loaded / (1024 * 1024)).toFixed(1)} MB`);
           }),
         };
       }
@@ -253,11 +283,8 @@ export default function ARExperience() {
   }, [brandId, eventId, requestedProductId]);
 
   // ── Effect 1: Camera + Pose + Scene + Render loop ──
-  // Depends on isLoading: when isLoading flips to false, video/canvas elements
-  // appear in the DOM and this effect can initialize the AR pipeline.
-  // Product switches only swap the 3D model (Effect 2), never restart this pipeline.
   useEffect(() => {
-    if (isLoading) return; // Wait for product data + DOM elements
+    if (isLoading) return;
     if (!canvasRef.current || !videoRef.current) return;
     cleanedUpRef.current = false;
     const video = videoRef.current;
@@ -265,286 +292,328 @@ export default function ARExperience() {
 
     async function initPipeline() {
       try {
-      // 1. Check WebGL availability before anything else
-      console.log('[AR] Step 1: Checking WebGL support…');
-      const testCanvas = document.createElement('canvas');
-      const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
-      if (!gl) {
-        console.error('[AR] WebGL not available');
-        setTrackingState('camera_error');
-        setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
-        sceneReadyRejectRef.current?.(new Error('webgl_unavailable'));
-        return;
-      }
-      console.log('[AR] WebGL OK');
-
-      // 2. Camera + Pose in parallel (FIX-01: saves 3-8s)
-      setTrackingState('initializing');
-      setLoadStage('Starting camera & body tracking…');
-      console.log('[AR] Step 2: Starting camera + pose in parallel…');
-
-      const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
-      const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
-      // Phase 4: Start segmenter in parallel (optional — graceful failure)
-      const segPromise = BodySegmenter.create();
-
-      const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
-      // Segmenter completes independently — don't block on it
-      segPromise.then((seg) => { if (!cleanedUpRef.current) segmenterRef.current = seg; });
-      console.log('[AR] Camera result:', 'error' in camResult ? `ERROR: ${camResult.error.message}` : 'OK');
-      console.log('[AR] Pose result:', 'error' in poseResult ? `ERROR: ${poseResult.error.message}` : 'OK');
-
-      if (cleanedUpRef.current) {
-        if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
-        if (poseResult && !('error' in poseResult)) poseResult.close();
-        return;
-      }
-
-      // Handle camera errors
-      if ('error' in camResult) {
-        const err = camResult.error;
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setTrackingState('camera_denied');
-        } else {
+        // 1. Check WebGL
+        console.log('[AR] Step 1: Checking WebGL support…');
+        const testCanvas = document.createElement('canvas');
+        const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+        if (!gl) {
+          console.error('[AR] WebGL not available');
           setTrackingState('camera_error');
-          setTrackingMessage(err.message || 'Camera access failed');
+          setTrackingMessage('Your browser does not support WebGL. Try Chrome or Safari.');
+          sceneReadyRejectRef.current?.(new Error('webgl_unavailable'));
+          return;
         }
-        if (poseResult && !('error' in poseResult)) poseResult.close();
-        sceneReadyRejectRef.current?.(new Error('camera_failed'));
-        return;
-      }
 
-      streamRef.current = camResult.stream;
-      coverCropRef.current = computeCoverCrop(camResult.videoWidth, camResult.videoHeight, window.innerWidth, window.innerHeight);
+        // 2. Camera + Pose + Segmenter in parallel
+        setTrackingState('initializing');
+        setLoadStage('Starting camera & body tracking…');
 
-      // Handle pose errors
-      if ('error' in poseResult) {
-        setTrackingState('pose_init_failed');
-        setTrackingMessage(poseResult.error.message || 'Body tracking failed. Try refreshing.');
-        sceneReadyRejectRef.current?.(new Error('pose_failed'));
-        return;
-      }
+        const cameraPromise = startCamera(video).catch((err: any) => ({ error: err }));
+        const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
+        const segPromise = BodySegmenter.create();
 
-      poseProcessorRef.current = poseResult;
+        const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
+        segPromise.then((seg) => { if (!cleanedUpRef.current) segmenterRef.current = seg; });
 
-      // 3. Scene (persistent -- survives product switches)
-      console.log('[AR] Step 3: Creating SceneManager…');
-      setLoadStage('Setting up 3D scene…');
-      const sm = new SceneManager(canvas);
-      sceneManagerRef.current = sm;
+        if (cleanedUpRef.current) {
+          if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
+          if (poseResult && !('error' in poseResult)) poseResult.close();
+          return;
+        }
 
-      // Signal Effect 2 that SceneManager is ready (fixes race condition)
-      console.log('[AR] Scene ready — resolving sceneReadyPromise');
-      sceneReadyResolveRef.current?.();
+        // Fix 6: Handle camera errors with specific messages
+        if ('error' in camResult) {
+          const err = camResult.error;
+          const mapped = mapCameraError(err);
 
-      // Debug overlay (enabled via ?debug=true URL param)
-      debugRef.current = new DebugOverlay(canvas.parentElement!);
-
-      // Initialize anchor resolver with all strategies
-      const resolver = new AnchorResolver();
-      resolver.register('shirt', new ShirtAnchor());
-      resolver.register('abaya', new AbayaAnchor());
-      resolver.register('pants', new PantsAnchor());
-      resolver.register('jacket', new ShirtAnchor());
-      resolver.register('headwear', new AccessoryAnchor());
-      resolver.register('accessory', new AccessoryAnchor());
-      anchorResolverRef.current = resolver;
-
-      setTrackingState('waiting_for_pose');
-      setLoadStage('');
-
-      // 4. Render loop
-      let lastPoseTime = 0;
-      const animate = (time: number) => {
-        if (cleanedUpRef.current) return;
-        const pp = poseProcessorRef.current;
-        if (pp && video.readyState >= 2 && time - lastPoseTime > 66) {
-          lastPoseTime = time;
-          const now = performance.now();
-          const result = pp.detectForVideo(video, now);
-          if (framesWithoutPose.current < 5 || framesWithoutPose.current % 60 === 0) {
-            const lmCount = result?.landmarks?.[0]?.length ?? 0;
-            const wlmCount = result?.worldLandmarks?.[0]?.length ?? 0;
-            const modelLoaded = !!modelRef.current;
-            console.log(`[AR] Frame: poses=${result?.landmarks?.length ?? 0} lm=${lmCount} wlm=${wlmCount} model=${modelLoaded} state=${trackingState}`);
-          }
-          if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
-            framesWithoutPose.current = 0;
-            lastLandmarksRef.current = result.landmarks[0]; // Store for debug overlay
-
-            // ── 2D IMAGE OVERLAY PATH ──
-            // When product has ar_overlay_url, use simple 2D canvas overlay
-            if (imageOverlayRef.current) {
-              imageOverlayRef.current.updateFrame(video, result.landmarks[0]);
-              setTrackingState('tracking_active');
-              // Skip the entire 3D pipeline — 2D handles everything
-              sm.renderIfDirty();
-              animFrameRef.current = requestAnimationFrame(animate);
+          if (mapped.retry) {
+            // OverconstrainedError: retry with relaxed constraints
+            console.warn('[AR] Camera overconstrained, retrying with basic constraints…');
+            try {
+              const retryStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+              video.srcObject = retryStream;
+              await video.play();
+              streamRef.current = retryStream;
+              const vw = video.videoWidth || 640;
+              const vh = video.videoHeight || 480;
+              coverCropRef.current = computeCoverCrop(vw, vh, window.innerWidth, window.innerHeight);
+              // Fall through to continue pipeline
+            } catch (retryErr: any) {
+              const retryMapped = mapCameraError(retryErr);
+              setTrackingState(retryMapped.state);
+              setTrackingMessage(retryMapped.message);
+              if (poseResult && !('error' in poseResult)) poseResult.close();
+              sceneReadyRejectRef.current?.(new Error('camera_failed'));
               return;
             }
+          } else {
+            setTrackingState(mapped.state);
+            setTrackingMessage(mapped.message);
+            if (poseResult && !('error' in poseResult)) poseResult.close();
+            sceneReadyRejectRef.current?.(new Error('camera_failed'));
+            return;
+          }
+        } else {
+          streamRef.current = camResult.stream;
+          coverCropRef.current = computeCoverCrop(camResult.videoWidth, camResult.videoHeight, window.innerWidth, window.innerHeight);
+        }
 
-            // ── 3D GLB PATH (original pipeline) ──
-            const product = selectedProductRef.current;
-            const garmentType = product?.garment_type || 'shirt';
-            const config = GARMENT_PRESETS[garmentType];
-            const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
-            const arScale = product?.ar_scale || 1;
+        if ('error' in poseResult) {
+          setTrackingState('pose_init_failed');
+          setTrackingMessage(poseResult.error.message || 'Body tracking failed. Try refreshing.');
+          sceneReadyRejectRef.current?.(new Error('pose_failed'));
+          return;
+        }
 
-            // Compute body measurements from landmarks (ANCH-02: uses worldLandmarks for metric)
-            const measurements = computeBodyMeasurements(
-              result.landmarks[0],
-              result.worldLandmarks[0],
-              coverCropRef.current,
-              sm.visibleDims,
-            );
+        poseProcessorRef.current = poseResult;
 
-            // Check required landmark visibility for partial_tracking detection (UX-01)
-            const requiredVisible = config.requiredLandmarks.filter(
-              idx => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold
-            );
-            const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
-            const someRequiredVisible = requiredVisible.length > 0;
+        // 3. Scene
+        const sm = new SceneManager(canvas);
+        sceneManagerRef.current = sm;
+        sceneReadyResolveRef.current?.();
 
-            if (allRequiredVisible) {
-              setTrackingState('tracking_active');
-              // Clear missing parts when fully tracking
-              if (lastMissingPartsJson.current !== '[]') {
-                lastMissingPartsJson.current = '[]';
-                setMissingParts([]);
+        debugRef.current = new DebugOverlay(canvas.parentElement!);
+
+        const resolver = new AnchorResolver();
+        resolver.register('shirt', new ShirtAnchor());
+        resolver.register('abaya', new AbayaAnchor());
+        resolver.register('pants', new PantsAnchor());
+        resolver.register('jacket', new ShirtAnchor());
+        resolver.register('headwear', new AccessoryAnchor());
+        resolver.register('accessory', new AccessoryAnchor());
+        anchorResolverRef.current = resolver;
+
+        setTrackingState('waiting_for_pose');
+        setLoadStage('');
+
+        // 4. Render loop
+        let lastPoseTime = 0;
+
+        const animate = (time: number) => {
+          if (cleanedUpRef.current) return;
+          const pp = poseProcessorRef.current;
+          const poseInterval = POSE_INTERVAL_MS[currentTier.current];
+
+          if (pp && video.readyState >= 2 && time - lastPoseTime > poseInterval) {
+            lastPoseTime = time;
+            const now = performance.now();
+            const result = pp.detectForVideo(video, now);
+
+            if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
+              framesWithoutPose.current = 0;
+              lastLandmarksRef.current = result.landmarks[0];
+
+              // ── 2D IMAGE OVERLAY PATH ──
+              if (imageOverlayRef.current) {
+                imageOverlayRef.current.updateFrame(video, result.landmarks[0]);
+                setTrackingState('tracking_active');
+
+                // Fix 3: Run segmentation for 2D occlusion too (respects tier)
+                if (currentTier.current === 'A') {
+                  const frameBudgetMs = performance.now() - now;
+                  const seg = segmenterRef.current;
+                  if (seg?.isEnabled && frameBudgetMs < 20) {
+                    const mask = seg.segment(video, performance.now());
+                    if (mask) {
+                      imageOverlayRef.current.updateOcclusionMask(mask);
+                    }
+                  }
+                } else {
+                  // Tier B/C: no segmentation for 2D
+                  imageOverlayRef.current.updateOcclusionMask(null);
+                }
+
+                sm.renderIfDirty();
+                animFrameRef.current = requestAnimationFrame(animate);
+                return;
               }
-            } else if (someRequiredVisible) {
-              setTrackingState('partial_tracking');
-              // Compute and throttle missing parts updates
-              const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
-              const partsJson = JSON.stringify(parts);
-              if (partsJson !== lastMissingPartsJson.current) {
-                lastMissingPartsJson.current = partsJson;
-                setMissingParts(parts);
+
+              // ── 3D GLB PATH ──
+              const product = selectedProductRef.current;
+              const garmentType = product?.garment_type || 'shirt';
+              const config = GARMENT_PRESETS[garmentType];
+              const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
+              const arScale = product?.ar_scale || 1;
+
+              const measurements = computeBodyMeasurements(
+                result.landmarks[0],
+                result.worldLandmarks[0],
+                coverCropRef.current,
+                sm.visibleDims,
+              );
+
+              const requiredVisible = config.requiredLandmarks.filter(
+                idx => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold
+              );
+              const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
+              const someRequiredVisible = requiredVisible.length > 0;
+
+              if (allRequiredVisible) {
+                setTrackingState('tracking_active');
+                if (lastMissingPartsJson.current !== '[]') {
+                  lastMissingPartsJson.current = '[]';
+                  setMissingParts([]);
+                }
+              } else if (someRequiredVisible) {
+                setTrackingState('partial_tracking');
+                const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
+                const partsJson = JSON.stringify(parts);
+                if (partsJson !== lastMissingPartsJson.current) {
+                  lastMissingPartsJson.current = partsJson;
+                  setMissingParts(parts);
+                }
+              } else {
+                setTrackingState('waiting_for_pose');
+              }
+
+              const anchor = anchorResolverRef.current!.resolve(
+                garmentType, measurements, config, modelDimsRef.current
+              );
+
+              if (anchor && modelRef.current) {
+                modelRef.current.visible = true;
+
+                const px = outlierPosX.current.filter(anchor.position.x) ?? lastAnchorRef.current?.position.x ?? anchor.position.x;
+                const py = outlierPosY.current.filter(anchor.position.y) ?? lastAnchorRef.current?.position.y ?? anchor.position.y;
+                const sx = outlierScX.current.filter(anchor.scale.x * arScale) ?? lastAnchorRef.current?.scale.x ?? anchor.scale.x * arScale;
+                const sy = outlierScY.current.filter(anchor.scale.y * arScale) ?? lastAnchorRef.current?.scale.y ?? anchor.scale.y * arScale;
+                const ry = outlierRotY.current.filter(anchor.rotationY) ?? lastAnchorRef.current?.rotationY ?? anchor.rotationY;
+                const sz = (sx + sy) / 2;
+
+                const t = performance.now() / 1000;
+                const smoothX = filterPosX.current.filter(px, t);
+                const smoothY = filterPosY.current.filter(py, t);
+                const smoothScX = filterScaleX.current.filter(sx, t);
+                const smoothScY = filterScaleY.current.filter(sy, t);
+                const smoothScZ = filterScaleZ.current.filter(sz, t);
+                const smoothRotY = filterRotY.current.filter(ry, t);
+
+                modelRef.current.position.set(smoothX + offset.x, smoothY + offset.y, anchor.position.z + offset.z);
+                modelRef.current.scale.set(
+                  smoothScX * pinchScaleRef.current,
+                  smoothScY * pinchScaleRef.current,
+                  smoothScZ * pinchScaleRef.current,
+                );
+                modelRef.current.rotation.y = smoothRotY;
+
+                sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
+
+                if (boneMapperRef.current && result.worldLandmarks[0]) {
+                  boneMapperRef.current.update(result.worldLandmarks[0]);
+                }
+
+                // Segmentation for 3D occlusion (respects tier — only Tier A)
+                if (currentTier.current === 'A') {
+                  const frameBudgetMs = performance.now() - now;
+                  const seg = segmenterRef.current;
+                  if (seg?.isEnabled && frameBudgetMs < 20) {
+                    const mask = seg.segment(video, performance.now());
+                    if (mask) {
+                      sm.updateOcclusionMask(mask.data, mask.width, mask.height);
+                    }
+                  }
+                }
+
+                const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
+                sm.updateShadowPlane(floorY, garmentType);
+                sm.dirty = true;
+
+                lastAnchorRef.current = {
+                  ...anchor,
+                  scale: { x: sx, y: sy, z: sz },
+                };
+              } else if (modelRef.current) {
+                modelRef.current.visible = false;
+                sm.dirty = true;
               }
             } else {
-              setTrackingState('waiting_for_pose');
-            }
-
-            // Resolve anchor for garment type (ANCH-01: strategy dispatch)
-            const anchor = anchorResolverRef.current!.resolve(
-              garmentType, measurements, config, modelDimsRef.current
-            );
-
-            if (anchor && modelRef.current) {
-              modelRef.current.visible = true;
-
-              // Outlier rejection (ANCH-10): filter before smoothing
-              const px = outlierPosX.current.filter(anchor.position.x) ?? lastAnchorRef.current?.position.x ?? anchor.position.x;
-              const py = outlierPosY.current.filter(anchor.position.y) ?? lastAnchorRef.current?.position.y ?? anchor.position.y;
-              const sx = outlierScX.current.filter(anchor.scale.x * arScale) ?? lastAnchorRef.current?.scale.x ?? anchor.scale.x * arScale;
-              const sy = outlierScY.current.filter(anchor.scale.y * arScale) ?? lastAnchorRef.current?.scale.y ?? anchor.scale.y * arScale;
-              const ry = outlierRotY.current.filter(anchor.rotationY) ?? lastAnchorRef.current?.rotationY ?? anchor.rotationY;
-              const sz = (sx + sy) / 2;  // Z scale is average of X and Y
-
-              // Adaptive smoothing via One Euro Filter
-              const t = performance.now() / 1000;
-              const smoothX = filterPosX.current.filter(px, t);
-              const smoothY = filterPosY.current.filter(py, t);
-              const smoothScX = filterScaleX.current.filter(sx, t);
-              const smoothScY = filterScaleY.current.filter(sy, t);
-              const smoothScZ = filterScaleZ.current.filter(sz, t);
-              const smoothRotY = filterRotY.current.filter(ry, t);
-
-              // Apply position with per-product offset
-              modelRef.current.position.set(
-                smoothX + offset.x,
-                smoothY + offset.y,
-                anchor.position.z + offset.z,
-              );
-              // VIS-01: Apply pinch-to-zoom manual scale multiplier
-              modelRef.current.scale.set(
-                smoothScX * pinchScaleRef.current,
-                smoothScY * pinchScaleRef.current,
-                smoothScZ * pinchScaleRef.current,
-              );
-              modelRef.current.rotation.y = smoothRotY;
-
-              // Opacity from anchor confidence
-              sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
-
-              // Bone deformation for rigged models (Phase 3)
-              if (boneMapperRef.current && result.worldLandmarks[0]) {
-                boneMapperRef.current.update(result.worldLandmarks[0]);
+              framesWithoutPose.current++;
+              if (framesWithoutPose.current > 30) {
+                setTrackingState(prev => (prev === 'tracking_active' || prev === 'partial_tracking') ? 'tracking_lost' : 'waiting_for_pose');
+                if (modelRef.current) modelRef.current.visible = false;
+                sm.dirty = true;
               }
-
-              // Phase 4: Body segmentation for occlusion (arms in front of garment)
-              // Frame budgeting: only run segmentation if we have time budget left (<20ms spent so far)
-              const frameBudgetMs = performance.now() - now;
-              const seg = segmenterRef.current;
-              if (seg?.isEnabled && frameBudgetMs < 20) {
-                const mask = seg.segment(video, performance.now());
-                if (mask) {
-                  sm.updateOcclusionMask(mask.data, mask.width, mask.height);
-                }
-              }
-
-              // Shadow ground plane at floor level
-              const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
-              sm.updateShadowPlane(floorY, garmentType);
-              sm.dirty = true;
-
-              // Store for outlier fallback
-              lastAnchorRef.current = {
-                ...anchor,
-                scale: { x: sx, y: sy, z: sz },
-              };
-            } else if (modelRef.current) {
-              modelRef.current.visible = false;
-              sm.dirty = true;
-            }
-          } else {
-            framesWithoutPose.current++;
-            if (framesWithoutPose.current > 30) {
-              setTrackingState(prev => (prev === 'tracking_active' || prev === 'partial_tracking') ? 'tracking_lost' : 'waiting_for_pose');
-              // Hide model without disposing -- just toggle visibility
-              if (modelRef.current) modelRef.current.visible = false;
-              sm.dirty = true;
             }
           }
-        }
-        // Cloth sway animation (procedural vertex displacement)
-        if (modelRef.current?.visible) {
-          updateClothSwayTime(modelRef.current, time / 1000);
-          sm.dirty = true; // Sway changes vertices, need re-render
-        }
 
-        // VIS-02: Adaptive lighting from camera brightness (self-throttles to 500ms)
-        if (video.readyState >= 2) {
-          sm.updateLightingFromVideo(video);
-        }
-        sm.renderIfDirty();  // PERF-02: only render when pose updated or dirty
-
-        // Debug overlay (draws landmarks, skeleton, FPS when ?debug=true)
-        debugRef.current?.draw(lastLandmarksRef.current, trackingState, segmenterRef.current?.isEnabled ?? false, time);
-
-        // Quality tier auto-detection: disable segmentation if fps drops below 20
-        fpsFrames.current++;
-        if (time - fpsLastCheck.current > 2000) { // Check every 2s
-          const fps = (fpsFrames.current / ((time - fpsLastCheck.current) / 1000));
-          fpsFrames.current = 0;
-          fpsLastCheck.current = time;
-          if (fps < 20 && segmenterRef.current?.isEnabled) {
-            console.warn(`[AR] FPS dropped to ${fps.toFixed(0)} — disabling body segmentation`);
-            segmenterRef.current.setEnabled(false);
+          // Cloth sway animation
+          if (modelRef.current?.visible) {
+            updateClothSwayTime(modelRef.current, time / 1000);
+            sm.dirty = true;
           }
-        }
 
+          // Adaptive lighting
+          if (video.readyState >= 2) {
+            sm.updateLightingFromVideo(video);
+          }
+          sm.renderIfDirty();
+
+          // Debug overlay
+          debugRef.current?.draw(lastLandmarksRef.current, trackingState, segmenterRef.current?.isEnabled ?? false, time);
+
+          // ── Fix 5: Performance tier management ──
+          fpsFrames.current++;
+          if (time - fpsLastCheck.current > 2000) {
+            const fps = fpsFrames.current / ((time - fpsLastCheck.current) / 1000);
+            fpsFrames.current = 0;
+            fpsLastCheck.current = time;
+
+            const tier = currentTier.current;
+
+            // Downgrade logic
+            if (tier === 'A' && fps < TIER_THRESHOLDS.downToB) {
+              currentTier.current = 'B';
+              segmenterRef.current?.setEnabled(false);
+              tierStableStart.current = 0;
+              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier B (segmentation OFF)`);
+            } else if (tier === 'B' && fps < TIER_THRESHOLDS.downToC) {
+              currentTier.current = 'C';
+              sm.setShadowsEnabled(false);
+              tierStableStart.current = 0;
+              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier C (shadows OFF, pose 10fps)`);
+            } else if (tier === 'A' && fps < TIER_THRESHOLDS.downToC) {
+              // Direct jump A→C if very low
+              currentTier.current = 'C';
+              segmenterRef.current?.setEnabled(false);
+              sm.setShadowsEnabled(false);
+              tierStableStart.current = 0;
+              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier C (direct from A)`);
+            }
+
+            // Recovery logic (step up one tier if FPS sustained for 5s)
+            if (tier === 'C' && fps > TIER_THRESHOLDS.upFromC) {
+              if (!tierStableStart.current) tierStableStart.current = time;
+              else if (time - tierStableStart.current > 5000) {
+                currentTier.current = 'B';
+                sm.setShadowsEnabled(true);
+                tierStableStart.current = 0;
+                console.info(`[AR] FPS ${fps.toFixed(0)} → Tier B (recovered, shadows ON)`);
+              }
+            } else if (tier === 'B' && fps > TIER_THRESHOLDS.upFromB) {
+              if (!tierStableStart.current) tierStableStart.current = time;
+              else if (time - tierStableStart.current > 5000) {
+                currentTier.current = 'A';
+                segmenterRef.current?.setEnabled(true);
+                tierStableStart.current = 0;
+                console.info(`[AR] FPS ${fps.toFixed(0)} → Tier A (recovered, segmentation ON)`);
+              }
+            } else if (
+              (tier === 'C' && fps <= TIER_THRESHOLDS.upFromC) ||
+              (tier === 'B' && fps <= TIER_THRESHOLDS.upFromB)
+            ) {
+              tierStableStart.current = 0; // Reset recovery timer
+            }
+          }
+
+          animFrameRef.current = requestAnimationFrame(animate);
+        };
         animFrameRef.current = requestAnimationFrame(animate);
-      };
-      animFrameRef.current = requestAnimationFrame(animate);
 
       } catch (err: any) {
-        // CRITICAL: Catch any unhandled error in the pipeline so the UI never freezes
         console.error('[AR] initPipeline crashed:', err);
         setTrackingState('camera_error');
         setTrackingMessage(err.message || 'AR failed to initialize. Try refreshing.');
         setLoadStage('');
-        // Reject so Effect 2 doesn't hang forever
         sceneReadyRejectRef.current?.(err instanceof Error ? err : new Error(String(err)));
       }
     }
@@ -560,7 +629,7 @@ export default function ARExperience() {
       poseProcessorRef.current = null;
       sceneManagerRef.current?.dispose();
       sceneManagerRef.current = null;
-      clearModelCache(); // PERF-04: Free cached GPU resources on unmount
+      clearModelCache();
       segmenterRef.current?.close();
       segmenterRef.current = null;
       debugRef.current?.dispose();
@@ -570,26 +639,22 @@ export default function ARExperience() {
     };
   }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 2: Model loading (runs when selectedProduct changes) ──
-  // Only selectedProduct triggers model reload. Camera, pose, and scene persist.
+  // ── Effect 2: Model loading ──
   useEffect(() => {
     if (!selectedProduct) return;
     let cancelled = false;
 
     async function loadWhenReady() {
-      // Wait for SceneManager to be initialized by Effect 1 (fixes race condition)
       try {
         await sceneReadyPromiseRef.current;
       } catch (sceneErr: any) {
-        // Effect 1 failed — show specific error based on rejection reason
         console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
         if (!cancelled) {
           setTrackingState(prev => {
             const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
-            if (errorStates.includes(prev)) return prev; // keep specific error already set
+            if (errorStates.includes(prev)) return prev;
             return 'camera_error';
           });
-          // Parse rejection to show helpful message
           const msg = sceneErr?.message || '';
           if (msg.includes('camera') || msg.includes('Camera')) {
             setTrackingMessage('Camera access failed. Please allow camera permissions and reload.');
@@ -606,35 +671,34 @@ export default function ARExperience() {
       if (cancelled || !sceneManagerRef.current) return;
       const sm = sceneManagerRef.current;
 
-      // Reset smoothing filters for new product
-      filterPosX.current.reset();
-      filterPosY.current.reset();
-      filterScaleX.current.reset();
-      filterScaleY.current.reset();
-      filterScaleZ.current.reset();
+      // Reset filters
+      filterPosX.current.reset(); filterPosY.current.reset();
+      filterScaleX.current.reset(); filterScaleY.current.reset(); filterScaleZ.current.reset();
       filterRotY.current.reset();
-      // Reset outlier filters too
-      outlierPosX.current.reset();
-      outlierPosY.current.reset();
-      outlierScX.current.reset();
-      outlierScY.current.reset();
+      outlierPosX.current.reset(); outlierPosY.current.reset();
+      outlierScX.current.reset(); outlierScY.current.reset();
       outlierRotY.current.reset();
       lastAnchorRef.current = null;
-      pinchScaleRef.current = 1.0; // VIS-01: Reset pinch zoom on product switch
+      pinchScaleRef.current = 1.0;
       boneMapperRef.current?.reset();
       boneMapperRef.current = null;
 
-      // ── Determine AR mode respecting retailer preference ──
+      // Reset performance tier on product switch
+      currentTier.current = 'A';
+      tierStableStart.current = 0;
+      segmenterRef.current?.setEnabled(true);
+      sm.setShadowsEnabled(true);
+
       const resolvedMode = resolveARMode(selectedProduct);
       const use2D = resolvedMode === '2d';
       setArMode(resolvedMode);
+      arModeRef.current = resolvedMode;
 
-      // Dispose previous 2D overlay if switching to 3D
+      // Dispose previous 2D overlay
       imageOverlayRef.current?.dispose();
       imageOverlayRef.current = null;
 
       if (use2D) {
-        // ── 2D IMAGE OVERLAY PATH ──
         setTrackingState('model_loading');
         setLoadStage('Loading garment image…');
         try {
@@ -643,6 +707,13 @@ export default function ARExperience() {
           overlayCanvas.width = window.innerWidth;
           overlayCanvas.height = window.innerHeight;
           const overlay = new ImageOverlay(overlayCanvas);
+
+          // Fix 2/9: Initialize cover crop for 2D overlay
+          const v = videoRef.current;
+          if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+            overlay.updateCoverCrop(v.videoWidth, v.videoHeight, overlayCanvas.width, overlayCanvas.height);
+          }
+
           await overlay.loadGarment(selectedProduct.ar_overlay_url!, selectedProduct.garment_type || 'shirt');
           if (cancelled) return;
           imageOverlayRef.current = overlay;
@@ -665,18 +736,13 @@ export default function ARExperience() {
       setModelLoadFailed(false);
 
       const attemptLoad = (attempt: number) => {
-        // FIX-02: Reuse prefetched promise if URL matches (first product only)
         const prefetch = modelPrefetchRef.current;
         const modelPromise = (prefetch && prefetch.url === selectedProduct.ar_model_url)
-          ? (modelPrefetchRef.current = null, prefetch.promise) // consume it
+          ? (modelPrefetchRef.current = null, prefetch.promise)
           : loadModel(selectedProduct.ar_model_url, (loaded, _total, percent) => {
               if (cancelled) return;
-              if (percent >= 0) {
-                setLoadProgress(`${percent}%`);
-              } else {
-                const mb = (loaded / (1024 * 1024)).toFixed(1);
-                setLoadProgress(`${mb} MB`);
-              }
+              if (percent >= 0) setLoadProgress(`${percent}%`);
+              else setLoadProgress(`${(loaded / (1024 * 1024)).toFixed(1)} MB`);
             });
 
         modelPromise.then((result) => {
@@ -688,7 +754,6 @@ export default function ARExperience() {
           sm.enhanceMaterials(selectedProduct.garment_type || 'shirt');
           applyClothSway(result.wrapper, selectedProduct.garment_type || 'shirt');
 
-          // Phase 3: Create BoneMapper for rigged models
           if (result.isRigged && result.skeleton) {
             boneMapperRef.current = BoneMapper.create(result.skeleton);
           } else {
@@ -725,18 +790,25 @@ export default function ARExperience() {
     return () => { cancelled = true; };
   }, [selectedProduct]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 3: Resize handler (runs once) ──
+  // ── Effect 3: Resize handler ──
   useEffect(() => {
     const handleResize = () => {
       const sm = sceneManagerRef.current;
       if (!sm) return;
       sm.handleResize();
-      setCanvasSize({ w: window.innerWidth, h: window.innerHeight });
-      debugRef.current?.resize(window.innerWidth, window.innerHeight);
+      const newW = window.innerWidth;
+      const newH = window.innerHeight;
+      setCanvasSize({ w: newW, h: newH });
+      debugRef.current?.resize(newW, newH);
       if (videoRef.current && videoRef.current.videoWidth > 0) {
         coverCropRef.current = computeCoverCrop(
           videoRef.current.videoWidth, videoRef.current.videoHeight,
-          window.innerWidth, window.innerHeight
+          newW, newH
+        );
+        // Fix 9: Update 2D overlay cover crop on resize
+        imageOverlayRef.current?.updateCoverCrop(
+          videoRef.current.videoWidth, videoRef.current.videoHeight,
+          newW, newH
         );
       }
     };
@@ -744,7 +816,7 @@ export default function ARExperience() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ── Effect 4: Pinch-to-zoom gesture handling (VIS-01) ──
+  // ── Effect 4: Pinch-to-zoom ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -761,10 +833,9 @@ export default function ARExperience() {
 
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && initialDistance > 0) {
-        e.preventDefault(); // Prevent page zoom
+        e.preventDefault();
         const newDist = getTouchDistance(e.touches[0], e.touches[1]);
         const ratio = newDist / initialDistance;
-        // Clamp pinch scale to [0.5, 2.0]
         pinchScaleRef.current = Math.max(0.5, Math.min(2.0, initialScale * ratio));
         if (sceneManagerRef.current) {
           sceneManagerRef.current.dirty = true;
@@ -824,7 +895,7 @@ export default function ARExperience() {
         playsInline muted autoPlay
       />
 
-      {/* 2D garment overlay canvas (used when ar_overlay_url present) */}
+      {/* 2D garment overlay canvas */}
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0 w-full h-full"
@@ -833,7 +904,7 @@ export default function ARExperience() {
         height={canvasSize.h}
       />
 
-      {/* Three.js canvas (used for 3D GLB models) */}
+      {/* Three.js canvas */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
@@ -842,7 +913,7 @@ export default function ARExperience() {
         height={canvasSize.h}
       />
 
-      {/* Tracking guidance overlay */}
+      {/* Tracking guidance */}
       <TrackingGuidance
         state={trackingState}
         message={trackingMessage}
@@ -879,7 +950,7 @@ export default function ARExperience() {
         </div>
       )}
 
-      {/* Capture button -- visible when tracking is active or partial */}
+      {/* Capture button */}
       {(trackingState === 'tracking_active' || trackingState === 'partial_tracking') && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
           <button
@@ -893,7 +964,7 @@ export default function ARExperience() {
         </div>
       )}
 
-      {/* Capture preview overlay */}
+      {/* Capture preview */}
       {capturedBlob && previewUrlRef.current && (
         <div className="absolute inset-0 z-30 bg-black/80 flex flex-col items-center justify-center gap-4 p-6">
           <img
@@ -902,19 +973,11 @@ export default function ARExperience() {
             className="max-w-full max-h-[70vh] rounded-xl shadow-2xl object-contain"
           />
           <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              className="gap-2"
-              onClick={handleShare}
-            >
+            <Button variant="secondary" className="gap-2" onClick={handleShare}>
               <Share2 className="h-4 w-4" />
               Share
             </Button>
-            <Button
-              variant="ghost"
-              className="text-white hover:bg-white/20"
-              onClick={() => setCapturedBlob(null)}
-            >
+            <Button variant="ghost" className="text-white hover:bg-white/20" onClick={() => setCapturedBlob(null)}>
               Dismiss
             </Button>
           </div>
@@ -948,7 +1011,6 @@ export default function ARExperience() {
   );
 }
 
-/** VIS-01: Compute Euclidean distance between two touch points for pinch gesture. */
 function getTouchDistance(t1: Touch, t2: Touch): number {
   const dx = t1.clientX - t2.clientX;
   const dy = t1.clientY - t2.clientY;
