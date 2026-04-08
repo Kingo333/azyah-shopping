@@ -33,6 +33,7 @@ interface EventBrandProduct {
   ar_enabled?: boolean;
   ar_scale?: number;
   garment_type?: string;
+  ar_preferred_mode?: string;
 }
 
 interface EventBrand {
@@ -317,14 +318,19 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                         Try-On Ready
                       </Badge>
                     )}
-                    {product.ar_enabled && product.ar_model_url && (
+                    {product.ar_enabled && product.ar_model_url && !product.ar_overlay_url && (
                       <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
                         3D AR
                       </Badge>
                     )}
-                    {product.ar_overlay_url && (
+                    {product.ar_overlay_url && !product.ar_model_url && (
                       <Badge variant="outline" className="absolute top-2 left-2 bg-blue-50 text-blue-700 border-blue-200">
                         2D AR
+                      </Badge>
+                    )}
+                    {product.ar_overlay_url && product.ar_model_url && (
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-emerald-50 text-emerald-700 border-emerald-200">
+                        {product.ar_preferred_mode === '3d' ? '3D AR' : product.ar_preferred_mode === '2d' ? '2D AR' : '2D+3D AR'}
                       </Badge>
                     )}
                     {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
@@ -393,6 +399,41 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                 </div>
               </div>
 
+              {/* AR Mode Selector */}
+              {(editingProduct.ar_overlay_url || editingProduct.ar_model_url) && (
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <label className="text-sm font-medium">AR Display Mode</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Choose which AR experience shoppers see for this product.
+                  </p>
+                  <Select
+                    value={editingProduct.ar_preferred_mode || 'auto'}
+                    onValueChange={async (value) => {
+                      try {
+                        await supabase
+                          .from('event_brand_products')
+                          .update({ ar_preferred_mode: value, updated_at: new Date().toISOString() })
+                          .eq('id', editingProduct.id);
+                        setEditingProduct(prev => prev ? { ...prev, ar_preferred_mode: value } : prev);
+                        toast({ title: "AR mode updated", description: `Set to ${value === 'auto' ? 'Auto' : value === '2d' ? '2D Overlay' : '3D Model'}` });
+                        fetchProducts();
+                      } catch (error: any) {
+                        toast({ title: "Error", description: error.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto (system picks best)</SelectItem>
+                      <SelectItem value="2d" disabled={!editingProduct.ar_overlay_url}>2D Overlay{!editingProduct.ar_overlay_url ? ' (no overlay uploaded)' : ''}</SelectItem>
+                      <SelectItem value="3d" disabled={!editingProduct.ar_model_url}>3D Model{!editingProduct.ar_model_url ? ' (no model uploaded)' : ''}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Tabbed content */}
               <Tabs defaultValue="image" className="w-full">
                 <TabsList className="w-full">
@@ -450,7 +491,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                             const { error: uploadError } = await supabase.storage
                               .from('event-assets')
-                              .upload(filePath, file, { contentType: file.type, upsert: true });
+                              .upload(filePath, file, { contentType: file.type });
                             if (uploadError) throw uploadError;
 
                             const { data: urlData } = supabase.storage
@@ -548,6 +589,42 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           return;
                         }
 
+                        // Alpha/transparency validation
+                        try {
+                          const hasAlpha = await new Promise<boolean>((resolve) => {
+                            const img = new window.Image();
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const size = Math.min(img.width, img.height, 100);
+                              canvas.width = img.width;
+                              canvas.height = img.height;
+                              const ctx = canvas.getContext('2d')!;
+                              ctx.drawImage(img, 0, 0);
+                              // Sample edges
+                              let transparentPixels = 0;
+                              const samples = [
+                                ctx.getImageData(0, 0, img.width, 1), // top row
+                                ctx.getImageData(0, img.height - 1, img.width, 1), // bottom row
+                                ctx.getImageData(0, 0, 1, img.height), // left col
+                                ctx.getImageData(img.width - 1, 0, 1, img.height), // right col
+                              ];
+                              let totalPixels = 0;
+                              for (const s of samples) {
+                                for (let i = 3; i < s.data.length; i += 4) {
+                                  totalPixels++;
+                                  if (s.data[i] < 250) transparentPixels++;
+                                }
+                              }
+                              resolve(transparentPixels > 0);
+                            };
+                            img.onerror = () => resolve(true); // assume OK on error
+                            img.src = URL.createObjectURL(file);
+                          });
+                          if (!hasAlpha) {
+                            toast({ title: "Transparency warning", description: "This image may not have a transparent background. AR overlay works best with transparent PNG/WebP.", variant: "default" });
+                          }
+                        } catch { /* non-blocking */ }
+
                         try {
                           setUploadingOverlay(true);
                           const { data: brandData } = await supabase
@@ -562,7 +639,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                           const { error: uploadError } = await supabase.storage
                             .from('event-ar-overlays')
-                            .upload(fileName, file, { contentType: file.type, upsert: true });
+                            .upload(fileName, file, { contentType: file.type });
                           if (uploadError) throw uploadError;
 
                           const { data: urlData } = supabase.storage
@@ -609,7 +686,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                         />
                         <div>
                           <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
-                          <p className="text-xs text-muted-foreground">This takes priority over 3D models in AR</p>
+                          <p className="text-xs text-muted-foreground">Set preferred mode above to control which AR path shoppers see</p>
                         </div>
                       </div>
                     )}
@@ -726,8 +803,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           const { error: uploadError } = await supabase.storage
                             .from('event-ar-models')
                             .upload(fileName, file, {
-                              contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json',
-                              upsert: true
+                              contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json'
                             });
                           if (uploadError) throw uploadError;
 

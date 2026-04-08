@@ -1601,6 +1601,7 @@ export type Database = {
           ar_model_url: string | null
           ar_overlay_url: string | null
           ar_position_offset: Json | null
+          ar_preferred_mode: string | null
           ar_scale: number | null
           created_at: string
           event_brand_id: string
@@ -1621,6 +1622,7 @@ export type Database = {
           ar_model_url?: string | null
           ar_overlay_url?: string | null
           ar_position_offset?: Json | null
+          ar_preferred_mode?: string | null
           ar_scale?: number | null
           created_at?: string
           event_brand_id: string
@@ -1641,6 +1643,7 @@ export type Database = {
           ar_model_url?: string | null
           ar_overlay_url?: string | null
           ar_position_offset?: Json | null
+          ar_preferred_mode?: string | null
           ar_scale?: number | null
           created_at?: string
           event_brand_id?: string

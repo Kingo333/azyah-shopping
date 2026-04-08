@@ -31,6 +31,8 @@ export interface ARProduct {
   garment_type?: GarmentType;
   /** 2D garment overlay image URL (PNG/WebP with transparent background). */
   ar_overlay_url?: string;
+  /** Retailer-chosen AR rendering preference. */
+  ar_preferred_mode?: 'auto' | '2d' | '3d';
 }
 
 /** Which AR rendering mode to use for a product. */
