@@ -1,68 +1,27 @@
 
 
-# Add Delete Buttons for AR Assets (Try-On, 2D Overlay, 3D Model)
+# Fix: AR Button Missing When Only 2D Overlay Exists
 
-## Problem
-Retailers can upload AR assets but cannot remove them. If they upload the wrong file or want to disable AR for a product, they're stuck. Removing assets also affects the shopper side — deleted overlays/models must clear `ar_enabled` and `ar_preferred_mode` appropriately so shoppers don't see broken AR buttons.
+## Root Cause
 
-## Changes
+In `src/pages/Events.tsx` line 442, the AR button visibility check is:
+```typescript
+{product.ar_enabled && product.ar_model_url && (
+```
 
-### 1. BrandProductManager.tsx — Add "Remove" buttons in each tab
+This requires `ar_model_url` to exist, so the button never shows for products that only have a 2D overlay. When you remove the 3D model, `ar_model_url` becomes null and the button disappears — even though the 2D overlay is still there and `ar_enabled` is still true.
 
-**Tab 1 (Image Try-On):** Below the outfit preview (line ~545), add a red "Remove" button that:
-- Deletes the file from `event-assets` storage using the stored `try_on_data.outfit_image_path`
-- Updates the product: `try_on_data = {}`, `try_on_ready = false`, `try_on_config = null`
-- Updates local state
+## Fix
 
-**Tab 2 (2D AR Overlay):** Below the overlay preview (line ~680), add a red "Remove" button that:
-- Extracts the storage path from `ar_overlay_url` (after the bucket name in the URL)
-- Deletes the file from `event-ar-overlays` storage
-- Updates the product: `ar_overlay_url = null`
-- If `ar_model_url` also doesn't exist, sets `ar_enabled = false`
-- If `ar_preferred_mode` was `'2d'`, resets to `'auto'`
-- Updates local state
+### File: `src/pages/Events.tsx` (line 442)
 
-**Tab 3 (3D AR Model):** Below the model status indicator (line ~738), add a red "Remove" button that:
-- Extracts the storage path from `ar_model_url`
-- Deletes the file from `event-ar-models` storage
-- Updates the product: `ar_model_url = null`
-- If `ar_overlay_url` also doesn't exist, sets `ar_enabled = false`
-- If `ar_preferred_mode` was `'3d'`, resets to `'auto'`
-- Updates local state
+Change the condition to show the AR button when **any** AR asset exists:
 
-### 2. Shared helper function
+```typescript
+{product.ar_enabled && (product.ar_model_url || product.ar_overlay_url) && (
+```
 
-Create a `handleRemoveAsset` function inside the component that takes parameters:
-- `type`: `'tryon' | 'overlay' | 'model'`
-- Handles the confirmation dialog, storage deletion, DB update, state refresh, and toast
-
-### 3. Shopper-side impact (no code changes needed)
-
-The existing `resolveARMode()` in `ARExperience.tsx` already handles missing URLs gracefully:
-- If `ar_overlay_url` is null, it skips 2D
-- If `ar_model_url` is null, it skips 3D
-- If both are null and `ar_enabled` is false, no AR button shows
-
-The key is ensuring the DB update in step 1 correctly nullifies URLs and adjusts `ar_enabled` — which the plan covers.
-
-### 4. UI details
-
-Each "Remove" button:
-- Small, red/destructive variant, with Trash2 icon
-- Positioned next to the preview of the uploaded asset
-- Shows a confirm dialog before proceeding
-- Shows a loading spinner during deletion
-
-### Technical Details
-
-**Single file modified:** `src/components/BrandProductManager.tsx`
-
-**Storage path extraction:** Parse the public URL to get the path after `/object/public/{bucket}/` — this is the storage path needed for `supabase.storage.from(bucket).remove([path])`.
-
-**DB fields updated per removal:**
-| Removal | Fields set |
-|---------|-----------|
-| Try-on | `try_on_data: {}`, `try_on_ready: false`, `try_on_config: null` |
-| 2D overlay | `ar_overlay_url: null`, maybe `ar_enabled: false`, maybe `ar_preferred_mode: 'auto'` |
-| 3D model | `ar_model_url: null`, maybe `ar_enabled: false`, maybe `ar_preferred_mode: 'auto'` |
+That's the only change needed. The rest of the pipeline already works:
+- `ARExperience.tsx` fetches products with `ar_enabled = true` and runs `resolveARMode()` which correctly picks 2D if only an overlay exists
+- The removal logic in `BrandProductManager.tsx` already sets `ar_enabled = false` only when **both** assets are gone (lines 107 and 111 check for the other asset before disabling)
 
