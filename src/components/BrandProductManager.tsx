@@ -621,13 +621,24 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     </div>
 
                     {editingProduct.try_on_data?.outfit_image_url && (
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex items-center gap-3 p-2 rounded-md bg-muted/50">
                         <img
                           src={editingProduct.try_on_data.outfit_image_url}
                           alt="Outfit preview"
                           className="w-16 h-16 object-cover rounded border"
                         />
-                        <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={removingAsset === 'tryon'}
+                          onClick={() => handleRemoveAsset(editingProduct, 'tryon')}
+                        >
+                          {removingAsset === 'tryon' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          <span className="ml-1 text-xs">Remove</span>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -762,10 +773,19 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           alt="2D overlay preview"
                           className="w-16 h-16 object-contain rounded border bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)_0_0/20px_20px]"
                         />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
                           <p className="text-xs text-muted-foreground">Set preferred mode above to control which AR path shoppers see</p>
                         </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={removingAsset === 'overlay'}
+                          onClick={() => handleRemoveAsset(editingProduct, 'overlay')}
+                        >
+                          {removingAsset === 'overlay' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          <span className="ml-1 text-xs">Remove</span>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -816,7 +836,16 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   {editingProduct.ar_model_url && editingProduct.ar_enabled && (
                     <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-md">
                       <CheckCircle className="w-4 h-4 text-purple-600" />
-                      <span className="text-sm text-purple-700">AR model uploaded — AR enabled</span>
+                      <span className="text-sm text-purple-700 flex-1">AR model uploaded — AR enabled</span>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={removingAsset === 'model'}
+                        onClick={() => handleRemoveAsset(editingProduct, 'model')}
+                      >
+                        {removingAsset === 'model' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        <span className="ml-1 text-xs">Remove</span>
+                      </Button>
                     </div>
                   )}
 
