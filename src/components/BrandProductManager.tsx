@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box } from 'lucide-react';
+import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box, ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@ interface EventBrandProduct {
   created_at: string;
   product_id?: string;
   ar_model_url?: string;
+  ar_overlay_url?: string;
   ar_enabled?: boolean;
   ar_scale?: number;
   garment_type?: string;
@@ -53,6 +54,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const [uploadingARModel, setUploadingARModel] = useState(false);
+  const [uploadingOverlay, setUploadingOverlay] = useState(false);
   // forceReupload removed — legacy BitStudio UI
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -317,7 +319,12 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     )}
                     {product.ar_enabled && product.ar_model_url && (
                       <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
-                        AR
+                        3D AR
+                      </Badge>
+                    )}
+                    {product.ar_overlay_url && (
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-blue-50 text-blue-700 border-blue-200">
+                        2D AR
                       </Badge>
                     )}
                     {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
@@ -392,6 +399,10 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   <TabsTrigger value="image" className="flex-1 gap-1.5">
                     <Shirt className="w-4 h-4" />
                     Image Try-On
+                  </TabsTrigger>
+                  <TabsTrigger value="overlay" className="flex-1 gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    2D AR Overlay
                   </TabsTrigger>
                   <TabsTrigger value="ar" className="flex-1 gap-1.5">
                     <Box className="w-4 h-4" />
@@ -509,7 +520,109 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   </div>
                 </TabsContent>
 
-                {/* ── Tab 2: 3D AR Model ── */}
+                {/* ── Tab 2: 2D AR Overlay ── */}
+                <TabsContent value="overlay" className="space-y-4 pt-2">
+                  <div>
+                    <label className="text-sm font-medium">Upload 2D Garment Image</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Upload a front-view garment image with <strong>transparent background</strong> (PNG or WebP).
+                      This enables fast 2D AR overlay on the shopper's body.
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      <strong>Tips:</strong> Use <a href="https://www.remove.bg" target="_blank" rel="noopener noreferrer" className="underline text-primary">remove.bg</a> to cut out the background. Image should be centered, upright, 800-2000px wide, under 2MB.
+                    </p>
+
+                    <input
+                      type="file"
+                      accept=".png,.webp"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        if (!['image/png', 'image/webp'].includes(file.type)) {
+                          toast({ title: "Invalid file type", description: "Please upload a PNG or WebP with transparent background", variant: "destructive" });
+                          return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({ title: "File too large", description: "Please select an image under 5MB", variant: "destructive" });
+                          return;
+                        }
+
+                        try {
+                          setUploadingOverlay(true);
+                          const { data: brandData } = await supabase
+                            .from('event_brands')
+                            .select('event_id')
+                            .eq('id', brand.id)
+                            .single();
+                          if (!brandData) throw new Error('Failed to get event_id');
+
+                          const fileExt = file.name.split('.').pop();
+                          const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/overlay_${Date.now()}.${fileExt}`;
+
+                          const { error: uploadError } = await supabase.storage
+                            .from('event-ar-overlays')
+                            .upload(fileName, file, { contentType: file.type, upsert: true });
+                          if (uploadError) throw uploadError;
+
+                          const { data: urlData } = supabase.storage
+                            .from('event-ar-overlays')
+                            .getPublicUrl(fileName);
+
+                          await supabase
+                            .from('event_brand_products')
+                            .update({
+                              ar_overlay_url: urlData.publicUrl,
+                              ar_enabled: true,
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('id', editingProduct.id);
+
+                          setEditingProduct(prev => prev ? { ...prev, ar_overlay_url: urlData.publicUrl, ar_enabled: true } : prev);
+                          toast({ title: "2D overlay uploaded!", description: "2D AR try-on is now enabled for this product" });
+                          await fetchProducts();
+                        } catch (error: any) {
+                          console.error('AR overlay upload error:', error);
+                          toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                        } finally {
+                          setUploadingOverlay(false);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full p-2 border rounded"
+                      disabled={uploadingOverlay}
+                    />
+
+                    {uploadingOverlay && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading overlay…
+                      </div>
+                    )}
+
+                    {editingProduct.ar_overlay_url && (
+                      <div className="mt-3 flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                        <img
+                          src={editingProduct.ar_overlay_url}
+                          alt="2D overlay preview"
+                          className="w-16 h-16 object-contain rounded border bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)_0_0/20px_20px]"
+                        />
+                        <div>
+                          <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
+                          <p className="text-xs text-muted-foreground">This takes priority over 3D models in AR</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* ── Tab 3: 3D AR Model ── */}
                 <TabsContent value="ar" className="space-y-4 pt-2">
                   {/* Garment type */}
                   <div>
