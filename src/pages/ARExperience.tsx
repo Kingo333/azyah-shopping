@@ -31,6 +31,16 @@ import type { ARMode } from '@/ar/types';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
+/** Resolve which AR rendering mode to use, respecting retailer preference. */
+function resolveARMode(product: ARProduct): ARMode {
+  const pref = product.ar_preferred_mode || 'auto';
+  if (pref === '2d' && product.ar_overlay_url) return '2d';
+  if (pref === '3d' && product.ar_model_url) return '3d';
+  // Auto: 2D first if available, then 3D
+  if (product.ar_overlay_url) return '2d';
+  if (product.ar_model_url) return '3d';
+  return 'none';
+}
 
 export default function ARExperience() {
   const { eventId, brandId } = useParams();
