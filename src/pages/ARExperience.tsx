@@ -221,6 +221,7 @@ export default function ARExperience() {
         name: (p as any).name,
         garment_type: (p as any).garment_type || 'shirt',
         ar_overlay_url: (p as any).ar_overlay_url || undefined,
+        ar_preferred_mode: p.ar_preferred_mode || 'auto',
       }));
 
       setProducts(mapped);
