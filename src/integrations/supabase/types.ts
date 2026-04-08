@@ -1599,6 +1599,7 @@ export type Database = {
           ar_enabled: boolean | null
           ar_model_format: string | null
           ar_model_url: string | null
+          ar_overlay_url: string | null
           ar_position_offset: Json | null
           ar_scale: number | null
           created_at: string
@@ -1618,6 +1619,7 @@ export type Database = {
           ar_enabled?: boolean | null
           ar_model_format?: string | null
           ar_model_url?: string | null
+          ar_overlay_url?: string | null
           ar_position_offset?: Json | null
           ar_scale?: number | null
           created_at?: string
@@ -1637,6 +1639,7 @@ export type Database = {
           ar_enabled?: boolean | null
           ar_model_format?: string | null
           ar_model_url?: string | null
+          ar_overlay_url?: string | null
           ar_position_offset?: Json | null
           ar_scale?: number | null
           created_at?: string
