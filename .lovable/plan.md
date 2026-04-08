@@ -1,36 +1,68 @@
 
 
-# Fix: Retailer AR Mode Preference Not Reaching Shopper
+# Add Delete Buttons for AR Assets (Try-On, 2D Overlay, 3D Model)
 
-## Bug Found
+## Problem
+Retailers can upload AR assets but cannot remove them. If they upload the wrong file or want to disable AR for a product, they're stuck. Removing assets also affects the shopper side — deleted overlays/models must clear `ar_enabled` and `ar_preferred_mode` appropriately so shoppers don't see broken AR buttons.
 
-**Critical**: In `ARExperience.tsx` line 214-224, the product mapping omits `ar_preferred_mode` from the fetched data. Even though the column is fetched in the query (line 198) and `resolveARMode()` checks it (line 36), it's never assigned to the `ARProduct` object. Result: the retailer's mode choice is silently ignored — shoppers always get "auto" behavior.
+## Changes
 
-## Fix
+### 1. BrandProductManager.tsx — Add "Remove" buttons in each tab
 
-### File: `src/pages/ARExperience.tsx` (line 214-224)
+**Tab 1 (Image Try-On):** Below the outfit preview (line ~545), add a red "Remove" button that:
+- Deletes the file from `event-assets` storage using the stored `try_on_data.outfit_image_path`
+- Updates the product: `try_on_data = {}`, `try_on_ready = false`, `try_on_config = null`
+- Updates local state
 
-Add the missing field to the mapped object:
+**Tab 2 (2D AR Overlay):** Below the overlay preview (line ~680), add a red "Remove" button that:
+- Extracts the storage path from `ar_overlay_url` (after the bucket name in the URL)
+- Deletes the file from `event-ar-overlays` storage
+- Updates the product: `ar_overlay_url = null`
+- If `ar_model_url` also doesn't exist, sets `ar_enabled = false`
+- If `ar_preferred_mode` was `'2d'`, resets to `'auto'`
+- Updates local state
 
-```typescript
-const mapped: ARProduct[] = data.map((p: any) => ({
-  id: p.id,
-  image_url: p.image_url,
-  ar_model_url: p.ar_model_url,
-  ar_scale: p.ar_scale || 1.0,
-  ar_position_offset: p.ar_position_offset as any || { x: 0, y: 0, z: 0 },
-  brand_name: p.event_brands?.brand_name,
-  name: (p as any).name,
-  garment_type: (p as any).garment_type || 'shirt',
-  ar_overlay_url: (p as any).ar_overlay_url || undefined,
-  ar_preferred_mode: p.ar_preferred_mode || 'auto',   // <-- ADD THIS
-}));
-```
+**Tab 3 (3D AR Model):** Below the model status indicator (line ~738), add a red "Remove" button that:
+- Extracts the storage path from `ar_model_url`
+- Deletes the file from `event-ar-models` storage
+- Updates the product: `ar_model_url = null`
+- If `ar_overlay_url` also doesn't exist, sets `ar_enabled = false`
+- If `ar_preferred_mode` was `'3d'`, resets to `'auto'`
+- Updates local state
 
-That's the only change needed. The rest of the pipeline (resolveARMode, mode selector UI, badge logic) is already correctly wired.
+### 2. Shared helper function
 
-## Verification Summary
+Create a `handleRemoveAsset` function inside the component that takes parameters:
+- `type`: `'tryon' | 'overlay' | 'model'`
+- Handles the confirmation dialog, storage deletion, DB update, state refresh, and toast
 
-- **Retailer side**: Mode selector UI saves `ar_preferred_mode` to DB correctly (line 411-419). Badges reflect the active mode. Upload paths for 2D and 3D work independently. Alpha validation is in place. All correct.
-- **Shopper side**: `resolveARMode()` logic is correct. 2D/3D branching at line 626-658 is correct. The only issue was this missing field in the mapping.
+### 3. Shopper-side impact (no code changes needed)
+
+The existing `resolveARMode()` in `ARExperience.tsx` already handles missing URLs gracefully:
+- If `ar_overlay_url` is null, it skips 2D
+- If `ar_model_url` is null, it skips 3D
+- If both are null and `ar_enabled` is false, no AR button shows
+
+The key is ensuring the DB update in step 1 correctly nullifies URLs and adjusts `ar_enabled` — which the plan covers.
+
+### 4. UI details
+
+Each "Remove" button:
+- Small, red/destructive variant, with Trash2 icon
+- Positioned next to the preview of the uploaded asset
+- Shows a confirm dialog before proceeding
+- Shows a loading spinner during deletion
+
+### Technical Details
+
+**Single file modified:** `src/components/BrandProductManager.tsx`
+
+**Storage path extraction:** Parse the public URL to get the path after `/object/public/{bucket}/` — this is the storage path needed for `supabase.storage.from(bucket).remove([path])`.
+
+**DB fields updated per removal:**
+| Removal | Fields set |
+|---------|-----------|
+| Try-on | `try_on_data: {}`, `try_on_ready: false`, `try_on_config: null` |
+| 2D overlay | `ar_overlay_url: null`, maybe `ar_enabled: false`, maybe `ar_preferred_mode: 'auto'` |
+| 3D model | `ar_model_url: null`, maybe `ar_enabled: false`, maybe `ar_preferred_mode: 'auto'` |
 
