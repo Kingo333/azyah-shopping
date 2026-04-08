@@ -690,9 +690,20 @@ export default function ARExperience() {
       sm.setShadowsEnabled(true);
 
       const resolvedMode = resolveARMode(selectedProduct);
+      console.log('[AR] Mode resolved:', resolvedMode, {
+        overlay: selectedProduct.ar_overlay_url,
+        model: selectedProduct.ar_model_url,
+        pref: selectedProduct.ar_preferred_mode,
+      });
       const use2D = resolvedMode === '2d';
       setArMode(resolvedMode);
       arModeRef.current = resolvedMode;
+
+      if (resolvedMode === 'none') {
+        setTrackingState('model_error');
+        setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
+        return;
+      }
 
       // Dispose previous 2D overlay
       imageOverlayRef.current?.dispose();
@@ -721,9 +732,9 @@ export default function ARExperience() {
           setLoadStage('');
         } catch (err: any) {
           if (!cancelled) {
-            console.error('[AR] 2D overlay load error:', err);
+            console.error('[AR] 2D overlay load error:', err, 'URL:', selectedProduct.ar_overlay_url);
             setTrackingState('model_error');
-            setTrackingMessage('Could not load garment image.');
+            setTrackingMessage(`Could not load garment image. ${err?.message || ''}`);
           }
         }
         return;
@@ -947,6 +958,7 @@ export default function ARExperience() {
         <div className="absolute top-16 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-white/80">Tracking</span>
+          <span className="text-xs text-white/60 ml-0.5">({arMode.toUpperCase()})</span>
         </div>
       )}
 
