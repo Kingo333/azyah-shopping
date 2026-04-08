@@ -319,7 +319,12 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     )}
                     {product.ar_enabled && product.ar_model_url && (
                       <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
-                        AR
+                        3D AR
+                      </Badge>
+                    )}
+                    {product.ar_overlay_url && (
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-blue-50 text-blue-700 border-blue-200">
+                        2D AR
                       </Badge>
                     )}
                     {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
