@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box } from 'lucide-react';
+import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box, ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@ interface EventBrandProduct {
   created_at: string;
   product_id?: string;
   ar_model_url?: string;
+  ar_overlay_url?: string;
   ar_enabled?: boolean;
   ar_scale?: number;
   garment_type?: string;
