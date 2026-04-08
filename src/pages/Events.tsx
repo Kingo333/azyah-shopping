@@ -44,6 +44,7 @@ interface EventProduct {
   brand_name: string;
   brand_logo_url?: string;
   ar_model_url?: string;
+  ar_overlay_url?: string;
   ar_enabled?: boolean;
 }
 
@@ -439,7 +440,7 @@ const Events = () => {
                                 </Button>
                                 
                                 {/* Per-product AR button — icon only */}
-                                {product.ar_enabled && product.ar_model_url && (
+                                {product.ar_enabled && (product.ar_model_url || product.ar_overlay_url) && (
                                   <Button
                                     size="sm"
                                     variant="outline"
