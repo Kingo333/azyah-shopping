@@ -134,9 +134,6 @@ describe('capture path selection', () => {
   });
 
   it('should use compositor when no overlay canvas', () => {
-    const arMode = '2d';
-    const hasOverlayCanvas = false;
-    const shouldUse2D = arMode === '2d' && hasOverlayCanvas;
-    expect(shouldUse2D).toBe(false);
+    expect(shouldUse2DCapture('2d', false)).toBe(false);
   });
 });
