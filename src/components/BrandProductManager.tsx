@@ -491,7 +491,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                             const { error: uploadError } = await supabase.storage
                               .from('event-assets')
-                              .upload(filePath, file, { contentType: file.type, upsert: true });
+                              .upload(filePath, file, { contentType: file.type });
                             if (uploadError) throw uploadError;
 
                             const { data: urlData } = supabase.storage
