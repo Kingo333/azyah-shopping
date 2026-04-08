@@ -803,8 +803,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           const { error: uploadError } = await supabase.storage
                             .from('event-ar-models')
                             .upload(fileName, file, {
-                              contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json',
-                              upsert: true
+                              contentType: ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json'
                             });
                           if (uploadError) throw uploadError;
 
