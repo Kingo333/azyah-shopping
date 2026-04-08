@@ -624,8 +624,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                             toast({ title: "Transparency warning", description: "This image may not have a transparent background. AR overlay works best with transparent PNG/WebP.", variant: "default" });
                           }
                         } catch { /* non-blocking */ }
-                          return;
-                        }
 
                         try {
                           setUploadingOverlay(true);
@@ -641,7 +639,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                           const { error: uploadError } = await supabase.storage
                             .from('event-ar-overlays')
-                            .upload(fileName, file, { contentType: file.type, upsert: true });
+                            .upload(fileName, file, { contentType: file.type });
                           if (uploadError) throw uploadError;
 
                           const { data: urlData } = supabase.storage
