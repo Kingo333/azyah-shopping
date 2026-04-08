@@ -439,7 +439,7 @@ const Events = () => {
                                 </Button>
                                 
                                 {/* Per-product AR button — icon only */}
-                                {product.ar_enabled && product.ar_model_url && (
+                                {product.ar_enabled && (product.ar_model_url || product.ar_overlay_url) && (
                                   <Button
                                     size="sm"
                                     variant="outline"
