@@ -520,7 +520,109 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   </div>
                 </TabsContent>
 
-                {/* ── Tab 2: 3D AR Model ── */}
+                {/* ── Tab 2: 2D AR Overlay ── */}
+                <TabsContent value="overlay" className="space-y-4 pt-2">
+                  <div>
+                    <label className="text-sm font-medium">Upload 2D Garment Image</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Upload a front-view garment image with <strong>transparent background</strong> (PNG or WebP).
+                      This enables fast 2D AR overlay on the shopper's body.
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      <strong>Tips:</strong> Use <a href="https://www.remove.bg" target="_blank" rel="noopener noreferrer" className="underline text-primary">remove.bg</a> to cut out the background. Image should be centered, upright, 800-2000px wide, under 2MB.
+                    </p>
+
+                    <input
+                      type="file"
+                      accept=".png,.webp"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        if (!['image/png', 'image/webp'].includes(file.type)) {
+                          toast({ title: "Invalid file type", description: "Please upload a PNG or WebP with transparent background", variant: "destructive" });
+                          return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({ title: "File too large", description: "Please select an image under 5MB", variant: "destructive" });
+                          return;
+                        }
+
+                        try {
+                          setUploadingOverlay(true);
+                          const { data: brandData } = await supabase
+                            .from('event_brands')
+                            .select('event_id')
+                            .eq('id', brand.id)
+                            .single();
+                          if (!brandData) throw new Error('Failed to get event_id');
+
+                          const fileExt = file.name.split('.').pop();
+                          const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/overlay_${Date.now()}.${fileExt}`;
+
+                          const { error: uploadError } = await supabase.storage
+                            .from('event-ar-overlays')
+                            .upload(fileName, file, { contentType: file.type, upsert: true });
+                          if (uploadError) throw uploadError;
+
+                          const { data: urlData } = supabase.storage
+                            .from('event-ar-overlays')
+                            .getPublicUrl(fileName);
+
+                          await supabase
+                            .from('event_brand_products')
+                            .update({
+                              ar_overlay_url: urlData.publicUrl,
+                              ar_enabled: true,
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('id', editingProduct.id);
+
+                          setEditingProduct(prev => prev ? { ...prev, ar_overlay_url: urlData.publicUrl, ar_enabled: true } : prev);
+                          toast({ title: "2D overlay uploaded!", description: "2D AR try-on is now enabled for this product" });
+                          await fetchProducts();
+                        } catch (error: any) {
+                          console.error('AR overlay upload error:', error);
+                          toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                        } finally {
+                          setUploadingOverlay(false);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full p-2 border rounded"
+                      disabled={uploadingOverlay}
+                    />
+
+                    {uploadingOverlay && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading overlay…
+                      </div>
+                    )}
+
+                    {editingProduct.ar_overlay_url && (
+                      <div className="mt-3 flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                        <img
+                          src={editingProduct.ar_overlay_url}
+                          alt="2D overlay preview"
+                          className="w-16 h-16 object-contain rounded border bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)_0_0/20px_20px]"
+                        />
+                        <div>
+                          <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
+                          <p className="text-xs text-muted-foreground">This takes priority over 3D models in AR</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* ── Tab 3: 3D AR Model ── */}
                 <TabsContent value="ar" className="space-y-4 pt-2">
                   {/* Garment type */}
                   <div>
