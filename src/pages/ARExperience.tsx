@@ -655,6 +655,7 @@ export default function ARExperience() {
         await Promise.race([sceneReadyPromiseRef.current, timeoutPromise]);
       } catch (sceneErr: any) {
         console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
+        setArDebugInfo({ status: 'error', error: `Scene init failed: ${sceneErr?.message || 'unknown'}` });
         if (!cancelled) {
           setTrackingState(prev => {
             const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
