@@ -2,10 +2,9 @@
  * 2D garment image overlay with cover-crop alignment, OneEuro smoothing,
  * segmentation-based occlusion, and per-category placement.
  *
- * Fix 2: Cover-crop alignment — video drawn with proper source rect matching
- *         object-fit:cover, landmarks mapped through crop offsets.
- * Fix 3: Segmentation occlusion — arms/hands drawn over garment via mask.
- * Fix 4: OneEuro + Outlier smoothing replacing basic EMA.
+ * v2: Split drawVideo / drawGarment for continuous repaint.
+ *     Cached + downscaled occlusion buffer. Throttled to ~8fps.
+ *     try/catch around occlusion so failures never break rendering.
  */
 
 import { OneEuroFilter, FILTER_PRESETS } from '../utils/OneEuroFilter';
@@ -38,9 +37,6 @@ interface CoverCropRect {
   videoW: number; videoH: number;
 }
 
-/**
- * Compute the source rect for cover-crop drawing, matching object-fit:cover.
- */
 function computeCoverCropRect(videoW: number, videoH: number, canvasW: number, canvasH: number): CoverCropRect {
   const videoAspect = videoW / videoH;
   const canvasAspect = canvasW / canvasH;
@@ -48,11 +44,9 @@ function computeCoverCropRect(videoW: number, videoH: number, canvasW: number, c
   let srcX = 0, srcY = 0, srcW = videoW, srcH = videoH;
 
   if (videoAspect > canvasAspect) {
-    // Video wider than canvas: crop sides
     srcW = videoH * canvasAspect;
     srcX = (videoW - srcW) / 2;
   } else {
-    // Video taller than canvas: crop top/bottom
     srcH = videoW / canvasAspect;
     srcY = (videoH - srcH) / 2;
   }
@@ -62,7 +56,6 @@ function computeCoverCropRect(videoW: number, videoH: number, canvasW: number, c
 
 // ── Smoothing filter bank ──
 
-/** One filter pair (outlier + 1€) per axis */
 interface FilterPair {
   outlier: OutlierFilter;
   euro: OneEuroFilter;
@@ -88,8 +81,8 @@ function resetFilterPair(fp: FilterPair): void {
 
 // ── SmoothedState (filter-based) ──
 interface SmoothedLandmarks {
-  lm11: Pt | null;  // left shoulder
-  lm12: Pt | null;  // right shoulder
+  lm11: Pt | null;
+  lm12: Pt | null;
   hipL: Pt | null;
   hipR: Pt | null;
   hipC: Pt | null;
@@ -110,8 +103,17 @@ export class ImageOverlay {
 
   // Occlusion mask from segmenter
   private occlusionMask: { data: Float32Array; width: number; height: number } | null = null;
+  // Cached occlusion canvases (never re-created per frame)
+  private occTempCanvas: HTMLCanvasElement;
+  private occTempCtx: CanvasRenderingContext2D;
+  private occMaskCanvas: HTMLCanvasElement;
+  private occMaskCtx: CanvasRenderingContext2D;
+  private occDisabled = false;
+  private occLastTime = 0;
+  private static readonly OCC_THROTTLE_MS = 120; // ~8fps
+  private static readonly OCC_SCALE = 256; // downscaled width
 
-  // OneEuro filters for landmark smoothing (7 landmarks × 2 axes = 14 pairs)
+  // OneEuro filters for landmark smoothing
   private filters = {
     lm11x: createFilterPair(FILTER_PRESETS.position),
     lm11y: createFilterPair(FILTER_PRESETS.position),
@@ -125,7 +127,6 @@ export class ImageOverlay {
     wristRy: createFilterPair(FILTER_PRESETS.position),
     wristLx: createFilterPair(FILTER_PRESETS.position),
     wristLy: createFilterPair(FILTER_PRESETS.position),
-    // Garment transform
     gx: createFilterPair(FILTER_PRESETS.position),
     gy: createFilterPair(FILTER_PRESETS.position),
     gw: createFilterPair(FILTER_PRESETS.scale),
@@ -133,15 +134,22 @@ export class ImageOverlay {
     gAngle: createFilterPair(FILTER_PRESETS.rotation),
   };
 
-  // Track if garment transform has been initialized (first frame)
   private garmentInitialized = false;
-  // Last good garment values for outlier fallback
   private lastGarment = { x: 0, y: 0, w: 100, h: 100, angle: 0 };
+
+  // Keep reference to the last video used for occlusion compositing
+  private lastVideo: HTMLVideoElement | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.sm = this.createFreshLandmarks();
+
+    // Pre-create cached occlusion canvases
+    this.occTempCanvas = document.createElement('canvas');
+    this.occTempCtx = this.occTempCanvas.getContext('2d')!;
+    this.occMaskCanvas = document.createElement('canvas');
+    this.occMaskCtx = this.occMaskCanvas.getContext('2d')!;
   }
 
   private createFreshLandmarks(): SmoothedLandmarks {
@@ -151,14 +159,12 @@ export class ImageOverlay {
     };
   }
 
-  /** Update cover crop when video or canvas dimensions change. */
   updateCoverCrop(videoW: number, videoH: number, canvasW: number, canvasH: number): void {
     if (videoW <= 0 || videoH <= 0 || canvasW <= 0 || canvasH <= 0) return;
     this.crop = computeCoverCropRect(videoW, videoH, canvasW, canvasH);
     this.cropValid = true;
   }
 
-  /** Feed segmentation mask for body occlusion. */
   updateOcclusionMask(mask: { data: Float32Array; width: number; height: number } | null): void {
     this.occlusionMask = mask;
   }
@@ -183,38 +189,35 @@ export class ImageOverlay {
   /** Convert normalized landmark to canvas pixel coords with cover-crop correction and mirror. */
   private toPixel(lm: Landmark, w: number, _h: number): Pt {
     if (!this.cropValid) {
-      // Fallback: no cover crop info yet
       return { x: (1 - lm.x) * w, y: lm.y * this.canvas.height };
     }
     const { srcX, srcY, srcW, srcH, videoW, videoH } = this.crop;
     const canvasW = this.canvas.width;
     const canvasH = this.canvas.height;
 
-    // Convert normalized landmark (0..1 in full video space) to video pixels
     const vx = lm.x * videoW;
     const vy = lm.y * videoH;
 
-    // Map through cover-crop to canvas coords
     let cx = (vx - srcX) * (canvasW / srcW);
     const cy = (vy - srcY) * (canvasH / srcH);
 
-    // Mirror once (selfie camera)
     cx = canvasW - cx;
 
     return { x: cx, y: cy };
   }
 
-  /**
-   * Render one frame: cover-cropped mirrored video + garment overlay + occlusion.
-   */
-  updateFrame(video: HTMLVideoElement, landmarks: Landmark[]): void {
-    if (!this.garmentImage || !landmarks || landmarks.length < 25) return;
+  // ═══════════════════════════════════════════════════════
+  // PUBLIC API: split into drawVideo + drawGarment
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Draw cover-cropped mirrored video only. Call every rAF for continuous repaint.
+   */
+  drawVideo(video: HTMLVideoElement): void {
     const { canvas, ctx } = this;
     const w = canvas.width;
     const h = canvas.height;
 
-    // Auto-update cover crop if video dimensions are available
     if (video.videoWidth > 0 && video.videoHeight > 0) {
       if (!this.cropValid || this.crop.videoW !== video.videoWidth || this.crop.videoH !== video.videoHeight) {
         this.updateCoverCrop(video.videoWidth, video.videoHeight, w, h);
@@ -223,7 +226,6 @@ export class ImageOverlay {
 
     const { srcX, srcY, srcW, srcH } = this.crop;
 
-    // 1. Draw cover-cropped mirrored video feed
     ctx.save();
     ctx.translate(w, 0);
     ctx.scale(-1, 1);
@@ -234,7 +236,20 @@ export class ImageOverlay {
     }
     ctx.restore();
 
-    // 2. Extract pixel-space landmarks (with cover-crop correction)
+    this.lastVideo = video;
+  }
+
+  /**
+   * Draw garment overlay + occlusion over the already-drawn video.
+   * Call only when landmarks are available.
+   */
+  drawGarment(landmarks: Landmark[]): void {
+    if (!this.garmentImage || !landmarks || landmarks.length < 25) return;
+
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+
+    // Extract pixel-space landmarks
     const pts: Record<number, Pt> = {};
     for (let i = 0; i < landmarks.length; i++) {
       if (vis(landmarks[i]) > 0.3) {
@@ -242,7 +257,7 @@ export class ImageOverlay {
       }
     }
 
-    // 3. Smooth key landmarks with OneEuro + Outlier filters
+    // Smooth key landmarks
     const t = performance.now() / 1000;
     if (pts[11] && pts[12] && pts[23] && pts[24]) {
       const raw11 = pts[11];
@@ -250,105 +265,149 @@ export class ImageOverlay {
       const rawHipL = pts[23];
       const rawHipR = pts[24];
 
-      const s11x = filterValue(this.filters.lm11x, raw11.x, t, this.sm.lm11?.x ?? raw11.x);
-      const s11y = filterValue(this.filters.lm11y, raw11.y, t, this.sm.lm11?.y ?? raw11.y);
-      const s12x = filterValue(this.filters.lm12x, raw12.x, t, this.sm.lm12?.x ?? raw12.x);
-      const s12y = filterValue(this.filters.lm12y, raw12.y, t, this.sm.lm12?.y ?? raw12.y);
-      const sHLx = filterValue(this.filters.hipLx, rawHipL.x, t, this.sm.hipL?.x ?? rawHipL.x);
-      const sHLy = filterValue(this.filters.hipLy, rawHipL.y, t, this.sm.hipL?.y ?? rawHipL.y);
-      const sHRx = filterValue(this.filters.hipRx, rawHipR.x, t, this.sm.hipR?.x ?? rawHipR.x);
-      const sHRy = filterValue(this.filters.hipRy, rawHipR.y, t, this.sm.hipR?.y ?? rawHipR.y);
-
-      this.sm.lm11 = { x: s11x, y: s11y };
-      this.sm.lm12 = { x: s12x, y: s12y };
-      this.sm.hipL = { x: sHLx, y: sHLy };
-      this.sm.hipR = { x: sHRx, y: sHRy };
+      this.sm.lm11 = {
+        x: filterValue(this.filters.lm11x, raw11.x, t, this.sm.lm11?.x ?? raw11.x),
+        y: filterValue(this.filters.lm11y, raw11.y, t, this.sm.lm11?.y ?? raw11.y),
+      };
+      this.sm.lm12 = {
+        x: filterValue(this.filters.lm12x, raw12.x, t, this.sm.lm12?.x ?? raw12.x),
+        y: filterValue(this.filters.lm12y, raw12.y, t, this.sm.lm12?.y ?? raw12.y),
+      };
+      this.sm.hipL = {
+        x: filterValue(this.filters.hipLx, rawHipL.x, t, this.sm.hipL?.x ?? rawHipL.x),
+        y: filterValue(this.filters.hipLy, rawHipL.y, t, this.sm.hipL?.y ?? rawHipL.y),
+      };
+      this.sm.hipR = {
+        x: filterValue(this.filters.hipRx, rawHipR.x, t, this.sm.hipR?.x ?? rawHipR.x),
+        y: filterValue(this.filters.hipRy, rawHipR.y, t, this.sm.hipR?.y ?? rawHipR.y),
+      };
       this.sm.hipC = midpoint(this.sm.hipL, this.sm.hipR);
     }
 
     if (pts[16]) {
-      const rx = filterValue(this.filters.wristRx, pts[16].x, t, this.sm.wristR?.x ?? pts[16].x);
-      const ry = filterValue(this.filters.wristRy, pts[16].y, t, this.sm.wristR?.y ?? pts[16].y);
-      this.sm.wristR = { x: rx, y: ry };
+      this.sm.wristR = {
+        x: filterValue(this.filters.wristRx, pts[16].x, t, this.sm.wristR?.x ?? pts[16].x),
+        y: filterValue(this.filters.wristRy, pts[16].y, t, this.sm.wristR?.y ?? pts[16].y),
+      };
     }
     if (pts[15]) {
-      const lx = filterValue(this.filters.wristLx, pts[15].x, t, this.sm.wristL?.x ?? pts[15].x);
-      const ly = filterValue(this.filters.wristLy, pts[15].y, t, this.sm.wristL?.y ?? pts[15].y);
-      this.sm.wristL = { x: lx, y: ly };
+      this.sm.wristL = {
+        x: filterValue(this.filters.wristLx, pts[15].x, t, this.sm.wristL?.x ?? pts[15].x),
+        y: filterValue(this.filters.wristLy, pts[15].y, t, this.sm.wristL?.y ?? pts[15].y),
+      };
     }
 
-    // 4. Dispatch to category-specific rendering
+    // Dispatch to category-specific rendering
     const type = this.garmentType;
     if (type === 'shirt' || type === 'jacket') {
-      this.renderShirt(ctx, w, h, pts);
+      this.renderShirt(this.ctx, w, h, pts);
     } else if (type === 'abaya' || type === 'dress') {
-      this.renderAbayaDress(ctx, w, h, pts);
+      this.renderAbayaDress(this.ctx, w, h, pts);
     } else if (type === 'pants') {
-      this.renderPants(ctx, w, h, pts);
+      this.renderPants(this.ctx, w, h, pts);
     } else if (type === 'headwear') {
-      this.renderHeadwear(ctx, w, h, pts);
+      this.renderHeadwear(this.ctx, w, h, pts);
     } else if (type === 'accessory') {
-      this.renderWatch(ctx, w, h, pts);
+      this.renderWatch(this.ctx, w, h, pts);
     } else {
-      this.renderShirt(ctx, w, h, pts); // fallback
+      this.renderShirt(this.ctx, w, h, pts);
     }
 
-    // 5. Segmentation-based occlusion: draw body pixels OVER the garment
-    this.applyOcclusion(ctx, video, w, h);
+    // Occlusion (throttled, cached, try/catch guarded)
+    this.applyOcclusion(this.ctx, w, h);
   }
 
-  // ── Occlusion composite ──
+  /**
+   * Legacy convenience: draw video + garment in one call.
+   */
+  updateFrame(video: HTMLVideoElement, landmarks: Landmark[]): void {
+    this.drawVideo(video);
+    this.drawGarment(landmarks);
+  }
 
-  private applyOcclusion(ctx: CanvasRenderingContext2D, video: HTMLVideoElement, w: number, h: number): void {
+  // ── Occlusion composite (cached + downscaled + throttled) ──
+
+  private applyOcclusion(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    if (this.occDisabled) return;
     const mask = this.occlusionMask;
     if (!mask || mask.data.length === 0) return;
+    const video = this.lastVideo;
+    if (!video) return;
 
-    const { srcX, srcY, srcW, srcH } = this.crop;
+    // Throttle: run at most ~8fps
+    const now = performance.now();
+    if (now - this.occLastTime < ImageOverlay.OCC_THROTTLE_MS) return;
+    this.occLastTime = now;
 
-    // Draw cover-cropped mirrored video into a temp canvas to get pixel data
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const tempCtx = tempCanvas.getContext('2d')!;
-    tempCtx.save();
-    tempCtx.translate(w, 0);
-    tempCtx.scale(-1, 1);
-    if (this.cropValid) {
-      tempCtx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, w, h);
-    } else {
-      tempCtx.drawImage(video, 0, 0, w, h);
-    }
-    tempCtx.restore();
+    try {
+      const { srcX, srcY, srcW, srcH } = this.crop;
+      const mw = mask.width;
+      const mh = mask.height;
+      const data = mask.data;
 
-    const videoPixels = tempCtx.getImageData(0, 0, w, h);
+      // Use downscaled buffer for compositing
+      const occW = ImageOverlay.OCC_SCALE;
+      const occH = Math.round((h / w) * occW);
 
-    // Get current canvas (video + garment) pixels
-    const composited = ctx.getImageData(0, 0, w, h);
+      // Ensure cached canvases are correctly sized
+      if (this.occTempCanvas.width !== occW || this.occTempCanvas.height !== occH) {
+        this.occTempCanvas.width = occW;
+        this.occTempCanvas.height = occH;
+      }
+      if (this.occMaskCanvas.width !== occW || this.occMaskCanvas.height !== occH) {
+        this.occMaskCanvas.width = occW;
+        this.occMaskCanvas.height = occH;
+      }
 
-    const mw = mask.width;
-    const mh = mask.height;
-    const data = mask.data;
+      // 1. Draw cover-cropped mirrored video at small size
+      const tc = this.occTempCtx;
+      tc.save();
+      tc.translate(occW, 0);
+      tc.scale(-1, 1);
+      if (this.cropValid) {
+        tc.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, occW, occH);
+      } else {
+        tc.drawImage(video, 0, 0, occW, occH);
+      }
+      tc.restore();
 
-    // Where mask > 0.5 (body detected), replace garment pixels with original video
-    // This makes body parts (arms/hands) appear IN FRONT of the garment
-    for (let cy = 0; cy < h; cy++) {
-      // Map canvas y to mask y (mirror not needed — mask is in camera space, video is mirrored)
-      const my = Math.floor((cy / h) * mh);
-      for (let cx = 0; cx < w; cx++) {
-        // Mirror x for mask lookup since canvas is mirrored
-        const mx = Math.floor(((w - 1 - cx) / w) * mw);
-        const maskIdx = my * mw + mx;
-        if (data[maskIdx] > 0.5) {
-          const pi = (cy * w + cx) * 4;
-          composited.data[pi] = videoPixels.data[pi];
-          composited.data[pi + 1] = videoPixels.data[pi + 1];
-          composited.data[pi + 2] = videoPixels.data[pi + 2];
-          composited.data[pi + 3] = videoPixels.data[pi + 3];
+      // 2. Build an alpha mask on the mask canvas
+      const mc = this.occMaskCtx;
+      const maskImgData = mc.createImageData(occW, occH);
+      const md = maskImgData.data;
+
+      for (let cy = 0; cy < occH; cy++) {
+        const my = Math.floor((cy / occH) * mh);
+        for (let cx = 0; cx < occW; cx++) {
+          const mx = Math.floor(((occW - 1 - cx) / occW) * mw);
+          const maskIdx = my * mw + mx;
+          const pi = (cy * occW + cx) * 4;
+          if (data[maskIdx] > 0.5) {
+            md[pi] = 255;
+            md[pi + 1] = 255;
+            md[pi + 2] = 255;
+            md[pi + 3] = 255;
+          } else {
+            md[pi + 3] = 0;
+          }
         }
       }
-    }
+      mc.putImageData(maskImgData, 0, 0);
 
-    ctx.putImageData(composited, 0, 0);
+      // 3. Use mask as clip: draw body video through mask onto main canvas
+      // source-in on temp: keep only masked body pixels
+      tc.save();
+      tc.globalCompositeOperation = 'destination-in';
+      tc.drawImage(this.occMaskCanvas, 0, 0);
+      tc.restore();
+
+      // 4. Draw the masked body (small) onto the main canvas, scaled up
+      ctx.drawImage(this.occTempCanvas, 0, 0, w, h);
+
+    } catch (err) {
+      console.warn('[ImageOverlay] Occlusion failed, disabling:', err);
+      this.occDisabled = true;
+    }
   }
 
   // ── Category renderers ──
@@ -512,7 +571,19 @@ export class ImageOverlay {
     this.sm = this.createFreshLandmarks();
     this.garmentInitialized = false;
     this.occlusionMask = null;
+    this.occDisabled = false;
+    this.occLastTime = 0;
     Object.values(this.filters).forEach(fp => resetFilterPair(fp));
+  }
+
+  /** Whether garment image is loaded and ready */
+  get isReady(): boolean {
+    return this.garmentImage !== null;
+  }
+
+  /** Garment image dimensions for debug HUD */
+  get garmentDims(): { w: number; h: number } | null {
+    return this.garmentImage ? { w: this.garmentImage.width, h: this.garmentImage.height } : null;
   }
 
   clear(): void {
@@ -521,6 +592,7 @@ export class ImageOverlay {
 
   dispose(): void {
     this.garmentImage = null;
+    this.lastVideo = null;
     this.resetFilters();
   }
 }

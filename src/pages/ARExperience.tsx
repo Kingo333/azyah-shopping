@@ -31,6 +31,9 @@ import type { ARMode } from '@/ar/types';
 import type { AnchorResult } from '@/ar/anchoring/types';
 import type { Object3D } from 'three';
 
+// ── Build ID for deployment verification ──
+const BUILD_ID = '2026-04-09T-v2-freeze-fix';
+
 /** Resolve which AR rendering mode to use, respecting retailer preference. */
 export function resolveARMode(product: ARProduct): ARMode {
   const pref = product.ar_preferred_mode || 'auto';
@@ -41,7 +44,6 @@ export function resolveARMode(product: ARProduct): ARMode {
   return 'none';
 }
 
-// ── Fix 6: Camera error mapping ──
 function mapCameraError(err: any): { state: TrackingState; message: string; retry?: boolean } {
   const name = err.name || '';
   switch (name) {
@@ -61,23 +63,23 @@ function mapCameraError(err: any): { state: TrackingState; message: string; retr
   }
 }
 
-// ── Fix 5: Performance tier system ──
 type PerformanceTier = 'A' | 'B' | 'C';
 
 const TIER_THRESHOLDS = {
-  downToB: 22,  // FPS < 22 for 2s → Tier B
-  downToC: 15,  // FPS < 15 for 2s → Tier C
-  upFromB: 25,  // FPS > 25 for 5s → Tier A
-  upFromC: 20,  // FPS > 20 for 5s → Tier B
+  downToB: 22,
+  downToC: 15,
+  upFromB: 25,
+  upFromC: 20,
 };
 
-const POSE_INTERVAL_MS = { A: 66, B: 66, C: 100 }; // ~15fps, ~15fps, ~10fps
+const POSE_INTERVAL_MS = { A: 66, B: 66, C: 100 };
 
 export default function ARExperience() {
   const { eventId, brandId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const requestedProductId = searchParams.get('productId');
+  const isDebug = searchParams.get('debug') === 'true';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -96,6 +98,12 @@ export default function ARExperience() {
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arMode, setArMode] = useState<ARMode>('none');
   const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string }>({ status: 'pending' });
+
+  // Debug HUD counters
+  const debugCounters = useRef({ rafTicks: 0, poseCalls: 0, overlayDraws: 0, segCalls: 0 });
+  const [debugRates, setDebugRates] = useState({ raf: 0, pose: 0, overlay: 0, seg: 0 });
+  const debugLastSecond = useRef(0);
+  const debugLastError = useRef('');
 
   const imageOverlayRef = useRef<ImageOverlay | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -124,7 +132,6 @@ export default function ARExperience() {
   const modelDimsRef = useRef({ w: 1, h: 1, d: 1 });
   const coverCropRef = useRef<CoverCropInfo>({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 });
 
-  // One Euro Filters (3D path)
   const filterPosX = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
   const filterPosY = useRef(new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff));
   const filterScaleX = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
@@ -132,7 +139,6 @@ export default function ARExperience() {
   const filterScaleZ = useRef(new OneEuroFilter(FILTER_PRESETS.scale.minCutoff, FILTER_PRESETS.scale.beta, FILTER_PRESETS.scale.dCutoff));
   const filterRotY = useRef(new OneEuroFilter(FILTER_PRESETS.rotation.minCutoff, FILTER_PRESETS.rotation.beta, FILTER_PRESETS.rotation.dCutoff));
 
-  // Outlier filters (3D path)
   const outlierPosX = useRef(new OutlierFilter(15, 3.0));
   const outlierPosY = useRef(new OutlierFilter(15, 3.0));
   const outlierScX = useRef(new OutlierFilter(15, 3.0));
@@ -145,11 +151,10 @@ export default function ARExperience() {
   const debugRef = useRef<DebugOverlay | null>(null);
   const lastLandmarksRef = useRef<any[] | null>(null);
 
-  // Fix 5: Performance tier state
   const fpsFrames = useRef(0);
   const fpsLastCheck = useRef(0);
   const currentTier = useRef<PerformanceTier>('A');
-  const tierStableStart = useRef(0); // timestamp when FPS crossed recovery threshold
+  const tierStableStart = useRef(0);
 
   const lastAnchorRef = useRef<AnchorResult | null>(null);
   const pinchScaleRef = useRef(1.0);
@@ -157,7 +162,6 @@ export default function ARExperience() {
   selectedProductRef.current = selectedProduct;
   const lastMissingPartsJson = useRef<string>('[]');
 
-  // Ref to track current arMode inside animation loop without stale closure
   const arModeRef = useRef<ARMode>('none');
 
   const previewUrlRef = useRef<string | null>(null);
@@ -172,20 +176,18 @@ export default function ARExperience() {
     };
   }, [capturedBlob]);
 
-  // ── Fix 1: Mode-aware capture ──
+  // ── Capture ──
   const handleCapture = async () => {
     if (!videoRef.current || isCapturing) return;
     setIsCapturing(true);
     try {
       let blob: Blob;
       if (arModeRef.current === '2d' && overlayCanvasRef.current) {
-        // 2D mode: overlay canvas already contains video + garment composite
         blob = await new Promise<Blob>((resolve, reject) => {
           overlayCanvasRef.current!.toBlob(
             (b) => {
               if (b) resolve(b);
               else {
-                // iOS Safari fallback: use toDataURL
                 try {
                   const dataUrl = overlayCanvasRef.current!.toDataURL('image/png');
                   const byteStr = atob(dataUrl.split(',')[1]);
@@ -201,7 +203,6 @@ export default function ARExperience() {
           );
         });
       } else if (canvasRef.current) {
-        // 3D mode: composite video + Three.js canvas
         sceneManagerRef.current?.renderIfDirty();
         blob = await compositeCapture(videoRef.current, canvasRef.current);
       } else {
@@ -294,7 +295,6 @@ export default function ARExperience() {
 
     async function initPipeline() {
       try {
-        // 1. Check WebGL
         console.log('[AR] Step 1: Checking WebGL support…');
         const testCanvas = document.createElement('canvas');
         const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
@@ -306,7 +306,6 @@ export default function ARExperience() {
           return;
         }
 
-        // 2. Camera + Pose + Segmenter in parallel
         setTrackingState('initializing');
         setLoadStage('Starting camera & body tracking…');
 
@@ -315,7 +314,7 @@ export default function ARExperience() {
         const segPromise = BodySegmenter.create();
 
         const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
-        segPromise.then((seg) => { if (!cleanedUpRef.current) segmenterRef.current = seg; });
+        segPromise.then((seg) => { if (!cleanedUpRef.current) segmenterRef.current = seg; }).catch(() => {});
 
         if (cleanedUpRef.current) {
           if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
@@ -323,13 +322,11 @@ export default function ARExperience() {
           return;
         }
 
-        // Fix 6: Handle camera errors with specific messages
         if ('error' in camResult) {
           const err = camResult.error;
           const mapped = mapCameraError(err);
 
           if (mapped.retry) {
-            // OverconstrainedError: retry with relaxed constraints
             console.warn('[AR] Camera overconstrained, retrying with basic constraints…');
             try {
               const retryStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
@@ -339,7 +336,6 @@ export default function ARExperience() {
               const vw = video.videoWidth || 640;
               const vh = video.videoHeight || 480;
               coverCropRef.current = computeCoverCrop(vw, vh, window.innerWidth, window.innerHeight);
-              // Fall through to continue pipeline
             } catch (retryErr: any) {
               const retryMapped = mapCameraError(retryErr);
               setTrackingState(retryMapped.state);
@@ -369,7 +365,24 @@ export default function ARExperience() {
 
         poseProcessorRef.current = poseResult;
 
-        // 3. Scene
+        // iOS Safari: re-check video on loadedmetadata + visibilitychange
+        const handleMetadata = () => {
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            coverCropRef.current = computeCoverCrop(video.videoWidth, video.videoHeight, window.innerWidth, window.innerHeight);
+            imageOverlayRef.current?.updateCoverCrop(video.videoWidth, video.videoHeight, window.innerWidth, window.innerHeight);
+          }
+        };
+        video.addEventListener('loadedmetadata', handleMetadata);
+
+        const handleVisibility = () => {
+          if (document.visibilityState === 'visible' && video.paused) {
+            video.play().catch(() => {});
+            // Re-check dimensions after resume
+            setTimeout(handleMetadata, 300);
+          }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
         const sm = new SceneManager(canvas);
         sceneManagerRef.current = sm;
         sceneReadyResolveRef.current?.();
@@ -388,168 +401,196 @@ export default function ARExperience() {
         setTrackingState('waiting_for_pose');
         setLoadStage('');
 
-        // 4. Render loop
+        // ═══════════════════════════════════════════════════
+        // RENDER LOOP — restructured to never freeze 2D canvas
+        // ═══════════════════════════════════════════════════
         let lastPoseTime = 0;
 
         const animate = (time: number) => {
           if (cleanedUpRef.current) return;
+
+          debugCounters.current.rafTicks++;
+
           const pp = poseProcessorRef.current;
           const poseInterval = POSE_INTERVAL_MS[currentTier.current];
+          const is2D = !!imageOverlayRef.current;
 
-          if (pp && video.readyState >= 2 && time - lastPoseTime > poseInterval) {
-            lastPoseTime = time;
-            const now = performance.now();
-            const result = pp.detectForVideo(video, now);
+          // ── STEP A: Always repaint 2D canvas with live video (every frame) ──
+          if (is2D && video.readyState >= 2) {
+            imageOverlayRef.current!.drawVideo(video);
+            debugCounters.current.overlayDraws++;
 
-            if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
-              framesWithoutPose.current = 0;
-              lastLandmarksRef.current = result.landmarks[0];
-
-              // ── 2D IMAGE OVERLAY PATH ──
-              if (imageOverlayRef.current) {
-                imageOverlayRef.current.updateFrame(video, result.landmarks[0]);
-                setTrackingState('tracking_active');
-
-                // Fix 3: Run segmentation for 2D occlusion too (respects tier)
-                if (currentTier.current === 'A') {
-                  const frameBudgetMs = performance.now() - now;
-                  const seg = segmenterRef.current;
-                  if (seg?.isEnabled && frameBudgetMs < 20) {
-                    const mask = seg.segment(video, performance.now());
-                    if (mask) {
-                      imageOverlayRef.current.updateOcclusionMask(mask);
-                    }
-                  }
-                } else {
-                  // Tier B/C: no segmentation for 2D
-                  imageOverlayRef.current.updateOcclusionMask(null);
-                }
-
-                sm.renderIfDirty();
-                animFrameRef.current = requestAnimationFrame(animate);
-                return;
-              }
-
-              // ── 3D GLB PATH ──
-              const product = selectedProductRef.current;
-              const garmentType = product?.garment_type || 'shirt';
-              const config = GARMENT_PRESETS[garmentType];
-              const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
-              const arScale = product?.ar_scale || 1;
-
-              const measurements = computeBodyMeasurements(
-                result.landmarks[0],
-                result.worldLandmarks[0],
-                coverCropRef.current,
-                sm.visibleDims,
-              );
-
-              const requiredVisible = config.requiredLandmarks.filter(
-                idx => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold
-              );
-              const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
-              const someRequiredVisible = requiredVisible.length > 0;
-
-              // Only set 3D tracking states when a model is actually loaded
-              if (modelRef.current) {
-                if (allRequiredVisible) {
-                  setTrackingState('tracking_active');
-                  if (lastMissingPartsJson.current !== '[]') {
-                    lastMissingPartsJson.current = '[]';
-                    setMissingParts([]);
-                  }
-                } else if (someRequiredVisible) {
-                  setTrackingState('partial_tracking');
-                  const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
-                  const partsJson = JSON.stringify(parts);
-                  if (partsJson !== lastMissingPartsJson.current) {
-                    lastMissingPartsJson.current = partsJson;
-                    setMissingParts(parts);
-                  }
-                } else {
-                  setTrackingState('waiting_for_pose');
-                }
-              }
-              // If no model loaded yet, leave tracking state as-is (model_loading/waiting)
-
-              const anchor = anchorResolverRef.current!.resolve(
-                garmentType, measurements, config, modelDimsRef.current
-              );
-
-              if (anchor && modelRef.current) {
-                modelRef.current.visible = true;
-
-                const px = outlierPosX.current.filter(anchor.position.x) ?? lastAnchorRef.current?.position.x ?? anchor.position.x;
-                const py = outlierPosY.current.filter(anchor.position.y) ?? lastAnchorRef.current?.position.y ?? anchor.position.y;
-                const sx = outlierScX.current.filter(anchor.scale.x * arScale) ?? lastAnchorRef.current?.scale.x ?? anchor.scale.x * arScale;
-                const sy = outlierScY.current.filter(anchor.scale.y * arScale) ?? lastAnchorRef.current?.scale.y ?? anchor.scale.y * arScale;
-                const ry = outlierRotY.current.filter(anchor.rotationY) ?? lastAnchorRef.current?.rotationY ?? anchor.rotationY;
-                const sz = (sx + sy) / 2;
-
-                const t = performance.now() / 1000;
-                const smoothX = filterPosX.current.filter(px, t);
-                const smoothY = filterPosY.current.filter(py, t);
-                const smoothScX = filterScaleX.current.filter(sx, t);
-                const smoothScY = filterScaleY.current.filter(sy, t);
-                const smoothScZ = filterScaleZ.current.filter(sz, t);
-                const smoothRotY = filterRotY.current.filter(ry, t);
-
-                modelRef.current.position.set(smoothX + offset.x, smoothY + offset.y, anchor.position.z + offset.z);
-                modelRef.current.scale.set(
-                  smoothScX * pinchScaleRef.current,
-                  smoothScY * pinchScaleRef.current,
-                  smoothScZ * pinchScaleRef.current,
-                );
-                modelRef.current.rotation.y = smoothRotY;
-
-                sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
-
-                if (boneMapperRef.current && result.worldLandmarks[0]) {
-                  boneMapperRef.current.update(result.worldLandmarks[0]);
-                }
-
-                // Segmentation for 3D occlusion (respects tier — only Tier A)
-                if (currentTier.current === 'A') {
-                  const frameBudgetMs = performance.now() - now;
-                  const seg = segmenterRef.current;
-                  if (seg?.isEnabled && frameBudgetMs < 20) {
-                    const mask = seg.segment(video, performance.now());
-                    if (mask) {
-                      sm.updateOcclusionMask(mask.data, mask.width, mask.height);
-                    }
-                  }
-                }
-
-                const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
-                sm.updateShadowPlane(floorY, garmentType);
-                sm.dirty = true;
-
-                lastAnchorRef.current = {
-                  ...anchor,
-                  scale: { x: sx, y: sy, z: sz },
-                };
-              } else if (modelRef.current) {
-                modelRef.current.visible = false;
-                sm.dirty = true;
-              }
-            } else {
-              framesWithoutPose.current++;
-              if (framesWithoutPose.current > 30) {
-                setTrackingState(prev => (prev === 'tracking_active' || prev === 'partial_tracking') ? 'tracking_lost' : 'waiting_for_pose');
-                if (modelRef.current) modelRef.current.visible = false;
-                sm.dirty = true;
-              }
+            // If we have stale landmarks, draw garment even without new pose
+            if (lastLandmarksRef.current) {
+              imageOverlayRef.current!.drawGarment(lastLandmarksRef.current);
             }
           }
 
-          // Cloth sway animation
+          // ── STEP B: Pose detection (throttled) ──
+          if (pp && video.readyState >= 2 && time - lastPoseTime > poseInterval) {
+            lastPoseTime = time;
+            const now = performance.now();
+
+            try {
+              const result = pp.detectForVideo(video, now);
+              debugCounters.current.poseCalls++;
+
+              if (result && result.landmarks.length > 0 && result.landmarks[0].length > 0) {
+                framesWithoutPose.current = 0;
+                lastLandmarksRef.current = result.landmarks[0];
+
+                if (is2D) {
+                  // 2D: garment already drawn above with latest landmarks; just update tracking state
+                  setTrackingState('tracking_active');
+
+                  // Segmentation for 2D occlusion (Tier A only, try/catch guarded)
+                  if (currentTier.current === 'A') {
+                    try {
+                      const frameBudgetMs = performance.now() - now;
+                      const seg = segmenterRef.current;
+                      if (seg?.isEnabled && frameBudgetMs < 20) {
+                        const mask = seg.segment(video, performance.now());
+                        debugCounters.current.segCalls++;
+                        if (mask) {
+                          imageOverlayRef.current!.updateOcclusionMask(mask);
+                        }
+                      }
+                    } catch (segErr) {
+                      debugLastError.current = `seg2d: ${segErr}`;
+                      segmenterRef.current?.setEnabled(false);
+                    }
+                  } else {
+                    imageOverlayRef.current!.updateOcclusionMask(null);
+                  }
+                } else {
+                  // ── 3D GLB PATH ──
+                  const product = selectedProductRef.current;
+                  const garmentType = product?.garment_type || 'shirt';
+                  const config = GARMENT_PRESETS[garmentType];
+                  const offset = product?.ar_position_offset || { x: 0, y: 0, z: 0 };
+                  const arScale = product?.ar_scale || 1;
+
+                  const measurements = computeBodyMeasurements(
+                    result.landmarks[0],
+                    result.worldLandmarks[0],
+                    coverCropRef.current,
+                    sm.visibleDims,
+                  );
+
+                  const requiredVisible = config.requiredLandmarks.filter(
+                    idx => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold
+                  );
+                  const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
+                  const someRequiredVisible = requiredVisible.length > 0;
+
+                  if (modelRef.current) {
+                    if (allRequiredVisible) {
+                      setTrackingState('tracking_active');
+                      if (lastMissingPartsJson.current !== '[]') {
+                        lastMissingPartsJson.current = '[]';
+                        setMissingParts([]);
+                      }
+                    } else if (someRequiredVisible) {
+                      setTrackingState('partial_tracking');
+                      const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
+                      const partsJson = JSON.stringify(parts);
+                      if (partsJson !== lastMissingPartsJson.current) {
+                        lastMissingPartsJson.current = partsJson;
+                        setMissingParts(parts);
+                      }
+                    } else {
+                      setTrackingState('waiting_for_pose');
+                    }
+                  }
+
+                  const anchor = anchorResolverRef.current!.resolve(
+                    garmentType, measurements, config, modelDimsRef.current
+                  );
+
+                  if (anchor && modelRef.current) {
+                    modelRef.current.visible = true;
+
+                    const px = outlierPosX.current.filter(anchor.position.x) ?? lastAnchorRef.current?.position.x ?? anchor.position.x;
+                    const py = outlierPosY.current.filter(anchor.position.y) ?? lastAnchorRef.current?.position.y ?? anchor.position.y;
+                    const sx = outlierScX.current.filter(anchor.scale.x * arScale) ?? lastAnchorRef.current?.scale.x ?? anchor.scale.x * arScale;
+                    const sy = outlierScY.current.filter(anchor.scale.y * arScale) ?? lastAnchorRef.current?.scale.y ?? anchor.scale.y * arScale;
+                    const ry = outlierRotY.current.filter(anchor.rotationY) ?? lastAnchorRef.current?.rotationY ?? anchor.rotationY;
+                    const sz = (sx + sy) / 2;
+
+                    const t = performance.now() / 1000;
+                    const smoothX = filterPosX.current.filter(px, t);
+                    const smoothY = filterPosY.current.filter(py, t);
+                    const smoothScX = filterScaleX.current.filter(sx, t);
+                    const smoothScY = filterScaleY.current.filter(sy, t);
+                    const smoothScZ = filterScaleZ.current.filter(sz, t);
+                    const smoothRotY = filterRotY.current.filter(ry, t);
+
+                    modelRef.current.position.set(smoothX + offset.x, smoothY + offset.y, anchor.position.z + offset.z);
+                    modelRef.current.scale.set(
+                      smoothScX * pinchScaleRef.current,
+                      smoothScY * pinchScaleRef.current,
+                      smoothScZ * pinchScaleRef.current,
+                    );
+                    modelRef.current.rotation.y = smoothRotY;
+
+                    sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
+
+                    if (boneMapperRef.current && result.worldLandmarks[0]) {
+                      boneMapperRef.current.update(result.worldLandmarks[0]);
+                    }
+
+                    // 3D segmentation occlusion (Tier A only)
+                    if (currentTier.current === 'A') {
+                      try {
+                        const frameBudgetMs = performance.now() - now;
+                        const seg = segmenterRef.current;
+                        if (seg?.isEnabled && frameBudgetMs < 20) {
+                          const mask = seg.segment(video, performance.now());
+                          debugCounters.current.segCalls++;
+                          if (mask) {
+                            sm.updateOcclusionMask(mask.data, mask.width, mask.height);
+                          }
+                        }
+                      } catch (segErr) {
+                        debugLastError.current = `seg3d: ${segErr}`;
+                        segmenterRef.current?.setEnabled(false);
+                      }
+                    }
+
+                    const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
+                    sm.updateShadowPlane(floorY, garmentType);
+                    sm.dirty = true;
+
+                    lastAnchorRef.current = {
+                      ...anchor,
+                      scale: { x: sx, y: sy, z: sz },
+                    };
+                  } else if (modelRef.current) {
+                    modelRef.current.visible = false;
+                    sm.dirty = true;
+                  }
+                }
+              } else {
+                framesWithoutPose.current++;
+                if (framesWithoutPose.current > 30) {
+                  setTrackingState(prev => (prev === 'tracking_active' || prev === 'partial_tracking') ? 'tracking_lost' : 'waiting_for_pose');
+                  if (modelRef.current) modelRef.current.visible = false;
+                  sm.dirty = true;
+                }
+              }
+            } catch (poseErr) {
+              debugLastError.current = `pose: ${poseErr}`;
+            }
+          }
+
+          // Cloth sway animation (3D only)
           if (modelRef.current?.visible) {
             updateClothSwayTime(modelRef.current, time / 1000);
             sm.dirty = true;
           }
 
-          // Adaptive lighting
-          if (video.readyState >= 2) {
+          // Adaptive lighting (3D only)
+          if (!is2D && video.readyState >= 2) {
             sm.updateLightingFromVideo(video);
           }
           sm.renderIfDirty();
@@ -557,7 +598,20 @@ export default function ARExperience() {
           // Debug overlay
           debugRef.current?.draw(lastLandmarksRef.current, trackingState, segmenterRef.current?.isEnabled ?? false, time);
 
-          // ── Fix 5: Performance tier management ──
+          // ── Debug HUD rate computation (every 1s) ──
+          if (isDebug && time - debugLastSecond.current > 1000) {
+            const elapsed = (time - debugLastSecond.current) / 1000;
+            setDebugRates({
+              raf: Math.round(debugCounters.current.rafTicks / elapsed),
+              pose: Math.round(debugCounters.current.poseCalls / elapsed),
+              overlay: Math.round(debugCounters.current.overlayDraws / elapsed),
+              seg: Math.round(debugCounters.current.segCalls / elapsed),
+            });
+            debugCounters.current = { rafTicks: 0, poseCalls: 0, overlayDraws: 0, segCalls: 0 };
+            debugLastSecond.current = time;
+          }
+
+          // ── Performance tier management ──
           fpsFrames.current++;
           if (time - fpsLastCheck.current > 2000) {
             const fps = fpsFrames.current / ((time - fpsLastCheck.current) / 1000);
@@ -566,34 +620,27 @@ export default function ARExperience() {
 
             const tier = currentTier.current;
 
-            // Downgrade logic
             if (tier === 'A' && fps < TIER_THRESHOLDS.downToB) {
               currentTier.current = 'B';
               segmenterRef.current?.setEnabled(false);
               tierStableStart.current = 0;
-              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier B (segmentation OFF)`);
             } else if (tier === 'B' && fps < TIER_THRESHOLDS.downToC) {
               currentTier.current = 'C';
               sm.setShadowsEnabled(false);
               tierStableStart.current = 0;
-              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier C (shadows OFF, pose 10fps)`);
             } else if (tier === 'A' && fps < TIER_THRESHOLDS.downToC) {
-              // Direct jump A→C if very low
               currentTier.current = 'C';
               segmenterRef.current?.setEnabled(false);
               sm.setShadowsEnabled(false);
               tierStableStart.current = 0;
-              console.warn(`[AR] FPS ${fps.toFixed(0)} → Tier C (direct from A)`);
             }
 
-            // Recovery logic (step up one tier if FPS sustained for 5s)
             if (tier === 'C' && fps > TIER_THRESHOLDS.upFromC) {
               if (!tierStableStart.current) tierStableStart.current = time;
               else if (time - tierStableStart.current > 5000) {
                 currentTier.current = 'B';
                 sm.setShadowsEnabled(true);
                 tierStableStart.current = 0;
-                console.info(`[AR] FPS ${fps.toFixed(0)} → Tier B (recovered, shadows ON)`);
               }
             } else if (tier === 'B' && fps > TIER_THRESHOLDS.upFromB) {
               if (!tierStableStart.current) tierStableStart.current = time;
@@ -601,22 +648,23 @@ export default function ARExperience() {
                 currentTier.current = 'A';
                 segmenterRef.current?.setEnabled(true);
                 tierStableStart.current = 0;
-                console.info(`[AR] FPS ${fps.toFixed(0)} → Tier A (recovered, segmentation ON)`);
               }
             } else if (
               (tier === 'C' && fps <= TIER_THRESHOLDS.upFromC) ||
               (tier === 'B' && fps <= TIER_THRESHOLDS.upFromB)
             ) {
-              tierStableStart.current = 0; // Reset recovery timer
+              tierStableStart.current = 0;
             }
           }
 
+          // ── ALWAYS schedule next frame (never early-return without this) ──
           animFrameRef.current = requestAnimationFrame(animate);
         };
         animFrameRef.current = requestAnimationFrame(animate);
 
       } catch (err: any) {
         console.error('[AR] initPipeline crashed:', err);
+        debugLastError.current = `init: ${err?.message}`;
         setTrackingState('camera_error');
         setTrackingMessage(err.message || 'AR failed to initialize. Try refreshing.');
         setLoadStage('');
@@ -650,7 +698,6 @@ export default function ARExperience() {
     if (!selectedProduct) return;
     let cancelled = false;
 
-    // 1. Resolve AR mode IMMEDIATELY so UI reflects the correct mode
     const resolvedMode = resolveARMode(selectedProduct);
     console.log('[AR] Mode resolved:', resolvedMode, {
       overlay: selectedProduct.ar_overlay_url,
@@ -667,7 +714,6 @@ export default function ARExperience() {
       return;
     }
 
-    // 2. Clear stale assets from previous product
     imageOverlayRef.current?.dispose();
     imageOverlayRef.current = null;
     if (modelRef.current) {
@@ -679,7 +725,6 @@ export default function ARExperience() {
     const use2D = resolvedMode === '2d';
 
     async function loadWhenReady() {
-      // Wait for scene — no artificial timeout, real errors caught by reject
       try {
         await sceneReadyPromiseRef.current;
       } catch (sceneErr: any) {
@@ -707,7 +752,6 @@ export default function ARExperience() {
       if (cancelled || !sceneManagerRef.current) return;
       const sm = sceneManagerRef.current;
 
-      // Reset filters
       filterPosX.current.reset(); filterPosY.current.reset();
       filterScaleX.current.reset(); filterScaleY.current.reset(); filterScaleZ.current.reset();
       filterRotY.current.reset();
@@ -718,8 +762,8 @@ export default function ARExperience() {
       pinchScaleRef.current = 1.0;
       boneMapperRef.current?.reset();
       boneMapperRef.current = null;
+      lastLandmarksRef.current = null;
 
-      // Reset performance tier on product switch
       currentTier.current = 'A';
       tierStableStart.current = 0;
       segmenterRef.current?.setEnabled(true);
@@ -836,7 +880,6 @@ export default function ARExperience() {
           videoRef.current.videoWidth, videoRef.current.videoHeight,
           newW, newH
         );
-        // Fix 9: Update 2D overlay cover crop on resize
         imageOverlayRef.current?.updateCoverCrop(
           videoRef.current.videoWidth, videoRef.current.videoHeight,
           newW, newH
@@ -922,24 +965,24 @@ export default function ARExperience() {
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ transform: 'scaleX(-1)' }}
+        style={{ transform: 'scaleX(-1)', display: arMode === '2d' ? 'none' : 'block' }}
         playsInline muted autoPlay
       />
 
-      {/* 2D garment overlay canvas */}
+      {/* 2D garment overlay canvas — on top of everything in 2D mode */}
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ display: arMode === '2d' ? 'block' : 'none' }}
+        style={{ display: arMode === '2d' ? 'block' : 'none', zIndex: 2 }}
         width={canvasSize.w}
         height={canvasSize.h}
       />
 
-      {/* Three.js canvas */}
+      {/* Three.js canvas — hidden in 2D mode */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ display: arMode === '3d' || arMode === 'none' ? 'block' : 'none' }}
+        style={{ display: arMode === '3d' || arMode === 'none' ? 'block' : 'none', zIndex: 1 }}
         width={canvasSize.w}
         height={canvasSize.h}
       />
@@ -973,14 +1016,22 @@ export default function ARExperience() {
         </div>
       </div>
 
-      {/* AR Debug Panel — visible on-screen for mobile diagnostics */}
-      <div className="absolute top-16 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[280px] text-[10px] font-mono text-white/80 space-y-0.5">
-        <div>mode: <span className="text-green-400">{arMode}</span> | status: <span className="text-yellow-300">{arDebugInfo.status}</span></div>
-        <div>overlay: {selectedProduct?.ar_overlay_url ? selectedProduct.ar_overlay_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
-        <div>model: {selectedProduct?.ar_model_url ? selectedProduct.ar_model_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
-        <div>pref: {selectedProduct?.ar_preferred_mode || 'auto'} | tracking: {trackingState}</div>
-        {arDebugInfo.error && <div className="text-red-400 break-all">err: {arDebugInfo.error}</div>}
-      </div>
+      {/* Debug HUD — only when ?debug=true */}
+      {isDebug && (
+        <div className="absolute top-16 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[300px] text-[10px] font-mono text-white/80 space-y-0.5">
+          <div className="text-yellow-300 font-bold">BUILD: {BUILD_ID}</div>
+          <div>raf/s: <span className="text-green-400">{debugRates.raf}</span> | pose/s: <span className="text-green-400">{debugRates.pose}</span></div>
+          <div>overlay/s: <span className="text-green-400">{debugRates.overlay}</span> | seg/s: <span className="text-green-400">{debugRates.seg}</span></div>
+          <div>mode: <span className="text-green-400">{arMode}</span> | tier: {currentTier.current} | tracking: {trackingState}</div>
+          <div>cam: {videoRef.current?.readyState ?? '?'} | {videoRef.current?.videoWidth ?? 0}×{videoRef.current?.videoHeight ?? 0}</div>
+          <div>garment: {imageOverlayRef.current?.isReady ? `✓ ${imageOverlayRef.current.garmentDims?.w}×${imageOverlayRef.current.garmentDims?.h}` : '✗'}</div>
+          <div>model: {modelRef.current ? `✓ vis=${modelRef.current.visible}` : '✗'}</div>
+          <div>status: {arDebugInfo.status}</div>
+          {(arDebugInfo.error || debugLastError.current) && (
+            <div className="text-red-400 break-all">err: {arDebugInfo.error || debugLastError.current}</div>
+          )}
+        </div>
+      )}
 
       {/* Tracking quality indicator */}
       {trackingState === 'tracking_active' && (
