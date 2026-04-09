@@ -79,8 +79,8 @@ export function TrackingGuidance({ state, message, garmentType, missingParts, lo
       case 'model_error':
         return {
           icon: <AlertTriangle className="h-10 w-10 text-yellow-400" />,
-          title: "Couldn't Load 3D Model",
-          sub: message || 'The model file may be too large or your connection is slow.',
+          title: "Couldn't Load AR Asset",
+          sub: message || 'The asset file may be too large or your connection is slow.',
           action: onRetry ? <Button variant="secondary" onClick={onRetry}>Try Again</Button> : undefined,
         };
 

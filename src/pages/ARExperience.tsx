@@ -450,23 +450,27 @@ export default function ARExperience() {
               const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
               const someRequiredVisible = requiredVisible.length > 0;
 
-              if (allRequiredVisible && modelRef.current) {
-                setTrackingState('tracking_active');
-                if (lastMissingPartsJson.current !== '[]') {
-                  lastMissingPartsJson.current = '[]';
-                  setMissingParts([]);
+              // Only set 3D tracking states when a model is actually loaded
+              if (modelRef.current) {
+                if (allRequiredVisible) {
+                  setTrackingState('tracking_active');
+                  if (lastMissingPartsJson.current !== '[]') {
+                    lastMissingPartsJson.current = '[]';
+                    setMissingParts([]);
+                  }
+                } else if (someRequiredVisible) {
+                  setTrackingState('partial_tracking');
+                  const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
+                  const partsJson = JSON.stringify(parts);
+                  if (partsJson !== lastMissingPartsJson.current) {
+                    lastMissingPartsJson.current = partsJson;
+                    setMissingParts(parts);
+                  }
+                } else {
+                  setTrackingState('waiting_for_pose');
                 }
-              } else if (someRequiredVisible) {
-                setTrackingState('partial_tracking');
-                const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
-                const partsJson = JSON.stringify(parts);
-                if (partsJson !== lastMissingPartsJson.current) {
-                  lastMissingPartsJson.current = partsJson;
-                  setMissingParts(parts);
-                }
-              } else {
-                setTrackingState('waiting_for_pose');
               }
+              // If no model loaded yet, leave tracking state as-is (model_loading/waiting)
 
               const anchor = anchorResolverRef.current!.resolve(
                 garmentType, measurements, config, modelDimsRef.current
