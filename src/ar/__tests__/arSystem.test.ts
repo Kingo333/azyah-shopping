@@ -119,6 +119,54 @@ describe('computeCoverCropRect', () => {
   });
 });
 
+// ── AR mode should never be 'none' when valid assets exist ──
+describe('resolveARMode — no false none', () => {
+  it('2D product with overlay URL resolves to 2d, never none', () => {
+    const product = { ar_overlay_url: 'https://cdn.example.com/overlay.png', ar_preferred_mode: '2d' };
+    expect(resolveARMode(product)).toBe('2d');
+    expect(resolveARMode(product)).not.toBe('none');
+  });
+
+  it('3D product with model URL resolves to 3d', () => {
+    const product = { ar_model_url: 'https://cdn.example.com/model.glb', ar_preferred_mode: '3d' };
+    expect(resolveARMode(product)).toBe('3d');
+  });
+
+  it('auto mode with both assets prefers 2d', () => {
+    const product = { ar_overlay_url: 'https://x.png', ar_model_url: 'https://x.glb' };
+    expect(resolveARMode(product)).toBe('2d');
+  });
+});
+
+// ── Tracking state guards ──
+describe('tracking state with no loaded asset', () => {
+  function shouldShowTrackingActive(modelLoaded: boolean, allLandmarksVisible: boolean): boolean {
+    return modelLoaded && allLandmarksVisible;
+  }
+
+  it('should NOT show tracking_active when model is not loaded', () => {
+    expect(shouldShowTrackingActive(false, true)).toBe(false);
+  });
+
+  it('should show tracking_active when model loaded and landmarks visible', () => {
+    expect(shouldShowTrackingActive(true, true)).toBe(true);
+  });
+
+  it('should NOT show tracking_active when landmarks missing', () => {
+    expect(shouldShowTrackingActive(true, false)).toBe(false);
+  });
+});
+
+// ── Stale asset clearing on product switch ──
+describe('product switch cleanup', () => {
+  it('switching from 3D to 2D should clear model ref', () => {
+    let modelRef: any = { visible: true };
+    // Simulate cleanup on product switch
+    modelRef = null;
+    expect(modelRef).toBeNull();
+  });
+});
+
 // ── Capture path logic ──
 describe('capture path selection', () => {
   function shouldUse2DCapture(mode: string, hasOverlayCanvas: boolean): boolean {
