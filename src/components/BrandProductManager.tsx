@@ -773,6 +773,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                             .update({
                               ar_overlay_url: urlData.publicUrl,
                               ar_enabled: true,
+                              garment_type: editingProduct.garment_type || 'shirt',
                               updated_at: new Date().toISOString()
                             })
                             .eq('id', editingProduct.id);
