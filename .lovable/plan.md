@@ -1,72 +1,65 @@
 
+Do I know what the issue is? Yes.
 
-# Fix: AR Mode Stuck at "NONE" Despite Valid 2D Assets
+What I found
+- This is not a missing 2D/3D camera connection and not a shopper-side camera toggle problem. Both 2D and 3D already share the same camera/video feed.
+- The real break is in `src/pages/ARExperience.tsx`:
+  - `Effect 2` waits on `sceneReadyPromiseRef`.
+  - That promise is only resolved after camera + pose init complete and `SceneManager` is created.
+  - `Effect 2` also hard-fails after 15s.
+- Your evidence proves the race:
+  - screenshot debug panel: `pref: 2d`, overlay URL exists, `mode: none`, `status: error`, `Scene init failed: AR scene loading timed out after 15s`
+  - console logs: timeout fires at `16:31:57`, but `PoseProcessor` finishes at `16:31:58`
+- So the app aborts one second too early, never reaches mode/asset loading, and leaves `arMode` stuck at its default `'none'`.
 
-## Root Cause Analysis
+Secondary code bugs I found
+- `arMode` is set too late. It is assigned only after the scene wait, so a slow init leaves the UI stuck on `(NONE)` even for a valid 2D product.
+- The 3D branch can still set `partial_tracking` / `tracking_active` even when no model is loaded, which creates misleading shopper guidance.
+- Product switching does not fully clear 3D state (`modelRef.current` / scene swap), so stale model state can leak into 2D or failed loads.
+- `TrackingGuidance` always says “3D model” on `model_error`, even when the failing asset is a 2D overlay.
 
-The user's screenshot proves:
-- Camera works (video feed visible)
-- Pose detection works (green "Tracking" dot)
-- But `arMode` is stuck at `'none'` — meaning Effect 2 (model/overlay loading) either never reached `setArMode(resolvedMode)` or resolved as `'none'`
+Implementation plan
+1. Fix the init race in `src/pages/ARExperience.tsx`
+   - Remove the fatal 15s `Promise.race` timeout.
+   - Resolve scene readiness earlier: create `SceneManager` and resolve the scene-ready signal before waiting for slow pose/model downloads.
+   - Keep real failure handling on camera/WebGL/pose errors instead of the artificial timeout.
 
-The DB confirms the product HAS `ar_overlay_url` set with `ar_preferred_mode: '2d'`. So `resolveARMode()` SHOULD return `'2d'`.
+2. Set AR mode immediately on product selection
+   - Move `resolveARMode(selectedProduct)` + `setArMode(...)` + `arModeRef.current = ...` to the start of the load flow.
+   - This makes valid 2D products show `2d` right away instead of falling back to `'none'` while init is still running.
 
-**Most likely cause**: Effect 2 silently fails or hangs. The animation loop falls through to the 3D path (line 431+), which sets `trackingState('tracking_active')` even without a model loaded — showing the green badge with `(NONE)`.
+3. Decouple 2D asset loading from slow pose init
+   - Let the 2D overlay load as soon as the video/canvas prerequisites are ready.
+   - Keep pose detection initializing in parallel so the garment appears as soon as landmarks start arriving.
 
-There are two bugs working together:
+4. Stop fake tracking states
+   - In the animation loop, only allow 3D tracking states when `arModeRef.current === '3d'` and `modelRef.current` exists.
+   - If no asset is loaded yet, keep the shopper in loading/waiting instead of `partial_tracking` or `tracking_active`.
 
-1. **Effect 2 may be failing silently** — if the 2D overlay image fails to load (CORS, 404, timeout), the catch block logs to console but the user on mobile can't see console logs. We need visible diagnostics.
+5. Fully clear stale assets on product switch
+   - Dispose the old 2D overlay.
+   - Clear `modelRef.current`.
+   - Call `sceneManagerRef.current?.swapModel(null)`.
+   - Reset debug/loading state before loading the new asset.
 
-2. **3D path sets "tracking_active" even with no model** — the tracking state logic at lines 451-466 runs regardless of whether a model is loaded, making it appear everything is working when nothing is rendering.
+6. Fix shopper messaging
+   - Update `src/ar/guidance/TrackingGuidance.tsx` so `model_error` becomes a generic AR asset error message, not always a 3D-model message.
+   - Keep the debug panel, but make it reflect “resolved mode” vs “loaded asset” more clearly.
 
-## Fix Plan
+7. Add regression tests
+   - Extend `src/ar/__tests__/arSystem.test.ts` for:
+     - valid 2D products not getting stuck at `none`
+     - slow pose init not aborting asset load
+     - no tracking-active/partial state when no asset is actually loaded
+     - stale 3D model state clearing on switch to 2D
 
-### 1. Add visible debug info to the AR UI (temporary diagnostic)
-**File**: `src/pages/ARExperience.tsx`
+Files to edit
+- `src/pages/ARExperience.tsx`
+- `src/ar/guidance/TrackingGuidance.tsx`
+- `src/ar/__tests__/arSystem.test.ts`
 
-Add a small debug panel visible in the AR view showing:
-- `arMode` value
-- `selectedProduct.ar_overlay_url` (truncated)  
-- `selectedProduct.ar_model_url` (truncated)
-- Effect 2 status (pending/loading/loaded/error)
-- Any error messages from overlay/model loading
-
-This lets the user report exactly what's happening without needing console access.
-
-### 2. Prevent 3D path from claiming "tracking_active" when no model exists
-**File**: `src/pages/ARExperience.tsx` (animate loop, around line 431)
-
-Add a guard: if `arModeRef.current === 'none'` or `(!imageOverlayRef.current && !modelRef.current)`, don't set tracking state to active. Instead show a "loading" or "waiting" state.
-
-### 3. Add timeout + error surfacing to Effect 2
-**File**: `src/pages/ARExperience.tsx` (Effect 2)
-
-- Add a 15-second timeout on the `sceneReadyPromise` await so it doesn't hang forever
-- After `resolveARMode`, log the result visibly (already done, but also set it in a debug state)
-- In the 2D catch block, surface the error more prominently (not just console.error)
-
-### 4. Add overlay URL validation before attempting load
-**File**: `src/pages/ARExperience.tsx` (Effect 2, 2D branch)
-
-Before calling `overlay.loadGarment(url)`, validate the URL is reachable with a HEAD request. If it 404s, show a specific error instead of a generic load failure.
-
-### 5. Ensure `ar_overlay_url` is correctly passed through the data pipeline
-**File**: `src/pages/ARExperience.tsx` (Effect 0, mapping)
-
-Add `console.log('[AR] Mapped products:', mapped)` right after the mapping to confirm `ar_overlay_url` is present in the mapped data. Also add it to the visible debug panel.
-
-## Files to Edit
-
-| File | Change |
-|------|--------|
-| `src/pages/ARExperience.tsx` | Add debug panel, fix tracking_active guard, add timeout to Effect 2, add URL validation |
-
-## Verification
-
-After these changes, the user opens the AR view and can see:
-- What mode was resolved
-- Whether the overlay URL exists
-- Whether the overlay image loaded or what error occurred
-- The exact point where the pipeline stalled
-
-This diagnostic data tells us the exact fix needed. Without it, we're guessing at which of the 3 possible failure points is the actual culprit.
+Expected result
+- For this shopper flow, the debug panel should show `mode: 2d` immediately.
+- The overlay should load after camera/video readiness, even if MediaPipe is slower on iPhone Safari.
+- The UI should stop showing `(NONE)` for products that already have a valid 2D overlay.
+- If something still fails after that, the remaining error will point to the actual asset load step, not a false scene timeout.
