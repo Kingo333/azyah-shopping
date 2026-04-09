@@ -1,80 +1,72 @@
 
 
-# Camera + AR Mode Connection Audit Results
+# Fix: AR Mode Stuck at "NONE" Despite Valid 2D Assets
 
-## Finding: Both 2D and 3D ARE connected to the same camera — no toggle needed
+## Root Cause Analysis
 
-The architecture is correct. Here's the proof:
+The user's screenshot proves:
+- Camera works (video feed visible)
+- Pose detection works (green "Tracking" dot)
+- But `arMode` is stuck at `'none'` — meaning Effect 2 (model/overlay loading) either never reached `setArMode(resolvedMode)` or resolved as `'none'`
 
-```text
-Pipeline Flow:
-  1 camera (startCamera) → 1 video element → 1 PoseProcessor
-                                                    ↓
-                                            animate() loop
-                                                    ↓
-                              imageOverlayRef.current exists?
-                              ├─ YES → 2D path (ImageOverlay.updateFrame)
-                              └─ NO  → 3D path (SceneManager + model)
-```
+The DB confirms the product HAS `ar_overlay_url` set with `ar_preferred_mode: '2d'`. So `resolveARMode()` SHOULD return `'2d'`.
 
-- **One `<video>` element** (line 891) with `playsInline muted autoPlay`
-- **One `startCamera()` call** (line 311) — shared by both modes
-- **One `PoseProcessor`** (line 312) — shared by both modes
-- **Mode branching** happens at line 407: if `imageOverlayRef.current` exists, the 2D path runs; otherwise the 3D path runs
-- **Mode is set** in Effect 2 (line 692-695) via `resolveARMode(product)` which checks `ar_overlay_url` vs `ar_model_url`
+**Most likely cause**: Effect 2 silently fails or hangs. The animation loop falls through to the 3D path (line 431+), which sets `trackingState('tracking_active')` even without a model loaded — showing the green badge with `(NONE)`.
 
-## Why "nothing is working" — likely root causes
+There are two bugs working together:
 
-The camera and pose pipeline initialize correctly, but the problem is probably one of these:
+1. **Effect 2 may be failing silently** — if the 2D overlay image fails to load (CORS, 404, timeout), the catch block logs to console but the user on mobile can't see console logs. We need visible diagnostics.
 
-### 1. The product has no AR assets uploaded
-If `ar_overlay_url` is null AND `ar_model_url` is null, `resolveARMode()` returns `'none'` — the render loop runs but neither path activates (no `imageOverlayRef`, no model loaded). The user sees just the camera feed with "Waiting for pose" forever.
+2. **3D path sets "tracking_active" even with no model** — the tracking state logic at lines 451-466 runs regardless of whether a model is loaded, making it appear everything is working when nothing is rendering.
 
-### 2. The `sceneReadyPromise` blocks Effect 2
-Effect 2 (model/overlay loading) awaits `sceneReadyPromiseRef.current` before loading anything. If the camera or pose init fails silently, this promise never resolves and the overlay/model never loads. The user sees the camera feed but no garment.
+## Fix Plan
 
-### 3. 2D overlay image fails to load (CORS or 404)
-If the `ar_overlay_url` points to a deleted or inaccessible Supabase file, `ImageOverlay.loadGarment()` fails, setting `model_error` state — but the camera keeps running with no garment visible.
+### 1. Add visible debug info to the AR UI (temporary diagnostic)
+**File**: `src/pages/ARExperience.tsx`
 
-## What to fix
+Add a small debug panel visible in the AR view showing:
+- `arMode` value
+- `selectedProduct.ar_overlay_url` (truncated)  
+- `selectedProduct.ar_model_url` (truncated)
+- Effect 2 status (pending/loading/loaded/error)
+- Any error messages from overlay/model loading
 
-### A. Add visible AR mode indicator in the UI
-Show the user which mode is active (2D/3D/none) so they know the system detected their product's assets correctly. Currently there's no visible indicator of which mode was selected.
+This lets the user report exactly what's happening without needing console access.
 
-### B. Add console logging for mode selection
-Add a `console.log('[AR] Mode resolved:', resolvedMode)` in Effect 2 so we can diagnose what mode is being chosen.
+### 2. Prevent 3D path from claiming "tracking_active" when no model exists
+**File**: `src/pages/ARExperience.tsx` (animate loop, around line 431)
 
-### C. Handle `arMode === 'none'` gracefully
-When `resolveARMode` returns `'none'`, show a message like "No AR assets found for this product" instead of silently running the camera with no overlay.
+Add a guard: if `arModeRef.current === 'none'` or `(!imageOverlayRef.current && !modelRef.current)`, don't set tracking state to active. Instead show a "loading" or "waiting" state.
 
-## Changes needed
+### 3. Add timeout + error surfacing to Effect 2
+**File**: `src/pages/ARExperience.tsx` (Effect 2)
 
-### File: `src/pages/ARExperience.tsx`
+- Add a 15-second timeout on the `sceneReadyPromise` await so it doesn't hang forever
+- After `resolveARMode`, log the result visibly (already done, but also set it in a debug state)
+- In the 2D catch block, surface the error more prominently (not just console.error)
 
-1. **Effect 2 (line 692)**: Add logging after mode resolution:
-   ```typescript
-   console.log('[AR] Mode resolved:', resolvedMode, {
-     overlay: selectedProduct.ar_overlay_url,
-     model: selectedProduct.ar_model_url,
-     pref: selectedProduct.ar_preferred_mode,
-   });
-   ```
+### 4. Add overlay URL validation before attempting load
+**File**: `src/pages/ARExperience.tsx` (Effect 2, 2D branch)
 
-2. **After line 695**: Handle `none` mode — if `resolvedMode === 'none'`, set an error state:
-   ```typescript
-   if (resolvedMode === 'none') {
-     setTrackingState('model_error');
-     setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
-     return;
-   }
-   ```
+Before calling `overlay.loadGarment(url)`, validate the URL is reachable with a HEAD request. If it 404s, show a specific error instead of a generic load failure.
 
-3. **UI (around line 947)**: Add AR mode badge next to tracking indicator so users/developers can see which mode is active:
-   ```typescript
-   <span className="text-xs text-white/60 ml-1">({arMode.toUpperCase()})</span>
-   ```
+### 5. Ensure `ar_overlay_url` is correctly passed through the data pipeline
+**File**: `src/pages/ARExperience.tsx` (Effect 0, mapping)
 
-4. **Effect 2, 2D load error**: Add more specific error logging when overlay image fails to load (line 722-727) — log the URL that failed so we can check if it's a CORS/404 issue.
+Add `console.log('[AR] Mapped products:', mapped)` right after the mapping to confirm `ar_overlay_url` is present in the mapped data. Also add it to the visible debug panel.
 
-These are diagnostic + UX changes. No camera toggle is needed — the camera is already shared. The real issue is likely that the product's AR assets are missing or the mode resolved to `'none'`.
+## Files to Edit
 
+| File | Change |
+|------|--------|
+| `src/pages/ARExperience.tsx` | Add debug panel, fix tracking_active guard, add timeout to Effect 2, add URL validation |
+
+## Verification
+
+After these changes, the user opens the AR view and can see:
+- What mode was resolved
+- Whether the overlay URL exists
+- Whether the overlay image loaded or what error occurred
+- The exact point where the pipeline stalled
+
+This diagnostic data tells us the exact fix needed. Without it, we're guessing at which of the 3 possible failure points is the actual culprit.
