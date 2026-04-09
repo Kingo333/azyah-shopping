@@ -723,9 +723,19 @@ export default function ARExperience() {
         setLoadStage('Loading garment image…');
         try {
           const overlayCanvas = overlayCanvasRef.current;
-          if (!overlayCanvas) { setTrackingState('model_error'); return; }
+          if (!overlayCanvas) { setTrackingState('model_error'); setArDebugInfo({ status: 'error', error: 'No overlay canvas' }); return; }
           overlayCanvas.width = window.innerWidth;
           overlayCanvas.height = window.innerHeight;
+
+          // Validate URL is reachable before loading
+          const overlayUrl = selectedProduct.ar_overlay_url!;
+          try {
+            const headResp = await fetch(overlayUrl, { method: 'HEAD', mode: 'no-cors' });
+            console.log('[AR] Overlay URL HEAD check:', headResp.status, headResp.type);
+          } catch (headErr) {
+            console.warn('[AR] Overlay URL HEAD check failed (may still work):', headErr);
+          }
+
           const overlay = new ImageOverlay(overlayCanvas);
 
           // Fix 2/9: Initialize cover crop for 2D overlay
@@ -734,16 +744,18 @@ export default function ARExperience() {
             overlay.updateCoverCrop(v.videoWidth, v.videoHeight, overlayCanvas.width, overlayCanvas.height);
           }
 
-          await overlay.loadGarment(selectedProduct.ar_overlay_url!, selectedProduct.garment_type || 'shirt');
+          await overlay.loadGarment(overlayUrl, selectedProduct.garment_type || 'shirt');
           if (cancelled) return;
           imageOverlayRef.current = overlay;
           setTrackingState('waiting_for_pose');
           setLoadStage('');
+          setArDebugInfo({ status: '2d_loaded' });
         } catch (err: any) {
           if (!cancelled) {
             console.error('[AR] 2D overlay load error:', err, 'URL:', selectedProduct.ar_overlay_url);
             setTrackingState('model_error');
             setTrackingMessage(`Could not load garment image. ${err?.message || ''}`);
+            setArDebugInfo({ status: 'error', error: `2D load failed: ${err?.message || 'unknown'} | URL: ${selectedProduct.ar_overlay_url}` });
           }
         }
         return;
