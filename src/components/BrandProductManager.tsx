@@ -652,6 +652,39 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                 {/* ── Tab 2: 2D AR Overlay ── */}
                 <TabsContent value="overlay" className="space-y-4 pt-2">
+                  {/* Garment type for 2D overlay */}
+                  <div>
+                    <label className="text-sm font-medium">Garment Type</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Select the type of garment to optimize 2D AR placement on the body.
+                    </p>
+                    <Select
+                      value={editingProduct.garment_type || 'shirt'}
+                      onValueChange={async (value) => {
+                        try {
+                          await supabase
+                            .from('event_brand_products')
+                            .update({ garment_type: value, updated_at: new Date().toISOString() })
+                            .eq('id', editingProduct.id);
+                          setEditingProduct(prev => prev ? { ...prev, garment_type: value } : prev);
+                          toast({ title: "Garment type updated", description: `Set to ${GARMENT_TYPES.find(t => t.value === value)?.label || value}` });
+                          fetchProducts();
+                        } catch (error: any) {
+                          toast({ title: "Error", description: error.message || "Failed to update garment type", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select garment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GARMENT_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium">Upload 2D Garment Image</label>
                     <p className="text-xs text-muted-foreground mb-2">
