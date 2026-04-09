@@ -95,6 +95,7 @@ export default function ARExperience() {
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arMode, setArMode] = useState<ARMode>('none');
+  const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string }>({ status: 'pending' });
 
   const imageOverlayRef = useRef<ImageOverlay | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
