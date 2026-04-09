@@ -261,6 +261,7 @@ export default function ARExperience() {
         ar_preferred_mode: p.ar_preferred_mode || 'auto',
       }));
 
+      console.log('[AR] Mapped products:', mapped.map(p => ({ id: p.id, overlay: p.ar_overlay_url, model: p.ar_model_url, pref: p.ar_preferred_mode })));
       setProducts(mapped);
 
       const selected = requestedProductId
@@ -449,7 +450,7 @@ export default function ARExperience() {
               const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
               const someRequiredVisible = requiredVisible.length > 0;
 
-              if (allRequiredVisible) {
+              if (allRequiredVisible && modelRef.current) {
                 setTrackingState('tracking_active');
                 if (lastMissingPartsJson.current !== '[]') {
                   lastMissingPartsJson.current = '[]';
@@ -647,7 +648,11 @@ export default function ARExperience() {
 
     async function loadWhenReady() {
       try {
-        await sceneReadyPromiseRef.current;
+        setArDebugInfo({ status: 'waiting_scene' });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('AR scene loading timed out after 15s')), 15000)
+        );
+        await Promise.race([sceneReadyPromiseRef.current, timeoutPromise]);
       } catch (sceneErr: any) {
         console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
         if (!cancelled) {
@@ -703,8 +708,11 @@ export default function ARExperience() {
       if (resolvedMode === 'none') {
         setTrackingState('model_error');
         setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
+        setArDebugInfo({ status: 'error', error: 'resolveARMode returned none — no ar_overlay_url or ar_model_url' });
         return;
       }
+
+      setArDebugInfo({ status: 'loading_' + resolvedMode });
 
       // Dispose previous 2D overlay
       imageOverlayRef.current?.dispose();
