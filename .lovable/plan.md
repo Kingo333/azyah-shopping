@@ -1,65 +1,138 @@
 
-Do I know what the issue is? Yes.
 
-What I found
-- This is not a missing 2D/3D camera connection and not a shopper-side camera toggle problem. Both 2D and 3D already share the same camera/video feed.
-- The real break is in `src/pages/ARExperience.tsx`:
-  - `Effect 2` waits on `sceneReadyPromiseRef`.
-  - That promise is only resolved after camera + pose init complete and `SceneManager` is created.
-  - `Effect 2` also hard-fails after 15s.
-- Your evidence proves the race:
-  - screenshot debug panel: `pref: 2d`, overlay URL exists, `mode: none`, `status: error`, `Scene init failed: AR scene loading timed out after 15s`
-  - console logs: timeout fires at `16:31:57`, but `PoseProcessor` finishes at `16:31:58`
-- So the app aborts one second too early, never reaches mode/asset loading, and leaves `arMode` stuck at its default `'none'`.
+# Fix AR System for Real Devices — Implementation Plan
 
-Secondary code bugs I found
-- `arMode` is set too late. It is assigned only after the scene wait, so a slow init leaves the UI stuck on `(NONE)` even for a valid 2D product.
-- The 3D branch can still set `partial_tracking` / `tracking_active` even when no model is loaded, which creates misleading shopper guidance.
-- Product switching does not fully clear 3D state (`modelRef.current` / scene swap), so stale model state can leak into 2D or failed loads.
-- `TrackingGuidance` always says “3D model” on `model_error`, even when the failing asset is a 2D overlay.
+## Proven Root Causes
 
-Implementation plan
-1. Fix the init race in `src/pages/ARExperience.tsx`
-   - Remove the fatal 15s `Promise.race` timeout.
-   - Resolve scene readiness earlier: create `SceneManager` and resolve the scene-ready signal before waiting for slow pose/model downloads.
-   - Keep real failure handling on camera/WebGL/pose errors instead of the artificial timeout.
+### Bug 1: 2D canvas freezes when pose drops
+**File**: `src/pages/ARExperience.tsx`, lines 399-431
+The 2D overlay repaints ONLY inside the `if (result && result.landmarks.length > 0)` block (line 404). When pose detection returns no landmarks (common on mobile due to throttling/occlusion), the 2D canvas stops repainting entirely — the user sees a frozen image. The rAF still schedules, but the visible canvas is never touched.
 
-2. Set AR mode immediately on product selection
-   - Move `resolveARMode(selectedProduct)` + `setArMode(...)` + `arModeRef.current = ...` to the start of the load flow.
-   - This makes valid 2D products show `2d` right away instead of falling back to `'none'` while init is still running.
+### Bug 2: 2D occlusion allocates a canvas every frame
+**File**: `src/ar/core/ImageOverlay.ts`, line 309
+`document.createElement('canvas')` + full-resolution `getImageData`/`putImageData` every frame. On a 1280×720 canvas that's ~3.7M pixels × 4 bytes = ~14.7MB of pixel copying per frame. This will stall mobile browsers.
 
-3. Decouple 2D asset loading from slow pose init
-   - Let the 2D overlay load as soon as the video/canvas prerequisites are ready.
-   - Keep pose detection initializing in parallel so the garment appears as soon as landmarks start arriving.
+### Bug 3: No `garment_type` selector on 2D overlay tab
+**File**: `src/components/BrandProductManager.tsx`, lines 654-798
+The garment type selector only exists in Tab 3 (3D model, line 802-833). 2D-only products default to `'shirt'`, causing wrong anchor placement for abayas/pants.
 
-4. Stop fake tracking states
-   - In the animation loop, only allow 3D tracking states when `arModeRef.current === '3d'` and `modelRef.current` exists.
-   - If no asset is loaded yet, keep the shopper in loading/waiting instead of `partial_tracking` or `tracking_active`.
+### Bug 4: No iOS Safari resilience
+**File**: `src/ar/core/CameraManager.ts` — no `visibilitychange` handler. iOS Safari pauses video when backgrounded and may not resume `play()`. Also no `loadedmetadata` re-check for late video dimensions.
 
-5. Fully clear stale assets on product switch
-   - Dispose the old 2D overlay.
-   - Clear `modelRef.current`.
-   - Call `sceneManagerRef.current?.swapModel(null)`.
-   - Reset debug/loading state before loading the new asset.
+### Bug 5: Debug panel always visible in production
+**File**: `src/pages/ARExperience.tsx`, lines 976-983. The debug panel is unconditionally rendered for all users.
 
-6. Fix shopper messaging
-   - Update `src/ar/guidance/TrackingGuidance.tsx` so `model_error` becomes a generic AR asset error message, not always a 3D-model message.
-   - Keep the debug panel, but make it reflect “resolved mode” vs “loaded asset” more clearly.
+## Implementation Plan
 
-7. Add regression tests
-   - Extend `src/ar/__tests__/arSystem.test.ts` for:
-     - valid 2D products not getting stuck at `none`
-     - slow pose init not aborting asset load
-     - no tracking-active/partial state when no asset is actually loaded
-     - stale 3D model state clearing on switch to 2D
+### 1. Add BUILD_ID + debug HUD with runtime counters
+**File**: `src/pages/ARExperience.tsx`
 
-Files to edit
-- `src/pages/ARExperience.tsx`
-- `src/ar/guidance/TrackingGuidance.tsx`
-- `src/ar/__tests__/arSystem.test.ts`
+- Add `const BUILD_ID = '2026-04-09T...'` constant at top of file
+- Add refs for counters: `rafTicks`, `poseCalls`, `overlayDraws`, `segCalls`, each with a per-second snapshot
+- In `animate()`, increment `rafTicks` every frame, `poseCalls` when pose runs, `overlayDraws` when 2D canvas draws, `segCalls` when segmentation runs
+- Every 1s, compute rates and store in state (only when `?debug=true`)
+- Gate debug panel render on `isDebug` flag from URL params
+- Show: BUILD_ID, rafTicks/s, poseCalls/s, overlayDraws/s, segCalls/s, camera status, arMode, video dimensions, garment loaded, model loaded, tier, last error
 
-Expected result
-- For this shopper flow, the debug panel should show `mode: 2d` immediately.
-- The overlay should load after camera/video readiness, even if MediaPipe is slower on iPhone Safari.
-- The UI should stop showing `(NONE)` for products that already have a valid 2D overlay.
-- If something still fails after that, the remaining error will point to the actual asset load step, not a false scene timeout.
+### 2. Fix 2D freeze — repaint video every rAF regardless of pose
+**File**: `src/pages/ARExperience.tsx`, lines 394-615
+
+Restructure `animate()`:
+- **Always** repaint the 2D canvas with the live video feed every frame (not just when pose arrives)
+- Only draw garment overlay when `lastLandmarksRef.current` exists
+- Move rAF scheduling to a single `finally`-style location at the end — no early returns before it
+- Specifically: remove the `return` at line 430, move all post-pose code (tier management, debug, rAF scheduling) outside the pose-conditional block
+
+```
+animate(time):
+  // 2D: always repaint video
+  if (imageOverlayRef.current && video.readyState >= 2) {
+    imageOverlay.drawVideoFrame(video)   // new method: just video, no garment
+    overlayDraws++
+  }
+
+  // Pose detection (throttled)
+  if (time - lastPoseTime > interval && video.readyState >= 2) {
+    result = pp.detectForVideo(...)
+    poseCalls++
+    if (result.landmarks) {
+      lastLandmarksRef = result.landmarks[0]
+      if (imageOverlayRef.current) {
+        imageOverlay.drawGarmentAndOcclusion(lastLandmarks)
+      } else {
+        // 3D path...
+      }
+    }
+  }
+  // 2D with stale landmarks: still draw garment
+  else if (imageOverlayRef.current && lastLandmarksRef.current) {
+    imageOverlay.drawGarmentOnly(lastLandmarks)
+  }
+
+  // tier management, debug, rAF — always runs
+  animFrameRef.current = requestAnimationFrame(animate)
+```
+
+### 3. Refactor ImageOverlay to separate video draw from garment draw
+**File**: `src/ar/core/ImageOverlay.ts`
+
+Split `updateFrame()` into:
+- `drawVideo(video)` — draws cover-cropped mirrored video only (called every rAF)
+- `drawGarment(landmarks)` — extracts landmarks, smooths, dispatches to renderer, applies occlusion (called only when landmarks available)
+- Keep `updateFrame(video, landmarks)` as a convenience wrapper that calls both
+
+### 4. Fix 2D occlusion performance
+**File**: `src/ar/core/ImageOverlay.ts`
+
+A. Cache temp canvas as class fields (`this.tempCanvas`, `this.tempCtx`) — create once in constructor, resize when canvas resizes
+B. Downscale: use a 256px-wide occlusion buffer instead of full resolution
+C. Use `globalCompositeOperation: 'destination-over'` approach: draw mask-shaped body region, then composite — avoids per-pixel JS loop entirely
+D. Throttle: add `lastOcclusionTime` field, only run every 100-125ms (~8-10fps)
+E. Wrap in try/catch; on error, set `this.occlusionDisabled = true` and continue
+
+### 5. Add garment type selector to 2D overlay tab
+**File**: `src/components/BrandProductManager.tsx`
+
+Insert the same garment type `<Select>` component (currently at lines 803-833) into the overlay tab (before the upload input at line 665). Persist `garment_type` alongside the overlay upload at line 738-745.
+
+### 6. iOS Safari hardening
+**File**: `src/pages/ARExperience.tsx`
+
+- Add `visibilitychange` listener in Effect 1: on resume, check `video.paused` and call `video.play()`, re-check `videoWidth`
+- Add `loadedmetadata` listener on video element: when fired, recompute `coverCropRef` and call `imageOverlayRef.current?.updateCoverCrop()`
+- These ensure late dimension availability and backgrounding don't break the pipeline
+
+### 7. Gate debug panel behind `?debug=true`
+**File**: `src/pages/ARExperience.tsx`
+
+- `const isDebug = searchParams.get('debug') === 'true'`
+- Wrap debug panel JSX (lines 976-983) in `{isDebug && (...)}`
+
+### 8. Segmentation hardening
+**Files**: `src/pages/ARExperience.tsx`, `src/ar/core/ImageOverlay.ts`
+
+Wrap all segmentation calls in try/catch. On failure, log error to debug HUD, disable segmentation for the session, continue rendering.
+
+## Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/pages/ARExperience.tsx` | BUILD_ID, debug HUD with counters (gated), fix animate() 2D freeze, iOS handlers, segmentation try/catch |
+| `src/ar/core/ImageOverlay.ts` | Split updateFrame, cache occlusion canvas, downscale occlusion, throttle, try/catch |
+| `src/components/BrandProductManager.tsx` | Add garment_type selector to 2D overlay tab |
+
+## Verification
+
+After deploying, open `?debug=true` on each platform and confirm:
+
+| Metric | Desktop Chrome | Android Chrome | iOS Safari |
+|--------|---------------|----------------|------------|
+| BUILD_ID matches | PASS | PASS | PASS |
+| rafTicks/s > 30 | PASS | PASS | PASS |
+| overlayDraws/s > 20 (2D) | PASS | PASS | PASS |
+| poseCalls/s ~ 10-15 | PASS | PASS | PASS |
+| segCalls/s ~ 8-10 (Tier A) | PASS | PASS | PASS |
+| 2D canvas stays live when hands cover face | PASS | PASS | PASS |
+| Capture includes garment | PASS | PASS | PASS |
+| No freeze after 10s | PASS | PASS | PASS |
+
