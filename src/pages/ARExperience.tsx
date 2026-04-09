@@ -95,6 +95,7 @@ export default function ARExperience() {
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arMode, setArMode] = useState<ARMode>('none');
+  const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string }>({ status: 'pending' });
 
   const imageOverlayRef = useRef<ImageOverlay | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -260,6 +261,7 @@ export default function ARExperience() {
         ar_preferred_mode: p.ar_preferred_mode || 'auto',
       }));
 
+      console.log('[AR] Mapped products:', mapped.map(p => ({ id: p.id, overlay: p.ar_overlay_url, model: p.ar_model_url, pref: p.ar_preferred_mode })));
       setProducts(mapped);
 
       const selected = requestedProductId
@@ -448,7 +450,7 @@ export default function ARExperience() {
               const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
               const someRequiredVisible = requiredVisible.length > 0;
 
-              if (allRequiredVisible) {
+              if (allRequiredVisible && modelRef.current) {
                 setTrackingState('tracking_active');
                 if (lastMissingPartsJson.current !== '[]') {
                   lastMissingPartsJson.current = '[]';
@@ -646,9 +648,14 @@ export default function ARExperience() {
 
     async function loadWhenReady() {
       try {
-        await sceneReadyPromiseRef.current;
+        setArDebugInfo({ status: 'waiting_scene' });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('AR scene loading timed out after 15s')), 15000)
+        );
+        await Promise.race([sceneReadyPromiseRef.current, timeoutPromise]);
       } catch (sceneErr: any) {
         console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
+        setArDebugInfo({ status: 'error', error: `Scene init failed: ${sceneErr?.message || 'unknown'}` });
         if (!cancelled) {
           setTrackingState(prev => {
             const errorStates: TrackingState[] = ['camera_denied', 'camera_error', 'pose_init_failed'];
@@ -702,8 +709,11 @@ export default function ARExperience() {
       if (resolvedMode === 'none') {
         setTrackingState('model_error');
         setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
+        setArDebugInfo({ status: 'error', error: 'resolveARMode returned none — no ar_overlay_url or ar_model_url' });
         return;
       }
+
+      setArDebugInfo({ status: 'loading_' + resolvedMode });
 
       // Dispose previous 2D overlay
       imageOverlayRef.current?.dispose();
@@ -714,9 +724,19 @@ export default function ARExperience() {
         setLoadStage('Loading garment image…');
         try {
           const overlayCanvas = overlayCanvasRef.current;
-          if (!overlayCanvas) { setTrackingState('model_error'); return; }
+          if (!overlayCanvas) { setTrackingState('model_error'); setArDebugInfo({ status: 'error', error: 'No overlay canvas' }); return; }
           overlayCanvas.width = window.innerWidth;
           overlayCanvas.height = window.innerHeight;
+
+          // Validate URL is reachable before loading
+          const overlayUrl = selectedProduct.ar_overlay_url!;
+          try {
+            const headResp = await fetch(overlayUrl, { method: 'HEAD', mode: 'no-cors' });
+            console.log('[AR] Overlay URL HEAD check:', headResp.status, headResp.type);
+          } catch (headErr) {
+            console.warn('[AR] Overlay URL HEAD check failed (may still work):', headErr);
+          }
+
           const overlay = new ImageOverlay(overlayCanvas);
 
           // Fix 2/9: Initialize cover crop for 2D overlay
@@ -725,16 +745,18 @@ export default function ARExperience() {
             overlay.updateCoverCrop(v.videoWidth, v.videoHeight, overlayCanvas.width, overlayCanvas.height);
           }
 
-          await overlay.loadGarment(selectedProduct.ar_overlay_url!, selectedProduct.garment_type || 'shirt');
+          await overlay.loadGarment(overlayUrl, selectedProduct.garment_type || 'shirt');
           if (cancelled) return;
           imageOverlayRef.current = overlay;
           setTrackingState('waiting_for_pose');
           setLoadStage('');
+          setArDebugInfo({ status: '2d_loaded' });
         } catch (err: any) {
           if (!cancelled) {
             console.error('[AR] 2D overlay load error:', err, 'URL:', selectedProduct.ar_overlay_url);
             setTrackingState('model_error');
             setTrackingMessage(`Could not load garment image. ${err?.message || ''}`);
+            setArDebugInfo({ status: 'error', error: `2D load failed: ${err?.message || 'unknown'} | URL: ${selectedProduct.ar_overlay_url}` });
           }
         }
         return;
@@ -953,9 +975,18 @@ export default function ARExperience() {
         </div>
       </div>
 
+      {/* AR Debug Panel — visible on-screen for mobile diagnostics */}
+      <div className="absolute top-16 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[280px] text-[10px] font-mono text-white/80 space-y-0.5">
+        <div>mode: <span className="text-green-400">{arMode}</span> | status: <span className="text-yellow-300">{arDebugInfo.status}</span></div>
+        <div>overlay: {selectedProduct?.ar_overlay_url ? selectedProduct.ar_overlay_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
+        <div>model: {selectedProduct?.ar_model_url ? selectedProduct.ar_model_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
+        <div>pref: {selectedProduct?.ar_preferred_mode || 'auto'} | tracking: {trackingState}</div>
+        {arDebugInfo.error && <div className="text-red-400 break-all">err: {arDebugInfo.error}</div>}
+      </div>
+
       {/* Tracking quality indicator */}
       {trackingState === 'tracking_active' && (
-        <div className="absolute top-16 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
+        <div className="absolute top-44 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-white/80">Tracking</span>
           <span className="text-xs text-white/60 ml-0.5">({arMode.toUpperCase()})</span>
