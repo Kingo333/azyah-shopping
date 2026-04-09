@@ -650,13 +650,38 @@ export default function ARExperience() {
     if (!selectedProduct) return;
     let cancelled = false;
 
+    // 1. Resolve AR mode IMMEDIATELY so UI reflects the correct mode
+    const resolvedMode = resolveARMode(selectedProduct);
+    console.log('[AR] Mode resolved:', resolvedMode, {
+      overlay: selectedProduct.ar_overlay_url,
+      model: selectedProduct.ar_model_url,
+      pref: selectedProduct.ar_preferred_mode,
+    });
+    setArMode(resolvedMode);
+    arModeRef.current = resolvedMode;
+
+    if (resolvedMode === 'none') {
+      setTrackingState('model_error');
+      setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
+      setArDebugInfo({ status: 'error', error: 'resolveARMode returned none — no ar_overlay_url or ar_model_url' });
+      return;
+    }
+
+    // 2. Clear stale assets from previous product
+    imageOverlayRef.current?.dispose();
+    imageOverlayRef.current = null;
+    if (modelRef.current) {
+      sceneManagerRef.current?.swapModel(null);
+      modelRef.current = null;
+    }
+
+    setArDebugInfo({ status: 'loading_' + resolvedMode });
+    const use2D = resolvedMode === '2d';
+
     async function loadWhenReady() {
+      // Wait for scene — no artificial timeout, real errors caught by reject
       try {
-        setArDebugInfo({ status: 'waiting_scene' });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('AR scene loading timed out after 15s')), 15000)
-        );
-        await Promise.race([sceneReadyPromiseRef.current, timeoutPromise]);
+        await sceneReadyPromiseRef.current;
       } catch (sceneErr: any) {
         console.error('[AR] sceneReadyPromise rejected:', sceneErr?.message);
         setArDebugInfo({ status: 'error', error: `Scene init failed: ${sceneErr?.message || 'unknown'}` });
@@ -700,29 +725,6 @@ export default function ARExperience() {
       segmenterRef.current?.setEnabled(true);
       sm.setShadowsEnabled(true);
 
-      const resolvedMode = resolveARMode(selectedProduct);
-      console.log('[AR] Mode resolved:', resolvedMode, {
-        overlay: selectedProduct.ar_overlay_url,
-        model: selectedProduct.ar_model_url,
-        pref: selectedProduct.ar_preferred_mode,
-      });
-      const use2D = resolvedMode === '2d';
-      setArMode(resolvedMode);
-      arModeRef.current = resolvedMode;
-
-      if (resolvedMode === 'none') {
-        setTrackingState('model_error');
-        setTrackingMessage('No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.');
-        setArDebugInfo({ status: 'error', error: 'resolveARMode returned none — no ar_overlay_url or ar_model_url' });
-        return;
-      }
-
-      setArDebugInfo({ status: 'loading_' + resolvedMode });
-
-      // Dispose previous 2D overlay
-      imageOverlayRef.current?.dispose();
-      imageOverlayRef.current = null;
-
       if (use2D) {
         setTrackingState('model_loading');
         setLoadStage('Loading garment image…');
@@ -732,18 +734,9 @@ export default function ARExperience() {
           overlayCanvas.width = window.innerWidth;
           overlayCanvas.height = window.innerHeight;
 
-          // Validate URL is reachable before loading
           const overlayUrl = selectedProduct.ar_overlay_url!;
-          try {
-            const headResp = await fetch(overlayUrl, { method: 'HEAD', mode: 'no-cors' });
-            console.log('[AR] Overlay URL HEAD check:', headResp.status, headResp.type);
-          } catch (headErr) {
-            console.warn('[AR] Overlay URL HEAD check failed (may still work):', headErr);
-          }
-
           const overlay = new ImageOverlay(overlayCanvas);
 
-          // Fix 2/9: Initialize cover crop for 2D overlay
           const v = videoRef.current;
           if (v && v.videoWidth > 0 && v.videoHeight > 0) {
             overlay.updateCoverCrop(v.videoWidth, v.videoHeight, overlayCanvas.width, overlayCanvas.height);
@@ -784,7 +777,6 @@ export default function ARExperience() {
 
         modelPromise.then((result) => {
           if (cancelled) return;
-          console.log('[AR] Model loaded OK:', { dims: result.dims, isRigged: result.isRigged, boneCount: result.boneNames.length });
           modelRef.current = result.wrapper;
           modelDimsRef.current = result.dims;
           sm.swapModel(result.wrapper);
@@ -801,6 +793,7 @@ export default function ARExperience() {
           setLoadProgress('');
           setLoadStage('');
           sm.dirty = true;
+          setArDebugInfo({ status: '3d_loaded' });
         }).catch((err) => {
           if (cancelled) return;
           console.error(`Model load error (attempt ${attempt}):`, err);
@@ -815,6 +808,7 @@ export default function ARExperience() {
                 : 'Could not load 3D model. Check your connection and try again.'
             );
             setModelLoadFailed(true);
+            setArDebugInfo({ status: 'error', error: `3D load failed: ${err?.message || 'unknown'}` });
           }
         });
       };
