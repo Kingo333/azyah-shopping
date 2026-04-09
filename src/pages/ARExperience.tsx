@@ -974,9 +974,18 @@ export default function ARExperience() {
         </div>
       </div>
 
+      {/* AR Debug Panel — visible on-screen for mobile diagnostics */}
+      <div className="absolute top-16 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[280px] text-[10px] font-mono text-white/80 space-y-0.5">
+        <div>mode: <span className="text-green-400">{arMode}</span> | status: <span className="text-yellow-300">{arDebugInfo.status}</span></div>
+        <div>overlay: {selectedProduct?.ar_overlay_url ? selectedProduct.ar_overlay_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
+        <div>model: {selectedProduct?.ar_model_url ? selectedProduct.ar_model_url.substring(0, 60) + '…' : <span className="text-red-400">null</span>}</div>
+        <div>pref: {selectedProduct?.ar_preferred_mode || 'auto'} | tracking: {trackingState}</div>
+        {arDebugInfo.error && <div className="text-red-400 break-all">err: {arDebugInfo.error}</div>}
+      </div>
+
       {/* Tracking quality indicator */}
       {trackingState === 'tracking_active' && (
-        <div className="absolute top-16 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
+        <div className="absolute top-44 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-white/80">Tracking</span>
           <span className="text-xs text-white/60 ml-0.5">({arMode.toUpperCase()})</span>
