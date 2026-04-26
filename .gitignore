@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# MCP config contains a local Lens Studio auth token; keep out of git
+.mcp.json
