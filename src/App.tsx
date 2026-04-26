@@ -61,6 +61,7 @@ import StyleLinkPage from './pages/StyleLinkPage';
 import PublicDealsPage from './pages/PublicDealsPage';
 import AffiliateRedirect from './pages/AffiliateRedirect';
 import ARExperience from './pages/ARExperience';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -276,8 +277,19 @@ function AppContent() {
                       <UserDeletionTool />
                     </ProtectedRoute>
                   } />
-                  {/* AR Experience - public, accessed via QR code */}
-                  <Route path="/ar/:eventId/:brandId" element={<ARExperience />} />
+                  {/* AR Experience - public, accessed via QR code.
+                      Wrapped in ErrorBoundary (Phase A8): any unhandled error in
+                      the AR pipeline (WebGL, MediaPipe, three.js, scene init)
+                      surfaces a friendly retry/home fallback instead of a
+                      blank screen or stuck loading. */}
+                  <Route
+                    path="/ar/:eventId/:brandId"
+                    element={
+                      <ErrorBoundary>
+                        <ARExperience />
+                      </ErrorBoundary>
+                    }
+                  />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>
