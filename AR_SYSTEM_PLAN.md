@@ -243,6 +243,152 @@ Week 5+: Phase E — Advanced realism (ongoing R&D)
 
 ---
 
+## Research-Backed Additions (verified from nawodyaishan, sarthar3, WebAR.rocks source — see [AR_RESEARCH_DIGEST.md](AR_RESEARCH_DIGEST.md) for full context)
+
+These are the high-value lessons that would save real debugging time on top of the existing plan.
+
+### R1. Camera mirror — flip X on the landmarks, not the video
+
+**Gotcha**: the video element is CSS-mirrored (`scale-x-[-1]` or `transform: scaleX(-1)`). MediaPipe returns landmarks in un-mirrored coordinates. If you feed un-mirrored landmarks into an alignment formula, the garment will swing the wrong way when the user tilts.
+
+**Fix (nawodyaishan pattern)**: flip X immediately after `detectForVideo`:
+```ts
+landmarks: raw.map(l => ({ x: 1 - l.x, y: l.y, z: l.z, visibility: l.visibility }))
+```
+Because the X flip naturally reverses `atan2(y2-y1, x2-x1)`, the rotation formula needs **no sign negation**. Skipping this flip is the single most common source of "shoulders track, but mirror-reversed."
+
+### R2. Pin MediaPipe CDN versions — never `@latest`
+
+khomotsojane/TryOn uses `@mediapipe/tasks-vision@latest` in the WASM URL and has already shipped bugs when Google ships a breaking update. Use exact versions:
+```ts
+FilesetResolver.forVisionTasks(
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+);
+```
+
+### R3. Exact MediaPipe Tasks API init (copy-paste)
+
+```ts
+const modelPath =
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/' +
+  'pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+const landmarker = await PoseLandmarker.createFromOptions(vision, {
+  baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+  runningMode: 'VIDEO',
+  numPoses: 1,
+  minPoseDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5,
+  minPosePresenceConfidence: 0.5
+});
+```
+**Use `pose_landmarker_lite.task` (float16)**, not `full`/`heavy` — nawodyaishan and the sample repos both explicitly chose lite for real-time web. Heavy is CPU-only even with GPU delegate on many mobile GPUs.
+
+Detect loop must skip duplicate frames:
+```ts
+if (video.currentTime === lastVideoTimeRef.current) return;
+lastVideoTimeRef.current = video.currentTime;
+landmarker.detectForVideo(video, performance.now());
+```
+
+### R4. Confidence gate before updating garment
+
+Throttle to 10 FPS AND skip low-confidence frames:
+```ts
+if (now - lastUpdate < 100) return;                   // 10 FPS cap
+const critical = [11,12,23,24].filter(i => landmarks[i]?.visibility > 0.5);
+if (critical.length < 3) return;                      // need 3 of 4 torso landmarks
+```
+Without this gate, momentary occlusions (arms crossing torso) cause the garment to snap to garbage landmark positions.
+
+### R5. HTTPS required on local network IPs too
+
+`getUserMedia` runs on `localhost`/`127.0.0.1` without HTTPS, but **not on `192.168.x.x`, `10.x.x.x`, or `172.16-31.x.x`**. Mobile testing across the office WiFi without HTTPS will silently fail with a cryptic "NotAllowedError". Either use a local mkcert + self-signed cert, or use a tunneling service (ngrok, Cloudflare Tunnel) for device testing.
+
+### R6. Accessory category — soft-occluder pattern (no segmentation needed)
+
+For watches, rings, bracelets, glasses, shoes: **skip Phase C (body segmentation)** and use the WebAR.rocks soft-occluder trick instead. Add an invisible depth-only mesh around the body part:
+```ts
+const occluder = new THREE.Mesh(
+  new THREE.CylinderGeometry(r, r, 48, 32, 1, true),
+  new THREE.ShaderMaterial({
+    uniforms: { uFadeBand: { value: [r, r * 1.15] } },
+    colorWrite: false,               // depth only — no color output
+    depthWrite: true,
+    transparent: true,
+    // fragment shader: gl_FragDepth gradient from inner radius to outer
+  })
+);
+occluder.scale.set(1.0, 1.0, 0.6);   // flatten cylinder → ellipse around wrist
+scene.add(occluder);
+```
+The fade band (`[4, 4.7]` in their code, scaled to your units) gives a smooth transition from "fully occluded" to "fully visible" — prevents the hard edge that makes watches look pasted-on.
+
+### R7. Stabilizer constants — WebAR.rocks-verified starting points
+
+For `OneEuroFilter` initialization (good default for body pose):
+```ts
+minCutOff: 0.001, beta: 4, freqRange: [2, 144]
+```
+Plus adaptive smoothing based on detection quality:
+- `qualityFactorRange: [0.9, 0.98]` → when detection quality is high, smooth heavily; when low, respond quickly. This prevents jitter when the pose is stable AND low latency when the user moves.
+
+### R8. iOS 15 Safari canvas workaround
+
+Known bug: canvas composition breaks on iOS 15 Safari until the canvas has rendered at least once with a solid color:
+```ts
+canvas.style.backgroundColor = 'darkblue';
+setTimeout(() => { canvas.style.backgroundColor = ''; }, 10);
+```
+WebAR.rocks' author calls this a "crappy workaround" in a comment, but it's the canonical fix. Needed on iOS 15 only; newer Safari is fine.
+
+### R9. Different alignment formulas across references — pick nawodyaishan's
+
+| Formula | nawodyaishan | sarthar3 |
+|---|---|---|
+| Shirt width | 1.8 × shoulder dist | **2.0** × shoulder dist |
+| Shirt height | — | 1.8 × (hip.y − shoulder.y) |
+| Y offset up | 0.15 × height | **0.20** × height |
+| Rotation clamp | **±45°** | none |
+| Scale clamp | **[0.5, 3.0]** | none |
+
+nawodyaishan's version has clamps which prevent runaway scaling when landmarks jitter or go behind the torso. Use those. The 1.8× width factor is tighter for modern-fit shirts; 2.0× is looser (hoodie/tee). Consider making this a per-garment tunable rather than a constant.
+
+### R10. GLB model compression — pin exact targets
+
+From cross-referencing Snap docs + Three.js best practices:
+- Draco-compress on upload (we already support this)
+- Target **< 5MB** compressed per GLB (10MB hard cap)
+- **Cloth sim mesh ≤ 3000 triangles** (Snap's official recommendation). If we later add Lens Studio export, any mesh over 3K tris will hurt cloth-sim quality.
+- Textures: power-of-2, ≤ 1024×1024 mobile, ≤ 512×512 for jewelry/small accessories
+
+### R11. Webcam constraints — include fallback
+
+```ts
+try {
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: {ideal:1280}, height:{ideal:720}, facingMode:'user', frameRate:{ideal:30} }
+  });
+} catch (e) {
+  if (e.name === 'OverconstrainedError') {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });  // fallback
+  } else throw e;
+}
+```
+Desktop webcams that don't support 1280×720@30 will throw `OverconstrainedError`. The fallback saves ~15% of users.
+
+### R12. Double-check camera permission before prompting
+
+Avoid a second browser permission prompt on repeat visits:
+```ts
+if ('permissions' in navigator) {
+  const p = await navigator.permissions.query({ name: 'camera' as any });
+  if (p.state === 'denied') showClearDeniedUI();
+}
+await navigator.mediaDevices.getUserMedia({ video: true });
+```
+
+---
+
 ## Sources
 
 - [ZERO10 AR Technology](https://fashinnovation.nyc/zero10-and-their-try-on-technology/)
@@ -251,3 +397,4 @@ Week 5+: Phase E — Advanced realism (ongoing R&D)
 - [WANNA Technical Architecture](https://wanna.fashion/blog/rocket-science-vto)
 - [Three.js Virtual Try-On Implementation](https://dev.to/mpoiiii/building-high-performance-virtual-try-on-systems-with-webgl-and-threejs-technical-implementation-b19)
 - [MediaPipe Pose Landmarker Web Guide](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js)
+- [AR_RESEARCH_DIGEST.md](AR_RESEARCH_DIGEST.md) — source-verified details from 14 repos + Snap official docs
