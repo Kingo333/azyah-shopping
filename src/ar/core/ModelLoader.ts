@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 export interface ModelResult {
@@ -109,6 +110,9 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
 
   const loader = new GLTFLoader();
   loader.setDRACOLoader(getDracoLoader());
+  // Meshopt support — required for assets compressed by gltf-transform's
+  // default `optimize` pipeline (EXT_meshopt_compression).
+  loader.setMeshoptDecoder(MeshoptDecoder);
 
   const promise = new Promise<ModelResult>((resolve, reject) => {
     const timeoutId = setTimeout(() => {

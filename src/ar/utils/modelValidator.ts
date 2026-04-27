@@ -11,6 +11,8 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 /**
  * Result of a GLB model validation pass.
@@ -51,9 +53,16 @@ export async function validateGLBModel(file: File): Promise<ModelValidationResul
   // but early-return is not warranted -- retailer benefits from all feedback.
 
   const objectUrl = URL.createObjectURL(file);
+  // Local DRACOLoader for the validator — disposed after this run. The
+  // runtime ModelLoader uses its own module-level singleton; the validator is
+  // a one-shot path so a per-call instance is fine.
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 
   try {
     const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+    loader.setMeshoptDecoder(MeshoptDecoder);
     const gltf = await new Promise<any>((resolve, reject) => {
       loader.load(objectUrl, resolve, undefined, reject);
     });
@@ -216,6 +225,7 @@ export async function validateGLBModel(file: File): Promise<ModelValidationResul
     };
   } finally {
     URL.revokeObjectURL(objectUrl);
+    dracoLoader.dispose();
   }
 
   return {
