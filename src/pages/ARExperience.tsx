@@ -48,7 +48,11 @@ export default function ARExperience() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const requestedProductId = searchParams.get('productId');
-  const isDebug = searchParams.get('debug') === 'true';
+  // Prototype phase: HUD on by default so we can debug from any entry point
+  // (shopper button, QR code, testMesh override). Append `?debug=false` to
+  // hide the HUD for screenshots/recordings. Flip back to `=== 'true'`
+  // before public release so real shoppers don't see the overlay.
+  const isDebug = searchParams.get('debug') !== 'false';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
