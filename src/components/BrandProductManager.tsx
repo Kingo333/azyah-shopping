@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,11 +29,9 @@ interface EventBrandProduct {
   created_at: string;
   product_id?: string;
   ar_model_url?: string;
-  ar_overlay_url?: string;
   ar_enabled?: boolean;
   ar_scale?: number;
   garment_type?: string;
-  ar_preferred_mode?: string;
 }
 
 interface EventBrand {
@@ -55,7 +53,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const [uploadingARModel, setUploadingARModel] = useState(false);
-  const [uploadingOverlay, setUploadingOverlay] = useState(false);
   // forceReupload removed — legacy BitStudio UI
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -70,9 +67,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
     return decodeURIComponent(publicUrl.slice(idx + marker.length));
   };
 
-  /** Remove an AR asset (try-on, 2D overlay, or 3D model) */
-  const handleRemoveAsset = async (product: EventBrandProduct, type: 'tryon' | 'overlay' | 'model') => {
-    const labels = { tryon: 'try-on image', overlay: '2D overlay', model: '3D model' };
+  /** Remove an AR asset (try-on or 3D model). The 2D overlay path was removed in Session 3. */
+  const handleRemoveAsset = async (product: EventBrandProduct, type: 'tryon' | 'model') => {
+    const labels = { tryon: 'try-on image', model: '3D model' };
     if (!confirm(`Remove the ${labels[type]}? This will affect the shopper AR experience.`)) return;
 
     setRemovingAsset(type);
@@ -82,11 +79,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         const path = product.try_on_data?.outfit_image_path;
         if (path) {
           await supabase.storage.from('event-assets').remove([path]);
-        }
-      } else if (type === 'overlay') {
-        const path = product.ar_overlay_url ? extractStoragePath(product.ar_overlay_url, 'event-ar-overlays') : null;
-        if (path) {
-          await supabase.storage.from('event-ar-overlays').remove([path]);
         }
       } else if (type === 'model') {
         const path = product.ar_model_url ? extractStoragePath(product.ar_model_url, 'event-ar-models') : null;
@@ -102,14 +94,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         update.try_on_data = {};
         update.try_on_ready = false;
         update.try_on_config = null;
-      } else if (type === 'overlay') {
-        update.ar_overlay_url = null;
-        if (!product.ar_model_url) update.ar_enabled = false;
-        if (product.ar_preferred_mode === '2d') update.ar_preferred_mode = 'auto';
       } else if (type === 'model') {
         update.ar_model_url = null;
-        if (!product.ar_overlay_url) update.ar_enabled = false;
-        if (product.ar_preferred_mode === '3d') update.ar_preferred_mode = 'auto';
+        update.ar_enabled = false;
       }
 
       const { error } = await supabase
@@ -125,8 +112,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         setEditingProduct(prev => {
           if (!prev) return prev;
           if (type === 'tryon') return { ...prev, try_on_data: {} };
-          if (type === 'overlay') return { ...prev, ar_overlay_url: undefined, ar_enabled: update.ar_enabled ?? prev.ar_enabled, ar_preferred_mode: update.ar_preferred_mode ?? prev.ar_preferred_mode };
-          if (type === 'model') return { ...prev, ar_model_url: undefined, ar_enabled: update.ar_enabled ?? prev.ar_enabled, ar_preferred_mode: update.ar_preferred_mode ?? prev.ar_preferred_mode };
+          if (type === 'model') return { ...prev, ar_model_url: undefined, ar_enabled: false };
           return prev;
         });
       }
@@ -396,19 +382,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                         Try-On Ready
                       </Badge>
                     )}
-                    {product.ar_enabled && product.ar_model_url && !product.ar_overlay_url && (
+                    {product.ar_enabled && product.ar_model_url && (
                       <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
                         3D AR
-                      </Badge>
-                    )}
-                    {product.ar_overlay_url && !product.ar_model_url && (
-                      <Badge variant="outline" className="absolute top-2 left-2 bg-blue-50 text-blue-700 border-blue-200">
-                        2D AR
-                      </Badge>
-                    )}
-                    {product.ar_overlay_url && product.ar_model_url && (
-                      <Badge variant="outline" className="absolute top-2 left-2 bg-emerald-50 text-emerald-700 border-emerald-200">
-                        {product.ar_preferred_mode === '3d' ? '3D AR' : product.ar_preferred_mode === '2d' ? '2D AR' : '2D+3D AR'}
                       </Badge>
                     )}
                     {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
@@ -477,51 +453,12 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                 </div>
               </div>
 
-              {/* AR Mode Selector */}
-              {(editingProduct.ar_overlay_url || editingProduct.ar_model_url) && (
-                <div className="p-3 rounded-lg border bg-muted/30">
-                  <label className="text-sm font-medium">AR Display Mode</label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Choose which AR experience shoppers see for this product.
-                  </p>
-                  <Select
-                    value={editingProduct.ar_preferred_mode || 'auto'}
-                    onValueChange={async (value) => {
-                      try {
-                        await supabase
-                          .from('event_brand_products')
-                          .update({ ar_preferred_mode: value, updated_at: new Date().toISOString() })
-                          .eq('id', editingProduct.id);
-                        setEditingProduct(prev => prev ? { ...prev, ar_preferred_mode: value } : prev);
-                        toast({ title: "AR mode updated", description: `Set to ${value === 'auto' ? 'Auto' : value === '2d' ? '2D Overlay' : '3D Model'}` });
-                        fetchProducts();
-                      } catch (error: any) {
-                        toast({ title: "Error", description: error.message, variant: "destructive" });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto (system picks best)</SelectItem>
-                      <SelectItem value="2d" disabled={!editingProduct.ar_overlay_url}>2D Overlay{!editingProduct.ar_overlay_url ? ' (no overlay uploaded)' : ''}</SelectItem>
-                      <SelectItem value="3d" disabled={!editingProduct.ar_model_url}>3D Model{!editingProduct.ar_model_url ? ' (no model uploaded)' : ''}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Tabbed content */}
+              {/* Tabbed content (3D-only AR — 2D overlay path was removed in Session 3) */}
               <Tabs defaultValue="image" className="w-full">
                 <TabsList className="w-full">
                   <TabsTrigger value="image" className="flex-1 gap-1.5">
                     <Shirt className="w-4 h-4" />
                     Image Try-On
-                  </TabsTrigger>
-                  <TabsTrigger value="overlay" className="flex-1 gap-1.5">
-                    <ImageIcon className="w-4 h-4" />
-                    2D AR Overlay
                   </TabsTrigger>
                   <TabsTrigger value="ar" className="flex-1 gap-1.5">
                     <Box className="w-4 h-4" />
@@ -650,188 +587,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   </div>
                 </TabsContent>
 
-                {/* ── Tab 2: 2D AR Overlay ── */}
-                <TabsContent value="overlay" className="space-y-4 pt-2">
-                  {/* Garment type for 2D overlay */}
-                  <div>
-                    <label className="text-sm font-medium">Garment Type</label>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Select the type of garment to optimize 2D AR placement on the body.
-                    </p>
-                    <Select
-                      value={editingProduct.garment_type || 'shirt'}
-                      onValueChange={async (value) => {
-                        try {
-                          await supabase
-                            .from('event_brand_products')
-                            .update({ garment_type: value, updated_at: new Date().toISOString() })
-                            .eq('id', editingProduct.id);
-                          setEditingProduct(prev => prev ? { ...prev, garment_type: value } : prev);
-                          toast({ title: "Garment type updated", description: `Set to ${GARMENT_TYPES.find(t => t.value === value)?.label || value}` });
-                          fetchProducts();
-                        } catch (error: any) {
-                          toast({ title: "Error", description: error.message || "Failed to update garment type", variant: "destructive" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select garment type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GARMENT_TYPES.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium">Upload 2D Garment Image</label>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Upload a front-view garment image with <strong>transparent background</strong> (PNG or WebP).
-                      This enables fast 2D AR overlay on the shopper's body.
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      <strong>Tips:</strong> Use <a href="https://www.remove.bg" target="_blank" rel="noopener noreferrer" className="underline text-primary">remove.bg</a> to cut out the background. Image should be centered, upright, 800-2000px wide, under 2MB.
-                    </p>
-
-                    <input
-                      type="file"
-                      accept=".png,.webp"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-
-                        if (!['image/png', 'image/webp'].includes(file.type)) {
-                          toast({ title: "Invalid file type", description: "Please upload a PNG or WebP with transparent background", variant: "destructive" });
-                          return;
-                        }
-                        if (file.size > 5 * 1024 * 1024) {
-                          toast({ title: "File too large", description: "Please select an image under 5MB", variant: "destructive" });
-                          return;
-                        }
-
-                        // Alpha/transparency validation
-                        try {
-                          const hasAlpha = await new Promise<boolean>((resolve) => {
-                            const img = new window.Image();
-                            img.onload = () => {
-                              const canvas = document.createElement('canvas');
-                              const size = Math.min(img.width, img.height, 100);
-                              canvas.width = img.width;
-                              canvas.height = img.height;
-                              const ctx = canvas.getContext('2d')!;
-                              ctx.drawImage(img, 0, 0);
-                              // Sample edges
-                              let transparentPixels = 0;
-                              const samples = [
-                                ctx.getImageData(0, 0, img.width, 1), // top row
-                                ctx.getImageData(0, img.height - 1, img.width, 1), // bottom row
-                                ctx.getImageData(0, 0, 1, img.height), // left col
-                                ctx.getImageData(img.width - 1, 0, 1, img.height), // right col
-                              ];
-                              let totalPixels = 0;
-                              for (const s of samples) {
-                                for (let i = 3; i < s.data.length; i += 4) {
-                                  totalPixels++;
-                                  if (s.data[i] < 250) transparentPixels++;
-                                }
-                              }
-                              resolve(transparentPixels > 0);
-                            };
-                            img.onerror = () => resolve(true); // assume OK on error
-                            img.src = URL.createObjectURL(file);
-                          });
-                          if (!hasAlpha) {
-                            toast({ title: "Transparency warning", description: "This image may not have a transparent background. AR overlay works best with transparent PNG/WebP.", variant: "default" });
-                          }
-                        } catch { /* non-blocking */ }
-
-                        try {
-                          setUploadingOverlay(true);
-                          const { data: brandData } = await supabase
-                            .from('event_brands')
-                            .select('event_id')
-                            .eq('id', brand.id)
-                            .single();
-                          if (!brandData) throw new Error('Failed to get event_id');
-
-                          const fileExt = file.name.split('.').pop();
-                          const fileName = `${brandData.event_id}/${brand.id}/${editingProduct.id}/overlay_${Date.now()}.${fileExt}`;
-
-                          const { error: uploadError } = await supabase.storage
-                            .from('event-ar-overlays')
-                            .upload(fileName, file, { contentType: file.type });
-                          if (uploadError) throw uploadError;
-
-                          const { data: urlData } = supabase.storage
-                            .from('event-ar-overlays')
-                            .getPublicUrl(fileName);
-
-                          await supabase
-                            .from('event_brand_products')
-                            .update({
-                              ar_overlay_url: urlData.publicUrl,
-                              ar_enabled: true,
-                              garment_type: editingProduct.garment_type || 'shirt',
-                              updated_at: new Date().toISOString()
-                            })
-                            .eq('id', editingProduct.id);
-
-                          setEditingProduct(prev => prev ? { ...prev, ar_overlay_url: urlData.publicUrl, ar_enabled: true } : prev);
-                          toast({ title: "2D overlay uploaded!", description: "2D AR try-on is now enabled for this product" });
-                          await fetchProducts();
-                        } catch (error: any) {
-                          console.error('AR overlay upload error:', error);
-                          toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-                        } finally {
-                          setUploadingOverlay(false);
-                          e.target.value = '';
-                        }
-                      }}
-                      className="w-full p-2 border rounded"
-                      disabled={uploadingOverlay}
-                    />
-
-                    {uploadingOverlay && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading overlay…
-                      </div>
-                    )}
-
-                    {editingProduct.ar_overlay_url && (
-                      <div className="mt-3 flex items-center gap-3 p-2 rounded-md bg-muted/50">
-                        <img
-                          src={editingProduct.ar_overlay_url}
-                          alt="2D overlay preview"
-                          className="w-16 h-16 object-contain rounded border bg-[repeating-conic-gradient(#80808015_0%_25%,transparent_0%_50%)_0_0/20px_20px]"
-                        />
-                        <div className="flex-1">
-                          <p className="text-xs text-green-600 font-medium">2D overlay configured</p>
-                          <p className="text-xs text-muted-foreground">Set preferred mode above to control which AR path shoppers see</p>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          disabled={removingAsset === 'overlay'}
-                          onClick={() => handleRemoveAsset(editingProduct, 'overlay')}
-                        >
-                          {removingAsset === 'overlay' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                          <span className="ml-1 text-xs">Remove</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                      Close
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                {/* ── Tab 3: 3D AR Model ── */}
+                {/* ── Tab 2: 3D AR Model ── */}
                 <TabsContent value="ar" className="space-y-4 pt-2">
                   {/* Garment type */}
                   <div>

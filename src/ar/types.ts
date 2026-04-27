@@ -18,6 +18,7 @@ export type GarmentType = 'shirt' | 'abaya' | 'pants' | 'jacket' | 'headwear' | 
  * AR product metadata loaded from the event_brand_products table.
  *
  * Represents a product that has AR try-on enabled with a 3D model URL.
+ * The 2D image-overlay path was removed in Session 3 — runtime is 3D-only.
  */
 export interface ARProduct {
   id: string;
@@ -29,10 +30,6 @@ export interface ARProduct {
   name?: string;
   /** Garment type for anchor strategy selection. Optional for backward compatibility. */
   garment_type?: GarmentType;
-  /** 2D garment overlay image URL (PNG/WebP with transparent background). */
-  ar_overlay_url?: string;
-  /** Retailer-chosen AR rendering preference. */
-  ar_preferred_mode?: 'auto' | '2d' | '3d';
 }
 
 /**

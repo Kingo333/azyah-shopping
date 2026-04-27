@@ -118,7 +118,7 @@ export default function ARExperience() {
       await supabase.auth.getSession();
       const { data, error: fetchError } = await supabase
         .from('event_brand_products')
-        .select(`id, image_url, ar_model_url, ar_overlay_url, ar_scale, ar_position_offset, garment_type, ar_preferred_mode, event_brands!inner(brand_name, event_id)`)
+        .select(`id, image_url, ar_model_url, ar_scale, ar_position_offset, garment_type, event_brands!inner(brand_name, event_id)`)
         .eq('event_brand_id', brandId)
         .eq('ar_enabled', true);
       if (cancelled) return;
@@ -136,8 +136,6 @@ export default function ARExperience() {
         brand_name: p.event_brands?.brand_name,
         name: (p as any).name,
         garment_type: (p as any).garment_type || 'shirt',
-        ar_overlay_url: (p as any).ar_overlay_url || undefined,
-        ar_preferred_mode: p.ar_preferred_mode || 'auto',
       }));
       setProducts(mapped);
       const selected = requestedProductId
