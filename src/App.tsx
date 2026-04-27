@@ -290,6 +290,16 @@ function AppContent() {
                       </ErrorBoundary>
                     }
                   />
+                  {/* Phase C local dev/test entry: bypasses Supabase when paired
+                      with ?testMesh=/test-assets/<file>.glb. */}
+                  <Route
+                    path="/ar/test"
+                    element={
+                      <ErrorBoundary>
+                        <ARExperience />
+                      </ErrorBoundary>
+                    }
+                  />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>

@@ -26,3 +26,7 @@ dist-ssr
 
 # MCP config contains a local Lens Studio auth token; keep out of git
 .mcp.json
+
+# Local AR test assets (large GLBs that should not enter git history).
+# To use a local test mesh, drop a .glb here and load via ?testMesh=/test-assets/your-file.glb
+public/test-assets/

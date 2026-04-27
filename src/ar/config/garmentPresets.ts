@@ -21,7 +21,11 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     type: 'shirt',
     requiredLandmarks: [11, 12],
     optionalLandmarks: [23, 24],
-    visibilityThreshold: 0.5,
+    // 0.5 was too strict in real-device tests — front-facing shoulders
+    // often returned 0.35-0.45 confidence at typical try-on distances,
+    // leaving the user stuck on "Show Upper Body". 0.3 still gates true
+    // off-frame shoulders out without rejecting genuine in-frame poses.
+    visibilityThreshold: 0.3,
     widthPadding: 1.15,
     heightPadding: 1.1,
     verticalOffset: 0,
@@ -63,7 +67,7 @@ export const GARMENT_PRESETS: Record<GarmentType, GarmentConfig> = {
     type: 'jacket',
     requiredLandmarks: [11, 12],
     optionalLandmarks: [23, 24, 13, 14],
-    visibilityThreshold: 0.5,
+    visibilityThreshold: 0.3,
     widthPadding: 1.25,
     heightPadding: 1.1,
     verticalOffset: 0,

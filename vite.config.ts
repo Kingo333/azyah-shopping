@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Allow tunnel hosts (ngrok / cloudflared / any) for mobile AR testing.
+    // Dev-only — production builds don't run this server.
+    allowedHosts: true,
   },
   plugins: [
     react(),

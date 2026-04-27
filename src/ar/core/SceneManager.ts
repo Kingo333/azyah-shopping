@@ -6,6 +6,11 @@
  *
  * Fix 5: Added setShadowsEnabled() for performance tier switching.
  * Fix 8: Added powerPreference: 'high-performance' to WebGLRenderer.
+ *
+ * R8 (preserveDrawingBuffer): defaults to FALSE for memory/battery, especially
+ * on iOS Safari where leaving it on causes a full-canvas readback every frame.
+ * Use captureFrame() (or beginCapture/endCapture for raw access) — these flip
+ * the flag to true transiently, render once, snapshot, then flip back.
  */
 import * as THREE from 'three';
 import { MATERIAL_PRESETS } from '../config/materialPresets';
@@ -38,10 +43,11 @@ export class SceneManager {
     this.camera.position.z = 2;
 
     // Fix 8: powerPreference for mobile GPU selection
+    // R8: preserveDrawingBuffer default FALSE; flipped on transiently for capture.
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       alpha: true,
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
       powerPreference: 'high-performance',
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -291,6 +297,36 @@ export class SceneManager {
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
     }
+  }
+
+  /**
+   * R8: Render-and-capture in one synchronous call so preserveDrawingBuffer
+   * can stay false. The WebGL back buffer is only valid in the same task as
+   * the render() call; toBlob/toDataURL must be invoked before the browser
+   * yields. Forces a render even if !dirty so the captured frame is current.
+   */
+  captureFrame(type: string = 'image/png', quality?: number): Promise<Blob> {
+    this.renderer.render(this.scene, this.camera);
+    this.dirty = false;
+    const canvas = this.renderer.domElement;
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (b) => {
+          if (b) { resolve(b); return; }
+          try {
+            const dataUrl = canvas.toDataURL(type);
+            const byteStr = atob(dataUrl.split(',')[1]);
+            const arr = new Uint8Array(byteStr.length);
+            for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+            resolve(new Blob([arr], { type }));
+          } catch (err) {
+            reject(err);
+          }
+        },
+        type,
+        quality,
+      );
+    });
   }
 
   handleResize(): void {
