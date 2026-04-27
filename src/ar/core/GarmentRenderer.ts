@@ -1,32 +1,30 @@
 /**
  * GarmentRenderer — single-class facade that owns the entire AR runtime.
  *
- * Replaces the manual orchestration that previously lived inside
- * ARExperience.tsx (~1100 lines of effects, refs, and a ~250-line render loop).
- * The React component is now a thin shell that constructs this class, wires
- * its events to component state, and calls a small handful of methods.
+ * Session 3 simplification:
+ * - 3D-only. The 2D image-overlay path has been removed; ImageOverlay.ts is
+ *   gone. The retailer dashboard's ar_overlay_url field is ignored at runtime.
+ * - No body segmentation (BodySegmenter.ts removed). Occlusion was Tier-A only
+ *   and added significant complexity for marginal visual gain at the prototype
+ *   stage.
+ * - No performance tier auto-downgrade (A/B/C). Fixed-quality 15 FPS pose
+ *   detection. Re-introduce later if a low-end device tests show jitter.
+ * - State transitions in handleFrame3D are NO LONGER gated by `currentModel`
+ *   being set — the prior gate caused the state to stay at init-time
+ *   `waiting_for_pose` while the GLB was loading, which was the most likely
+ *   root cause of the persistent "Show Upper Body" guidance message.
  *
- * What this class owns:
- * - Camera lifecycle (via CameraManager)
- * - Pose processor (MediaPipe PoseLandmarker @ 10 FPS throttled)
- * - Scene manager (Three.js renderer / scene / camera / lighting)
- * - 2D image overlay (alternate rendering path for `mode='2d'`)
- * - Body segmenter (occlusion mask, Tier-A only)
- * - Bone mapper (skeleton retargeting from pose landmarks)
- * - Anchor resolver + strategies (ShirtAnchor, AbayaAnchor, etc.)
+ * What this class still owns:
+ * - Camera lifecycle (CameraManager)
+ * - MediaPipe PoseLandmarker (~15 FPS throttled)
+ * - Three.js scene / renderer / camera / lighting (SceneManager)
+ * - GLB load + skeleton retargeting (ModelLoader, BoneMapper)
+ * - Anchor strategies (Shirt, Abaya, Pants, Accessory) for garment placement
  * - Smoothing pipeline (OneEuro + outlier filters per channel)
- * - Performance tier state machine (A/B/C with hysteresis)
  * - The single requestAnimationFrame loop driving everything
  *
- * What it does NOT own:
- * - React state (it emits events; the component translates to setState)
- * - Product fetching / Supabase
- * - UI controls / capture preview
- * - Pinch-to-zoom gesture wiring (component owns the touch listeners and
- *   forwards the pinch result via setPinchScale)
- *
  * Lifecycle:
- *   const renderer = new GarmentRenderer({ videoEl, glCanvas, overlayCanvas });
+ *   const renderer = new GarmentRenderer({ videoEl, glCanvas, debugMount });
  *   renderer.on(handleEvent);
  *   await renderer.init();
  *   await renderer.loadGarment({ garmentType, modelUrl, ... });
@@ -37,8 +35,6 @@ import type { Object3D } from 'three';
 import { startCamera, stopCamera } from './CameraManager';
 import { createPoseProcessor, PoseProcessor } from './PoseProcessor';
 import { SceneManager } from './SceneManager';
-import { ImageOverlay } from './ImageOverlay';
-import { BodySegmenter } from './BodySegmenter';
 import { BoneMapper } from './BoneMapper';
 import { loadModel, prefetchModel, clearModelCache } from './ModelLoader';
 import { applyClothSway, updateClothSwayTime } from './ClothSway';
@@ -58,28 +54,14 @@ import { getMissingBodyParts } from '../guidance/garmentGuidance';
 import type { AnchorResult } from '../anchoring/types';
 import type { ARMode, GarmentType, TrackingState } from '../types';
 
-// ── Performance tier ──────────────────────────────────────────────────────
-
-export type PerformanceTier = 'A' | 'B' | 'C';
-
-const TIER_THRESHOLDS = {
-  downToB: 22,
-  downToC: 15,
-  upFromB: 25,
-  upFromC: 20,
-};
-
-/** Pose interval in ms per tier — A/B run ~15 FPS, C drops to ~10. */
-const POSE_INTERVAL_MS: Record<PerformanceTier, number> = { A: 66, B: 66, C: 100 };
-
-const SEG_BUDGET_MS = 20; // skip segmentation if frame already over budget
+/** Pose detection cadence — fixed ~15 FPS. */
+const POSE_INTERVAL_MS = 66;
 
 // ── Public types ──────────────────────────────────────────────────────────
 
 export interface GarmentRendererOptions {
   videoEl: HTMLVideoElement;
   glCanvas: HTMLCanvasElement;
-  overlayCanvas: HTMLCanvasElement;
   /** Mount point for the 2D landmark debug overlay (typically canvas parent). */
   debugMount: HTMLElement;
   /** Emit `metrics` events at ~1 Hz when true. */
@@ -88,12 +70,8 @@ export interface GarmentRendererOptions {
 
 export interface GarmentSpec {
   garmentType: GarmentType;
-  /** 2D garment image URL (transparent PNG/WebP). */
-  overlayUrl?: string;
-  /** 3D model URL (GLB). */
+  /** 3D model URL (GLB). Required — runtime is 3D-only. */
   modelUrl?: string;
-  /** Retailer-chosen mode preference. */
-  preferredMode?: 'auto' | '2d' | '3d';
   arScale?: number;
   arPositionOffset?: { x: number; y: number; z: number };
 }
@@ -112,11 +90,8 @@ export type GarmentRendererEvent =
   | {
       type: 'metrics';
       fps: number;
-      tier: PerformanceTier;
       rafPerSec: number;
       posePerSec: number;
-      overlayPerSec: number;
-      segPerSec: number;
       /** Per-landmark visibility from the most recent pose detection (0-1). */
       visibility: Record<number, number>;
       /** True if MediaPipe has produced at least one landmark since init. */
@@ -126,14 +101,9 @@ export type GarmentRendererEvent =
 
 export type GarmentRendererListener = (event: GarmentRendererEvent) => void;
 
-/** Resolve which AR rendering mode to use, respecting retailer preference. */
-export function resolveARMode(spec: { overlayUrl?: string; modelUrl?: string; preferredMode?: 'auto' | '2d' | '3d' }): ARMode {
-  const pref = spec.preferredMode || 'auto';
-  if (pref === '2d' && spec.overlayUrl) return '2d';
-  if (pref === '3d' && spec.modelUrl) return '3d';
-  if (spec.overlayUrl) return '2d';
-  if (spec.modelUrl) return '3d';
-  return 'none';
+/** Resolve which AR rendering mode to use. 3D-only at runtime. */
+export function resolveARMode(spec: { modelUrl?: string }): ARMode {
+  return spec.modelUrl ? '3d' : 'none';
 }
 
 function mapCameraError(err: any): { state: TrackingState; message: string } {
@@ -160,16 +130,13 @@ export class GarmentRenderer {
   // Wiring
   private readonly video: HTMLVideoElement;
   private readonly glCanvas: HTMLCanvasElement;
-  private readonly overlayCanvas: HTMLCanvasElement;
   private readonly debugMount: HTMLElement;
   private readonly enableMetrics: boolean;
 
-  // Subsystems (created lazily during init)
+  // Subsystems (created during init)
   private sceneManager: SceneManager | null = null;
   private poseProcessor: PoseProcessor | null = null;
-  private segmenter: BodySegmenter | null = null;
   private debugOverlay: DebugOverlay | null = null;
-  private imageOverlay: ImageOverlay | null = null;
   private boneMapper: BoneMapper | null = null;
   private anchorResolver: AnchorResolver | null = null;
   private currentModel: Object3D | null = null;
@@ -179,7 +146,7 @@ export class GarmentRenderer {
   private stream: MediaStream | null = null;
   private coverCrop: CoverCropInfo = { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
 
-  // Smoothing pipeline (3D path)
+  // Smoothing pipeline
   private readonly filters = {
     posX: new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff),
     posY: new OneEuroFilter(FILTER_PRESETS.position.minCutoff, FILTER_PRESETS.position.beta, FILTER_PRESETS.position.dCutoff),
@@ -205,14 +172,8 @@ export class GarmentRenderer {
   private trackingState: TrackingState = 'initializing';
   private lastMissingPartsJson = '[]';
 
-  // Performance tier
-  private tier: PerformanceTier = 'A';
-  private fpsFrames = 0;
-  private fpsLastCheck = 0;
-  private tierStableStart = 0;
-
   // Debug HUD counters
-  private debugCounters = { rafTicks: 0, poseCalls: 0, overlayDraws: 0, segCalls: 0 };
+  private debugCounters = { rafTicks: 0, poseCalls: 0 };
   private metricsLastEmit = 0;
   private latestVisibility: Record<number, number> = {};
   private poseEverDetected = false;
@@ -233,8 +194,12 @@ export class GarmentRenderer {
   private readonly handleVideoMetadata = () => {
     const v = this.video;
     if (v.videoWidth > 0 && v.videoHeight > 0) {
-      this.coverCrop = computeCoverCrop(v.videoWidth, v.videoHeight, this.glCanvas.width, this.glCanvas.height);
-      this.imageOverlay?.updateCoverCrop(v.videoWidth, v.videoHeight, this.overlayCanvas.width, this.overlayCanvas.height);
+      this.coverCrop = computeCoverCrop(
+        v.videoWidth,
+        v.videoHeight,
+        this.glCanvas.width,
+        this.glCanvas.height,
+      );
     }
   };
   private readonly handleVisibility = () => {
@@ -247,39 +212,35 @@ export class GarmentRenderer {
   constructor(opts: GarmentRendererOptions) {
     this.video = opts.videoEl;
     this.glCanvas = opts.glCanvas;
-    this.overlayCanvas = opts.overlayCanvas;
     this.debugMount = opts.debugMount;
     this.enableMetrics = !!opts.enableMetrics;
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
 
-  /** Subscribe to renderer events. Returns an unsubscribe fn. */
   on(listener: GarmentRendererListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  /** Read-only current AR mode. */
   get mode(): ARMode {
     return this.currentMode;
   }
 
-  /** Optional helper exposed for anchor-debug snapshotting. */
   get isReady(): boolean {
     return this.sceneManager !== null && this.poseProcessor !== null;
   }
 
   /**
-   * Initialize camera + pose + scene + segmenter in parallel where possible.
+   * Initialize camera + pose + scene in parallel where possible.
    * Idempotent: subsequent calls no-op.
    */
   async init(): Promise<void> {
     if (this.disposed) throw new Error('GarmentRenderer already disposed');
-    if (this.poseProcessor && this.sceneManager) return; // already initialized
+    if (this.poseProcessor && this.sceneManager) return;
 
     try {
-      // Step 1 — WebGL2 capability gate (R-A2). Synchronous, fails fast.
+      // WebGL2 capability gate. Synchronous, fails fast.
       const gl = document.createElement('canvas').getContext('webgl2')
         || document.createElement('canvas').getContext('webgl');
       if (!gl) {
@@ -293,13 +254,11 @@ export class GarmentRenderer {
       this.setTrackingState('initializing');
       this.emit({ type: 'load-stage', stage: 'Starting camera & body tracking…' });
 
-      // Step 2 — kick off camera + pose + segmenter in parallel
+      // Kick off camera + pose in parallel
       const cameraPromise = startCamera(this.video).catch((err: any) => ({ error: err }));
       const posePromise = createPoseProcessor().catch((err: any) => ({ error: err }));
-      const segPromise = BodySegmenter.create();
 
       const [camResult, poseResult] = await Promise.all([cameraPromise, posePromise]);
-      segPromise.then((seg) => { if (!this.disposed) this.segmenter = seg; }).catch(() => {});
 
       if (this.disposed) {
         if (camResult && !('error' in camResult)) stopCamera(camResult.stream);
@@ -307,7 +266,6 @@ export class GarmentRenderer {
         return;
       }
 
-      // Step 3 — handle camera result
       if ('error' in camResult) {
         const mapped = mapCameraError(camResult.error);
         this.emit({ type: 'camera-error', state: mapped.state, message: mapped.message });
@@ -322,7 +280,6 @@ export class GarmentRenderer {
         window.innerHeight,
       );
 
-      // Step 4 — handle pose result
       if ('error' in poseResult) {
         this.emit({
           type: 'pose-init-failed',
@@ -332,11 +289,9 @@ export class GarmentRenderer {
       }
       this.poseProcessor = poseResult as PoseProcessor;
 
-      // Re-check video on metadata + visibility
       this.video.addEventListener('loadedmetadata', this.handleVideoMetadata);
       document.addEventListener('visibilitychange', this.handleVisibility);
 
-      // Step 5 — scene manager + debug overlay + anchor resolver
       this.sceneManager = new SceneManager(this.glCanvas);
       this.debugOverlay = new DebugOverlay(this.debugMount);
       this.anchorResolver = this.buildAnchorResolver();
@@ -344,7 +299,6 @@ export class GarmentRenderer {
       this.setTrackingState('waiting_for_pose');
       this.emit({ type: 'load-stage', stage: '' });
 
-      // Step 6 — start the rAF loop
       this.startLoop();
     } catch (err: any) {
       console.error('[GarmentRenderer] init crashed:', err);
@@ -353,25 +307,19 @@ export class GarmentRenderer {
   }
 
   /**
-   * Swap to the given garment. Resolves when the asset is loaded (image or GLB).
+   * Swap to the given garment. Resolves when the GLB is loaded.
    * Cancels any in-flight load from a prior call.
    */
   async loadGarment(spec: GarmentSpec): Promise<void> {
     if (this.disposed) return;
 
-    // Cancel any in-flight load from a previous call
     if (this.modelLoadCancel) this.modelLoadCancel.cancelled = true;
     const cancelToken = { cancelled: false };
     this.modelLoadCancel = cancelToken;
 
     this.currentSpec = spec;
 
-    // Resolve mode and announce
-    const mode = resolveARMode({
-      overlayUrl: spec.overlayUrl,
-      modelUrl: spec.modelUrl,
-      preferredMode: spec.preferredMode,
-    });
+    const mode = resolveARMode({ modelUrl: spec.modelUrl });
     this.currentMode = mode;
     this.emit({ type: 'mode-change', mode });
 
@@ -379,16 +327,14 @@ export class GarmentRenderer {
       this.setTrackingState('model_error');
       this.emit({
         type: 'model-error',
-        message: 'No AR assets found for this product. Ask the retailer to upload a 2D overlay or 3D model.',
+        message: 'No 3D model found for this product. Ask the retailer to upload a GLB.',
         canRetry: false,
       });
-      this.emit({ type: 'ar-debug', status: 'error', error: 'resolveARMode returned none — no overlay/model URL' });
+      this.emit({ type: 'ar-debug', status: 'error', error: 'no model URL' });
       return;
     }
 
     // Tear down prior garment state
-    this.imageOverlay?.dispose();
-    this.imageOverlay = null;
     if (this.currentModel) {
       this.sceneManager?.swapModel(null);
       this.currentModel = null;
@@ -397,69 +343,32 @@ export class GarmentRenderer {
     this.boneMapper = null;
     this.resetSmoothingPipeline();
     this.lastLandmarks = null;
-
-    // Reset perf tier and segmenter on swap
-    this.tier = 'A';
-    this.tierStableStart = 0;
-    this.segmenter?.setEnabled(true);
     this.sceneManager?.setShadowsEnabled(true);
 
-    this.emit({ type: 'ar-debug', status: 'loading_' + mode });
+    this.emit({ type: 'ar-debug', status: 'loading_3d' });
 
-    if (mode === '2d') {
-      await this.load2D(spec, cancelToken);
-    } else {
-      await this.load3D(spec, cancelToken);
-    }
+    await this.load3D(spec, cancelToken);
   }
 
-  /** Pinch-to-zoom scale, clamped to [0.5, 2.0]. */
   setPinchScale(scale: number): void {
     this.pinchScale = Math.max(0.5, Math.min(2.0, scale));
     if (this.sceneManager) this.sceneManager.dirty = true;
   }
 
-  /** Re-compute cover crop and renderer size for new viewport dimensions. */
   resize(width: number, height: number): void {
     this.sceneManager?.handleResize();
     this.debugOverlay?.resize(width, height);
     if (this.video.videoWidth > 0 && this.video.videoHeight > 0) {
       this.coverCrop = computeCoverCrop(this.video.videoWidth, this.video.videoHeight, width, height);
-      this.imageOverlay?.updateCoverCrop(this.video.videoWidth, this.video.videoHeight, width, height);
     }
-    this.overlayCanvas.width = width;
-    this.overlayCanvas.height = height;
   }
 
   /**
-   * Capture the current frame as a PNG Blob.
-   * - 2D mode: snapshot the overlay canvas directly.
-   * - 3D mode: render once + composite video & three.js canvas.
-   *
-   * R8: with preserveDrawingBuffer:false, the 3D path needs a fresh render
-   * immediately before the composite read.
+   * Capture the current frame as a PNG Blob. Renders fresh + composites
+   * synchronously (preserveDrawingBuffer: false requires the toBlob/drawImage
+   * to happen before the browser yields).
    */
   async capture(): Promise<Blob> {
-    if (this.currentMode === '2d') {
-      return new Promise<Blob>((resolve, reject) => {
-        this.overlayCanvas.toBlob(
-          (b) => {
-            if (b) { resolve(b); return; }
-            try {
-              const dataUrl = this.overlayCanvas.toDataURL('image/png');
-              const byteStr = atob(dataUrl.split(',')[1]);
-              const arr = new Uint8Array(byteStr.length);
-              for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
-              resolve(new Blob([arr], { type: 'image/png' }));
-            } catch (err) {
-              reject(err);
-            }
-          },
-          'image/png',
-        );
-      });
-    }
-    // 3D path — render fresh and composite video + three.js canvas synchronously.
     if (!this.sceneManager) throw new Error('Scene not ready for capture');
     this.sceneManager.dirty = true;
     this.sceneManager.renderIfDirty();
@@ -487,14 +396,8 @@ export class GarmentRenderer {
     this.sceneManager?.dispose();
     this.sceneManager = null;
 
-    this.segmenter?.close();
-    this.segmenter = null;
-
     this.debugOverlay?.dispose();
     this.debugOverlay = null;
-
-    this.imageOverlay?.dispose();
-    this.imageOverlay = null;
 
     this.boneMapper?.reset();
     this.boneMapper = null;
@@ -522,45 +425,6 @@ export class GarmentRenderer {
     Object.values(this.outliers).forEach((f) => f.reset());
     this.lastAnchor = null;
     this.pinchScale = 1.0;
-  }
-
-  private async load2D(spec: GarmentSpec, cancel: { cancelled: boolean }): Promise<void> {
-    this.setTrackingState('model_loading');
-    this.emit({ type: 'load-stage', stage: 'Loading garment image…' });
-    try {
-      this.overlayCanvas.width = window.innerWidth;
-      this.overlayCanvas.height = window.innerHeight;
-
-      const overlay = new ImageOverlay(this.overlayCanvas);
-      if (this.video.videoWidth > 0 && this.video.videoHeight > 0) {
-        overlay.updateCoverCrop(
-          this.video.videoWidth,
-          this.video.videoHeight,
-          this.overlayCanvas.width,
-          this.overlayCanvas.height,
-        );
-      }
-      await overlay.loadGarment(spec.overlayUrl!, spec.garmentType);
-      if (cancel.cancelled || this.disposed) return;
-      this.imageOverlay = overlay;
-      this.setTrackingState('waiting_for_pose');
-      this.emit({ type: 'load-stage', stage: '' });
-      this.emit({ type: 'ar-debug', status: '2d_loaded' });
-    } catch (err: any) {
-      if (cancel.cancelled || this.disposed) return;
-      console.error('[GarmentRenderer] 2D overlay load error:', err, 'URL:', spec.overlayUrl);
-      this.setTrackingState('model_error');
-      this.emit({
-        type: 'model-error',
-        message: `Could not load garment image. ${err?.message || ''}`,
-        canRetry: false,
-      });
-      this.emit({
-        type: 'ar-debug',
-        status: 'error',
-        error: `2D load failed: ${err?.message || 'unknown'} | URL: ${spec.overlayUrl}`,
-      });
-    }
   }
 
   private async load3D(spec: GarmentSpec, cancel: { cancelled: boolean }): Promise<void> {
@@ -636,7 +500,6 @@ export class GarmentRenderer {
         console.error('[GarmentRenderer] Frame error:', err);
         this.emit({ type: 'ar-debug', status: 'frame_error', error: err?.message || String(err) });
       }
-      this.updatePerformanceTier(time);
       this.maybeEmitMetrics(time);
       this.rafId = requestAnimationFrame(tick);
     };
@@ -648,21 +511,8 @@ export class GarmentRenderer {
     const pp = this.poseProcessor;
     if (!sm || !pp) return;
 
-    const is2D = this.currentMode === '2d';
-    const poseInterval = POSE_INTERVAL_MS[this.tier];
-
-    // ── A: 2D path always repaints video every frame to avoid stuttering ──
-    if (is2D && this.imageOverlay && this.video.readyState >= 2) {
-      this.imageOverlay.drawVideo(this.video);
-      this.debugCounters.overlayDraws++;
-      // Re-paint garment with last known landmarks so position holds across pose-frame gaps
-      if (this.lastLandmarks) {
-        this.imageOverlay.drawGarment(this.lastLandmarks);
-      }
-    }
-
-    // ── B: pose detection (throttled) ──
-    if (this.video.readyState >= 2 && time - this.lastPoseTime > poseInterval) {
+    // ── Pose detection (throttled) ──
+    if (this.video.readyState >= 2 && time - this.lastPoseTime > POSE_INTERVAL_MS) {
       this.lastPoseTime = time;
       const now = performance.now();
 
@@ -679,18 +529,12 @@ export class GarmentRenderer {
         this.framesWithoutPose = 0;
         this.lastLandmarks = result.landmarks[0];
         this.poseEverDetected = true;
-        // Snapshot visibility for HUD: shoulders + hips + ankles + face for diagnostics.
         const lm = result.landmarks[0];
         const KEY_INDICES = [0, 11, 12, 23, 24, 25, 26, 27, 28];
         for (const idx of KEY_INDICES) {
           this.latestVisibility[idx] = lm[idx]?.visibility ?? 0;
         }
-
-        if (is2D) {
-          this.handleFrame2D(now, result);
-        } else {
-          this.handleFrame3D(time, now, result, sm);
-        }
+        this.handleFrame3D(result, sm);
       } else if (result) {
         this.framesWithoutPose++;
         if (this.framesWithoutPose > 30) {
@@ -707,43 +551,31 @@ export class GarmentRenderer {
       }
     }
 
-    // ── C: cloth sway animation (3D only) ──
+    // Cloth sway animation
     if (this.currentModel?.visible) {
       updateClothSwayTime(this.currentModel, time / 1000);
       sm.dirty = true;
     }
 
-    // ── D: adaptive lighting (3D only) ──
-    if (!is2D && this.video.readyState >= 2) {
+    // Adaptive lighting from camera
+    if (this.video.readyState >= 2) {
       sm.updateLightingFromVideo(this.video);
     }
     sm.renderIfDirty();
 
-    // ── E: debug overlay ──
-    this.debugOverlay?.draw(this.lastLandmarks, this.trackingState, this.segmenter?.isEnabled ?? false, time);
+    // Debug overlay
+    this.debugOverlay?.draw(this.lastLandmarks, this.trackingState, false, time);
   }
 
-  private handleFrame2D(now: number, _result: any): void {
-    this.setTrackingState('tracking_active');
-    if (this.tier !== 'A' || !this.imageOverlay) {
-      this.imageOverlay?.updateOcclusionMask(null);
-      return;
-    }
-    try {
-      const frameBudget = performance.now() - now;
-      const seg = this.segmenter;
-      if (seg?.isEnabled && frameBudget < SEG_BUDGET_MS) {
-        const mask = seg.segment(this.video, performance.now());
-        this.debugCounters.segCalls++;
-        if (mask) this.imageOverlay.updateOcclusionMask(mask);
-      }
-    } catch (err: any) {
-      this.emit({ type: 'ar-debug', status: 'seg2d_error', error: err?.message || String(err) });
-      this.segmenter?.setEnabled(false);
-    }
-  }
-
-  private handleFrame3D(_time: number, now: number, result: any, sm: SceneManager): void {
+  /**
+   * Handle a frame with valid landmarks.
+   *
+   * IMPORTANT: state transitions are NOT gated on `currentModel`. Tracking
+   * state reflects what MediaPipe sees, regardless of whether the GLB has
+   * finished loading. The model's visibility + transform updates are gated
+   * separately below.
+   */
+  private handleFrame3D(result: any, sm: SceneManager): void {
     const spec = this.currentSpec!;
     const garmentType = spec.garmentType;
     const config = GARMENT_PRESETS[garmentType];
@@ -757,36 +589,36 @@ export class GarmentRenderer {
       sm.visibleDims,
     );
 
-    // ── Tracking state from required-landmark visibility ──
     const requiredVisible = config.requiredLandmarks.filter(
       (idx) => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold,
     );
     const allRequiredVisible = requiredVisible.length === config.requiredLandmarks.length;
     const someRequiredVisible = requiredVisible.length > 0;
 
-    if (this.currentModel) {
-      if (allRequiredVisible) {
-        this.setTrackingState('tracking_active');
-        if (this.lastMissingPartsJson !== '[]') {
-          this.lastMissingPartsJson = '[]';
-          this.emit({ type: 'missing-parts', parts: [] });
-        }
-      } else if (someRequiredVisible) {
-        this.setTrackingState('partial_tracking');
-        const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
-        const partsJson = JSON.stringify(parts);
-        if (partsJson !== this.lastMissingPartsJson) {
-          this.lastMissingPartsJson = partsJson;
-          this.emit({ type: 'missing-parts', parts });
-        }
-      } else {
-        this.setTrackingState('waiting_for_pose');
+    // ── Tracking state (decoupled from currentModel; bug fix from Session 2) ──
+    if (allRequiredVisible) {
+      this.setTrackingState('tracking_active');
+      if (this.lastMissingPartsJson !== '[]') {
+        this.lastMissingPartsJson = '[]';
+        this.emit({ type: 'missing-parts', parts: [] });
       }
+    } else if (someRequiredVisible) {
+      this.setTrackingState('partial_tracking');
+      const parts = getMissingBodyParts(garmentType, measurements.visibility, config.visibilityThreshold);
+      const partsJson = JSON.stringify(parts);
+      if (partsJson !== this.lastMissingPartsJson) {
+        this.lastMissingPartsJson = partsJson;
+        this.emit({ type: 'missing-parts', parts });
+      }
+    } else {
+      this.setTrackingState('waiting_for_pose');
     }
 
-    // ── Anchor solve ──
+    // ── Anchor solve + model placement (gated on currentModel being loaded) ──
+    if (!this.currentModel) return;
+
     const anchor = this.anchorResolver!.resolve(garmentType, measurements, config, this.modelDims);
-    if (anchor && this.currentModel) {
+    if (anchor) {
       this.currentModel.visible = true;
 
       const px = this.outliers.posX.filter(anchor.position.x) ?? this.lastAnchor?.position.x ?? anchor.position.x;
@@ -822,100 +654,36 @@ export class GarmentRenderer {
         this.boneMapper.update(result.worldLandmarks[0]);
       }
 
-      // Tier-A: segmentation occlusion mask drives Three.js depth wall
-      if (this.tier === 'A') {
-        try {
-          const frameBudget = performance.now() - now;
-          const seg = this.segmenter;
-          if (seg?.isEnabled && frameBudget < SEG_BUDGET_MS) {
-            const mask = seg.segment(this.video, performance.now());
-            this.debugCounters.segCalls++;
-            if (mask) sm.updateOcclusionMask(mask.data, mask.width, mask.height);
-          }
-        } catch (err: any) {
-          this.emit({ type: 'ar-debug', status: 'seg3d_error', error: err?.message || String(err) });
-          this.segmenter?.setEnabled(false);
-        }
-      }
-
       const floorY = measurements.ankleCenter?.y ?? (measurements.hipCenter.y + 0.8);
       sm.updateShadowPlane(floorY, garmentType);
       sm.dirty = true;
 
       this.lastAnchor = { ...anchor, scale: { x: sx, y: sy, z: sz } };
-    } else if (this.currentModel) {
+    } else {
       this.currentModel.visible = false;
       sm.dirty = true;
     }
   }
 
-  // ── Private: tier + metrics ─────────────────────────────────────────────
-
-  private updatePerformanceTier(time: number): void {
-    this.fpsFrames++;
-    if (time - this.fpsLastCheck < 2000) return;
-    const fps = this.fpsFrames / ((time - this.fpsLastCheck) / 1000);
-    this.fpsFrames = 0;
-    this.fpsLastCheck = time;
-
-    const t = this.tier;
-    const sm = this.sceneManager;
-
-    if (t === 'A' && fps < TIER_THRESHOLDS.downToC) {
-      this.tier = 'C';
-      this.segmenter?.setEnabled(false);
-      sm?.setShadowsEnabled(false);
-      this.tierStableStart = 0;
-    } else if (t === 'A' && fps < TIER_THRESHOLDS.downToB) {
-      this.tier = 'B';
-      this.segmenter?.setEnabled(false);
-      this.tierStableStart = 0;
-    } else if (t === 'B' && fps < TIER_THRESHOLDS.downToC) {
-      this.tier = 'C';
-      sm?.setShadowsEnabled(false);
-      this.tierStableStart = 0;
-    } else if (t === 'C' && fps > TIER_THRESHOLDS.upFromC) {
-      if (!this.tierStableStart) this.tierStableStart = time;
-      else if (time - this.tierStableStart > 5000) {
-        this.tier = 'B';
-        sm?.setShadowsEnabled(true);
-        this.tierStableStart = 0;
-      }
-    } else if (t === 'B' && fps > TIER_THRESHOLDS.upFromB) {
-      if (!this.tierStableStart) this.tierStableStart = time;
-      else if (time - this.tierStableStart > 5000) {
-        this.tier = 'A';
-        this.segmenter?.setEnabled(true);
-        this.tierStableStart = 0;
-      }
-    } else if (
-      (t === 'C' && fps <= TIER_THRESHOLDS.upFromC) ||
-      (t === 'B' && fps <= TIER_THRESHOLDS.upFromB)
-    ) {
-      this.tierStableStart = 0;
-    }
-  }
+  // ── Private: metrics ───────────────────────────────────────────────────
 
   private maybeEmitMetrics(time: number): void {
     if (!this.enableMetrics) return;
     if (time - this.metricsLastEmit < 1000) return;
-    const elapsed = (time - this.metricsLastEmit) / 1000;
     if (this.metricsLastEmit === 0) {
       this.metricsLastEmit = time;
       return;
     }
+    const elapsed = (time - this.metricsLastEmit) / 1000;
     this.emit({
       type: 'metrics',
       fps: Math.round(this.debugCounters.rafTicks / elapsed),
-      tier: this.tier,
       rafPerSec: Math.round(this.debugCounters.rafTicks / elapsed),
       posePerSec: Math.round(this.debugCounters.poseCalls / elapsed),
-      overlayPerSec: Math.round(this.debugCounters.overlayDraws / elapsed),
-      segPerSec: Math.round(this.debugCounters.segCalls / elapsed),
       visibility: { ...this.latestVisibility },
       poseEverDetected: this.poseEverDetected,
     });
-    this.debugCounters = { rafTicks: 0, poseCalls: 0, overlayDraws: 0, segCalls: 0 };
+    this.debugCounters = { rafTicks: 0, poseCalls: 0 };
     this.metricsLastEmit = time;
   }
 
@@ -936,5 +704,5 @@ export class GarmentRenderer {
   }
 }
 
-/** Convenience: prefetch a model URL outside the renderer (e.g. on product fetch). */
+/** Convenience: prefetch a model URL outside the renderer. */
 export { prefetchModel };

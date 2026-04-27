@@ -12,15 +12,15 @@ import {
   type GarmentRendererEvent,
   type GarmentSpec,
 } from '@/ar/core/GarmentRenderer';
-import type { ARProduct, TrackingState, ARMode } from '@/ar/types';
+import type { ARProduct, TrackingState } from '@/ar/types';
 
-const BUILD_ID = '2026-04-26T-garment-renderer';
+const BUILD_ID = '2026-04-27T-3d-only';
 
 /**
  * Phase C dev-override: when `?testMesh=<url>` is in the URL OR when
  * VITE_AR_TEST_MESH_URL is set, the renderer loads that GLB instead of the
- * product's database `ar_model_url`. The override forces 3D mode so the
- * testMesh always renders even if the underlying product prefers 2D.
+ * product's database `ar_model_url`. Bypasses Supabase entirely with a
+ * synthetic in-memory product.
  */
 function getTestMeshOverride(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -29,20 +29,9 @@ function getTestMeshOverride(): string | null {
 
 function productToSpec(product: ARProduct): GarmentSpec {
   const testMesh = getTestMeshOverride();
-  if (testMesh) {
-    return {
-      garmentType: product.garment_type || 'shirt',
-      modelUrl: testMesh,
-      preferredMode: '3d',
-      arScale: product.ar_scale,
-      arPositionOffset: product.ar_position_offset,
-    };
-  }
   return {
     garmentType: product.garment_type || 'shirt',
-    overlayUrl: product.ar_overlay_url,
-    modelUrl: product.ar_model_url ?? undefined,
-    preferredMode: product.ar_preferred_mode,
+    modelUrl: testMesh ?? product.ar_model_url ?? undefined,
     arScale: product.ar_scale,
     arPositionOffset: product.ar_position_offset,
   };
@@ -63,7 +52,6 @@ export default function ARExperience() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const glCanvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<GarmentRenderer | null>(null);
 
@@ -76,14 +64,13 @@ export default function ARExperience() {
   const [missingParts, setMissingParts] = useState<string[]>([]);
   const [loadStage, setLoadStage] = useState('');
   const [loadProgress, setLoadProgress] = useState('');
-  const [arMode, setArMode] = useState<ARMode>('none');
   const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string }>({ status: 'pending' });
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [debugMetrics, setDebugMetrics] = useState({
-    fps: 0, tier: 'A', rafPerSec: 0, posePerSec: 0, overlayPerSec: 0, segPerSec: 0,
+    fps: 0, rafPerSec: 0, posePerSec: 0,
     visibility: {} as Record<number, number>,
     poseEverDetected: false,
   });
@@ -105,8 +92,6 @@ export default function ARExperience() {
   useEffect(() => {
     let cancelled = false;
     async function fetchAndValidate() {
-      // Phase C dev-bypass: when ?testMesh=... is in the URL, skip Supabase
-      // entirely and synthesize a single product around the test mesh.
       const testMesh = getTestMeshOverride();
       if (testMesh) {
         const synthetic: ARProduct = {
@@ -118,7 +103,6 @@ export default function ARExperience() {
           brand_name: 'Local test mesh',
           name: 'test-garment.glb',
           garment_type: 'shirt',
-          ar_preferred_mode: '3d',
         };
         setProducts([synthetic]);
         setSelectedProduct(synthetic);
@@ -160,13 +144,12 @@ export default function ARExperience() {
         ? mapped.find((p) => p.id === requestedProductId) || mapped[0]
         : mapped[0];
       setSelectedProduct(selected);
-      // Pre-fetch the model so we get a head-start before the scene is ready
-      const modelUrl = getTestMeshOverride() ?? selected.ar_model_url ?? undefined;
+      const modelUrl = selected.ar_model_url ?? undefined;
       if (modelUrl) {
         prefetchModel(modelUrl, (loaded, _t, percent) => {
           if (percent >= 0) setLoadProgress(`${percent}%`);
           else setLoadProgress(`${(loaded / (1024 * 1024)).toFixed(1)} MB`);
-        }).catch(() => {/* swallowed; will retry inside renderer */});
+        }).catch(() => {/* swallowed; renderer will retry */});
       }
       setIsLoading(false);
     }
@@ -179,14 +162,12 @@ export default function ARExperience() {
     if (isLoading) return;
     const video = videoRef.current;
     const glCanvas = glCanvasRef.current;
-    const overlayCanvas = overlayCanvasRef.current;
     const stage = stageRef.current;
-    if (!video || !glCanvas || !overlayCanvas || !stage) return;
+    if (!video || !glCanvas || !stage) return;
 
     const renderer = new GarmentRenderer({
       videoEl: video,
       glCanvas,
-      overlayCanvas,
       debugMount: stage,
       enableMetrics: isDebug,
     });
@@ -233,7 +214,7 @@ export default function ARExperience() {
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
         initialDistance = getTouchDistance(e.touches[0], e.touches[1]);
-        initialScale = 1; // re-base on each gesture; renderer clamps
+        initialScale = 1;
       }
     };
     const onTouchMove = (e: TouchEvent) => {
@@ -271,7 +252,7 @@ export default function ARExperience() {
         setMissingParts(event.parts);
         return;
       case 'mode-change':
-        setArMode(event.mode);
+        // 3D-only runtime; mode is informational only.
         return;
       case 'camera-error':
         setTrackingState(event.state);
@@ -297,9 +278,9 @@ export default function ARExperience() {
         return;
       case 'metrics':
         setDebugMetrics({
-          fps: event.fps, tier: event.tier,
-          rafPerSec: event.rafPerSec, posePerSec: event.posePerSec,
-          overlayPerSec: event.overlayPerSec, segPerSec: event.segPerSec,
+          fps: event.fps,
+          rafPerSec: event.rafPerSec,
+          posePerSec: event.posePerSec,
           visibility: event.visibility,
           poseEverDetected: event.poseEverDetected,
         });
@@ -310,7 +291,6 @@ export default function ARExperience() {
     }
   }
 
-  // ── Capture / Share ──
   const handleCapture = async () => {
     if (isCapturing) return;
     const renderer = rendererRef.current;
@@ -362,24 +342,15 @@ export default function ARExperience() {
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ transform: 'scaleX(-1)', display: arMode === '2d' ? 'none' : 'block' }}
+        style={{ transform: 'scaleX(-1)' }}
         playsInline muted autoPlay
       />
 
-      {/* 2D garment overlay canvas */}
-      <canvas
-        ref={overlayCanvasRef}
-        className="absolute inset-0 w-full h-full"
-        style={{ display: arMode === '2d' ? 'block' : 'none', zIndex: 2 }}
-        width={canvasSize.w}
-        height={canvasSize.h}
-      />
-
-      {/* Three.js canvas */}
+      {/* Three.js canvas (3D garment overlay) */}
       <canvas
         ref={glCanvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ display: arMode === '3d' || arMode === 'none' ? 'block' : 'none', zIndex: 1 }}
+        style={{ zIndex: 1 }}
         width={canvasSize.w}
         height={canvasSize.h}
       />
@@ -417,8 +388,7 @@ export default function ARExperience() {
         <div className="absolute top-16 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[300px] text-[10px] font-mono text-white/80 space-y-0.5">
           <div className="text-yellow-300 font-bold">BUILD: {BUILD_ID}</div>
           <div>raf/s: <span className="text-green-400">{debugMetrics.rafPerSec}</span> | pose/s: <span className="text-green-400">{debugMetrics.posePerSec}</span></div>
-          <div>overlay/s: <span className="text-green-400">{debugMetrics.overlayPerSec}</span> | seg/s: <span className="text-green-400">{debugMetrics.segPerSec}</span></div>
-          <div>mode: <span className="text-green-400">{arMode}</span> | tier: {debugMetrics.tier} | tracking: {trackingState}</div>
+          <div>tracking: {trackingState}</div>
           <div>cam: {videoRef.current?.readyState ?? '?'} | {videoRef.current?.videoWidth ?? 0}×{videoRef.current?.videoHeight ?? 0}</div>
           <div>pose-ever: <span className={debugMetrics.poseEverDetected ? 'text-green-400' : 'text-red-400'}>{debugMetrics.poseEverDetected ? 'yes' : 'NO'}</span></div>
           <div>vis 11/12 (shoulders): {(debugMetrics.visibility[11] ?? 0).toFixed(2)} / {(debugMetrics.visibility[12] ?? 0).toFixed(2)}</div>
@@ -428,16 +398,13 @@ export default function ARExperience() {
         </div>
       )}
 
-      {/* Tracking-quality indicator */}
       {trackingState === 'tracking_active' && (
         <div className="absolute top-44 right-4 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-white/80">Tracking</span>
-          <span className="text-xs text-white/60 ml-0.5">({arMode.toUpperCase()})</span>
         </div>
       )}
 
-      {/* Capture button */}
       {(trackingState === 'tracking_active' || trackingState === 'partial_tracking') && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
           <button
@@ -451,7 +418,6 @@ export default function ARExperience() {
         </div>
       )}
 
-      {/* Capture preview */}
       {capturedBlob && previewUrlRef.current && (
         <div className="absolute inset-0 z-30 bg-black/80 flex flex-col items-center justify-center gap-4 p-6">
           <img
@@ -471,7 +437,6 @@ export default function ARExperience() {
         </div>
       )}
 
-      {/* Product selector */}
       {products.length > 1 && (
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent z-10">
           <div className="flex gap-3 overflow-x-auto pb-2">
@@ -498,5 +463,4 @@ export default function ARExperience() {
   );
 }
 
-// Re-export resolveARMode for any consumers (e.g. unit tests)
 export { resolveARMode };

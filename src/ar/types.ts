@@ -35,8 +35,13 @@ export interface ARProduct {
   ar_preferred_mode?: 'auto' | '2d' | '3d';
 }
 
-/** Which AR rendering mode to use for a product. */
-export type ARMode = '2d' | '3d' | 'none';
+/**
+ * Which AR rendering mode to use for a product.
+ * The 2D image-overlay path was removed in Session 3 — runtime is 3D-only.
+ * The retailer dashboard's `ar_overlay_url` upload UI is preserved but ignored
+ * by the runtime.
+ */
+export type ARMode = '3d' | 'none';
 
 /**
  * Tracking state machine for the AR experience.

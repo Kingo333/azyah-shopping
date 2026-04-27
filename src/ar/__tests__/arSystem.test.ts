@@ -1,69 +1,28 @@
 /**
  * Regression tests for the AR system.
- * Fix 10: Covers mode selection, cover-crop math, and capture path logic.
+ * Session 3: 3D-only — 2D mode tests removed.
  */
 import { describe, it, expect } from 'vitest';
 
 // ── resolveARMode ──
-// Imported as named export from ARExperience
-// Since it's a pure function, we test it directly
-
-// Re-implement here for isolated testing (same logic as ARExperience.tsx)
-type ARMode = '2d' | '3d' | 'none';
-interface TestProduct {
-  ar_overlay_url?: string;
-  ar_model_url?: string;
-  ar_preferred_mode?: string;
+// Imported as named export from ARExperience / GarmentRenderer.
+// Re-implemented here for isolated testing — same logic as runtime.
+type ARMode = '3d' | 'none';
+interface TestSpec {
+  modelUrl?: string;
 }
 
-function resolveARMode(product: TestProduct): ARMode {
-  const pref = product.ar_preferred_mode || 'auto';
-  if (pref === '2d' && product.ar_overlay_url) return '2d';
-  if (pref === '3d' && product.ar_model_url) return '3d';
-  if (product.ar_overlay_url) return '2d';
-  if (product.ar_model_url) return '3d';
-  return 'none';
+function resolveARMode(spec: TestSpec): ARMode {
+  return spec.modelUrl ? '3d' : 'none';
 }
 
 describe('resolveARMode', () => {
-  it('returns 2d when only overlay exists', () => {
-    expect(resolveARMode({ ar_overlay_url: 'http://img.png' })).toBe('2d');
+  it('returns 3d when a model URL is present', () => {
+    expect(resolveARMode({ modelUrl: 'http://model.glb' })).toBe('3d');
   });
 
-  it('returns 3d when only model exists', () => {
-    expect(resolveARMode({ ar_model_url: 'http://model.glb' })).toBe('3d');
-  });
-
-  it('returns 2d when both exist (auto prefers 2d)', () => {
-    expect(resolveARMode({ ar_overlay_url: 'http://img.png', ar_model_url: 'http://model.glb' })).toBe('2d');
-  });
-
-  it('returns 3d when both exist but preference is 3d', () => {
-    expect(resolveARMode({
-      ar_overlay_url: 'http://img.png',
-      ar_model_url: 'http://model.glb',
-      ar_preferred_mode: '3d',
-    })).toBe('3d');
-  });
-
-  it('returns 2d when preference is 2d', () => {
-    expect(resolveARMode({
-      ar_overlay_url: 'http://img.png',
-      ar_model_url: 'http://model.glb',
-      ar_preferred_mode: '2d',
-    })).toBe('2d');
-  });
-
-  it('returns none when no assets', () => {
+  it('returns none when no model URL', () => {
     expect(resolveARMode({})).toBe('none');
-  });
-
-  it('falls back to 3d when preference is 2d but no overlay', () => {
-    expect(resolveARMode({ ar_model_url: 'http://model.glb', ar_preferred_mode: '2d' })).toBe('3d');
-  });
-
-  it('falls back to 2d when preference is 3d but no model', () => {
-    expect(resolveARMode({ ar_overlay_url: 'http://img.png', ar_preferred_mode: '3d' })).toBe('2d');
   });
 });
 
@@ -112,76 +71,35 @@ describe('computeCoverCropRect', () => {
 
   it('cover crop preserves full canvas coverage', () => {
     const result = computeCoverCropRect(1280, 720, 390, 844);
-    // The cropped source should map exactly to canvas dimensions
     const displayedAspect = result.srcW / result.srcH;
     const canvasAspect = 390 / 844;
     expect(displayedAspect).toBeCloseTo(canvasAspect, 3);
   });
 });
 
-// ── AR mode should never be 'none' when valid assets exist ──
-describe('resolveARMode — no false none', () => {
-  it('2D product with overlay URL resolves to 2d, never none', () => {
-    const product = { ar_overlay_url: 'https://cdn.example.com/overlay.png', ar_preferred_mode: '2d' };
-    expect(resolveARMode(product)).toBe('2d');
-    expect(resolveARMode(product)).not.toBe('none');
-  });
-
-  it('3D product with model URL resolves to 3d', () => {
-    const product = { ar_model_url: 'https://cdn.example.com/model.glb', ar_preferred_mode: '3d' };
-    expect(resolveARMode(product)).toBe('3d');
-  });
-
-  it('auto mode with both assets prefers 2d', () => {
-    const product = { ar_overlay_url: 'https://x.png', ar_model_url: 'https://x.glb' };
-    expect(resolveARMode(product)).toBe('2d');
-  });
-});
-
-// ── Tracking state guards ──
-describe('tracking state with no loaded asset', () => {
-  function shouldShowTrackingActive(modelLoaded: boolean, allLandmarksVisible: boolean): boolean {
-    return modelLoaded && allLandmarksVisible;
+// ── Tracking state transitions decoupled from model load (Session 3 bug fix) ──
+describe('tracking state transitions', () => {
+  /**
+   * Session 3 fix: state transitions in handleFrame3D should reflect what
+   * MediaPipe pose sees, regardless of whether the model has finished loading.
+   * Previously the transition was gated on currentModel being set, which kept
+   * users stuck on the init "waiting_for_pose" state during the GLB download.
+   */
+  function nextTrackingState(allRequiredVisible: boolean, someRequiredVisible: boolean): string {
+    if (allRequiredVisible) return 'tracking_active';
+    if (someRequiredVisible) return 'partial_tracking';
+    return 'waiting_for_pose';
   }
 
-  it('should NOT show tracking_active when model is not loaded', () => {
-    expect(shouldShowTrackingActive(false, true)).toBe(false);
+  it('all required visible → tracking_active', () => {
+    expect(nextTrackingState(true, true)).toBe('tracking_active');
   });
 
-  it('should show tracking_active when model loaded and landmarks visible', () => {
-    expect(shouldShowTrackingActive(true, true)).toBe(true);
+  it('some required visible → partial_tracking', () => {
+    expect(nextTrackingState(false, true)).toBe('partial_tracking');
   });
 
-  it('should NOT show tracking_active when landmarks missing', () => {
-    expect(shouldShowTrackingActive(true, false)).toBe(false);
-  });
-});
-
-// ── Stale asset clearing on product switch ──
-describe('product switch cleanup', () => {
-  it('switching from 3D to 2D should clear model ref', () => {
-    let modelRef: any = { visible: true };
-    // Simulate cleanup on product switch
-    modelRef = null;
-    expect(modelRef).toBeNull();
-  });
-});
-
-// ── Capture path logic ──
-describe('capture path selection', () => {
-  function shouldUse2DCapture(mode: string, hasOverlayCanvas: boolean): boolean {
-    return mode === '2d' && hasOverlayCanvas;
-  }
-
-  it('should use overlay canvas for 2D mode', () => {
-    expect(shouldUse2DCapture('2d', true)).toBe(true);
-  });
-
-  it('should use compositor for 3D mode', () => {
-    expect(shouldUse2DCapture('3d', true)).toBe(false);
-  });
-
-  it('should use compositor when no overlay canvas', () => {
-    expect(shouldUse2DCapture('2d', false)).toBe(false);
+  it('no required visible → waiting_for_pose', () => {
+    expect(nextTrackingState(false, false)).toBe('waiting_for_pose');
   });
 });

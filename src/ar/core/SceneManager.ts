@@ -32,8 +32,6 @@ export class SceneManager {
   private brightnessCtx: CanvasRenderingContext2D;
   private lastBrightnessSample = 0;
   private shadowPlane: THREE.Mesh | null = null;
-  private occlusionMesh: THREE.Mesh | null = null;
-  private occlusionTexture: THREE.DataTexture | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
@@ -215,61 +213,6 @@ export class SceneManager {
     }
     this.dirty = true;
     console.log(`[SceneManager] Shadows ${enabled ? 'enabled' : 'disabled'}`);
-  }
-
-  updateOcclusionMask(maskData: Float32Array, width: number, height: number): void {
-    const rgba = new Uint8Array(width * height * 4);
-    for (let i = 0; i < maskData.length; i++) {
-      const v = Math.round(maskData[i] * 255);
-      rgba[i * 4] = v;
-      rgba[i * 4 + 1] = v;
-      rgba[i * 4 + 2] = v;
-      rgba[i * 4 + 3] = 255;
-    }
-
-    if (!this.occlusionTexture) {
-      this.occlusionTexture = new THREE.DataTexture(rgba, width, height, THREE.RGBAFormat);
-      this.occlusionTexture.needsUpdate = true;
-
-      const geo = new THREE.PlaneGeometry(2, 2);
-      const mat = new THREE.ShaderMaterial({
-        uniforms: {
-          uMask: { value: this.occlusionTexture },
-          uThreshold: { value: 0.5 },
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = vec4(position.xy, -0.99, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform sampler2D uMask;
-          uniform float uThreshold;
-          varying vec2 vUv;
-          void main() {
-            float mask = texture2D(uMask, vUv).r;
-            if (mask < uThreshold) discard;
-            gl_FragColor = vec4(0.0);
-          }
-        `,
-        colorWrite: false,
-        depthWrite: true,
-        depthTest: false,
-        side: THREE.DoubleSide,
-      });
-
-      this.occlusionMesh = new THREE.Mesh(geo, mat);
-      this.occlusionMesh.renderOrder = 0;
-      this.occlusionMesh.frustumCulled = false;
-      this.scene.add(this.occlusionMesh);
-    } else {
-      this.occlusionTexture.image.data.set(rgba);
-      this.occlusionTexture.needsUpdate = true;
-    }
-
-    this.dirty = true;
   }
 
   updateLightingFromVideo(video: HTMLVideoElement): void {
