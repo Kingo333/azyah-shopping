@@ -185,6 +185,9 @@ export class GarmentRenderer {
   private currentSpec: GarmentSpec | null = null;
   private currentMode: ARMode = 'none';
   private modelLoadCancel: { cancelled: boolean } | null = null;
+  // Holds a spec passed to loadGarment() before init() finished building
+  // sceneManager. Flushed at the end of init().
+  private pendingSpec: GarmentSpec | null = null;
 
   // Listeners
   private readonly listeners = new Set<GarmentRendererListener>();
@@ -299,6 +302,16 @@ export class GarmentRenderer {
       this.setTrackingState('waiting_for_pose');
       this.emit({ type: 'load-stage', stage: '' });
 
+      // Flush any spec passed to loadGarment() before sceneManager existed.
+      // Reuse the existing cancel token so a later loadGarment can supersede.
+      if (this.pendingSpec && !this.disposed) {
+        const queued = this.pendingSpec;
+        this.pendingSpec = null;
+        const cancelToken = this.modelLoadCancel ?? { cancelled: false };
+        this.modelLoadCancel = cancelToken;
+        void this.load3D(queued, cancelToken);
+      }
+
       this.startLoop();
     } catch (err: any) {
       console.error('[GarmentRenderer] init crashed:', err);
@@ -346,6 +359,15 @@ export class GarmentRenderer {
     this.sceneManager?.setShadowsEnabled(true);
 
     this.emit({ type: 'ar-debug', status: 'loading_3d' });
+
+    if (!this.sceneManager) {
+      // init() hasn't finished building sceneManager yet. Queue the spec; the
+      // tail of init() will flush it. Status stays at loading_3d, which is
+      // accurate — the request is in flight, just waiting on init.
+      this.pendingSpec = spec;
+      return;
+    }
+    this.pendingSpec = null;
 
     await this.load3D(spec, cancelToken);
   }
