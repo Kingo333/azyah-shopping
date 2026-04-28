@@ -68,7 +68,7 @@ export default function ARExperience() {
   const [missingParts, setMissingParts] = useState<string[]>([]);
   const [loadStage, setLoadStage] = useState('');
   const [loadProgress, setLoadProgress] = useState('');
-  const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string }>({ status: 'pending' });
+  const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string; boneCount?: number }>({ status: 'pending' });
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -288,7 +288,13 @@ export default function ARExperience() {
         });
         return;
       case 'ar-debug':
-        setArDebugInfo({ status: event.status, error: event.error });
+        setArDebugInfo((prev) => ({
+          status: event.status,
+          error: event.error,
+          // Preserve boneCount across status updates — only set on the
+          // 3d_loaded emit. Without this, later debug emits would clear it.
+          boneCount: event.boneCount ?? prev.boneCount,
+        }));
         return;
     }
   }
@@ -396,6 +402,9 @@ export default function ARExperience() {
           <div>vis 11/12 (shoulders): {(debugMetrics.visibility[11] ?? 0).toFixed(2)} / {(debugMetrics.visibility[12] ?? 0).toFixed(2)}</div>
           <div>vis 23/24 (hips): {(debugMetrics.visibility[23] ?? 0).toFixed(2)} / {(debugMetrics.visibility[24] ?? 0).toFixed(2)}</div>
           <div>status: {arDebugInfo.status}</div>
+          {arDebugInfo.boneCount !== undefined && (
+            <div>bones: {arDebugInfo.boneCount > 0 ? `${arDebugInfo.boneCount} mapped` : 'static (no rig)'}</div>
+          )}
           {arDebugInfo.error && <div className="text-red-400 break-all">err: {arDebugInfo.error}</div>}
         </div>
       )}

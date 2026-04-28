@@ -97,7 +97,7 @@ export type GarmentRendererEvent =
       /** True if MediaPipe has produced at least one landmark since init. */
       poseEverDetected: boolean;
     }
-  | { type: 'ar-debug'; status: string; error?: string };
+  | { type: 'ar-debug'; status: string; error?: string; boneCount?: number };
 
 export type GarmentRendererListener = (event: GarmentRendererEvent) => void;
 
@@ -487,7 +487,11 @@ export class GarmentRenderer {
         this.setTrackingState('waiting_for_pose');
         this.emit({ type: 'load-progress', progress: '' });
         this.emit({ type: 'load-stage', stage: '' });
-        this.emit({ type: 'ar-debug', status: '3d_loaded' });
+        this.emit({
+          type: 'ar-debug',
+          status: '3d_loaded',
+          boneCount: this.boneMapper?.boneCount ?? 0,
+        });
         sm.dirty = true;
       } catch (err: any) {
         if (cancel.cancelled || this.disposed) return;

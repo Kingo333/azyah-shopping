@@ -109,9 +109,14 @@ export class BoneMapper {
         continue;
       }
 
-      // Compute direction from→to in world space
-      fromDir.set(fromLm.x, fromLm.y, fromLm.z);
-      toDir.set(toLm.x, toLm.y, toLm.z);
+      // Compute direction from→to in world space.
+      // MediaPipe worldLandmarks use Y-DOWN (image-coordinate convention,
+      // origin at hip midpoint). Three.js — and our restDir = (0,1,0) below —
+      // assume Y-UP. Negate Y so setFromUnitVectors operates in three.js
+      // convention; otherwise the spine quaternion flips ~180° and the rig
+      // inverts in model-local space.
+      fromDir.set(fromLm.x, -fromLm.y, fromLm.z);
+      toDir.set(toLm.x, -toLm.y, toLm.z);
       toDir.sub(fromDir).normalize();
 
       // Compute quaternion that rotates rest direction to target direction
@@ -134,6 +139,11 @@ export class BoneMapper {
       // Store for next frame
       lastQuat.copy(bone.quaternion);
     }
+  }
+
+  /** Number of skeleton bones that the mapper is actively driving from landmarks. */
+  get boneCount(): number {
+    return this.mappedBones.size;
   }
 
   /** Reset all bones to their rest pose. */
