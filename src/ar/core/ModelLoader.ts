@@ -128,6 +128,17 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
+
+        // Diagnostic: surface the actual runtime bbox values so we can see why
+        // the Z-up auto-fix below either fires or doesn't. Visible in browser
+        // devtools / Safari Web Inspector.
+        console.info(
+          `[ModelLoader] Bbox before any correction — ` +
+          `size: x=${size.x.toFixed(3)} y=${size.y.toFixed(3)} z=${size.z.toFixed(3)} | ` +
+          `center: x=${center.x.toFixed(3)} y=${center.y.toFixed(3)} z=${center.z.toFixed(3)} | ` +
+          `Z-up condition (size.z > size.y * 1.5): ${size.z.toFixed(3)} > ${(size.y * 1.5).toFixed(3)} = ${size.z > size.y * 1.5}`
+        );
+
         model.position.sub(center);
 
         const wrapper = new THREE.Group();
@@ -148,9 +159,17 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
           wrapper.updateMatrixWorld(true);
           box.setFromObject(wrapper);
           box.getSize(size);
+          console.info(
+            `[ModelLoader] Z-up rotation applied. Post-rotation size: ` +
+            `x=${size.x.toFixed(3)} y=${size.y.toFixed(3)} z=${size.z.toFixed(3)}`
+          );
         }
 
         const dims = { w: size.x || 1, h: size.y || 1, d: size.z || 1 };
+        console.info(
+          `[ModelLoader] Final dims: w=${dims.w.toFixed(3)} h=${dims.h.toFixed(3)} d=${dims.d.toFixed(3)} | ` +
+          `cached as pristineResult for url=…${url.slice(-40)}`
+        );
 
         // Detect rigged model (SkinnedMesh with skeleton)
         let skeleton: THREE.Skeleton | null = null;
