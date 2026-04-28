@@ -130,10 +130,27 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
         const center = box.getCenter(new THREE.Vector3());
         model.position.sub(center);
 
-        const dims = { w: size.x || 1, h: size.y || 1, d: size.z || 1 };
         const wrapper = new THREE.Group();
         wrapper.add(model);
         wrapper.visible = false;
+
+        // Z-up detection: if Z extent is more than 1.5× Y extent, the GLB was
+        // exported from Blender without correctly applying the Y-up transform
+        // to vertex data. Rotating the wrapper -90° around X maps Blender's
+        // Z (up) to three.js Y (up). Skinning matrices inherit the wrapper's
+        // rotation through matrixWorld so the rig follows the geometry.
+        if (size.z > size.y * 1.5) {
+          console.warn(
+            `[ModelLoader] Z-up GLB detected (size.z=${size.z.toFixed(3)} > size.y=${size.y.toFixed(3)}). ` +
+            `Applying -π/2 rotation around X to convert to Y-up.`
+          );
+          wrapper.rotation.x = -Math.PI / 2;
+          wrapper.updateMatrixWorld(true);
+          box.setFromObject(wrapper);
+          box.getSize(size);
+        }
+
+        const dims = { w: size.x || 1, h: size.y || 1, d: size.z || 1 };
 
         // Detect rigged model (SkinnedMesh with skeleton)
         let skeleton: THREE.Skeleton | null = null;

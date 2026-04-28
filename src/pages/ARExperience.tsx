@@ -14,7 +14,7 @@ import {
 } from '@/ar/core/GarmentRenderer';
 import type { ARProduct, TrackingState } from '@/ar/types';
 
-const BUILD_ID = '2026-04-27T-3d-only';
+const BUILD_ID = __BUILD_ID__;
 
 /**
  * Phase C dev-override: when `?testMesh=<url>` is in the URL OR when
@@ -77,6 +77,12 @@ export default function ARExperience() {
     fps: 0, rafPerSec: 0, posePerSec: 0,
     visibility: {} as Record<number, number>,
     poseEverDetected: false,
+    wrapperPosY: 0,
+    scaleY: 0,
+    modelDimsH: 0,
+    shoulderY: 0,
+    hipY: 0,
+    bonesDisabled: false,
   });
 
   // Capture preview URL lifecycle
@@ -285,6 +291,12 @@ export default function ARExperience() {
           posePerSec: event.posePerSec,
           visibility: event.visibility,
           poseEverDetected: event.poseEverDetected,
+          wrapperPosY: event.wrapperPosY,
+          scaleY: event.scaleY,
+          modelDimsH: event.modelDimsH,
+          shoulderY: event.shoulderY,
+          hipY: event.hipY,
+          bonesDisabled: event.bonesDisabled,
         });
         return;
       case 'ar-debug':
@@ -401,6 +413,17 @@ export default function ARExperience() {
           <div>pose-ever: <span className={debugMetrics.poseEverDetected ? 'text-green-400' : 'text-red-400'}>{debugMetrics.poseEverDetected ? 'yes' : 'NO'}</span></div>
           <div>vis 11/12 (shoulders): {(debugMetrics.visibility[11] ?? 0).toFixed(2)} / {(debugMetrics.visibility[12] ?? 0).toFixed(2)}</div>
           <div>vis 23/24 (hips): {(debugMetrics.visibility[23] ?? 0).toFixed(2)} / {(debugMetrics.visibility[24] ?? 0).toFixed(2)}</div>
+          <div>wrapperY: {debugMetrics.wrapperPosY.toFixed(2)} | scaleY: {debugMetrics.scaleY.toFixed(2)}</div>
+          <div>
+            dims.h: {debugMetrics.modelDimsH.toFixed(2)}
+            {debugMetrics.modelDimsH > 0 && debugMetrics.modelDimsH < 0.5 && (
+              <span className="text-red-400"> ⚠ Z-up?</span>
+            )}
+          </div>
+          <div>shoulderY: {debugMetrics.shoulderY.toFixed(2)} | hipY: {debugMetrics.hipY.toFixed(2)}</div>
+          {debugMetrics.bonesDisabled && (
+            <div className="text-orange-400">BONES DISABLED (?nobones=1)</div>
+          )}
           <div>status: {arDebugInfo.status}</div>
           {arDebugInfo.boneCount !== undefined && (
             <div>bones: {arDebugInfo.boneCount > 0 ? `${arDebugInfo.boneCount} mapped` : 'static (no rig)'}</div>

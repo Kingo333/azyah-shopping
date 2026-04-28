@@ -96,6 +96,18 @@ export type GarmentRendererEvent =
       visibility: Record<number, number>;
       /** True if MediaPipe has produced at least one landmark since init. */
       poseEverDetected: boolean;
+      /** Wrapper world-space Y position (after smoothing). 0 if no model loaded. */
+      wrapperPosY: number;
+      /** Wrapper Y-axis scale factor applied by the anchor strategy. */
+      scaleY: number;
+      /** Model bbox height. < 0.5 typically signals a Z-up GLB orientation bug. */
+      modelDimsH: number;
+      /** Last computed shoulder-center Y in three.js world coords (Y-up). */
+      shoulderY: number;
+      /** Last computed hip-center Y in three.js world coords (Y-up, may be estimated). */
+      hipY: number;
+      /** True when ?nobones=1 forced BoneMapper off — for bisection testing. */
+      bonesDisabled: boolean;
     }
   | { type: 'ar-debug'; status: string; error?: string; boneCount?: number };
 
@@ -188,6 +200,12 @@ export class GarmentRenderer {
   // Holds a spec passed to loadGarment() before init() finished building
   // sceneManager. Flushed at the end of init().
   private pendingSpec: GarmentSpec | null = null;
+
+  // Diagnostic snapshots — emitted on the 'metrics' event each second so the
+  // HUD can show what the placement math is actually doing on-device.
+  private lastShoulderY = 0;
+  private lastHipY = 0;
+  private bonesDisabled = false;
 
   // Listeners
   private readonly listeners = new Set<GarmentRendererListener>();
@@ -475,13 +493,21 @@ export class GarmentRenderer {
         sm.enhanceMaterials(spec.garmentType);
         applyClothSway(result.wrapper, spec.garmentType);
 
-        if (result.isRigged && result.skeleton) {
+        // Bisection kill-switch: ?nobones=1 forces static T-pose (no rig
+        // retargeting). Lets us isolate placement bugs from rig bugs without
+        // modifying any other code path.
+        const skipBones = new URLSearchParams(window.location.search).get('nobones') === '1';
+        this.bonesDisabled = skipBones;
+        if (result.isRigged && result.skeleton && !skipBones) {
           this.boneMapper = BoneMapper.create(result.skeleton);
           if (!this.boneMapper) {
             console.warn('[GarmentRenderer] BoneMapper.create returned null — skeleton has too few mappable bones');
           }
         } else {
           this.boneMapper = null;
+          if (skipBones) {
+            console.info('[GarmentRenderer] BoneMapper disabled via ?nobones=1 — model in static T-pose');
+          }
         }
 
         this.setTrackingState('waiting_for_pose');
@@ -615,6 +641,9 @@ export class GarmentRenderer {
       sm.visibleDims,
     );
 
+    this.lastShoulderY = measurements.shoulderCenter?.y ?? 0;
+    this.lastHipY = measurements.hipCenter?.y ?? 0;
+
     const requiredVisible = config.requiredLandmarks.filter(
       (idx) => (measurements.visibility[idx] ?? 0) >= config.visibilityThreshold,
     );
@@ -708,6 +737,12 @@ export class GarmentRenderer {
       posePerSec: Math.round(this.debugCounters.poseCalls / elapsed),
       visibility: { ...this.latestVisibility },
       poseEverDetected: this.poseEverDetected,
+      wrapperPosY: this.currentModel?.position.y ?? 0,
+      scaleY: this.currentModel?.scale.y ?? 0,
+      modelDimsH: this.modelDims.h,
+      shoulderY: this.lastShoulderY,
+      hipY: this.lastHipY,
+      bonesDisabled: this.bonesDisabled,
     });
     this.debugCounters = { rafTicks: 0, poseCalls: 0 };
     this.metricsLastEmit = time;
