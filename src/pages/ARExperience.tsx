@@ -366,11 +366,12 @@ export default function ARExperience() {
         playsInline muted autoPlay
       />
 
-      {/* Three.js canvas (3D garment overlay) */}
+      {/* Three.js canvas (3D garment overlay).
+          pointer-events: none so taps pass through to UI controls underneath. */}
       <canvas
         ref={glCanvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ zIndex: 1 }}
+        style={{ zIndex: 1, pointerEvents: 'none' }}
         width={canvasSize.w}
         height={canvasSize.h}
       />
