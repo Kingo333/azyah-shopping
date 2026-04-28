@@ -35,7 +35,9 @@ export interface BoneDef {
 export const BONE_DEFS: Record<string, BoneDef> = {
   spine: {
     label: 'Spine',
-    patterns: [/^spine\d?$/i, /^torso$/i, /^chest$/i, /^spine$/i],
+    // `/mixamorig.*spine$/i` matches `mixamorig:Spine` (the lowest spine bone)
+    // but not Spine1/Spine2 — those would conflict with the parent chain.
+    patterns: [/^spine\d?$/i, /^torso$/i, /^chest$/i, /mixamorig.*spine$/i],
     fromLandmark: 23, // hip midpoint (computed)
     toLandmark: 11,   // shoulder midpoint (computed)
     slerpFactor: 0.2,

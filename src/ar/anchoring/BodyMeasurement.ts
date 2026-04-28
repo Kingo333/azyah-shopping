@@ -190,8 +190,13 @@ export function computeBodyMeasurements(
     const rhScreen = landmarkToWorld(nlRH, coverCrop, visibleDims);
     hipCenter = weightedMidpoint(lhScreen, rhScreen, nlLH.visibility, nlRH.visibility);
   } else {
-    // Estimate hip center below shoulder center
-    hipCenter = { x: shoulderCenter.x, y: shoulderCenter.y - visibleDims.h * 0.25 };
+    // Estimate hip center below shoulder center using shoulder width as proxy.
+    // Typical adult torso (shoulder→hip) is ~1.3× shoulder width. Earlier
+    // formulation (visibleDims.h * 0.25) used the camera frustum height (~5m),
+    // putting estimated hips ~1.4m below shoulders — nearly at the floor and
+    // throwing off shirt anchor positioning when hips were out of frame.
+    const estimatedTorso = Math.max(0.05, shoulderWidthMetric * 1.3);
+    hipCenter = { x: shoulderCenter.x, y: shoulderCenter.y - estimatedTorso };
   }
 
   let kneeCenter: { x: number; y: number } | null = null;
