@@ -125,6 +125,13 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
         clearTimeout(timeoutId);
 
         const model = gltf.scene;
+        // Force SkinnedMesh bounding boxes to update from vertex buffers
+        // (not cached bind-pose bbox)
+        model.traverse((o) => {
+          if ((o as THREE.SkinnedMesh).isSkinnedMesh) {
+            (o as THREE.SkinnedMesh).computeBoundingBox?.();
+          }
+        });
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
@@ -136,7 +143,7 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
           `[ModelLoader] Bbox before any correction — ` +
           `size: x=${size.x.toFixed(3)} y=${size.y.toFixed(3)} z=${size.z.toFixed(3)} | ` +
           `center: x=${center.x.toFixed(3)} y=${center.y.toFixed(3)} z=${center.z.toFixed(3)} | ` +
-          `Z-up condition (size.z > size.y * 1.5): ${size.z.toFixed(3)} > ${(size.y * 1.5).toFixed(3)} = ${size.z > size.y * 1.5}`
+          `Z-up condition (size.z > size.y * 1.0): ${size.z.toFixed(3)} > ${(size.y * 1.0).toFixed(3)} = ${size.z > size.y * 1.0}`
         );
 
         model.position.sub(center);
@@ -150,7 +157,7 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
         // to vertex data. Rotating the wrapper -90° around X maps Blender's
         // Z (up) to three.js Y (up). Skinning matrices inherit the wrapper's
         // rotation through matrixWorld so the rig follows the geometry.
-        if (size.z > size.y * 1.5) {
+        if (size.z > size.y * 1.0) {
           console.warn(
             `[ModelLoader] Z-up GLB detected (size.z=${size.z.toFixed(3)} > size.y=${size.y.toFixed(3)}). ` +
             `Applying -π/2 rotation around X to convert to Y-up.`
