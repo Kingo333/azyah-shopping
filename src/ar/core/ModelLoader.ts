@@ -164,10 +164,19 @@ function doLoad(url: string, onProgress?: ModelProgressCallback): Promise<ModelR
           );
           wrapper.rotation.x = -Math.PI / 2;
           wrapper.updateMatrixWorld(true);
-          box.setFromObject(wrapper);
-          box.getSize(size);
+          // NOTE: three.js Box3.setFromObject on a SkinnedMesh whose ancestor
+          // wrapper has been rotated does NOT reliably return post-rotation
+          // extents (verified empirically — HUD showed dims.h still at the
+          // pre-rotation value of 0.38 instead of 0.66 after rotation).
+          // Manually swap Y and Z since rotation -π/2 around X maps
+          // (x, y, z) → (x, z, -y) — the swapped extents are exact, no
+          // recompute needed.
+          const preY = size.y;
+          const preZ = size.z;
+          size.y = preZ;
+          size.z = preY;
           console.info(
-            `[ModelLoader] Z-up rotation applied. Post-rotation size: ` +
+            `[ModelLoader] Z-up rotation applied. Post-rotation size (manual swap): ` +
             `x=${size.x.toFixed(3)} y=${size.y.toFixed(3)} z=${size.z.toFixed(3)}`
           );
         }
