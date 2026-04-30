@@ -68,7 +68,15 @@ export default function ARExperience() {
   const [missingParts, setMissingParts] = useState<string[]>([]);
   const [loadStage, setLoadStage] = useState('');
   const [loadProgress, setLoadProgress] = useState('');
-  const [arDebugInfo, setArDebugInfo] = useState<{ status: string; error?: string; boneCount?: number }>({ status: 'pending' });
+  const [arDebugInfo, setArDebugInfo] = useState<{
+    status: string;
+    error?: string;
+    boneCount?: number;
+    mode?: string;
+    rigProfile?: string | null;
+    calibrationLoaded?: boolean;
+    upAxis?: string;
+  }>({ status: 'pending' });
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -303,9 +311,13 @@ export default function ARExperience() {
         setArDebugInfo((prev) => ({
           status: event.status,
           error: event.error,
-          // Preserve boneCount across status updates — only set on the
-          // 3d_loaded emit. Without this, later debug emits would clear it.
+          // Preserve fields across status updates — they're only set on the
+          // 3d_loaded emit. Without preservation, later debug emits would clear them.
           boneCount: event.boneCount ?? prev.boneCount,
+          mode: event.mode ?? prev.mode,
+          rigProfile: event.rigProfile !== undefined ? event.rigProfile : prev.rigProfile,
+          calibrationLoaded: event.calibrationLoaded ?? prev.calibrationLoaded,
+          upAxis: event.upAxis ?? prev.upAxis,
         }));
         return;
     }
@@ -426,6 +438,8 @@ export default function ARExperience() {
             <div className="text-orange-400">BONES DISABLED (?nobones=1)</div>
           )}
           <div>status: {arDebugInfo.status}</div>
+          <div>mode: {arDebugInfo.mode ?? '?'} | upAxis: {arDebugInfo.upAxis ?? '?'}</div>
+          <div>profile: {arDebugInfo.rigProfile ?? 'none'} | cal: {arDebugInfo.calibrationLoaded ? 'yes' : 'no'}</div>
           {arDebugInfo.boneCount !== undefined && (
             <div>bones: {arDebugInfo.boneCount > 0 ? `${arDebugInfo.boneCount} mapped` : 'static (no rig)'}</div>
           )}
