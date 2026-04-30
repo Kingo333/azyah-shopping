@@ -1,27 +1,16 @@
-/**
- * Maps MediaPipe pose landmarks to Three.js skeleton bones for garment deformation.
- *
- * When a GLB model contains a skeleton (SkinnedMesh), the BoneMapper drives
- * bone rotations from detected body landmark positions, making the garment
- * bend at elbows, shoulders, and hips as the user moves.
- *
- * Safety guardrails:
- * 1. Confidence gating — only update bones when driving landmarks are visible (>0.5)
- * 2. Angle clamps — max rotation delta per frame prevents explosion on bad frames
- * 3. Parent chain order — spine → shoulder → arm → forearm (never child before parent)
- * 4. Rig validation — minimum required bones must exist or fallback to static
- */
 import * as THREE from 'three';
 import { BONE_DEFS, MIN_REQUIRED_BONES, type BoneDef } from '../config/boneMapping';
+import type { RigProfile } from '../config/rigProfiles';
+import { toVector3 } from '../config/rigProfiles';
 
 interface MappedBone {
   bone: THREE.Bone;
   def: BoneDef;
   restQuat: THREE.Quaternion;
   lastQuat: THREE.Quaternion;
+  restAxis: THREE.Vector3;
 }
 
-/** Landmark data from MediaPipe (normalized or world). */
 interface LandmarkPoint {
   x: number;
   y: number;
@@ -31,122 +20,96 @@ interface LandmarkPoint {
 
 export class BoneMapper {
   private mappedBones: Map<string, MappedBone> = new Map();
-  private updateOrder: string[] = []; // topological sort (parents first)
+  private updateOrder: string[] = [];
+  private rigProfileName: string | null = null;
 
-  /**
-   * Create a BoneMapper from a Three.js Skeleton.
-   *
-   * Fuzzy-matches skeleton bone names against BONE_DEFS patterns.
-   * Returns null if minimum required bones are not found (rig invalid).
-   */
-  static create(skeleton: THREE.Skeleton): BoneMapper | null {
+  static create(skeleton: THREE.Skeleton, rigProfile?: RigProfile | null): BoneMapper | null {
     const mapper = new BoneMapper();
+    mapper.rigProfileName = rigProfile?.name ?? null;
 
-    // Match skeleton bones to our definitions using regex patterns
     for (const [key, def] of Object.entries(BONE_DEFS)) {
       const matchedBone = skeleton.bones.find((bone) =>
-        def.patterns.some((pattern) => pattern.test(bone.name))
+        def.patterns.some((pattern) => pattern.test(bone.name)),
       );
-      if (matchedBone) {
-        mapper.mappedBones.set(key, {
-          bone: matchedBone,
-          def,
-          restQuat: matchedBone.quaternion.clone(),
-          lastQuat: matchedBone.quaternion.clone(),
-        });
-      }
+      if (!matchedBone) continue;
+
+      const profileAxis = rigProfile?.bones[key]?.restAxis;
+      mapper.mappedBones.set(key, {
+        bone: matchedBone,
+        def,
+        restQuat: matchedBone.quaternion.clone(),
+        lastQuat: matchedBone.quaternion.clone(),
+        restAxis: toVector3(profileAxis),
+      });
     }
 
-    // Validate: minimum required bones must be present
     const foundKeys = [...mapper.mappedBones.keys()];
     const hasRequired = MIN_REQUIRED_BONES.every((k) => foundKeys.includes(k));
     if (!hasRequired) {
       console.warn(
-        `[BoneMapper] Rig validation failed. Found: [${foundKeys.join(', ')}]. ` +
-        `Required: [${MIN_REQUIRED_BONES.join(', ')}]. Falling back to static.`
+        `[BoneMapper] Rig validation failed. Found: [${foundKeys.join(', ')}]. Required: [${MIN_REQUIRED_BONES.join(', ')}]. Falling back to static.`,
       );
       return null;
     }
 
-    // Build topological update order (parents before children)
     mapper.updateOrder = mapper.buildUpdateOrder();
 
     console.info(
-      `[BoneMapper] Mapped ${mapper.mappedBones.size} bones: ` +
-      `[${foundKeys.join(', ')}]. Update order: [${mapper.updateOrder.join(' → ')}]`
+      `[BoneMapper] Mapped ${mapper.mappedBones.size} bones using profile=${mapper.rigProfileName ?? 'none'}: ` +
+      `[${foundKeys.join(', ')}]`,
     );
 
     return mapper;
   }
 
-  /**
-   * Update bone rotations from current landmark positions.
-   *
-   * Uses world landmarks for direction computation (metric scale, more stable).
-   * Applies confidence gating, angle clamping, and slerp smoothing.
-   */
   update(worldLandmarks: LandmarkPoint[]): void {
     if (!worldLandmarks || worldLandmarks.length < 33) return;
 
     const fromDir = new THREE.Vector3();
     const toDir = new THREE.Vector3();
     const targetQuat = new THREE.Quaternion();
-    const restDir = new THREE.Vector3(0, 1, 0); // default "up" rest direction
 
     for (const key of this.updateOrder) {
       const mapped = this.mappedBones.get(key);
       if (!mapped) continue;
 
-      const { bone, def, restQuat, lastQuat } = mapped;
+      const { bone, def, restQuat, lastQuat, restAxis } = mapped;
       const fromLm = worldLandmarks[def.fromLandmark];
       const toLm = worldLandmarks[def.toLandmark];
 
-      // Confidence gating: skip if driving landmarks not visible
       const fromVis = fromLm?.visibility ?? 0;
       const toVis = toLm?.visibility ?? 0;
-      if (fromVis < 0.5 || toVis < 0.5) {
-        // Keep last stable rotation
-        continue;
-      }
+      if (fromVis < 0.5 || toVis < 0.5) continue;
 
-      // Compute direction from→to in world space.
-      // MediaPipe worldLandmarks use Y-DOWN (image-coordinate convention,
-      // origin at hip midpoint). Three.js — and our restDir = (0,1,0) below —
-      // assume Y-UP. Negate Y so setFromUnitVectors operates in three.js
-      // convention; otherwise the spine quaternion flips ~180° and the rig
-      // inverts in model-local space.
+      // MediaPipe worldLandmarks use Y-DOWN; negate Y so direction math stays
+      // in three.js Y-UP convention with the per-profile restAxis.
       fromDir.set(fromLm.x, -fromLm.y, fromLm.z);
       toDir.set(toLm.x, -toLm.y, toLm.z);
       toDir.sub(fromDir).normalize();
+      if (toDir.lengthSq() < 1e-6) continue;
 
-      // Compute quaternion that rotates rest direction to target direction
-      targetQuat.setFromUnitVectors(restDir, toDir);
-
-      // Combine with rest pose
+      targetQuat.setFromUnitVectors(restAxis, toDir);
       targetQuat.premultiply(restQuat);
 
-      // Angle clamp: limit rotation delta per frame
       const angleDelta = lastQuat.angleTo(targetQuat);
       if (angleDelta > def.maxDeltaPerFrame) {
-        // Clamp by slerping only up to max delta
         const clampT = def.maxDeltaPerFrame / angleDelta;
         targetQuat.copy(lastQuat).slerp(targetQuat, clampT);
       }
 
-      // Slerp smoothing
       bone.quaternion.copy(lastQuat).slerp(targetQuat, def.slerpFactor);
-
-      // Store for next frame
       lastQuat.copy(bone.quaternion);
     }
   }
 
-  /** Number of skeleton bones that the mapper is actively driving from landmarks. */
   get boneCount(): number {
     return this.mappedBones.size;
   }
 
-  /** Reset all bones to their rest pose. */
+  get profileName(): string | null {
+    return this.rigProfileName;
+  }
+
   reset(): void {
     for (const mapped of this.mappedBones.values()) {
       mapped.bone.quaternion.copy(mapped.restQuat);
@@ -154,7 +117,6 @@ export class BoneMapper {
     }
   }
 
-  /** Build topological sort of bone keys (parents before children). */
   private buildUpdateOrder(): string[] {
     const order: string[] = [];
     const visited = new Set<string>();
