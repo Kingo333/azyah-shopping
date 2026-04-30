@@ -52,7 +52,9 @@ import { OutlierFilter } from '../utils/OutlierFilter';
 import { compositeCapture } from '../capture/captureCompositor';
 import { getMissingBodyParts } from '../guidance/garmentGuidance';
 import type { AnchorResult } from '../anchoring/types';
-import type { ARMode, GarmentType, TrackingState } from '../types';
+import type { ARAssetNormalization, ARMode, ARStabilityMode, GarmentCalibration, GarmentType, TrackingState } from '../types';
+import { resolveRigProfile } from '../config/rigProfiles';
+import { resolveStabilityMode, validateRigForMode } from '../utils/garmentCalibration';
 
 /** Pose detection cadence — fixed ~15 FPS. */
 const POSE_INTERVAL_MS = 66;
@@ -109,7 +111,16 @@ export type GarmentRendererEvent =
       /** True when ?nobones=1 forced BoneMapper off — for bisection testing. */
       bonesDisabled: boolean;
     }
-  | { type: 'ar-debug'; status: string; error?: string; boneCount?: number };
+  | {
+      type: 'ar-debug';
+      status: string;
+      error?: string;
+      boneCount?: number;
+      mode?: ARStabilityMode;
+      rigProfile?: string | null;
+      calibrationLoaded?: boolean;
+      upAxis?: ARAssetNormalization['upAxis'];
+    };
 
 export type GarmentRendererListener = (event: GarmentRendererEvent) => void;
 
@@ -153,6 +164,12 @@ export class GarmentRenderer {
   private anchorResolver: AnchorResolver | null = null;
   private currentModel: Object3D | null = null;
   private modelDims = { w: 1, h: 1, d: 1 };
+
+  // Stability mode + calibration state (set per garment in load3D)
+  private currentCalibration: GarmentCalibration | null = null;
+  private stabilityMode: ARStabilityMode = 'anchor-only';
+  private anchorFitDims = { w: 1, h: 1, d: 1 };
+  private activeRigProfileName: string | null = null;
 
   // Camera state
   private stream: MediaStream | null = null;
@@ -372,6 +389,10 @@ export class GarmentRenderer {
     }
     this.boneMapper?.reset();
     this.boneMapper = null;
+    this.currentCalibration = null;
+    this.stabilityMode = 'anchor-only';
+    this.anchorFitDims = { w: 1, h: 1, d: 1 };
+    this.activeRigProfileName = null;
     this.resetSmoothingPipeline();
     this.lastLandmarks = null;
     this.sceneManager?.setShadowsEnabled(true);
@@ -489,6 +510,23 @@ export class GarmentRenderer {
 
         this.currentModel = result.wrapper;
         this.modelDims = result.dims;
+        this.currentCalibration = result.calibration;
+        this.stabilityMode = resolveStabilityMode(spec.garmentType, result.calibration);
+        this.anchorFitDims = {
+          w: result.fitRefs.shoulderWidth || result.dims.w,
+          h: result.fitRefs.torsoHeight || result.dims.h,
+          d: result.dims.d,
+        };
+
+        console.info(
+          `[GarmentRenderer] mode=${this.stabilityMode} rawDims=${JSON.stringify(result.dims)} ` +
+          `fitDims=${JSON.stringify(this.anchorFitDims)} calibration=${result.calibration ? 'yes' : 'no'} ` +
+          `upAxis=${result.normalization.upAxis}`,
+        );
+
+        // anchorPivot is already baked into the inner model's local position
+        // by ModelLoader. Do NOT re-apply it on the wrapper — handleFrame3D
+        // overwrites wrapper.position every frame, which would wipe it.
         sm.swapModel(result.wrapper);
         sm.enhanceMaterials(spec.garmentType);
         applyClothSway(result.wrapper, spec.garmentType);
@@ -498,16 +536,25 @@ export class GarmentRenderer {
         // modifying any other code path.
         const skipBones = new URLSearchParams(window.location.search).get('nobones') === '1';
         this.bonesDisabled = skipBones;
-        if (result.isRigged && result.skeleton && !skipBones) {
-          this.boneMapper = BoneMapper.create(result.skeleton);
-          if (!this.boneMapper) {
-            console.warn('[GarmentRenderer] BoneMapper.create returned null — skeleton has too few mappable bones');
-          }
+        this.activeRigProfileName = null;
+
+        const rigValidation = validateRigForMode({
+          boneNames: result.boneNames,
+          isRigged: result.isRigged,
+          calibration: result.calibration,
+          mode: this.stabilityMode,
+        });
+
+        if (!skipBones && rigValidation.enabled && result.skeleton) {
+          const rigProfile = resolveRigProfile(result.boneNames, rigValidation.rigProfile);
+          this.boneMapper = BoneMapper.create(result.skeleton, rigProfile);
+          this.activeRigProfileName = rigProfile?.name ?? null;
         } else {
           this.boneMapper = null;
-          if (skipBones) {
-            console.info('[GarmentRenderer] BoneMapper disabled via ?nobones=1 — model in static T-pose');
-          }
+          this.activeRigProfileName = rigValidation.rigProfile ?? null;
+          console.info(
+            `[GarmentRenderer] Bones disabled. mode=${this.stabilityMode} reason=${rigValidation.reason}`,
+          );
         }
 
         this.setTrackingState('waiting_for_pose');
@@ -517,6 +564,10 @@ export class GarmentRenderer {
           type: 'ar-debug',
           status: '3d_loaded',
           boneCount: this.boneMapper?.boneCount ?? 0,
+          mode: this.stabilityMode,
+          rigProfile: this.activeRigProfileName,
+          calibrationLoaded: !!this.currentCalibration,
+          upAxis: result.normalization.upAxis,
         });
         sm.dirty = true;
       } catch (err: any) {
@@ -672,7 +723,7 @@ export class GarmentRenderer {
     // ── Anchor solve + model placement (gated on currentModel being loaded) ──
     if (!this.currentModel) return;
 
-    const anchor = this.anchorResolver!.resolve(garmentType, measurements, config, this.modelDims);
+    const anchor = this.anchorResolver!.resolve(garmentType, measurements, config, this.anchorFitDims);
     if (anchor) {
       this.currentModel.visible = true;
 
@@ -705,7 +756,11 @@ export class GarmentRenderer {
 
       sm.updateOpacity(Math.min(1, anchor.confidence * 1.5));
 
-      if (this.boneMapper && result.worldLandmarks[0]) {
+      if (
+        this.boneMapper &&
+        result.worldLandmarks[0] &&
+        this.stabilityMode === 'anchor-plus-safe-rig'
+      ) {
         this.boneMapper.update(result.worldLandmarks[0]);
       }
 
