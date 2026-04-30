@@ -429,7 +429,7 @@ export default function ARExperience() {
           <div>wrapperY: {debugMetrics.wrapperPosY.toFixed(2)} | scaleY: {debugMetrics.scaleY.toFixed(2)}</div>
           <div>
             dims.h: {debugMetrics.modelDimsH.toFixed(2)}
-            {debugMetrics.modelDimsH > 0 && debugMetrics.modelDimsH < 0.5 && (
+            {debugMetrics.modelDimsH > 0 && debugMetrics.modelDimsH < 0.5 && arDebugInfo.upAxis === 'unknown' && (
               <span className="text-red-400"> ⚠ Z-up?</span>
             )}
           </div>
