@@ -95,18 +95,18 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
 
   const loading = wardrobeLoading || extraLoading;
 
-  return (
-    <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-3">
-      <p className="text-sm text-muted-foreground mb-3">Pick a garment to try on live</p>
-      {loading ? (
-        <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
-        </div>
-      ) : allOptions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">No garments available yet.</p>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto">
-          {allOptions.map((o) => {
+  const wardrobeOpts = useMemo(() => allOptions.filter((o) => o.source === 'wardrobe_item'), [allOptions]);
+  const productOpts = useMemo(() => allOptions.filter((o) => o.source !== 'wardrobe_item'), [allOptions]);
+
+  const renderGrid = (opts: GarmentOption[], title: string) => {
+    if (opts.length === 0) return null;
+    return (
+      <div className="mb-2 last:mb-0">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1.5 px-0.5">
+          {title}
+        </p>
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+          {opts.map((o) => {
             const selected = value?.id === o.id && value?.source === o.source;
             return (
               <button
@@ -114,17 +114,35 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
                 type="button"
                 disabled={disabled}
                 onClick={() => handlePick(o)}
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition ${
+                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition ${
                   selected ? 'border-primary ring-2 ring-primary/40' : 'border-transparent hover:border-gray-300'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <img src={o.imageUrl} alt={o.label} className="w-full h-full object-cover" />
-                <span className="absolute bottom-0 inset-x-0 text-[10px] bg-black/50 text-white px-1 py-0.5 truncate">
+                <span className="absolute bottom-0 inset-x-0 text-[9px] bg-black/50 text-white px-1 py-0.5 truncate leading-tight">
                   {o.label}
                 </span>
               </button>
             );
           })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-2 sm:p-3">
+      <p className="text-xs text-muted-foreground mb-2">Pick an outfit</p>
+      {loading ? (
+        <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+        </div>
+      ) : allOptions.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-6">No outfits available yet.</p>
+      ) : (
+        <div className="max-h-56 overflow-y-auto pr-0.5">
+          {renderGrid(wardrobeOpts, 'My Closet')}
+          {renderGrid(productOpts, 'Discover')}
         </div>
       )}
     </div>
