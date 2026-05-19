@@ -15,15 +15,24 @@ export const LiveCamCameraView: React.FC<Props> = ({
   localVideoRef,
   remoteCanvasRef,
   isRunning,
+  status,
   expanded = false,
   onToggleExpand,
 }) => {
+  const isWarming = status === 'warming';
+  const warmingCopy = 'Warming up GPU… this can take up to 3 minutes';
   if (expanded) {
     return (
       <div className="relative w-full rounded-xl overflow-hidden bg-black h-[70vh] flex items-center justify-center">
         <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
         {!isRunning && (
           <span className="absolute text-white/70 text-xs">Try-on preview</span>
+        )}
+        {!isRunning && !isWarming && (
+          <span className="absolute text-white/70 text-xs">Try-on preview</span>
+        )}
+        {isWarming && (
+          <span className="absolute text-white/80 text-xs px-3 py-1 rounded-full bg-black/50">{warmingCopy}</span>
         )}
         <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
           Try-on
@@ -71,8 +80,13 @@ export const LiveCamCameraView: React.FC<Props> = ({
       </div>
       <div className="rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center">
         <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
-        {!isRunning && (
+        {!isRunning && !isWarming && (
           <span className="absolute text-white/70 text-xs">Try-on preview</span>
+        )}
+        {isWarming && (
+          <span className="absolute text-white/80 text-[11px] px-2 py-1 rounded-full bg-black/50 text-center max-w-[90%]">
+            {warmingCopy}
+          </span>
         )}
         <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
           Try-on
