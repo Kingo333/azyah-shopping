@@ -1021,11 +1021,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     </div>
                   )}
                 </TabsContent>
+
+                {isShopper && (
+                  <TabsContent value="live-cam" className="mt-0 space-y-4">
+                    <LiveCamTab />
+                  </TabsContent>
+                )}
               </div>
 
               {/* Sticky Action Bar - White Glass Footer */}
               <div className="flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-                {activeTab === 'picture' ? (
+                {activeTab === 'live-cam' ? null : activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
                     disabled={loading || uploadingPerson || uploadingOutfit || !personUrl || !outfitUrl || pictureCredits <= 0}
