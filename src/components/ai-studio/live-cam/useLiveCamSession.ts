@@ -51,8 +51,20 @@ export function useLiveCamSession({
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
   const pendingMetaRef = useRef<LiveCamRemoteFrameMeta | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  const retryAbortRef = useRef<(() => void) | null>(null);
+  const abortRef = useRef(false);
 
   const cleanupLocal = useCallback(() => {
+    abortRef.current = true;
+    if (retryTimerRef.current !== null) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (retryAbortRef.current) {
+      try { retryAbortRef.current(); } catch { /* noop */ }
+      retryAbortRef.current = null;
+    }
     if (frameTimerRef.current !== null) {
       window.clearInterval(frameTimerRef.current);
       frameTimerRef.current = null;
@@ -131,6 +143,7 @@ export function useLiveCamSession({
       return;
     }
 
+    abortRef.current = false;
     setStatus('starting');
     setErrorMessage(null);
     setLatencyMs(null);
@@ -173,6 +186,7 @@ export function useLiveCamSession({
       let ws: WebSocket | null = null;
       let attemptNum = 0;
       while (true) {
+        if (abortRef.current) throw new Error('aborted');
         attemptNum++;
         const candidate = new WebSocket(data.ws_url);
         candidate.binaryType = 'arraybuffer';
@@ -188,6 +202,10 @@ export function useLiveCamSession({
           candidate.addEventListener('error', onFail, { once: true });
           candidate.addEventListener('close', onFail, { once: true });
         });
+        if (abortRef.current) {
+          try { candidate.close(); } catch { /* noop */ }
+          throw new Error('aborted');
+        }
         if (opened) {
           ws = candidate;
           break;
@@ -197,7 +215,22 @@ export function useLiveCamSession({
           throw new Error('GPU pod did not accept connections in time. Please retry.');
         }
         const waitMs = attemptNum === 1 ? WS_FIRST_RETRY_MS : WS_RETRY_INTERVAL_MS;
-        await new Promise((r) => setTimeout(r, waitMs));
+        await new Promise<void>((resolve) => {
+          retryAbortRef.current = () => {
+            if (retryTimerRef.current !== null) {
+              window.clearTimeout(retryTimerRef.current);
+              retryTimerRef.current = null;
+            }
+            retryAbortRef.current = null;
+            resolve();
+          };
+          retryTimerRef.current = window.setTimeout(() => {
+            retryTimerRef.current = null;
+            retryAbortRef.current = null;
+            resolve();
+          }, waitMs);
+        });
+        if (abortRef.current) throw new Error('aborted');
       }
       wsRef.current = ws;
 
