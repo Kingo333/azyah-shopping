@@ -56,6 +56,7 @@ export const LiveCamTab: React.FC = () => {
         localVideoRef={localVideoRef}
         remoteCanvasRef={remoteCanvasRef}
         isRunning={isRunning}
+        status={status}
         expanded={expanded}
         onToggleExpand={() => setExpanded((v) => !v)}
       />

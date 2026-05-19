@@ -324,27 +324,50 @@ export function useLiveCamSession({
     }
   }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame]);
 
-  // Auto-cleanup on unmount + on logout + on page unload.
+  // Auto-cleanup on unmount + on logout + on page unload + on tab hide.
   useEffect(() => {
+    const endUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-cam-session-end`;
+    const apikey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ?? '';
+
+    const endViaKeepalive = (sid: string) => {
+      try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          apikey,
+        };
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session?.access_token) headers['Authorization'] = `Bearer ${data.session.access_token}`;
+          fetch(endUrl, { method: 'POST', headers, body: JSON.stringify({ session_id: sid }), keepalive: true }).catch(() => undefined);
+        });
+      } catch { /* noop */ }
+    };
+
+    const endViaBeacon = (sid: string) => {
+      try {
+        if (typeof navigator === 'undefined' || !navigator.sendBeacon) return;
+        const blob = new Blob([JSON.stringify({ session_id: sid, apikey })], { type: 'application/json' });
+        navigator.sendBeacon(endUrl, blob);
+      } catch { /* noop */ }
+    };
+
     const onUnload = () => {
-      cleanupLocal();
       const sid = sessionIdRef.current;
+      cleanupLocal();
       if (sid) {
-        // Fire-and-forget via fetch keepalive — supabase.functions.invoke is not keepalive-safe.
-        try {
-          const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-cam-session-end`;
-          const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-          };
-          supabase.auth.getSession().then(({ data }) => {
-            if (data.session?.access_token) headers['Authorization'] = `Bearer ${data.session.access_token}`;
-            fetch(url, { method: 'POST', headers, body: JSON.stringify({ session_id: sid }), keepalive: true }).catch(() => undefined);
-          });
-        } catch { /* noop */ }
+        endViaKeepalive(sid);
+        endViaBeacon(sid);
       }
     };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden' && sessionIdRef.current) {
+        void stop();
+      }
+    };
+
     window.addEventListener('beforeunload', onUnload);
+    window.addEventListener('pagehide', onUnload);
+    document.addEventListener('visibilitychange', onVisibility);
 
     const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
@@ -354,9 +377,10 @@ export function useLiveCamSession({
 
     return () => {
       window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('pagehide', onUnload);
+      document.removeEventListener('visibilitychange', onVisibility);
       authSub.subscription.unsubscribe();
       cleanupLocal();
-      // Best-effort end on unmount.
       void callEnd();
       sessionIdRef.current = null;
     };
