@@ -56,6 +56,15 @@ export function useLiveCamSession({
   const abortRef = useRef(false);
 
   const cleanupLocal = useCallback(() => {
+    abortRef.current = true;
+    if (retryTimerRef.current !== null) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (retryAbortRef.current) {
+      try { retryAbortRef.current(); } catch { /* noop */ }
+      retryAbortRef.current = null;
+    }
     if (frameTimerRef.current !== null) {
       window.clearInterval(frameTimerRef.current);
       frameTimerRef.current = null;
