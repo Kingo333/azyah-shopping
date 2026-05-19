@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X } from 'lucide-react';
+import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -49,7 +51,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { registerJob } = useTryOnJobMonitor();
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'picture' | 'video'>('picture');
+  const [activeTab, setActiveTab] = useState<'picture' | 'video' | 'live-cam'>('picture');
+  const { user } = useAuth();
+  const isShopper = (user?.user_metadata?.role ?? 'shopper') === 'shopper';
   
   // Picture tab state
   const [personFile, setPersonFile] = useState<File | null>(null);
@@ -559,9 +563,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </div>
 
             {/* Tabs - Soft Glass Pill Style */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video')} className="flex-1 flex flex-col min-h-0">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video' | 'live-cam')} className="flex-1 flex flex-col min-h-0">
               <div className="flex-shrink-0 px-4 pt-3">
-                <TabsList className="w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid grid-cols-2 gap-1">
+                <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${isShopper ? 'grid-cols-3' : 'grid-cols-2'} gap-1`}>
                   <TabsTrigger 
                     value="picture" 
                     className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
@@ -576,6 +580,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     <Video className="h-4 w-4" />
                     Video
                   </TabsTrigger>
+                  {isShopper && (
+                    <TabsTrigger
+                      value="live-cam"
+                      className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
+                    >
+                      <Radio className="h-4 w-4" />
+                      Live Cam
+                    </TabsTrigger>
+                  )}
                 </TabsList>
                 
                 {/* Credits display */}
@@ -1008,11 +1021,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     </div>
                   )}
                 </TabsContent>
+
+                {isShopper && (
+                  <TabsContent value="live-cam" className="mt-0 space-y-4">
+                    <LiveCamTab />
+                  </TabsContent>
+                )}
               </div>
 
               {/* Sticky Action Bar - White Glass Footer */}
               <div className="flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-                {activeTab === 'picture' ? (
+                {activeTab === 'live-cam' ? null : activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
                     disabled={loading || uploadingPerson || uploadingOutfit || !personUrl || !outfitUrl || pictureCredits <= 0}
