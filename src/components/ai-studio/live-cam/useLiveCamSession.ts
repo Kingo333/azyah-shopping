@@ -143,6 +143,7 @@ export function useLiveCamSession({
       return;
     }
 
+    abortRef.current = false;
     setStatus('starting');
     setErrorMessage(null);
     setLatencyMs(null);
