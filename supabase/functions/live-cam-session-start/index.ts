@@ -31,11 +31,11 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user?.id) {
       return json({ error: 'Unauthorized' }, 401);
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
 
     const body = (await req.json().catch(() => null)) as StartBody | null;
     if (!body || typeof body.garment_id !== 'string' || !body.garment_id || !ALLOWED_SOURCES.has(body.garment_source)) {
