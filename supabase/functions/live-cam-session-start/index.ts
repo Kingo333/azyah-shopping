@@ -136,10 +136,23 @@ Deno.serve(async (req) => {
       }
 
       podId = parsed.pod_id as string;
-      wsUrl = (parsed.ws_url_hint as string) ?? (podId ? `wss://${podId}-8765.proxy.runpod.net/ws` : null);
+      wsUrl = (parsed.ws_url as string) ?? null;
       gpuUsed = (parsed.gpu_used as string) ?? null;
       cloudUsed = (parsed.cloud_used as string) ?? null;
       attempts = parsed.attempts ?? null;
+
+      if (!wsUrl) {
+        await supabase
+          .from('live_cam_sessions')
+          .update({
+            status: 'failed',
+            error_message: 'Worker returned no ws_url',
+            attempts,
+            ended_at: new Date().toISOString(),
+          })
+          .eq('id', session.id);
+        return json({ error: 'Worker returned no ws_url', attempts }, 502);
+      }
     } catch (e: any) {
       await supabase
         .from('live_cam_sessions')

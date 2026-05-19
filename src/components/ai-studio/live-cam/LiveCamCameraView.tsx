@@ -1,10 +1,12 @@
 import React from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import type { LiveCamStatus } from './liveCamTypes';
 
 interface Props {
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
   isRunning: boolean;
+  status?: LiveCamStatus;
   expanded?: boolean;
   onToggleExpand?: () => void;
 }

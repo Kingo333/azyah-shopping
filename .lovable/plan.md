@@ -1,27 +1,48 @@
-## Goal
-In the Live Cam tab, add an expand icon on the "Try-on" preview pane. Clicking it enlarges the try-on view, and the surrounding AI Studio layout adapts to the larger size. Clicking again collapses back to the default side-by-side view.
+## Audit vs spec — what's already done
 
-## Changes
+- ✅ Migration columns `gpu_used`, `cloud_used`, `attempts` exist on `live_cam_sessions`.
+- ✅ `live-cam-session-start` UPDATEs the existing row (not INSERT) on success and failure, persists `gpu_used`/`cloud_used`/`attempts`, returns 503 for `runpod_no_capacity`, 502 for `runpod_create_failed`.
+- ✅ `STARTING_TIMEOUT_MS` bumped to 180_000; WS cold-start retry loop with ref-tracked timers, cancellable, with deadline.
+- ✅ `LiveCamStatus` includes `'warming'`; warming copy shown in `LiveCamTab` button.
+- ✅ `beforeunload` cleanup with keepalive fetch + auth call to `/live-cam-session-end`.
+- ✅ Stop button, unmount, auth SIGNED_OUT all call `cleanupLocal` + `callEnd`.
 
-**1. `src/components/ai-studio/live-cam/LiveCamCameraView.tsx`**
-- Add a new prop `expanded: boolean` and `onToggleExpand: () => void`.
-- Add a small expand/collapse icon button (lucide `Maximize2` / `Minimize2`) at the top-right of the Try-on pane.
-- Layout:
-  - Default (`expanded=false`): current `grid grid-cols-2` side-by-side, both panes `aspect-[16/9]`.
-  - Expanded (`expanded=true`): switch to vertical stack — Try-on pane becomes large (e.g. `aspect-[3/4]` or `h-[70vh]` with `object-contain`) and full width; the local "You" pane shrinks to a small picture-in-picture thumbnail (absolute top-left, ~`w-32`) overlaid on the try-on, OR collapses to a small row above. Final: PiP overlay is cleaner.
+## What's still missing
 
-**2. `src/components/ai-studio/live-cam/LiveCamTab.tsx`**
-- Add `const [expanded, setExpanded] = useState(false);`
-- Pass `expanded` and `onToggleExpand={() => setExpanded(v => !v)}` to `LiveCamCameraView`.
-- When `expanded`, add a wrapper class so the tab container can grow (e.g. remove width clamp / allow the camera view section to use full available width). Other controls (garment picker, status row, buttons) remain below unchanged.
+### Fix 1 — `supabase/functions/live-cam-session-start/index.ts`
+Worker now returns canonical `ws_url`. Stop constructing client-side and stop reading the old `ws_url_hint`.
+- Line 139: replace
+  ```
+  wsUrl = (parsed.ws_url_hint as string) ?? (podId ? `wss://${podId}-8765.proxy.runpod.net/ws` : null);
+  ```
+  with
+  ```
+  wsUrl = (parsed.ws_url as string) ?? null;
+  ```
+- If `wsUrl` is missing from a successful worker response, treat as upstream failure: UPDATE row to `status='failed'`, return 502.
+
+Redeploy this function.
+
+### Fix 2 — `src/components/ai-studio/live-cam/useLiveCamSession.ts`
+Add `visibilitychange` (when `document.hidden`) and `pagehide` listeners that mirror the `beforeunload` path. Use `navigator.sendBeacon` for `pagehide` (survives page close better than keepalive fetch on iOS Safari); keep keepalive fetch as the auth-bearing path because `sendBeacon` cannot set an `Authorization` header.
+
+Concretely, in the existing `useEffect` (around line 328):
+- Extract the unload-cleanup logic into a local `endViaKeepalive()` helper (auth-bearing keepalive fetch — already implemented).
+- Add `endViaBeacon()` helper: build same URL + JSON body, call `navigator.sendBeacon(url, new Blob([...], {type:'application/json'}))` as a best-effort fallback.
+- Listeners:
+  - `beforeunload` → `cleanupLocal()` + `endViaKeepalive()` + `endViaBeacon()`
+  - `pagehide` → same
+  - `visibilitychange` → if `document.hidden`, call `void stop()` (full path, including DB update to ended)
+- Add `removeEventListener` for all three in cleanup return.
+
+### Fix 3 — `src/components/ai-studio/live-cam/LiveCamCameraView.tsx`
+Render warming copy inside the try-on pane (small overlay) when a new optional prop `status === 'warming'` is passed. Add prop `status?: LiveCamStatus`. `LiveCamTab` passes `status` through. Keep button copy as-is.
 
 ## Out of scope
-- No changes to WebSocket, session logic, edge functions, garment picker, or snapshot logic.
-- No changes to Picture/Video tabs.
-- No backend or DB changes.
+- Worker, RunPod image, DB schema (already done), Picture/Video tabs, auth, verify_jwt, RLS.
 
-## Acceptance
-- Expand icon visible on Try-on preview.
-- Click → try-on enlarges, "You" view becomes PiP thumbnail, surrounding layout adapts.
-- Click again → returns to default 2-up layout.
-- Works while idle, starting, warming, and running.
+## Files touched
+- `supabase/functions/live-cam-session-start/index.ts` — read `ws_url` only; treat missing as failure.
+- `src/components/ai-studio/live-cam/useLiveCamSession.ts` — add `pagehide` + `visibilitychange` handlers, sendBeacon fallback.
+- `src/components/ai-studio/live-cam/LiveCamCameraView.tsx` — warming overlay.
+- `src/components/ai-studio/live-cam/LiveCamTab.tsx` — pass `status` prop down.
