@@ -1,6 +1,11 @@
 // Live Cam: save a snapshot of the remote try-on frame.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg']);
