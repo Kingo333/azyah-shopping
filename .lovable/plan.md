@@ -1,35 +1,27 @@
+## Goal
+In the Live Cam tab, add an expand icon on the "Try-on" preview pane. Clicking it enlarges the try-on view, and the surrounding AI Studio layout adapts to the larger size. Clicking again collapses back to the default side-by-side view.
 
-## Audit of the three tightenings
+## Changes
 
-### 1. Migration index hint — ✅ already safe
-The migration that ran added `attempts jsonb` as a plain column with no index. No GIN index will be added unless explicitly requested. Nothing to change in code; this is a documentation-only note. I'll add a one-line comment to `.lovable/plan.md` so future agents don't add a GIN index ("diagnostic-only, no index needed").
+**1. `src/components/ai-studio/live-cam/LiveCamCameraView.tsx`**
+- Add a new prop `expanded: boolean` and `onToggleExpand: () => void`.
+- Add a small expand/collapse icon button (lucide `Maximize2` / `Minimize2`) at the top-right of the Try-on pane.
+- Layout:
+  - Default (`expanded=false`): current `grid grid-cols-2` side-by-side, both panes `aspect-[16/9]`.
+  - Expanded (`expanded=true`): switch to vertical stack — Try-on pane becomes large (e.g. `aspect-[3/4]` or `h-[70vh]` with `object-contain`) and full width; the local "You" pane shrinks to a small picture-in-picture thumbnail (absolute top-left, ~`w-32`) overlaid on the try-on, OR collapses to a small row above. Final: PiP overlay is cleaner.
 
-### 2. UPDATE not INSERT on `live_cam_sessions` — ✅ already correct
-The shipped `live-cam-session-start/index.ts` already:
-- INSERTs the row once at request entry (status `starting`).
-- UPDATEs the same row keyed by `.eq('id', session.id)` on both the success path (`status='running'`, `pod_id`, `ws_url`, `gpu_used`, `cloud_used`, `attempts`) and every failure path (`status='failed'`, `error_message`, `attempts`, `ended_at`).
-No duplicate-row risk. Nothing to fix.
+**2. `src/components/ai-studio/live-cam/LiveCamTab.tsx`**
+- Add `const [expanded, setExpanded] = useState(false);`
+- Pass `expanded` and `onToggleExpand={() => setExpanded(v => !v)}` to `LiveCamCameraView`.
+- When `expanded`, add a wrapper class so the tab container can grow (e.g. remove width clamp / allow the camera view section to use full available width). Other controls (garment picker, status row, buttons) remain below unchanged.
 
-### 3. WS retry timers must be tracked & cleared on cleanup — ⚠️ not done, needs a small fix
-Current loop uses an inline `await new Promise((r) => setTimeout(r, waitMs))` with no ref tracking. If the user closes the modal / switches tabs / signs out mid-retry:
-- The pending `setTimeout` is not cleared (minor leak, fires into the void).
-- The in-flight `candidate` WebSocket from a prior iteration can still fire `open` after cleanup ran, racing against the new state.
-- The `while(true)` loop has no early-exit signal — it only exits on `opened` or `deadline`.
+## Out of scope
+- No changes to WebSocket, session logic, edge functions, garment picker, or snapshot logic.
+- No changes to Picture/Video tabs.
+- No backend or DB changes.
 
-**Fix in `src/components/ai-studio/live-cam/useLiveCamSession.ts`:**
-- Add two refs: `retryTimerRef = useRef<number | null>(null)` and `abortRef = useRef(false)`.
-- Replace the inline backoff with a cancellable wait that stores the timer id in `retryTimerRef` and resolves early on abort.
-- After each `opened` resolution, if `abortRef.current === true`, close the candidate and exit the loop with a thrown abort.
-- In `cleanupLocal`, set `abortRef.current = true`, clear `retryTimerRef`, and reset `abortRef` back to `false` at the start of each new `start()` call.
-
-No other files affected. No DB or edge-function changes.
-
-### Files touched
-- `src/components/ai-studio/live-cam/useLiveCamSession.ts` (refs + cancellable backoff)
-- `.lovable/plan.md` (one-line note about the jsonb index)
-
-### Out of scope
-Worker, edge functions (already correct), DB schema (already migrated), other tabs.
-
-
-> Note: `live_cam_sessions.attempts` is jsonb diagnostic-only — no GIN/index needed.
+## Acceptance
+- Expand icon visible on Try-on preview.
+- Click → try-on enlarges, "You" view becomes PiP thumbnail, surrounding layout adapts.
+- Click again → returns to default 2-up layout.
+- Works while idle, starting, warming, and running.

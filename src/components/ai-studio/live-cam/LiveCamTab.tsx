@@ -13,6 +13,7 @@ const supportsLiveCam = (): boolean => {
 
 export const LiveCamTab: React.FC = () => {
   const [garment, setGarment] = useState<LiveCamGarmentSelection | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
   const supported = supportsLiveCam();
@@ -55,6 +56,8 @@ export const LiveCamTab: React.FC = () => {
         localVideoRef={localVideoRef}
         remoteCanvasRef={remoteCanvasRef}
         isRunning={isRunning}
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((v) => !v)}
       />
 
       <div className="flex items-center justify-between gap-2">
