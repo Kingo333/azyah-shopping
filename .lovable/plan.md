@@ -1,53 +1,32 @@
 
-## Lovable side — final fixes
+## Audit of the three tightenings
 
-Three additive changes. Worker is already deployed and verified.
+### 1. Migration index hint — ✅ already safe
+The migration that ran added `attempts jsonb` as a plain column with no index. No GIN index will be added unless explicitly requested. Nothing to change in code; this is a documentation-only note. I'll add a one-line comment to `.lovable/plan.md` so future agents don't add a GIN index ("diagnostic-only, no index needed").
 
-### 1. Fix Worker endpoint paths (plural)
-- `supabase/functions/live-cam-session-start/index.ts`: change `/session/start` → `/sessions/start`
-- `supabase/functions/live-cam-session-end/index.ts`: change `/session/end` → `/sessions/end`
+### 2. UPDATE not INSERT on `live_cam_sessions` — ✅ already correct
+The shipped `live-cam-session-start/index.ts` already:
+- INSERTs the row once at request entry (status `starting`).
+- UPDATEs the same row keyed by `.eq('id', session.id)` on both the success path (`status='running'`, `pod_id`, `ws_url`, `gpu_used`, `cloud_used`, `attempts`) and every failure path (`status='failed'`, `error_message`, `attempts`, `ended_at`).
+No duplicate-row risk. Nothing to fix.
 
-Auth header, content-type, and body `{ user_id, garment_id }` already correct.
+### 3. WS retry timers must be tracked & cleared on cleanup — ⚠️ not done, needs a small fix
+Current loop uses an inline `await new Promise((r) => setTimeout(r, waitMs))` with no ref tracking. If the user closes the modal / switches tabs / signs out mid-retry:
+- The pending `setTimeout` is not cleared (minor leak, fires into the void).
+- The in-flight `candidate` WebSocket from a prior iteration can still fire `open` after cleanup ran, racing against the new state.
+- The `while(true)` loop has no early-exit signal — it only exits on `opened` or `deadline`.
 
-### 2. Persist and surface new Worker response shape
+**Fix in `src/components/ai-studio/live-cam/useLiveCamSession.ts`:**
+- Add two refs: `retryTimerRef = useRef<number | null>(null)` and `abortRef = useRef(false)`.
+- Replace the inline backoff with a cancellable wait that stores the timer id in `retryTimerRef` and resolves early on abort.
+- After each `opened` resolution, if `abortRef.current === true`, close the candidate and exit the loop with a thrown abort.
+- In `cleanupLocal`, set `abortRef.current = true`, clear `retryTimerRef`, and reset `abortRef` back to `false` at the start of each new `start()` call.
 
-**Migration** on `public.live_cam_sessions`:
-```sql
-alter table public.live_cam_sessions
-  add column if not exists gpu_used text,
-  add column if not exists cloud_used text,
-  add column if not exists attempts jsonb;
-```
-
-**In `live-cam-session-start/index.ts`:**
-- On success: write `gpu_used`, `cloud_used`, `attempts` to the session row alongside `pod_id`, `ws_url`, `status='running'`.
-- On `error === "runpod_no_capacity"` (HTTP 503): return `{ error: 'All GPUs are temporarily unavailable, please try again in a minute', attempts }` with status 503.
-- On `error === "runpod_create_failed"` (HTTP 502): log `upstream_body` + `attempts`, persist `attempts` and `error_message` on the failed session row, return generic 502 to client.
-- Keep existing behavior for non-JSON / unexpected upstream responses.
-
-### 3. WebSocket cold-start retry-with-backoff
-
-**In `src/components/ai-studio/live-cam/useLiveCamSession.ts`:**
-- Bump `STARTING_TIMEOUT_MS` from `90_000` → `180_000`.
-- Replace the single-shot WS open with a retry loop:
-  - First retry after 3s, subsequent retries every 5s.
-  - Retry on both `error` and on `close` that fires before `open`.
-  - Abort retries when the overall 180s budget elapses (already handled by `startTimeoutRef`); on abort, set `failed` with a clear message.
-- Add a new status value `'warming'` (or reuse `'starting'`) and expose a user-facing string "Warming up GPU… this can take up to 3 minutes" while retrying.
-
-**In `src/components/ai-studio/live-cam/liveCamTypes.ts`:** add `'warming'` to `LiveCamStatus` if introduced.
-
-**In `LiveCamCameraView.tsx` (or wherever status is rendered):** show the warming copy for that status.
-
-### Out of scope
-Worker, RunPod config, DB RLS, storage buckets, Picture/Video tabs, auth, edge function `verify_jwt` settings.
+No other files affected. No DB or edge-function changes.
 
 ### Files touched
-- `supabase/migrations/<new>.sql` (3 columns)
-- `supabase/functions/live-cam-session-start/index.ts`
-- `supabase/functions/live-cam-session-end/index.ts`
-- `src/components/ai-studio/live-cam/useLiveCamSession.ts`
-- `src/components/ai-studio/live-cam/liveCamTypes.ts` (if status added)
-- `src/components/ai-studio/live-cam/LiveCamCameraView.tsx` (warming copy)
+- `src/components/ai-studio/live-cam/useLiveCamSession.ts` (refs + cancellable backoff)
+- `.lovable/plan.md` (one-line note about the jsonb index)
 
-Approve to implement.
+### Out of scope
+Worker, edge functions (already correct), DB schema (already migrated), other tabs.

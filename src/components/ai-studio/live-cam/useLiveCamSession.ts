@@ -51,6 +51,9 @@ export function useLiveCamSession({
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
   const pendingMetaRef = useRef<LiveCamRemoteFrameMeta | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  const retryAbortRef = useRef<(() => void) | null>(null);
+  const abortRef = useRef(false);
 
   const cleanupLocal = useCallback(() => {
     if (frameTimerRef.current !== null) {
