@@ -1,12 +1,59 @@
 import React from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 
 interface Props {
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
   isRunning: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-export const LiveCamCameraView: React.FC<Props> = ({ localVideoRef, remoteCanvasRef, isRunning }) => {
+export const LiveCamCameraView: React.FC<Props> = ({
+  localVideoRef,
+  remoteCanvasRef,
+  isRunning,
+  expanded = false,
+  onToggleExpand,
+}) => {
+  if (expanded) {
+    return (
+      <div className="relative w-full rounded-xl overflow-hidden bg-black h-[70vh] flex items-center justify-center">
+        <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
+        {!isRunning && (
+          <span className="absolute text-white/70 text-xs">Try-on preview</span>
+        )}
+        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
+          Try-on
+        </span>
+
+        {/* PiP local cam */}
+        <div className="absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg">
+          <video
+            ref={localVideoRef}
+            playsInline
+            muted
+            className="w-full h-full object-cover -scale-x-100"
+          />
+          <span className="absolute top-1 left-1 text-[9px] uppercase tracking-wide bg-black/50 text-white px-1.5 py-0.5 rounded-full">
+            You
+          </span>
+        </div>
+
+        {onToggleExpand && (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-label="Collapse try-on preview"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+          >
+            <Minimize2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="rounded-xl overflow-hidden bg-black aspect-[16/9] relative">
@@ -28,6 +75,16 @@ export const LiveCamCameraView: React.FC<Props> = ({ localVideoRef, remoteCanvas
         <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
           Try-on
         </span>
+        {onToggleExpand && (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-label="Expand try-on preview"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );
