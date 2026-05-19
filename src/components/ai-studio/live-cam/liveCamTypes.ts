@@ -2,7 +2,7 @@
 
 export type GarmentSource = 'product' | 'event_brand_product' | 'wardrobe_item';
 
-export type LiveCamStatus = 'idle' | 'starting' | 'running' | 'ended' | 'failed';
+export type LiveCamStatus = 'idle' | 'starting' | 'warming' | 'running' | 'ended' | 'failed';
 
 export interface LiveCamGarmentSelection {
   id: string;

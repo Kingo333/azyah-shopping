@@ -40,7 +40,8 @@ export const LiveCamTab: React.FC = () => {
   }
 
   const isRunning = status === 'running';
-  const isStarting = status === 'starting';
+  const isStarting = status === 'starting' || status === 'warming';
+  const isWarming = status === 'warming';
 
   return (
     <div className="space-y-4">
@@ -75,7 +76,7 @@ export const LiveCamTab: React.FC = () => {
               className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95"
             >
               {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {isStarting ? 'Spinning up GPU…' : 'Start Live Try-On'}
+              {isWarming ? 'Warming up GPU… up to 3 min' : isStarting ? 'Spinning up GPU…' : 'Start Live Try-On'}
             </button>
           ) : (
             <button
@@ -110,6 +111,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const map: Record<string, string> = {
     idle: 'bg-gray-100 text-gray-700',
     starting: 'bg-amber-100 text-amber-800',
+    warming: 'bg-amber-100 text-amber-800',
     running: 'bg-emerald-100 text-emerald-800',
     ended: 'bg-gray-100 text-gray-700',
     failed: 'bg-red-100 text-red-800',

@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     if (session.pod_id && orchestratorUrl && orchestratorKey) {
       try {
-        await fetch(`${orchestratorUrl.replace(/\/$/, '')}/session/end`, {
+        await fetch(`${orchestratorUrl.replace(/\/$/, '')}/sessions/end`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${orchestratorKey}`,

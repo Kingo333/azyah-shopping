@@ -2547,10 +2547,13 @@ export type Database = {
       }
       live_cam_sessions: {
         Row: {
+          attempts: Json | null
+          cloud_used: string | null
           ended_at: string | null
           error_message: string | null
           garment_id: string
           garment_source: string
+          gpu_used: string | null
           id: string
           pod_id: string | null
           started_at: string
@@ -2559,10 +2562,13 @@ export type Database = {
           ws_url: string | null
         }
         Insert: {
+          attempts?: Json | null
+          cloud_used?: string | null
           ended_at?: string | null
           error_message?: string | null
           garment_id: string
           garment_source: string
+          gpu_used?: string | null
           id?: string
           pod_id?: string | null
           started_at?: string
@@ -2571,10 +2577,13 @@ export type Database = {
           ws_url?: string | null
         }
         Update: {
+          attempts?: Json | null
+          cloud_used?: string | null
           ended_at?: string | null
           error_message?: string | null
           garment_id?: string
           garment_source?: string
+          gpu_used?: string | null
           id?: string
           pod_id?: string | null
           started_at?: string
