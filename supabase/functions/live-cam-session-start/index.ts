@@ -1,7 +1,12 @@
 // Live Cam: start a FluxRT session via the Worker orchestrator.
 // Auth required. Resolves user_id from JWT; ignores any client-sent user_id.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
 
 interface StartBody {
   garment_id: string;
@@ -26,11 +31,11 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user?.id) {
       return json({ error: 'Unauthorized' }, 401);
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
 
     const body = (await req.json().catch(() => null)) as StartBody | null;
     if (!body || typeof body.garment_id !== 'string' || !body.garment_id || !ALLOWED_SOURCES.has(body.garment_source)) {
