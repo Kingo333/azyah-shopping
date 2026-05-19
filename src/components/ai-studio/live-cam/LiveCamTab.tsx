@@ -40,7 +40,8 @@ export const LiveCamTab: React.FC = () => {
   }
 
   const isRunning = status === 'running';
-  const isStarting = status === 'starting';
+  const isStarting = status === 'starting' || status === 'warming';
+  const isWarming = status === 'warming';
 
   return (
     <div className="space-y-4">
