@@ -34,16 +34,16 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
     async function load() {
       setExtraLoading(true);
       const [{ data: products }, { data: ebp }] = await Promise.all([
-        supabase.from('products').select('id, name, image_url').limit(12),
-        supabase.from('event_brand_products').select('id, name, image_url').limit(12),
+        supabase.from('products').select('id, title, image_url').limit(12),
+        supabase.from('event_brand_products').select('id, image_url, garment_type').limit(12),
       ]);
       if (cancelled) return;
       const opts: GarmentOption[] = [];
-      (products ?? []).forEach((p: { id: string; name: string | null; image_url: string | null }) => {
-        if (p.image_url) opts.push({ id: p.id, source: 'product', label: p.name ?? 'Product', imageUrl: p.image_url });
+      (products ?? []).forEach((p) => {
+        if (p.image_url) opts.push({ id: p.id, source: 'product', label: p.title ?? 'Product', imageUrl: p.image_url });
       });
-      (ebp ?? []).forEach((p: { id: string; name: string | null; image_url: string | null }) => {
-        if (p.image_url) opts.push({ id: p.id, source: 'event_brand_product', label: p.name ?? 'Event item', imageUrl: p.image_url });
+      (ebp ?? []).forEach((p) => {
+        if (p.image_url) opts.push({ id: p.id, source: 'event_brand_product', label: p.garment_type ?? 'Event item', imageUrl: p.image_url });
       });
       setExtra(opts);
       setExtraLoading(false);
