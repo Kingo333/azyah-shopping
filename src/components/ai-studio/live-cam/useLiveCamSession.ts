@@ -167,17 +167,39 @@ export function useLiveCamSession({
       const refMime = refResp.headers.get('Content-Type') || 'image/jpeg';
       const refBuf = await refResp.arrayBuffer();
 
-      // 4. Open WS.
-      const ws = new WebSocket(data.ws_url);
-      ws.binaryType = 'arraybuffer';
+      // 4. Open WS with cold-start retry-with-backoff (FluxRT pods need 60–180s to warm up).
+      setStatus('warming');
+      const deadline = Date.now() + STARTING_TIMEOUT_MS - 5_000; // leave room for handshake
+      let ws: WebSocket | null = null;
+      let attemptNum = 0;
+      while (true) {
+        attemptNum++;
+        const candidate = new WebSocket(data.ws_url);
+        candidate.binaryType = 'arraybuffer';
+        const opened = await new Promise<boolean>((resolve) => {
+          const onOpen = () => { cleanup(); resolve(true); };
+          const onFail = () => { cleanup(); resolve(false); };
+          const cleanup = () => {
+            candidate.removeEventListener('open', onOpen);
+            candidate.removeEventListener('error', onFail);
+            candidate.removeEventListener('close', onFail);
+          };
+          candidate.addEventListener('open', onOpen, { once: true });
+          candidate.addEventListener('error', onFail, { once: true });
+          candidate.addEventListener('close', onFail, { once: true });
+        });
+        if (opened) {
+          ws = candidate;
+          break;
+        }
+        try { candidate.close(); } catch { /* noop */ }
+        if (Date.now() >= deadline) {
+          throw new Error('GPU pod did not accept connections in time. Please retry.');
+        }
+        const waitMs = attemptNum === 1 ? WS_FIRST_RETRY_MS : WS_RETRY_INTERVAL_MS;
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
       wsRef.current = ws;
-
-      await new Promise<void>((resolve, reject) => {
-        const onOpen = () => { ws.removeEventListener('error', onError); resolve(); };
-        const onError = () => { ws.removeEventListener('open', onOpen); reject(new Error('WebSocket failed to open')); };
-        ws.addEventListener('open', onOpen, { once: true });
-        ws.addEventListener('error', onError, { once: true });
-      });
 
       // 5. Init handshake.
       const init: LiveCamInitMessage = {
