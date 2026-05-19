@@ -2521,6 +2521,104 @@ export type Database = {
         }
         Relationships: []
       }
+      live_cam_garment_settings: {
+        Row: {
+          garment_id: string
+          garment_source: string
+          prompt_hint: string | null
+          reference_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          garment_id: string
+          garment_source: string
+          prompt_hint?: string | null
+          reference_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          garment_id?: string
+          garment_source?: string
+          prompt_hint?: string | null
+          reference_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      live_cam_sessions: {
+        Row: {
+          ended_at: string | null
+          error_message: string | null
+          garment_id: string
+          garment_source: string
+          id: string
+          pod_id: string | null
+          started_at: string
+          status: string
+          user_id: string
+          ws_url: string | null
+        }
+        Insert: {
+          ended_at?: string | null
+          error_message?: string | null
+          garment_id: string
+          garment_source: string
+          id?: string
+          pod_id?: string | null
+          started_at?: string
+          status?: string
+          user_id: string
+          ws_url?: string | null
+        }
+        Update: {
+          ended_at?: string | null
+          error_message?: string | null
+          garment_id?: string
+          garment_source?: string
+          id?: string
+          pod_id?: string | null
+          started_at?: string
+          status?: string
+          user_id?: string
+          ws_url?: string | null
+        }
+        Relationships: []
+      }
+      live_cam_snapshots: {
+        Row: {
+          created_at: string
+          garment_id: string
+          id: string
+          session_id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          garment_id: string
+          id?: string
+          session_id: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          garment_id?: string
+          id?: string
+          session_id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_cam_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_cam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       look_items: {
         Row: {
           closet_item_id: string | null
