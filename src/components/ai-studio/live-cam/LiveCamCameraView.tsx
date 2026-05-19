@@ -25,9 +25,6 @@ export const LiveCamCameraView: React.FC<Props> = ({
     return (
       <div className="relative w-full rounded-xl overflow-hidden bg-black h-[70vh] flex items-center justify-center">
         <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
-        {!isRunning && (
-          <span className="absolute text-white/70 text-xs">Try-on preview</span>
-        )}
         {!isRunning && !isWarming && (
           <span className="absolute text-white/70 text-xs">Try-on preview</span>
         )}
