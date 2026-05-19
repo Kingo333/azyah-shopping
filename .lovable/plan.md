@@ -30,3 +30,6 @@ No other files affected. No DB or edge-function changes.
 
 ### Out of scope
 Worker, edge functions (already correct), DB schema (already migrated), other tabs.
+
+
+> Note: `live_cam_sessions.attempts` is jsonb diagnostic-only — no GIN/index needed.
