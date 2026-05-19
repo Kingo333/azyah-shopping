@@ -186,6 +186,7 @@ export function useLiveCamSession({
       let ws: WebSocket | null = null;
       let attemptNum = 0;
       while (true) {
+        if (abortRef.current) throw new Error('aborted');
         attemptNum++;
         const candidate = new WebSocket(data.ws_url);
         candidate.binaryType = 'arraybuffer';
@@ -201,6 +202,10 @@ export function useLiveCamSession({
           candidate.addEventListener('error', onFail, { once: true });
           candidate.addEventListener('close', onFail, { once: true });
         });
+        if (abortRef.current) {
+          try { candidate.close(); } catch { /* noop */ }
+          throw new Error('aborted');
+        }
         if (opened) {
           ws = candidate;
           break;
@@ -210,7 +215,22 @@ export function useLiveCamSession({
           throw new Error('GPU pod did not accept connections in time. Please retry.');
         }
         const waitMs = attemptNum === 1 ? WS_FIRST_RETRY_MS : WS_RETRY_INTERVAL_MS;
-        await new Promise((r) => setTimeout(r, waitMs));
+        await new Promise<void>((resolve) => {
+          retryAbortRef.current = () => {
+            if (retryTimerRef.current !== null) {
+              window.clearTimeout(retryTimerRef.current);
+              retryTimerRef.current = null;
+            }
+            retryAbortRef.current = null;
+            resolve();
+          };
+          retryTimerRef.current = window.setTimeout(() => {
+            retryTimerRef.current = null;
+            retryAbortRef.current = null;
+            resolve();
+          }, waitMs);
+        });
+        if (abortRef.current) throw new Error('aborted');
       }
       wsRef.current = ws;
 
