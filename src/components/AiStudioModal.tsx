@@ -53,7 +53,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   // Tab state
   const [activeTab, setActiveTab] = useState<'picture' | 'video' | 'live-cam'>('picture');
   const { user } = useAuth();
-  const isShopper = (user?.user_metadata?.role ?? 'shopper') === 'shopper';
+  const isShopper = !!user && (user.user_metadata?.role ?? 'shopper') === 'shopper';
   
   // Picture tab state
   const [personFile, setPersonFile] = useState<File | null>(null);
