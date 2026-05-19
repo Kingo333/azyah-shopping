@@ -1,138 +1,97 @@
+# Live Cam tab — AI Studio (additive only)
 
+## Scope guardrails
 
-# Fix AR System for Real Devices — Implementation Plan
+- Only one existing file is edited: `src/components/AiStudioModal.tsx` (note: actual path is `src/components/AiStudioModal.tsx`, not `src/components/ai-studio/AiStudioModal.tsx` as referenced in the brief — please confirm this is the correct target).
+- Picture tab, Video tab, wardrobe, auth, navigation, shared UI, existing tables/RLS/functions/buckets: untouched.
+- All new DB/storage/function names prefixed `live_cam_` / `live-cam-`.
+- Live Cam tab visible only when `user.role === 'shopper'` using the same role resolution already used elsewhere in the app (`useAuth()` from `AuthContext`).
 
-## Proven Root Causes
+## 1. Database migration (single new migration)
 
-### Bug 1: 2D canvas freezes when pose drops
-**File**: `src/pages/ARExperience.tsx`, lines 399-431
-The 2D overlay repaints ONLY inside the `if (result && result.landmarks.length > 0)` block (line 404). When pose detection returns no landmarks (common on mobile due to throttling/occlusion), the 2D canvas stops repainting entirely — the user sees a frozen image. The rAF still schedules, but the visible canvas is never touched.
+New tables, all additive:
+- `public.live_cam_sessions` — session lifecycle (user_id, garment_id, garment_source, pod_id, ws_url, status, error_message, started_at, ended_at)
+- `public.live_cam_snapshots` — captured frames (session_id, user_id, garment_id, storage_path)
+- `public.live_cam_garment_settings` — per-garment reference image + prompt hint (read-only to clients)
 
-### Bug 2: 2D occlusion allocates a canvas every frame
-**File**: `src/ar/core/ImageOverlay.ts`, line 309
-`document.createElement('canvas')` + full-resolution `getImageData`/`putImageData` every frame. On a 1280×720 canvas that's ~3.7M pixels × 4 bytes = ~14.7MB of pixel copying per frame. This will stall mobile browsers.
+RLS:
+- Sessions/snapshots: owner-only select/insert/update.
+- Garment settings: read by authenticated; writes service-role only.
 
-### Bug 3: No `garment_type` selector on 2D overlay tab
-**File**: `src/components/BrandProductManager.tsx`, lines 654-798
-The garment type selector only exists in Tab 3 (3D model, line 802-833). 2D-only products default to `'shirt'`, causing wrong anchor placement for abayas/pants.
+Storage:
+- Private bucket `live-cam-snapshots`.
+- Policies: only owner can read/write objects under `${auth.uid()}/` prefix.
 
-### Bug 4: No iOS Safari resilience
-**File**: `src/ar/core/CameraManager.ts` — no `visibilitychange` handler. iOS Safari pauses video when backgrounded and may not resume `play()`. Also no `loadedmetadata` re-check for late video dimensions.
+## 2. Edge function secrets
 
-### Bug 5: Debug panel always visible in production
-**File**: `src/pages/ARExperience.tsx`, lines 976-983. The debug panel is unconditionally rendered for all users.
+Two new secrets (placeholders, user will paste real values into Supabase):
+- `ORCHESTRATOR_URL`
+- `ORCHESTRATOR_API_KEY`
 
-## Implementation Plan
+Never shipped to browser; only read via `Deno.env.get(...)` inside the new edge functions.
 
-### 1. Add BUILD_ID + debug HUD with runtime counters
-**File**: `src/pages/ARExperience.tsx`
+## 3. Edge functions (new, under `supabase/functions/`)
 
-- Add `const BUILD_ID = '2026-04-09T...'` constant at top of file
-- Add refs for counters: `rafTicks`, `poseCalls`, `overlayDraws`, `segCalls`, each with a per-second snapshot
-- In `animate()`, increment `rafTicks` every frame, `poseCalls` when pose runs, `overlayDraws` when 2D canvas draws, `segCalls` when segmentation runs
-- Every 1s, compute rates and store in state (only when `?debug=true`)
-- Gate debug panel render on `isDebug` flag from URL params
-- Show: BUILD_ID, rafTicks/s, poseCalls/s, overlayDraws/s, segCalls/s, camera status, arMode, video dimensions, garment loaded, model loaded, tier, last error
+### `live-cam-session-start`
+- Requires Supabase JWT; resolves `user_id` from JWT (ignores any client-sent user_id).
+- Input: `{ garment_id, garment_source }` with `garment_source ∈ {product, event_brand_product, wardrobe_item}`.
+- Read-only access check against the matching existing table (uses anon client with caller JWT so existing RLS enforces access — no policy changes).
+- Insert `live_cam_sessions` row with `status='starting'`.
+- POST `${ORCHESTRATOR_URL}/session/start` with bearer auth and `{ user_id, garment_id }`.
+- On success → update row with `pod_id`, `ws_url`, `status='running'`; return `{ session_id, ws_url, pod_id }`.
+- On failure → update row with `status='failed'`, `error_message`; return 502.
+- Full CORS headers via `npm:@supabase/supabase-js@2/cors`.
 
-### 2. Fix 2D freeze — repaint video every rAF regardless of pose
-**File**: `src/pages/ARExperience.tsx`, lines 394-615
+### `live-cam-session-end`
+- Input: `{ session_id }`. Verifies session belongs to caller.
+- POST Worker `/session/end` with stored `pod_id`.
+- Updates row: `status='ended'`, `ended_at=now()`. Idempotent.
 
-Restructure `animate()`:
-- **Always** repaint the 2D canvas with the live video feed every frame (not just when pose arrives)
-- Only draw garment overlay when `lastLandmarksRef.current` exists
-- Move rAF scheduling to a single `finally`-style location at the end — no early returns before it
-- Specifically: remove the `return` at line 430, move all post-pose code (tier management, debug, rAF scheduling) outside the pose-conditional block
+### `live-cam-snapshot-save`
+- `multipart/form-data`: `session_id`, `image` (PNG/JPEG ≤ 2 MB; validated).
+- Uploads to `live-cam-snapshots/${user_id}/${session_id}/${ts}.jpg`.
+- Inserts `live_cam_snapshots` row. Returns `{ snapshot_id, storage_path }`.
 
-```
-animate(time):
-  // 2D: always repaint video
-  if (imageOverlayRef.current && video.readyState >= 2) {
-    imageOverlay.drawVideoFrame(video)   // new method: just video, no garment
-    overlayDraws++
-  }
+## 4. Frontend (all new files under `src/components/ai-studio/live-cam/`)
 
-  // Pose detection (throttled)
-  if (time - lastPoseTime > interval && video.readyState >= 2) {
-    result = pp.detectForVideo(...)
-    poseCalls++
-    if (result.landmarks) {
-      lastLandmarksRef = result.landmarks[0]
-      if (imageOverlayRef.current) {
-        imageOverlay.drawGarmentAndOcclusion(lastLandmarks)
-      } else {
-        // 3D path...
-      }
-    }
-  }
-  // 2D with stale landmarks: still draw garment
-  else if (imageOverlayRef.current && lastLandmarksRef.current) {
-    imageOverlay.drawGarmentOnly(lastLandmarks)
-  }
+- `liveCamTypes.ts` — typed WS messages, session state enum, garment selection types. No `any`.
+- `useLiveCamSession.ts` — orchestrates: call `live-cam-session-start` → open WS → send FluxRT init handshake (576×320, `use_reference_image: true`) → send reference image (numpy-encoded buffer matching server.py) → stream webcam frames at capped 12 fps → render returned frames to remote canvas → measure latency → on teardown stop tracks, close WS, call `live-cam-session-end`.
+- `LiveCamCameraView.tsx` — uses existing `src/ar/core/CameraManager.ts` (`startCamera`/`stopCamera`) for the local preview; pairs it with a remote canvas. No parallel camera manager.
+- `LiveCamGarmentPicker.tsx` — reuses the same hooks the Picture tab uses for products / event_brand_products / wardrobe_items (imported, not forked). Reads optional `reference_image_url` / `prompt_hint` from `live_cam_garment_settings`.
+- `LiveCamSnapshotButton.tsx` — grabs current remote frame, POSTs to `live-cam-snapshot-save`, brief freeze + toast.
+- `LiveCamTab.tsx` — composes the above. Layout: garment picker (left), local + remote preview (right), bottom controls (Start / Stop / Capture / status badge / latency ms).
 
-  // tier management, debug, rAF — always runs
-  animFrameRef.current = requestAnimationFrame(animate)
-```
+State machine: `idle → starting (spinner "Spinning up GPU…", 90s timeout → error + Retry) → running → ended | failed`.
 
-### 3. Refactor ImageOverlay to separate video draw from garment draw
-**File**: `src/ar/core/ImageOverlay.ts`
+Teardown triggers (all call `live-cam-session-end`):
+- Stop button
+- Modal close
+- Tab switch away from Live Cam (effect cleanup)
+- `beforeunload`
+- Logout (auth state change to no-user)
 
-Split `updateFrame()` into:
-- `drawVideo(video)` — draws cover-cropped mirrored video only (called every rAF)
-- `drawGarment(landmarks)` — extracts landmarks, smooths, dispatches to renderer, applies occlusion (called only when landmarks available)
-- Keep `updateFrame(video, landmarks)` as a convenience wrapper that calls both
+Mobile fallback: if `!navigator.mediaDevices?.getUserMedia` or `!window.WebSocket`, render a single-line notice; no crash.
 
-### 4. Fix 2D occlusion performance
-**File**: `src/ar/core/ImageOverlay.ts`
+## 5. `AiStudioModal.tsx` edit (minimal, additive)
 
-A. Cache temp canvas as class fields (`this.tempCanvas`, `this.tempCtx`) — create once in constructor, resize when canvas resizes
-B. Downscale: use a 256px-wide occlusion buffer instead of full resolution
-C. Use `globalCompositeOperation: 'destination-over'` approach: draw mask-shaped body region, then composite — avoids per-pixel JS loop entirely
-D. Throttle: add `lastOcclusionTime` field, only run every 100-125ms (~8-10fps)
-E. Wrap in try/catch; on error, set `this.occlusionDisabled = true` and continue
+Only changes:
+1. Import `LiveCamTab` and `useAuth`.
+2. Widen the `Tabs` value type from `'picture' | 'video'` to `'picture' | 'video' | 'live-cam'`.
+3. Change `TabsList` `grid-cols-2` → `grid-cols-3` only when `role === 'shopper'`; otherwise leave as-is.
+4. Append a third `<TabsTrigger value="live-cam">` (conditional on shopper) after Video trigger.
+5. Append `<TabsContent value="live-cam"><LiveCamTab /></TabsContent>` after Video content.
 
-### 5. Add garment type selector to 2D overlay tab
-**File**: `src/components/BrandProductManager.tsx`
+No reordering of existing tabs. No styling changes to Picture/Video.
 
-Insert the same garment type `<Select>` component (currently at lines 803-833) into the overlay tab (before the upload input at line 665). Persist `garment_type` alongside the overlay upload at line 738-745.
+## Technical notes
 
-### 6. iOS Safari hardening
-**File**: `src/pages/ARExperience.tsx`
+- WS auth: the orchestrator-returned `ws_url` goes directly to the RunPod proxy; no bearer needed on the WS itself (per Worker contract). The bearer stays server-side.
+- Frame protocol: matches the existing `server.py` numpy-buffer format already verified end-to-end; client encodes downscaled video frames to that format.
+- Latency: round-trip measured on each frame echo, exponential moving average displayed.
+- All edge function responses include CORS headers on success and error paths.
 
-- Add `visibilitychange` listener in Effect 1: on resume, check `video.paused` and call `video.play()`, re-check `videoWidth`
-- Add `loadedmetadata` listener on video element: when fired, recompute `coverCropRef` and call `imageOverlayRef.current?.updateCoverCrop()`
-- These ensure late dimension availability and backgrounding don't break the pipeline
+## Open questions before implementation
 
-### 7. Gate debug panel behind `?debug=true`
-**File**: `src/pages/ARExperience.tsx`
-
-- `const isDebug = searchParams.get('debug') === 'true'`
-- Wrap debug panel JSX (lines 976-983) in `{isDebug && (...)}`
-
-### 8. Segmentation hardening
-**Files**: `src/pages/ARExperience.tsx`, `src/ar/core/ImageOverlay.ts`
-
-Wrap all segmentation calls in try/catch. On failure, log error to debug HUD, disable segmentation for the session, continue rendering.
-
-## Files Changed
-
-| File | Changes |
-|------|---------|
-| `src/pages/ARExperience.tsx` | BUILD_ID, debug HUD with counters (gated), fix animate() 2D freeze, iOS handlers, segmentation try/catch |
-| `src/ar/core/ImageOverlay.ts` | Split updateFrame, cache occlusion canvas, downscale occlusion, throttle, try/catch |
-| `src/components/BrandProductManager.tsx` | Add garment_type selector to 2D overlay tab |
-
-## Verification
-
-After deploying, open `?debug=true` on each platform and confirm:
-
-| Metric | Desktop Chrome | Android Chrome | iOS Safari |
-|--------|---------------|----------------|------------|
-| BUILD_ID matches | PASS | PASS | PASS |
-| rafTicks/s > 30 | PASS | PASS | PASS |
-| overlayDraws/s > 20 (2D) | PASS | PASS | PASS |
-| poseCalls/s ~ 10-15 | PASS | PASS | PASS |
-| segCalls/s ~ 8-10 (Tier A) | PASS | PASS | PASS |
-| 2D canvas stays live when hands cover face | PASS | PASS | PASS |
-| Capture includes garment | PASS | PASS | PASS |
-| No freeze after 10s | PASS | PASS | PASS |
-
+1. Confirm the correct modal path — the brief says `src/components/ai-studio/AiStudioModal.tsx` but the actual file is `src/components/AiStudioModal.tsx`. I will edit the actual existing file.
+2. Should the Live Cam tab be hidden entirely on mobile, or shown with the graceful fallback notice as planned? (Brief says show with fallback — confirming.)
+3. The exact reference-image binary format and WS init message shape are taken from `server.py` / `config_with_reference.json` — these aren't in the repo. I will define `liveCamTypes.ts` from the brief and your verified format; please share the message schema or point me to it before I wire `useLiveCamSession.ts`.
