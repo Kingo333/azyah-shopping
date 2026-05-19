@@ -88,8 +88,11 @@ Deno.serve(async (req) => {
 
     let podId: string | null = null;
     let wsUrl: string | null = null;
+    let gpuUsed: string | null = null;
+    let cloudUsed: string | null = null;
+    let attempts: unknown = null;
     try {
-      const upstream = await fetch(`${orchestratorUrl.replace(/\/$/, '')}/session/start`, {
+      const upstream = await fetch(`${orchestratorUrl.replace(/\/$/, '')}/sessions/start`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${orchestratorKey}`,
@@ -102,19 +105,41 @@ Deno.serve(async (req) => {
       try { parsed = JSON.parse(text); } catch { /* keep raw */ }
 
       if (!upstream.ok || !parsed?.ok) {
+        const errCode = parsed?.error as string | undefined;
+        const upstreamAttempts = parsed?.attempts ?? null;
         await supabase
           .from('live_cam_sessions')
           .update({
             status: 'failed',
-            error_message: `Worker error ${upstream.status}: ${text.slice(0, 500)}`,
+            error_message: `${errCode ?? 'worker_error'} (${upstream.status}): ${text.slice(0, 500)}`,
+            attempts: upstreamAttempts,
             ended_at: new Date().toISOString(),
           })
           .eq('id', session.id);
-        return json({ error: 'Worker failed', status: upstream.status, body: text.slice(0, 500) }, 502);
+
+        if (errCode === 'runpod_no_capacity') {
+          return json({
+            error: 'All GPUs are temporarily unavailable, please try again in a minute.',
+            code: 'runpod_no_capacity',
+            attempts: upstreamAttempts,
+          }, 503);
+        }
+        if (errCode === 'runpod_create_failed') {
+          console.error('runpod_create_failed', { upstream_status: parsed?.upstream_status, upstream_body: parsed?.upstream_body, attempts: upstreamAttempts });
+          return json({
+            error: 'Could not start a GPU pod. Please try again shortly.',
+            code: 'runpod_create_failed',
+            attempts: upstreamAttempts,
+          }, 502);
+        }
+        return json({ error: 'Worker failed', status: upstream.status, body: text.slice(0, 500), attempts: upstreamAttempts }, 502);
       }
 
       podId = parsed.pod_id as string;
       wsUrl = (parsed.ws_url_hint as string) ?? (podId ? `wss://${podId}-8765.proxy.runpod.net/ws` : null);
+      gpuUsed = (parsed.gpu_used as string) ?? null;
+      cloudUsed = (parsed.cloud_used as string) ?? null;
+      attempts = parsed.attempts ?? null;
     } catch (e: any) {
       await supabase
         .from('live_cam_sessions')
@@ -125,8 +150,9 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('live_cam_sessions')
-      .update({ pod_id: podId, ws_url: wsUrl, status: 'running' })
+      .update({ pod_id: podId, ws_url: wsUrl, status: 'running', gpu_used: gpuUsed, cloud_used: cloudUsed, attempts })
       .eq('id', session.id);
+
 
     return json({ session_id: session.id, ws_url: wsUrl, pod_id: podId });
   } catch (e: any) {
