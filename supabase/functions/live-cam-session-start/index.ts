@@ -8,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+const DEFAULT_WORKER_URL = 'https://fluxrt-orchestrator.abdullahiking33.workers.dev';
+
 interface StartBody {
   garment_id: string;
   garment_source: 'product' | 'event_brand_product' | 'wardrobe_item';
@@ -152,6 +154,30 @@ Deno.serve(async (req) => {
           })
           .eq('id', session.id);
         return json({ error: 'Worker returned no ws_url', attempts }, 502);
+      }
+
+      // Rewrite ws_url to point at the Cloudflare Worker host (not raw RunPod).
+      // Browsers cannot attach Authorization headers to WebSockets, so the Worker
+      // must proxy the WS and inject the RunPod auth server-side. We preserve the
+      // exact signed token the Worker already produced.
+      try {
+        const workerHttpUrl = (Deno.env.get('FLUXRT_WORKER_URL') ?? Deno.env.get('ORCHESTRATOR_URL') ?? DEFAULT_WORKER_URL).replace(/\/$/, '');
+        const workerWsHost = workerHttpUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
+        const incoming = new URL(wsUrl);
+        const token = incoming.searchParams.get('token');
+        if (!token) throw new Error('worker ws_url missing token');
+        wsUrl = `${workerWsHost}/ws?token=${encodeURIComponent(token)}`;
+      } catch (e: any) {
+        await supabase
+          .from('live_cam_sessions')
+          .update({
+            status: 'failed',
+            error_message: `Invalid worker ws_url: ${e?.message ?? String(e)}`,
+            attempts,
+            ended_at: new Date().toISOString(),
+          })
+          .eq('id', session.id);
+        return json({ error: 'Invalid worker ws_url', attempts }, 502);
       }
     } catch (e: any) {
       await supabase
