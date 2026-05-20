@@ -8,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+const DEFAULT_WORKER_URL = 'https://fluxrt-orchestrator.abdullahiking33.workers.dev';
+
 interface StartBody {
   garment_id: string;
   garment_source: 'product' | 'event_brand_product' | 'wardrobe_item';
