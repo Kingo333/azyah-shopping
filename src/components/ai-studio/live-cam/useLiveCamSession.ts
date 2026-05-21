@@ -5,9 +5,6 @@ import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
   LiveCamStatus,
-  LiveCamFrameMeta,
-  LiveCamInitMessage,
-  LiveCamRemoteFrameMeta,
 } from './liveCamTypes';
 
 const TARGET_WIDTH = 576;
@@ -16,6 +13,9 @@ const FPS_CAP = 12;
 const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
+
+const DEFAULT_TRYON_PROMPT =
+  "Apply the clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, background, skin tone, and lighting. Make the garment look naturally worn, fitted, and realistic.";
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
@@ -32,6 +32,29 @@ interface UseLiveCamSessionReturn {
   stop: () => Promise<void>;
 }
 
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
+  }
+  return btoa(binary);
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  return arrayBufferToBase64(buf);
+}
+
+function base64ToBlob(b64: string, mime = 'image/jpeg'): Blob {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 export function useLiveCamSession({
   garment,
   localVideoRef,
@@ -46,11 +69,10 @@ export function useLiveCamSession({
   const streamRef = useRef<MediaStream | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameTimerRef = useRef<number | null>(null);
-  const seqRef = useRef(0);
   const sessionIdRef = useRef<string | null>(null);
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
-  const pendingMetaRef = useRef<LiveCamRemoteFrameMeta | null>(null);
+  const lastSendTsRef = useRef<number | null>(null);
   const retryTimerRef = useRef<number | null>(null);
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
@@ -83,8 +105,7 @@ export function useLiveCamSession({
       localVideoRef.current.srcObject = null;
     }
     captureCanvasRef.current = null;
-    seqRef.current = 0;
-    pendingMetaRef.current = null;
+    lastSendTsRef.current = null;
   }, [localVideoRef]);
 
   const callEnd = useCallback(async () => {
@@ -105,22 +126,21 @@ export function useLiveCamSession({
     setStatus((s) => (s === 'failed' ? s : 'ended'));
   }, [callEnd, cleanupLocal]);
 
-  const renderRemoteFrame = useCallback(async (buf: ArrayBuffer, meta: LiveCamRemoteFrameMeta | null) => {
+  const renderRemoteFrame = useCallback(async (b64: string) => {
     const canvas = remoteCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     try {
-      const blob = new Blob([buf], { type: meta?.mime || 'image/jpeg' });
+      const blob = base64ToBlob(b64, 'image/jpeg');
       const bitmap = await createImageBitmap(blob);
-      const w = meta?.width ?? bitmap.width;
-      const h = meta?.height ?? bitmap.height;
-      if (canvas.width !== w) canvas.width = w;
-      if (canvas.height !== h) canvas.height = h;
-      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
+      if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
+      ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
       bitmap.close?.();
-      if (meta?.ts) {
-        const rtt = performance.now() - meta.ts;
+      const sentAt = lastSendTsRef.current;
+      if (sentAt != null) {
+        const rtt = performance.now() - sentAt;
         const ema = latencyEmaRef.current;
         const next = ema === null ? rtt : ema * 0.8 + rtt * 0.2;
         latencyEmaRef.current = next;
@@ -148,6 +168,7 @@ export function useLiveCamSession({
     setErrorMessage(null);
     setLatencyMs(null);
     latencyEmaRef.current = null;
+    lastSendTsRef.current = null;
 
     startTimeoutRef.current = window.setTimeout(() => {
       setErrorMessage('GPU pod took too long to start. Please retry.');
@@ -174,22 +195,21 @@ export function useLiveCamSession({
       const cam: CameraResult = await startCamera(video);
       streamRef.current = cam.stream;
 
-      // 3. Fetch reference image as bytes.
+      // 3. Fetch reference image as bytes -> base64.
       const refResp = await fetch(garment.referenceImageUrl, { mode: 'cors' });
       if (!refResp.ok) throw new Error(`Reference image fetch failed (${refResp.status})`);
-      const refMime = refResp.headers.get('Content-Type') || 'image/jpeg';
       const refBuf = await refResp.arrayBuffer();
+      const refB64 = arrayBufferToBase64(refBuf);
 
       // 4. Open WS with cold-start retry-with-backoff (FluxRT pods need 60–180s to warm up).
       setStatus('warming');
-      const deadline = Date.now() + STARTING_TIMEOUT_MS - 5_000; // leave room for handshake
+      const deadline = Date.now() + STARTING_TIMEOUT_MS - 5_000;
       let ws: WebSocket | null = null;
       let attemptNum = 0;
       while (true) {
         if (abortRef.current) throw new Error('aborted');
         attemptNum++;
         const candidate = new WebSocket(data.ws_url);
-        candidate.binaryType = 'arraybuffer';
         const opened = await new Promise<boolean>((resolve) => {
           const onOpen = () => { cleanup(); resolve(true); };
           const onFail = () => { cleanup(); resolve(false); };
@@ -234,36 +254,25 @@ export function useLiveCamSession({
       }
       wsRef.current = ws;
 
-      // 5. Init handshake.
-      const init: LiveCamInitMessage = {
-        type: 'init',
-        config: {
-          resolution: [TARGET_WIDTH, TARGET_HEIGHT],
-          use_reference_image: true,
-          fps_cap: FPS_CAP,
-        },
-      };
-      ws.send(JSON.stringify(init));
+      // 5. Send reference image (FluxRT protocol).
+      ws.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
 
-      // 6. Reference image: JSON meta + binary frame.
-      ws.send(JSON.stringify({ type: 'reference', mime: refMime, prompt_hint: garment.promptHint ?? null }));
-      ws.send(refBuf);
+      // 6. Send try-on prompt (per-garment from DB, else strong default).
+      const prompt = (garment.promptHint && garment.promptHint.trim().length > 0)
+        ? garment.promptHint
+        : DEFAULT_TRYON_PROMPT;
+      ws.send(JSON.stringify({ type: 'set_prompt', prompt }));
 
-      // 7. Bind message handler (paired JSON meta + binary).
+      // 7. Bind message handler — worker sends {type:'frame', frame_b64}.
       ws.addEventListener('message', (ev) => {
-        if (typeof ev.data === 'string') {
-          try {
-            const parsed = JSON.parse(ev.data) as LiveCamRemoteFrameMeta & { type: string };
-            if (parsed?.type === 'frame') {
-              pendingMetaRef.current = parsed;
-            }
-          } catch {
-            // ignore non-JSON text frames
+        if (typeof ev.data !== 'string') return;
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (parsed?.type === 'frame' && typeof parsed.frame_b64 === 'string') {
+            void renderRemoteFrame(parsed.frame_b64);
           }
-        } else if (ev.data instanceof ArrayBuffer) {
-          const meta = pendingMetaRef.current;
-          pendingMetaRef.current = null;
-          void renderRemoteFrame(ev.data, meta);
+        } catch {
+          // ignore non-JSON
         }
       });
       ws.addEventListener('close', () => {
@@ -293,22 +302,16 @@ export function useLiveCamSession({
         if (!wsNow || wsNow.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
         capCtx.drawImage(v, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
         cap.toBlob(
-          (blob) => {
+          async (blob) => {
             if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-            const meta: LiveCamFrameMeta = {
-              type: 'frame',
-              ts: performance.now(),
-              seq: ++seqRef.current,
-              width: TARGET_WIDTH,
-              height: TARGET_HEIGHT,
-              mime: 'image/jpeg',
-            };
-            wsRef.current.send(JSON.stringify(meta));
-            blob.arrayBuffer().then((buf) => {
-              if (wsRef.current?.readyState === WebSocket.OPEN) {
-                wsRef.current.send(buf);
-              }
-            });
+            try {
+              const b64 = await blobToBase64(blob);
+              if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+              lastSendTsRef.current = performance.now();
+              wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64 }));
+            } catch {
+              // skip frame
+            }
           },
           'image/jpeg',
           0.7,
