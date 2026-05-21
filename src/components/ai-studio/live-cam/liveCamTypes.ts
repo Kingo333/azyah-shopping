@@ -20,39 +20,18 @@ export interface LiveCamSessionInfo {
   wsUrl: string;
 }
 
-/** FluxRT WS init handshake — matches the server.py / config_with_reference.json format. */
-export interface LiveCamInitMessage {
-  type: 'init';
-  config: {
-    resolution: [number, number]; // [width, height]
-    use_reference_image: boolean;
-    fps_cap: number;
-  };
+/** FluxRT WS protocol — JSON messages only, base64 payloads. */
+export interface LiveCamSetReferenceImageMessage {
+  type: 'set_reference_image';
+  image_b64: string;
 }
 
-/** Reference-image blob message (sent once after init). */
-export interface LiveCamReferenceMessage {
-  type: 'reference';
-  mime: string;
-  // Binary payload sent as a second WS frame immediately following this JSON frame.
+export interface LiveCamSetPromptMessage {
+  type: 'set_prompt';
+  prompt: string;
 }
 
-/** Frame metadata sent immediately before each binary frame payload. */
-export interface LiveCamFrameMeta {
+export interface LiveCamFrameMessage {
   type: 'frame';
-  ts: number; // client-side performance.now() at capture
-  seq: number;
-  width: number;
-  height: number;
-  mime: 'image/jpeg';
-}
-
-/** Response frame metadata expected from the pod. */
-export interface LiveCamRemoteFrameMeta {
-  type: 'frame';
-  ts?: number; // echoed client ts if present
-  seq?: number;
-  width?: number;
-  height?: number;
-  mime?: string;
+  frame_b64: string;
 }
