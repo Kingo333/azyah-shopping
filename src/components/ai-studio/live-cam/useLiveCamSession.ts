@@ -254,25 +254,87 @@ export function useLiveCamSession({
       }
       wsRef.current = ws;
 
-      // 5. Send reference image (FluxRT protocol).
-      ws.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
+      // 5. Build final prompt: strong base + optional garment hint appended.
+      const hint = garment.promptHint?.trim();
+      const finalPrompt = hint ? `${DEFAULT_TRYON_PROMPT} ${hint}` : DEFAULT_TRYON_PROMPT;
 
-      // 6. Send try-on prompt (per-garment from DB, else strong default).
-      const prompt = (garment.promptHint && garment.promptHint.trim().length > 0)
-        ? garment.promptHint
-        : DEFAULT_TRYON_PROMPT;
-      ws.send(JSON.stringify({ type: 'set_prompt', prompt }));
+      // 6. Start frame loop helper — invoked only after worker emits 'ready'.
+      let readyHandled = false;
+      const startFrameLoop = () => {
+        if (readyHandled) return;
+        readyHandled = true;
+        const wsNow = wsRef.current;
+        if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
 
-      // 7. Bind message handler — worker sends {type:'frame', frame_b64}.
+        // Send reference image + prompt now that worker is ready.
+        wsNow.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
+        wsNow.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+
+        if (startTimeoutRef.current !== null) {
+          window.clearTimeout(startTimeoutRef.current);
+          startTimeoutRef.current = null;
+        }
+        setStatus('running');
+
+        const cap = document.createElement('canvas');
+        cap.width = TARGET_WIDTH;
+        cap.height = TARGET_HEIGHT;
+        captureCanvasRef.current = cap;
+        const capCtx = cap.getContext('2d');
+        if (!capCtx) {
+          setErrorMessage('Capture canvas context unavailable');
+          setStatus('failed');
+          cleanupLocal();
+          return;
+        }
+
+        const intervalMs = Math.floor(1000 / FPS_CAP);
+        frameTimerRef.current = window.setInterval(() => {
+          const wsNow2 = wsRef.current;
+          const v = localVideoRef.current;
+          if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
+          // Backpressure: skip if socket has too much buffered.
+          if (wsNow2.bufferedAmount > 2_000_000) return;
+          capCtx.drawImage(v, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+          cap.toBlob(
+            async (blob) => {
+              if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+              if (wsRef.current.bufferedAmount > 2_000_000) return;
+              try {
+                const b64 = await blobToBase64(blob);
+                if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+                if (wsRef.current.bufferedAmount > 2_000_000) return;
+                lastSendTsRef.current = performance.now();
+                wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64 }));
+              } catch {
+                // skip frame
+              }
+            },
+            'image/jpeg',
+            0.7,
+          );
+        }, intervalMs);
+      };
+
+      // 7. Bind message handler — handle warming | ready | ack | error | frame.
       ws.addEventListener('message', (ev) => {
         if (typeof ev.data !== 'string') return;
-        try {
-          const parsed = JSON.parse(ev.data);
-          if (parsed?.type === 'frame' && typeof parsed.frame_b64 === 'string') {
-            void renderRemoteFrame(parsed.frame_b64);
-          }
-        } catch {
-          // ignore non-JSON
+        let parsed: any;
+        try { parsed = JSON.parse(ev.data); } catch { return; }
+        const t = parsed?.type;
+        if (t === 'ready') {
+          startFrameLoop();
+        } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
+          void renderRemoteFrame(parsed.frame_b64);
+        } else if (t === 'error') {
+          const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
+          setErrorMessage(msg);
+          setStatus('failed');
+          cleanupLocal();
+          void callEnd();
+          sessionIdRef.current = null;
+        } else if (t === 'warming' || t === 'ack') {
+          // no-op; status remains 'warming' until 'ready'
         }
       });
       ws.addEventListener('close', () => {
@@ -280,43 +342,6 @@ export function useLiveCamSession({
           setStatus((s) => (s === 'running' ? 'ended' : s));
         }
       });
-
-      // 8. Start frame loop.
-      if (startTimeoutRef.current !== null) {
-        window.clearTimeout(startTimeoutRef.current);
-        startTimeoutRef.current = null;
-      }
-      setStatus('running');
-
-      const cap = document.createElement('canvas');
-      cap.width = TARGET_WIDTH;
-      cap.height = TARGET_HEIGHT;
-      captureCanvasRef.current = cap;
-      const capCtx = cap.getContext('2d');
-      if (!capCtx) throw new Error('Capture canvas context unavailable');
-
-      const intervalMs = Math.floor(1000 / FPS_CAP);
-      frameTimerRef.current = window.setInterval(() => {
-        const wsNow = wsRef.current;
-        const v = localVideoRef.current;
-        if (!wsNow || wsNow.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
-        capCtx.drawImage(v, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-        cap.toBlob(
-          async (blob) => {
-            if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-            try {
-              const b64 = await blobToBase64(blob);
-              if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-              lastSendTsRef.current = performance.now();
-              wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64 }));
-            } catch {
-              // skip frame
-            }
-          },
-          'image/jpeg',
-          0.7,
-        );
-      }, intervalMs);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setErrorMessage(msg);
