@@ -66,7 +66,8 @@ export const LiveCamTab: React.FC = () => {
         isRunning={isRunning}
         status={status}
         expanded={expanded}
-        onToggleExpand={() => setExpanded((v) => !v)}
+        onToggleExpand={handleToggleExpand}
+        onCanvasResize={redrawLastFrame}
       />
 
       <div className="flex items-center justify-between gap-2">
