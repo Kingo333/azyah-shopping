@@ -44,12 +44,12 @@ export const LiveCamCameraView: React.FC<Props> = ({
   // Local video wrapper class.
   const localWrapClass = expanded
     ? 'absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
-    : 'rounded-xl overflow-hidden bg-black aspect-[16/9] relative';
+    : 'order-1 rounded-xl overflow-hidden bg-black aspect-[16/9] relative';
 
   // Remote canvas wrapper class.
   const remoteWrapClass = expanded
     ? 'absolute inset-0 z-0 flex items-center justify-center'
-    : 'rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
+    : 'order-2 rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
 
   const canvasClass = expanded
     ? 'absolute inset-0 w-full h-full object-contain'
