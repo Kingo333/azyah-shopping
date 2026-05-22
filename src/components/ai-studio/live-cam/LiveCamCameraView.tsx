@@ -37,7 +37,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
   // The video and canvas DOM nodes themselves are NEVER unmounted across
   // toggles — only their wrapper classes change.
   const outerClass = expanded
-    ? 'relative w-full rounded-xl overflow-hidden bg-black aspect-[9/16] sm:aspect-auto sm:h-[calc(100vh-160px)] sm:max-h-[calc(100vh-160px)]'
+    ? 'relative w-full rounded-xl overflow-hidden bg-black aspect-[16/9] sm:aspect-auto sm:h-[calc(100vh-160px)] sm:max-h-[calc(100vh-160px)]'
     : 'relative grid grid-cols-2 gap-3';
 
   const localWrapClass = expanded
