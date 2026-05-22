@@ -30,6 +30,7 @@ interface UseLiveCamSessionReturn {
   session: LiveCamSessionInfo | null;
   start: () => Promise<void>;
   stop: () => Promise<void>;
+  redrawLastFrame: () => void;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
