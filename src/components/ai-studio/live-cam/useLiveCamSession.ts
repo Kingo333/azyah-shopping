@@ -140,6 +140,7 @@ export function useLiveCamSession({
       if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
       ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
       bitmap.close?.();
+      lastFrameB64Ref.current = b64;
       const sentAt = lastSendTsRef.current;
       if (sentAt != null) {
         const rtt = performance.now() - sentAt;
@@ -151,6 +152,24 @@ export function useLiveCamSession({
     } catch {
       // bad frame, skip
     }
+  }, [remoteCanvasRef]);
+
+  const redrawLastFrame = useCallback(() => {
+    const b64 = lastFrameB64Ref.current;
+    const canvas = remoteCanvasRef.current;
+    if (!b64 || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    // Use sync path: decode via Image (createImageBitmap is fine but async).
+    base64ToBlob(b64, 'image/jpeg');
+    createImageBitmap(base64ToBlob(b64, 'image/jpeg'))
+      .then((bitmap) => {
+        if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
+        if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
+        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
+        bitmap.close?.();
+      })
+      .catch(() => { /* noop */ });
   }, [remoteCanvasRef]);
 
   const start = useCallback(async () => {
