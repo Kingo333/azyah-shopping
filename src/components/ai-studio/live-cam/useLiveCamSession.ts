@@ -138,6 +138,18 @@ export function useLiveCamSession({
     try {
       const blob = base64ToBlob(b64, 'image/jpeg');
       const bitmap = await createImageBitmap(blob);
+
+      // Cache pixels to an offscreen canvas for instant sync redraw on resize/expand.
+      let cache = lastFrameCanvasRef.current;
+      if (!cache) {
+        cache = document.createElement('canvas');
+        lastFrameCanvasRef.current = cache;
+      }
+      if (cache.width !== bitmap.width) cache.width = bitmap.width;
+      if (cache.height !== bitmap.height) cache.height = bitmap.height;
+      const cacheCtx = cache.getContext('2d');
+      if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
+
       if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
       if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
       ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
@@ -156,22 +168,17 @@ export function useLiveCamSession({
     }
   }, [remoteCanvasRef]);
 
+  // Sync redraw of the cached frame into the visible canvas. Safe to call on
+  // every resize / expand-toggle without async decode jank or black flashes.
   const redrawLastFrame = useCallback(() => {
-    const b64 = lastFrameB64Ref.current;
+    const cache = lastFrameCanvasRef.current;
     const canvas = remoteCanvasRef.current;
-    if (!b64 || !canvas) return;
+    if (!cache || !canvas || cache.width === 0 || cache.height === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // Use sync path: decode via Image (createImageBitmap is fine but async).
-    base64ToBlob(b64, 'image/jpeg');
-    createImageBitmap(base64ToBlob(b64, 'image/jpeg'))
-      .then((bitmap) => {
-        if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
-        if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
-        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
-        bitmap.close?.();
-      })
-      .catch(() => { /* noop */ });
+    if (canvas.width !== cache.width) canvas.width = cache.width;
+    if (canvas.height !== cache.height) canvas.height = cache.height;
+    ctx.drawImage(cache, 0, 0);
   }, [remoteCanvasRef]);
 
   const start = useCallback(async () => {
