@@ -435,5 +435,5 @@ export function useLiveCamSession({
     };
   }, [cleanupLocal, callEnd, stop]);
 
-  return { status, errorMessage, latencyMs, session, start, stop };
+  return { status, errorMessage, latencyMs, session, start, stop, redrawLastFrame };
 }
