@@ -57,8 +57,8 @@ export const LiveCamCameraView: React.FC<Props> = ({
       {/* Remote (AI) canvas — always mounted */}
       <div className={remoteWrapClass}>
         {expanded ? (
-          <div className="w-full aspect-[16/9] flex items-center justify-center bg-black">
-            <canvas ref={remoteCanvasRef} className={canvasClass} />
+          <div className="w-full aspect-[16/9] bg-black">
+            <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
           </div>
         ) : (
           <canvas ref={remoteCanvasRef} className={canvasClass} />
