@@ -24,36 +24,33 @@ export const LiveCamCameraView: React.FC<Props> = ({
   const isWarming = status === 'warming';
   const warmingCopy = 'Warming up GPU… this can take up to 3 minutes';
 
-  // Repaint when canvas size changes (window resize, expand toggle, orientation).
+  // Repaint cached frame whenever the visible canvas's box changes size.
   useEffect(() => {
     const canvas = remoteCanvasRef.current;
     if (!canvas || !onCanvasResize) return;
-    const ro = new ResizeObserver(() => {
-      onCanvasResize();
-    });
+    const ro = new ResizeObserver(() => onCanvasResize());
     ro.observe(canvas);
     return () => ro.disconnect();
   }, [remoteCanvasRef, onCanvasResize]);
 
-  // Outer container — class switches between compact grid and expanded full-bleed.
-  // The video and canvas DOM nodes are NEVER unmounted, only re-classed.
+  // Outer wrapper: grid in compact, single full-bleed block when expanded.
+  // The video and canvas DOM nodes themselves are NEVER unmounted across
+  // toggles — only their wrapper classes change.
   const outerClass = expanded
     ? 'relative w-full rounded-xl overflow-hidden bg-black aspect-[9/16] sm:aspect-auto sm:h-[calc(100vh-160px)] sm:max-h-[calc(100vh-160px)]'
     : 'relative grid grid-cols-2 gap-3';
 
-  // Local video wrapper class.
   const localWrapClass = expanded
     ? 'absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
     : 'order-1 rounded-xl overflow-hidden bg-black aspect-[16/9] relative';
 
-  // Remote canvas wrapper class.
   const remoteWrapClass = expanded
-    ? 'absolute inset-0 z-0 flex items-center justify-center'
+    ? 'absolute inset-0 z-0 flex items-center justify-center bg-black'
     : 'order-2 rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
 
-  const canvasClass = expanded
-    ? 'absolute inset-0 w-full h-full object-contain'
-    : 'w-full h-full object-contain';
+  // In both modes the canvas is a flex child sized by max-w/max-h-full so the
+  // bitmap is preserved during reflows (no momentary 0-size or stretching).
+  const canvasClass = 'max-w-full max-h-full w-auto h-auto object-contain';
 
   return (
     <div className={outerClass}>
@@ -91,7 +88,11 @@ export const LiveCamCameraView: React.FC<Props> = ({
           muted
           className="w-full h-full object-cover -scale-x-100"
         />
-        <span className={`absolute ${expanded ? 'top-1 left-1 text-[9px] px-1.5' : 'top-2 left-2 text-[10px] px-2'} uppercase tracking-wide bg-black/50 text-white py-0.5 rounded-full`}>
+        <span
+          className={`absolute ${
+            expanded ? 'top-1 left-1 text-[9px] px-1.5' : 'top-2 left-2 text-[10px] px-2'
+          } uppercase tracking-wide bg-black/50 text-white py-0.5 rounded-full`}
+        >
           You
         </span>
       </div>
