@@ -15,7 +15,7 @@ const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
 const DEFAULT_TRYON_PROMPT =
-  "Apply the clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, background, skin tone, and lighting. Make the garment look naturally worn, fitted, and realistic.";
+  "Apply the clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, background, skin tone, and lighting. Make the garment look naturally worn, fitted, and realistic, and keep the color/ pattern of the clothing item.";
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
