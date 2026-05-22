@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import type { LiveCamStatus } from './liveCamTypes';
 
@@ -9,6 +9,7 @@ interface Props {
   status?: LiveCamStatus;
   expanded?: boolean;
   onToggleExpand?: () => void;
+  onCanvasResize?: () => void;
 }
 
 export const LiveCamCameraView: React.FC<Props> = ({
@@ -18,86 +19,81 @@ export const LiveCamCameraView: React.FC<Props> = ({
   status,
   expanded = false,
   onToggleExpand,
+  onCanvasResize,
 }) => {
   const isWarming = status === 'warming';
   const warmingCopy = 'Warming up GPU… this can take up to 3 minutes';
-  if (expanded) {
-    return (
-      <div className="relative w-full rounded-xl overflow-hidden bg-black h-[70vh] flex items-center justify-center">
-        <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
+
+  // Repaint when canvas size changes (window resize, expand toggle, orientation).
+  useEffect(() => {
+    const canvas = remoteCanvasRef.current;
+    if (!canvas || !onCanvasResize) return;
+    const ro = new ResizeObserver(() => {
+      onCanvasResize();
+    });
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [remoteCanvasRef, onCanvasResize]);
+
+  // Outer container — class switches between compact grid and expanded full-bleed.
+  // The video and canvas DOM nodes are NEVER unmounted, only re-classed.
+  const outerClass = expanded
+    ? 'relative w-full rounded-xl overflow-hidden bg-black aspect-[9/16] sm:aspect-auto sm:h-[calc(100vh-160px)] sm:max-h-[calc(100vh-160px)]'
+    : 'relative grid grid-cols-2 gap-3';
+
+  // Local video wrapper class.
+  const localWrapClass = expanded
+    ? 'absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
+    : 'order-1 rounded-xl overflow-hidden bg-black aspect-[16/9] relative';
+
+  // Remote canvas wrapper class.
+  const remoteWrapClass = expanded
+    ? 'absolute inset-0 z-0 flex items-center justify-center'
+    : 'order-2 rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
+
+  const canvasClass = expanded
+    ? 'absolute inset-0 w-full h-full object-contain'
+    : 'w-full h-full object-contain';
+
+  return (
+    <div className={outerClass}>
+      {/* Remote (AI) canvas — always mounted */}
+      <div className={remoteWrapClass}>
+        <canvas ref={remoteCanvasRef} className={canvasClass} />
         {!isRunning && !isWarming && (
-          <span className="absolute text-white/70 text-xs">Try-on preview</span>
+          <span className="absolute text-white/70 text-xs z-20">Try-on preview</span>
         )}
         {isWarming && (
-          <span className="absolute text-white/80 text-xs px-3 py-1 rounded-full bg-black/50">{warmingCopy}</span>
+          <span className="absolute text-white/80 text-[11px] px-2 py-1 rounded-full bg-black/50 text-center max-w-[90%] z-20">
+            {warmingCopy}
+          </span>
         )}
-        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
+        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full z-20">
           Try-on
         </span>
-
-        {/* PiP local cam */}
-        <div className="absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg">
-          <video
-            ref={localVideoRef}
-            playsInline
-            muted
-            className="w-full h-full object-cover -scale-x-100"
-          />
-          <span className="absolute top-1 left-1 text-[9px] uppercase tracking-wide bg-black/50 text-white px-1.5 py-0.5 rounded-full">
-            You
-          </span>
-        </div>
-
         {onToggleExpand && (
           <button
             type="button"
             onClick={onToggleExpand}
-            aria-label="Collapse try-on preview"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+            aria-label={expanded ? 'Collapse try-on preview' : 'Expand try-on preview'}
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center z-20"
           >
-            <Minimize2 className="h-4 w-4" />
+            {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
         )}
       </div>
-    );
-  }
 
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-xl overflow-hidden bg-black aspect-[16/9] relative">
+      {/* Local video — always mounted */}
+      <div className={localWrapClass}>
         <video
           ref={localVideoRef}
           playsInline
           muted
           className="w-full h-full object-cover -scale-x-100"
         />
-        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
+        <span className={`absolute ${expanded ? 'top-1 left-1 text-[9px] px-1.5' : 'top-2 left-2 text-[10px] px-2'} uppercase tracking-wide bg-black/50 text-white py-0.5 rounded-full`}>
           You
         </span>
-      </div>
-      <div className="rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center">
-        <canvas ref={remoteCanvasRef} className="w-full h-full object-contain" />
-        {!isRunning && !isWarming && (
-          <span className="absolute text-white/70 text-xs">Try-on preview</span>
-        )}
-        {isWarming && (
-          <span className="absolute text-white/80 text-[11px] px-2 py-1 rounded-full bg-black/50 text-center max-w-[90%]">
-            {warmingCopy}
-          </span>
-        )}
-        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wide bg-black/50 text-white px-2 py-0.5 rounded-full">
-          Try-on
-        </span>
-        {onToggleExpand && (
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            aria-label="Expand try-on preview"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
-          >
-            <Maximize2 className="h-4 w-4" />
-          </button>
-        )}
       </div>
     </div>
   );

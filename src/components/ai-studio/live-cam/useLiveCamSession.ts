@@ -30,6 +30,7 @@ interface UseLiveCamSessionReturn {
   session: LiveCamSessionInfo | null;
   start: () => Promise<void>;
   stop: () => Promise<void>;
+  redrawLastFrame: () => void;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
@@ -73,6 +74,7 @@ export function useLiveCamSession({
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
   const lastSendTsRef = useRef<number | null>(null);
+  const lastFrameB64Ref = useRef<string | null>(null);
   const retryTimerRef = useRef<number | null>(null);
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
@@ -106,6 +108,7 @@ export function useLiveCamSession({
     }
     captureCanvasRef.current = null;
     lastSendTsRef.current = null;
+    lastFrameB64Ref.current = null;
   }, [localVideoRef]);
 
   const callEnd = useCallback(async () => {
@@ -138,6 +141,7 @@ export function useLiveCamSession({
       if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
       ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
       bitmap.close?.();
+      lastFrameB64Ref.current = b64;
       const sentAt = lastSendTsRef.current;
       if (sentAt != null) {
         const rtt = performance.now() - sentAt;
@@ -149,6 +153,24 @@ export function useLiveCamSession({
     } catch {
       // bad frame, skip
     }
+  }, [remoteCanvasRef]);
+
+  const redrawLastFrame = useCallback(() => {
+    const b64 = lastFrameB64Ref.current;
+    const canvas = remoteCanvasRef.current;
+    if (!b64 || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    // Use sync path: decode via Image (createImageBitmap is fine but async).
+    base64ToBlob(b64, 'image/jpeg');
+    createImageBitmap(base64ToBlob(b64, 'image/jpeg'))
+      .then((bitmap) => {
+        if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
+        if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
+        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
+        bitmap.close?.();
+      })
+      .catch(() => { /* noop */ });
   }, [remoteCanvasRef]);
 
   const start = useCallback(async () => {
@@ -414,5 +436,5 @@ export function useLiveCamSession({
     };
   }, [cleanupLocal, callEnd, stop]);
 
-  return { status, errorMessage, latencyMs, session, start, stop };
+  return { status, errorMessage, latencyMs, session, start, stop, redrawLastFrame };
 }

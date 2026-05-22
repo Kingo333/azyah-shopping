@@ -18,11 +18,19 @@ export const LiveCamTab: React.FC = () => {
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
   const supported = supportsLiveCam();
 
-  const { status, errorMessage, latencyMs, session, start, stop } = useLiveCamSession({
+  const { status, errorMessage, latencyMs, session, start, stop, redrawLastFrame } = useLiveCamSession({
     garment,
     localVideoRef,
     remoteCanvasRef,
   });
+
+  const handleToggleExpand = () => {
+    setExpanded((v) => !v);
+    // After layout flip, repaint cached frame so the new canvas size is filled immediately.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => redrawLastFrame());
+    });
+  };
 
   // Stop the session when this component unmounts (e.g., tab switch away).
   useEffect(() => {
@@ -58,7 +66,8 @@ export const LiveCamTab: React.FC = () => {
         isRunning={isRunning}
         status={status}
         expanded={expanded}
-        onToggleExpand={() => setExpanded((v) => !v)}
+        onToggleExpand={handleToggleExpand}
+        onCanvasResize={redrawLastFrame}
       />
 
       <div className="flex items-center justify-between gap-2">
