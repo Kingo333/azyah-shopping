@@ -74,6 +74,7 @@ export function useLiveCamSession({
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
   const lastSendTsRef = useRef<number | null>(null);
+  const lastFrameB64Ref = useRef<string | null>(null);
   const retryTimerRef = useRef<number | null>(null);
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
