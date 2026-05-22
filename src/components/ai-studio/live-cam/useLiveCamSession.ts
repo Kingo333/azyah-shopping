@@ -110,6 +110,7 @@ export function useLiveCamSession({
     captureCanvasRef.current = null;
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
+    lastFrameCanvasRef.current = null;
   }, [localVideoRef]);
 
   const callEnd = useCallback(async () => {
