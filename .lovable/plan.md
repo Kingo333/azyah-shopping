@@ -1,15 +1,12 @@
 ## Goal
-Keep the expanded outer wrapper as portrait (3:4) — unchanged. Inside it, render the try-on video stream in its native landscape rectangle (centered, with black space above/below), instead of letting the canvas fill the full portrait box.
+Stream is natively 512×288 (16:9 landscape). Render it as a centered landscape rectangle inside the unchanged portrait expanded frame, displayed at native aspect with no zoom/upscale-stretch. The current inner wrapper exists but the canvas (`max-w-full max-h-full w-auto h-auto object-contain`) lets the canvas's intrinsic bitmap drive size — if the canvas's internal bitmap is portrait, it renders portrait. We need to force the visible box to 16:9 regardless of bitmap dims.
 
 ## Change — `src/components/ai-studio/live-cam/LiveCamCameraView.tsx`
 
-In expanded mode, wrap the canvas in an inner landscape container so the stream displays as a centered rectangle within the portrait frame.
+In expanded mode, replace the inner wrapper + canvas pair so the canvas itself fills a 16:9 box:
 
-- `remoteWrapClass` (expanded): keep `absolute inset-0 z-0 flex items-center justify-center bg-black` (unchanged).
-- Inside that wrapper, when `expanded` is true, add an inner div with `w-full aspect-[16/9]` (or match FluxRT's native ratio) that contains the canvas. The canvas keeps `max-w-full max-h-full object-contain`.
+- Expanded inner wrapper: `w-full aspect-[16/9] bg-black` (centered via the existing flex parent).
+- Canvas inside expanded inner wrapper: `w-full h-full object-contain` (no `max-w/max-h`, no `w-auto/h-auto`) — this forces the visible canvas element to the wrapper's 16:9 box, and `object-contain` letterboxes the bitmap into it without zoom/crop.
 - Compact mode unchanged.
-- Outer expanded wrapper stays `aspect-[3/4]` — not touched.
 
-Result: portrait outer frame with a landscape video rectangle centered inside (black bars top/bottom of the video rectangle, frame edges intact left/right).
-
-No prompt, session, or stream-resolution changes.
+Result: portrait outer frame (3:4) preserved; inside it a centered 16:9 landscape rectangle holds the stream at native ratio with black space above/below the rectangle. No prompt, session, or stream-resolution changes.
