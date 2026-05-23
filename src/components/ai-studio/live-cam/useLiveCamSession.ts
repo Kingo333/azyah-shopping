@@ -306,17 +306,55 @@ export function useLiveCamSession({
       const hint = garment.promptHint?.trim();
       const finalPrompt = hint ? `${DEFAULT_TRYON_PROMPT} ${hint}` : DEFAULT_TRYON_PROMPT;
 
-      // 6. Start frame loop helper — invoked only after worker emits 'ready'.
-      let readyHandled = false;
-      const startFrameLoop = () => {
-        if (readyHandled) return;
-        readyHandled = true;
-        const wsNow = wsRef.current;
-        if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
+      console.log(`[live-cam] product id=${garment.id} source=${garment.source}`);
+      const refExists = typeof refB64 === 'string' && refB64.length > 0;
+      console.log(`[live-cam] reference image exists=${refExists}`);
 
-        // Send reference image + prompt now that worker is ready.
-        wsNow.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
-        wsNow.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+      // 6. Ack resolver registry — keyed by step name.
+      type Pending = { resolve: () => void; reject: (e: Error) => void; timer: number };
+      const pending = new Map<string, Pending>();
+
+      const matchAckKey = (parsed: any): string | null => {
+        const t = parsed?.type;
+        if (t === 'ack') {
+          if (typeof parsed.name === 'string' && pending.has(parsed.name)) return parsed.name;
+          if (typeof parsed.for === 'string' && pending.has(parsed.for)) return parsed.for;
+          return null;
+        }
+        if (typeof t === 'string') {
+          if (t.endsWith('_ack')) {
+            const k = t.slice(0, -4);
+            if (pending.has(k)) return k;
+          }
+          if (pending.has(t)) return t;
+        }
+        return null;
+      };
+
+      const waitForAck = (key: string, timeoutMs = 30_000) =>
+        new Promise<void>((resolve, reject) => {
+          const timer = window.setTimeout(() => {
+            pending.delete(key);
+            console.log(`[live-cam] ${key} ack=false`);
+            reject(new Error(`Worker did not acknowledge ${key}`));
+          }, timeoutMs);
+          pending.set(key, { resolve, reject, timer });
+        });
+
+      const rejectAllPending = (reason: string) => {
+        for (const [, p] of pending) {
+          window.clearTimeout(p.timer);
+          p.reject(new Error(reason));
+        }
+        pending.clear();
+      };
+
+      // 7. Start frame loop helper — invoked only after both acks received.
+      let handshakeStarted = false;
+      let frameLoopStarted = false;
+      const startFrameLoop = () => {
+        if (frameLoopStarted) return;
+        frameLoopStarted = true;
 
         if (startTimeoutRef.current !== null) {
           window.clearTimeout(startTimeoutRef.current);
@@ -341,7 +379,6 @@ export function useLiveCamSession({
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
-          // Backpressure: skip if socket has too much buffered.
           if (wsNow2.bufferedAmount > 2_000_000) return;
           capCtx.drawImage(v, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
           cap.toBlob(
@@ -364,28 +401,87 @@ export function useLiveCamSession({
         }, intervalMs);
       };
 
-      // 7. Bind message handler — handle warming | ready | ack | error | frame.
-      ws.addEventListener('message', (ev) => {
-        if (typeof ev.data !== 'string') return;
-        let parsed: any;
-        try { parsed = JSON.parse(ev.data); } catch { return; }
-        const t = parsed?.type;
-        if (t === 'ready') {
+      const runHandshake = async () => {
+        if (handshakeStarted) return;
+        handshakeStarted = true;
+        const wsNow = wsRef.current;
+        if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
+
+        if (!refExists) {
+          setErrorMessage('Reference image missing');
+          setStatus('failed');
+          cleanupLocal();
+          void callEnd();
+          sessionIdRef.current = null;
+          return;
+        }
+
+        try {
+          // Step A: set_reference_image — register resolver before sending.
+          const ackRef = waitForAck('set_reference_image');
+          wsNow.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
+          await ackRef;
+          console.log('[live-cam] set_reference_image ack=true');
+
+          // Step B: set_prompt
+          console.log(`[live-cam] final prompt length=${finalPrompt.length}`);
+          const ackPrompt = waitForAck('set_prompt');
+          const wsNow2 = wsRef.current;
+          if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
+            throw new Error('WebSocket closed before prompt could be sent');
+          }
+          wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+          await ackPrompt;
+          console.log('[live-cam] set_prompt ack=true');
+
           startFrameLoop();
-        } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
-          void renderRemoteFrame(parsed.frame_b64);
-        } else if (t === 'error') {
-          const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
           setErrorMessage(msg);
           setStatus('failed');
           cleanupLocal();
           void callEnd();
           sessionIdRef.current = null;
-        } else if (t === 'warming' || t === 'ack') {
-          // no-op; status remains 'warming' until 'ready'
+        }
+      };
+
+      // 8. Bind message handler — handle warming | ready | ack | error | frame.
+      ws.addEventListener('message', (ev) => {
+        if (typeof ev.data !== 'string') return;
+        let parsed: any;
+        try { parsed = JSON.parse(ev.data); } catch { return; }
+        const t = parsed?.type;
+
+        const ackKey = matchAckKey(parsed);
+        if (ackKey) {
+          const p = pending.get(ackKey);
+          if (p) {
+            window.clearTimeout(p.timer);
+            pending.delete(ackKey);
+            p.resolve();
+          }
+          return;
+        }
+
+        if (t === 'ready') {
+          void runHandshake();
+        } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
+          void renderRemoteFrame(parsed.frame_b64);
+        } else if (t === 'error') {
+          const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
+          rejectAllPending(msg);
+          setErrorMessage(msg);
+          setStatus('failed');
+          cleanupLocal();
+          void callEnd();
+          sessionIdRef.current = null;
         }
       });
+      ws.addEventListener('error', () => {
+        rejectAllPending('WebSocket error');
+      });
       ws.addEventListener('close', () => {
+        rejectAllPending('WebSocket closed');
         if (sessionIdRef.current) {
           setStatus((s) => (s === 'running' ? 'ended' : s));
         }
