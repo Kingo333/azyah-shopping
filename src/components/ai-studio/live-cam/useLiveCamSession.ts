@@ -15,7 +15,7 @@ const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
 const DEFAULT_TRYON_PROMPT =
-  "Apply the clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, background, skin tone, and lighting. Make the garment look naturally worn, fitted, and realistic.";
+  "Realistic virtual fashion try-on. Apply the exact clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, body shape, background, skin tone, and lighting. Preserve the reference garment faithfully: same garment type, sleeve length, neckline, hem length, silhouette, color, fabric texture, print, logo, graphics, pattern placement, seams, buttons, and visible design details. Make the garment look naturally worn and fitted on the person, but do not redesign it. Do not shorten sleeves. Do not remove patterns or logos. Do not turn a designed garment into a plain garment. Do not invent a different item.";
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
