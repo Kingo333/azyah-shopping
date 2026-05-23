@@ -73,8 +73,9 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
       .map((it) => ({
         id: it.id,
         source: 'wardrobe_item' as const,
-        label: it.brand || it.category || 'My item',
+        label: (it as any).name || it.brand || it.category || 'My item',
         imageUrl: (it.image_bg_removed_url || it.image_url) as string,
+        category: it.category ?? undefined,
       }));
     return [...w, ...extra];
   }, [wardrobe, extra]);
