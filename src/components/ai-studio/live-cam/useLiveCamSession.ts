@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
+import { buildTryOnPrompt } from './buildTryOnPrompt';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
