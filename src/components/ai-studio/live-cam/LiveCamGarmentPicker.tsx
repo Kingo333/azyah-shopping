@@ -36,16 +36,29 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
     async function load() {
       setExtraLoading(true);
       const [{ data: products }, { data: ebp }] = await Promise.all([
-        supabase.from('products').select('id, title, image_url').limit(12),
+        supabase.from('products').select('id, title, image_url, description, category_slug').limit(12),
         supabase.from('event_brand_products').select('id, image_url, garment_type').limit(12),
       ]);
       if (cancelled) return;
       const opts: GarmentOption[] = [];
-      (products ?? []).forEach((p) => {
-        if (p.image_url) opts.push({ id: p.id, source: 'product', label: p.title ?? 'Product', imageUrl: p.image_url });
+      (products ?? []).forEach((p: any) => {
+        if (p.image_url) opts.push({
+          id: p.id,
+          source: 'product',
+          label: p.title ?? 'Product',
+          imageUrl: p.image_url,
+          category: p.category_slug ?? undefined,
+          description: p.description ?? undefined,
+        });
       });
-      (ebp ?? []).forEach((p) => {
-        if (p.image_url) opts.push({ id: p.id, source: 'event_brand_product', label: p.garment_type ?? 'Event item', imageUrl: p.image_url });
+      (ebp ?? []).forEach((p: any) => {
+        if (p.image_url) opts.push({
+          id: p.id,
+          source: 'event_brand_product',
+          label: p.garment_type ?? 'Event item',
+          imageUrl: p.image_url,
+          category: p.garment_type ?? undefined,
+        });
       });
       setExtra(opts);
       setExtraLoading(false);
