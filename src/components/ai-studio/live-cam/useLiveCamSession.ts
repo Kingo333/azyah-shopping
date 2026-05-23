@@ -7,8 +7,8 @@ import type {
   LiveCamStatus,
 } from './liveCamTypes';
 
-const TARGET_WIDTH = 576;
-const TARGET_HEIGHT = 320;
+const TARGET_WIDTH = 288;
+const TARGET_HEIGHT = 512;
 const FPS_CAP = 12;
 const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
