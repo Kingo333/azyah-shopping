@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
+import { buildTryOnPrompt } from './buildTryOnPrompt';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -14,8 +15,7 @@ const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
-const DEFAULT_TRYON_PROMPT =
-  "Realistic virtual fashion try-on. Apply the exact clothing item from the reference image onto the person in the live camera frame. Preserve the person's face, body pose, body shape, background, skin tone, and lighting. Preserve the reference garment faithfully: same garment type, sleeve length, neckline, hem length, silhouette, color, fabric texture, print, logo, graphics, pattern placement, seams, buttons, and visible design details. Make the garment look naturally worn and fitted on the person, but do not redesign it. Do not shorten sleeves. Do not remove patterns or logos. Do not turn a designed garment into a plain garment. Do not invent a different item.";
+
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
@@ -302,13 +302,22 @@ export function useLiveCamSession({
       }
       wsRef.current = ws;
 
-      // 5. Build final prompt: strong base + optional garment hint appended.
+      // 5. Build category-aware prompt from existing item metadata.
+      const name = garment.label?.trim();
+      const description = garment.description?.trim();
       const hint = garment.promptHint?.trim();
-      const finalPrompt = hint ? `${DEFAULT_TRYON_PROMPT} ${hint}` : DEFAULT_TRYON_PROMPT;
+      const finalPrompt = buildTryOnPrompt({
+        category: garment.category,
+        name,
+        description,
+        promptHint: hint,
+      });
 
-      console.log(`[live-cam] product id=${garment.id} source=${garment.source}`);
+      console.log(`[live-cam] item id=${garment.id} category=${garment.category ?? ''} source=${garment.source}`);
+      console.log(`[live-cam] name exists=${!!name} description exists=${!!description} promptHint exists=${!!hint}`);
       const refExists = typeof refB64 === 'string' && refB64.length > 0;
       console.log(`[live-cam] reference image exists=${refExists}`);
+
 
       // 6. Ack resolver registry — keyed by step name.
       type Pending = { resolve: () => void; reject: (e: Error) => void; timer: number };
