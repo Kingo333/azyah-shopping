@@ -12,6 +12,10 @@ export interface LiveCamGarmentSelection {
   /** Reference image used by FluxRT. Falls back to the garment's main image. */
   referenceImageUrl: string;
   promptHint?: string;
+  /** Raw category string from DB (slug, label, or garment_type). Used for prompt building only. */
+  category?: string;
+  /** Optional item description from DB. Used for prompt building only. */
+  description?: string;
 }
 
 export interface LiveCamSessionInfo {
