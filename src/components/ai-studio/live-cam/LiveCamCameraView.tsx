@@ -48,15 +48,16 @@ export const LiveCamCameraView: React.FC<Props> = ({
     ? 'absolute inset-0 z-0 flex items-center justify-center bg-black'
     : 'order-2 rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
 
-  // In both modes the canvas is a flex child sized by max-w/max-h-full so the
-  // bitmap is preserved during reflows (no momentary 0-size or stretching).
+  // Canvas sized by CSS (max-w/max-h-full) — bitmap stays at 288×512 with
+  // contain-fit drawn manually inside renderRemoteFrame, so the frame is
+  // always centered on black with no zoom/crop/stretch.
   const canvasClass = 'max-w-full max-h-full w-auto h-auto object-contain';
 
   return (
     <div className={outerClass}>
       {/* Remote (AI) canvas — always mounted */}
       <div className={remoteWrapClass}>
-        <canvas ref={remoteCanvasRef} className={canvasClass} />
+        <canvas ref={remoteCanvasRef} width={288} height={512} className={canvasClass} />
         {!isRunning && !isWarming && (
           <span className="absolute text-white/70 text-xs z-20">Try-on preview</span>
         )}

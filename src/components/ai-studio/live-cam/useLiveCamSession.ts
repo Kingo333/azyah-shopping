@@ -7,8 +7,8 @@ import type {
   LiveCamStatus,
 } from './liveCamTypes';
 
-const TARGET_WIDTH = 576;
-const TARGET_HEIGHT = 320;
+const TARGET_WIDTH = 288;
+const TARGET_HEIGHT = 512;
 const FPS_CAP = 12;
 const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
@@ -151,9 +151,19 @@ export function useLiveCamSession({
       const cacheCtx = cache.getContext('2d');
       if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
 
-      if (canvas.width !== bitmap.width) canvas.width = bitmap.width;
-      if (canvas.height !== bitmap.height) canvas.height = bitmap.height;
-      ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
+      // Pin visible canvas bitmap to FluxRT output dimensions; do not mutate per frame.
+      if (canvas.width !== TARGET_WIDTH) canvas.width = TARGET_WIDTH;
+      if (canvas.height !== TARGET_HEIGHT) canvas.height = TARGET_HEIGHT;
+
+      // Contain-fit on a black backdrop — full frame visible, centered, never cropped.
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+      const dw = bitmap.width * scale;
+      const dh = bitmap.height * scale;
+      const dx = (canvas.width - dw) / 2;
+      const dy = (canvas.height - dh) / 2;
+      ctx.drawImage(bitmap, dx, dy, dw, dh);
       bitmap.close?.();
       lastFrameB64Ref.current = b64;
       const sentAt = lastSendTsRef.current;
@@ -177,9 +187,16 @@ export function useLiveCamSession({
     if (!cache || !canvas || cache.width === 0 || cache.height === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    if (canvas.width !== cache.width) canvas.width = cache.width;
-    if (canvas.height !== cache.height) canvas.height = cache.height;
-    ctx.drawImage(cache, 0, 0);
+    if (canvas.width !== TARGET_WIDTH) canvas.width = TARGET_WIDTH;
+    if (canvas.height !== TARGET_HEIGHT) canvas.height = TARGET_HEIGHT;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.min(canvas.width / cache.width, canvas.height / cache.height);
+    const dw = cache.width * scale;
+    const dh = cache.height * scale;
+    const dx = (canvas.width - dw) / 2;
+    const dy = (canvas.height - dh) / 2;
+    ctx.drawImage(cache, dx, dy, dw, dh);
   }, [remoteCanvasRef]);
 
   const start = useCallback(async () => {
