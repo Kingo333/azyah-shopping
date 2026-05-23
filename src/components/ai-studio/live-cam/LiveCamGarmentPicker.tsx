@@ -15,6 +15,8 @@ interface GarmentOption {
   source: GarmentSource;
   label: string;
   imageUrl: string;
+  category?: string;
+  description?: string;
 }
 
 interface SettingsRow {
