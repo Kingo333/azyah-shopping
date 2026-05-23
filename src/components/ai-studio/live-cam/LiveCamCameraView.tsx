@@ -41,12 +41,12 @@ export const LiveCamCameraView: React.FC<Props> = ({
     : 'relative grid grid-cols-2 gap-3';
 
   const localWrapClass = expanded
-    ? 'absolute bottom-3 right-3 w-32 sm:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
-    : 'order-1 rounded-xl overflow-hidden bg-black aspect-[16/9] relative';
+    ? 'absolute bottom-3 right-3 w-24 sm:w-32 md:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
+    : 'order-1 rounded-xl overflow-hidden bg-black aspect-[3/4] relative';
 
   const remoteWrapClass = expanded
     ? 'absolute inset-0 z-0 flex items-center justify-center bg-black'
-    : 'order-2 rounded-xl overflow-hidden bg-black aspect-[16/9] relative flex items-center justify-center';
+    : 'order-2 rounded-xl overflow-hidden bg-black aspect-[9/16] relative flex items-center justify-center';
 
   // Canvas sized by CSS (max-w/max-h-full) — bitmap stays at 288×512 with
   // contain-fit drawn manually inside renderRemoteFrame, so the frame is
