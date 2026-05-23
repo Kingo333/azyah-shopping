@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
-import { buildTryOnPrompt } from './buildTryOnPrompt';
+import { buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -313,7 +313,14 @@ export function useLiveCamSession({
         promptHint: hint,
       });
 
+      const sleeveInference = inferSleeveLength({
+        category: garment.category,
+        name,
+        description,
+        promptHint: hint,
+      });
       console.log(`[live-cam] item id=${garment.id} category=${garment.category ?? ''} source=${garment.source}`);
+      console.log(`[live-cam] sleeve inference=${sleeveInference}`);
       console.log(`[live-cam] name exists=${!!name} description exists=${!!description} promptHint exists=${!!hint}`);
       const refExists = typeof refB64 === 'string' && refB64.length > 0;
       console.log(`[live-cam] reference image exists=${refExists}`);
