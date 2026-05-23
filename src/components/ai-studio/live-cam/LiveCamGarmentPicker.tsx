@@ -106,6 +106,8 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
       label: opt.label,
       referenceImageUrl: override?.reference_image_url || opt.imageUrl,
       promptHint: override?.prompt_hint || undefined,
+      category: opt.category,
+      description: opt.description,
     });
   };
 
