@@ -302,13 +302,22 @@ export function useLiveCamSession({
       }
       wsRef.current = ws;
 
-      // 5. Build final prompt: strong base + optional garment hint appended.
+      // 5. Build category-aware prompt from existing item metadata.
+      const name = garment.label?.trim();
+      const description = garment.description?.trim();
       const hint = garment.promptHint?.trim();
-      const finalPrompt = hint ? `${DEFAULT_TRYON_PROMPT} ${hint}` : DEFAULT_TRYON_PROMPT;
+      const finalPrompt = buildTryOnPrompt({
+        category: garment.category,
+        name,
+        description,
+        promptHint: hint,
+      });
 
-      console.log(`[live-cam] product id=${garment.id} source=${garment.source}`);
+      console.log(`[live-cam] item id=${garment.id} category=${garment.category ?? ''} source=${garment.source}`);
+      console.log(`[live-cam] name exists=${!!name} description exists=${!!description} promptHint exists=${!!hint}`);
       const refExists = typeof refB64 === 'string' && refB64.length > 0;
       console.log(`[live-cam] reference image exists=${refExists}`);
+
 
       // 6. Ack resolver registry — keyed by step name.
       type Pending = { resolve: () => void; reject: (e: Error) => void; timer: number };
