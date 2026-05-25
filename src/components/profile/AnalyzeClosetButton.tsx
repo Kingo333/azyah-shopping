@@ -80,7 +80,7 @@ export const AnalyzeClosetButton: React.FC = () => {
     setLoadingMode(mode);
     setSummary(null);
     try {
-      const queueSize = Math.max(1, Math.min(7, coverage?.uniqueUrlsRemaining ?? 7));
+      const queueSize = Math.max(1, Math.min(25, coverage?.uniqueUrlsRemaining ?? 25));
       const body =
         mode === 'smoke'
           ? { mode: 'smoke-test' }
