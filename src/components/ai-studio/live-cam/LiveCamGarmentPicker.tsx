@@ -17,8 +17,10 @@ interface GarmentOption {
   imageUrl: string;
   category?: string;
   description?: string;
-  /** FashionCLIP-derived hint, only set for wardrobe items with status='complete'. */
+  /** Gemini final_prompt_hint preferred; falls back to legacy prompt_hint. */
   analysisPromptHint?: string;
+  /** When true, do NOT merge any FashionCLIP hint into the final Live Cam prompt. */
+  geminiReady?: boolean;
 }
 
 interface SettingsRow {
