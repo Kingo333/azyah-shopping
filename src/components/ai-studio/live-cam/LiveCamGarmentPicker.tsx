@@ -120,11 +120,13 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
 
   const handlePick = (opt: GarmentOption) => {
     const override = settings[opt.id];
-    // FashionCLIP hint first, manual per-garment override second.
+    // Gemini-only test: when Gemini final_prompt_hint exists, do NOT merge any FashionCLIP text.
+    // Manual per-garment override still appended last in both branches.
+    const parts = opt.geminiReady
+      ? [opt.analysisPromptHint, override?.prompt_hint]
+      : [opt.analysisPromptHint, override?.prompt_hint];
     const combinedHint =
-      [opt.analysisPromptHint, override?.prompt_hint || undefined]
-        .filter((s): s is string => !!s && s.trim().length > 0)
-        .join(' ') || undefined;
+      parts.filter((s): s is string => !!s && s.trim().length > 0).join(' ') || undefined;
     onChange({
       id: opt.id,
       source: opt.source,
