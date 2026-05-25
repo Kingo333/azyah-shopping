@@ -426,6 +426,8 @@ Deno.serve(async (req) => {
       gemini_error: null,
       gemini_version: GEMINI_VERSION,
       primary_provider: 'gemini',
+      final_metadata: gemini,
+      final_prompt_hint: promptHint,
     });
 
     console.log('[gemini] complete', {
