@@ -269,12 +269,16 @@ Deno.serve(async (req) => {
       console.log('[fashionclip-batch] smoke-test', {
         host: wDiag.workerHost,
         pathShape: wDiag.workerPathShape,
+        workerTokenConfigured: !!WORKER_TOKEN,
         pingStatus: result.pingStatus,
         pingDurationMs: result.pingDurationMs,
+        pingTimeoutMs: result.pingTimeoutMs,
+        pingBodyLen: (result.pingBodySummary || '').length,
         analyzeStatus: result.analyzeStatus,
         analyzeDurationMs: result.analyzeDurationMs,
         analyzeTimeoutMs: result.analyzeTimeoutMs,
         analyzeTimedOutBeforeResponse: result.analyzeTimedOutBeforeResponse,
+        analyzeBodyLen: (result.analyzeBodySummary || '').length,
         pingError: result.pingError,
         analyzeError: result.analyzeError ? '(set)' : null,
       });
