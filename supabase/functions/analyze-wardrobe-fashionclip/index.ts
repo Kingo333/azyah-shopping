@@ -211,10 +211,10 @@ Deno.serve(async (req) => {
           'X-Worker-Token': WORKER_TOKEN,
         },
         body: JSON.stringify({
+          wardrobe_item_id: item.id,
           image_url: imageUrl,
+          category_hint: item.category ?? null,
           category: item.category ?? null,
-          name: item.name ?? null,
-          brand: item.brand ?? null,
         }),
       });
     } catch (e: any) {
