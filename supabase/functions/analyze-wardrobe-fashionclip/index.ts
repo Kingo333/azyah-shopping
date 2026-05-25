@@ -20,6 +20,7 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const WORKER_URL = Deno.env.get('FASHIONCLIP_WORKER_URL') ?? '';
 const WORKER_TOKEN = Deno.env.get('FASHIONCLIP_WORKER_TOKEN') ?? '';
+const RUNPOD_API_KEY = Deno.env.get('RUNPOD_API_KEY') ?? '';
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false },
@@ -156,10 +157,12 @@ Deno.serve(async (req) => {
       else workerPathShape = 'other_path';
     } catch { /* noop */ }
     const workerConfigured = !!WORKER_URL && !!WORKER_TOKEN;
-    console.log('[fashionclip] worker', { workerConfigured, workerHost, workerPathShape });
+    const runpodAuthConfigured = !!RUNPOD_API_KEY;
+    console.log('[fashionclip] worker', { workerConfigured, runpodAuthConfigured, workerHost, workerPathShape });
 
     // No worker configured -> skipped
-    if (!workerConfigured) {
+    if (!workerConfigured || !runpodAuthConfigured) {
+      const reason = !workerConfigured ? 'worker_not_configured' : 'runpod_auth_not_configured';
       await upsertAnalysis({
         wardrobe_item_id,
         user_id: item.user_id,
@@ -168,10 +171,10 @@ Deno.serve(async (req) => {
         image_hash: imageHash,
         analysis_version: ANALYSIS_VERSION,
         model_name: MODEL_NAME,
-        error: 'worker_not_configured',
+        error: reason,
       });
-      console.log('[fashionclip] skipped', { wardrobe_item_id, reason: 'worker_not_configured' });
-      return new Response(JSON.stringify({ status: 'skipped', workerConfigured, workerHost, workerPathShape }), {
+      console.log('[fashionclip] skipped', { wardrobe_item_id, reason });
+      return new Response(JSON.stringify({ status: 'skipped', reason, workerConfigured, runpodAuthConfigured, workerHost, workerPathShape }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -186,6 +189,7 @@ Deno.serve(async (req) => {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${RUNPOD_API_KEY}`,
           'X-Worker-Token': WORKER_TOKEN,
         },
         body: JSON.stringify({
