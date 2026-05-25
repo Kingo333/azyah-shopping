@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
     }
 
     // ====================================================================
-    // BACKFILL MODE
+    // BACKFILL MODE — image-URL dedup + fanout (MVP)
     // ====================================================================
     const BACKFILL_ANALYZE_TIMEOUT_MS = Number(Deno.env.get('FASHIONCLIP_WORKER_TIMEOUT_MS') ?? '90000') || 90_000;
     const BACKFILL_WRAPPER_TIMEOUT_MS = BACKFILL_ANALYZE_TIMEOUT_MS + 15_000;
@@ -300,20 +300,45 @@ Deno.serve(async (req) => {
       MAX_CHUNK,
     );
 
-    // Load user's wardrobe items (oldest first)
+    // Short non-reversible hash of a URL — never leak raw URLs in response/logs.
+    async function shortUrlHash(s: string): Promise<string> {
+      const bytes = new TextEncoder().encode(s);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      const hex = Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      return hex.slice(0, 10);
+    }
+    function normalizeUrl(row: { image_url?: string | null; image_bg_removed_url?: string | null }): string {
+      const u = (row.image_bg_removed_url || row.image_url || '').trim();
+      return u;
+    }
+
+    // Load this user's wardrobe rows (oldest first) with image URLs.
     const { data: items, error: itemsErr } = await admin
       .from('wardrobe_items')
-      .select('id, created_at')
+      .select('id, image_url, image_bg_removed_url, category, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
     if (itemsErr) throw itemsErr;
-    const itemIds = (items ?? []).map((i) => i.id);
-    const total = itemIds.length;
+    const allRows = (items ?? []) as Array<{
+      id: string;
+      image_url: string | null;
+      image_bg_removed_url: string | null;
+      category: string | null;
+      created_at: string;
+    }>;
+    const totalRows = allRows.length;
 
-    if (total === 0) {
+    if (totalRows === 0) {
       return jsonResponse({
-        total: 0,
-        eligible: 0,
+        totalRows: 0,
+        uniqueUrlsTotal: 0,
+        uniqueUrlsAlreadyComplete: 0,
+        uniqueUrlsRemaining: 0,
+        linkedWithoutWorker: 0,
+        workerCalls: 0,
+        rowsCompletedByFanout: 0,
         requestedLimit: limit,
         chunkSize,
         queued: 0,
@@ -323,42 +348,150 @@ Deno.serve(async (req) => {
         skipped: 0,
         missing: 0,
         ...wDiag,
-        items: [],
+        perUrl: [],
+        perItem: [],
       });
     }
 
+    const itemIds = allRows.map((r) => r.id);
+
+    // Load existing analysis for this user's rows.
     const { data: analyses } = await admin
       .from('wardrobe_garment_analysis')
-      .select('wardrobe_item_id, status, prompt_hint, updated_at')
+      .select('wardrobe_item_id, status, prompt_hint, updated_at, metadata, confidence, image_hash, analysis_version, model_name, source_image_url')
       .in('wardrobe_item_id', itemIds);
-    const byItem = new Map<string, any>(
-      (analyses ?? []).map((a) => [a.wardrobe_item_id, a]),
-    );
+    const byItem = new Map<string, any>((analyses ?? []).map((a) => [a.wardrobe_item_id, a]));
 
     const staleCutoff = Date.now() - STALE_PENDING_MIN * 60_000;
-    const eligibleIds: string[] = [];
-    for (const id of itemIds) {
-      const a = byItem.get(id);
-      if (!a) {
-        eligibleIds.push(id);
-        continue;
-      }
+    function isEligible(a: any | undefined): boolean {
+      if (!a) return true;
       const emptyHint = !a.prompt_hint || String(a.prompt_hint).trim() === '';
-      if (
+      return (
         a.status === 'failed' ||
         a.status === 'skipped' ||
         emptyHint ||
-        (a.status === 'pending' &&
-          new Date(a.updated_at).getTime() < staleCutoff)
-      ) {
-        eligibleIds.push(id);
+        (a.status === 'pending' && new Date(a.updated_at).getTime() < staleCutoff)
+      );
+    }
+
+    // Group rows by normalized URL.
+    const rowsByUrl = new Map<string, typeof allRows>();
+    for (const r of allRows) {
+      const u = normalizeUrl(r);
+      if (!u) continue;
+      const arr = rowsByUrl.get(u) ?? [];
+      arr.push(r);
+      rowsByUrl.set(u, arr);
+    }
+    const uniqueUrlsTotal = rowsByUrl.size;
+
+    // Determine which unique URLs already have a complete analysis (in user's rows).
+    const completeByUrl = new Map<string, any>(); // url -> source analysis row
+    for (const r of allRows) {
+      const a = byItem.get(r.id);
+      const u = normalizeUrl(r);
+      if (!u || !a) continue;
+      const hintOk = a.prompt_hint && String(a.prompt_hint).trim() !== '';
+      if (a.status === 'complete' && hintOk && !completeByUrl.has(u)) {
+        completeByUrl.set(u, a);
+      }
+    }
+    const uniqueUrlsAlreadyComplete = completeByUrl.size;
+
+    // Helper: upsert analysis row by copying source analysis fields to target item.
+    async function copyAnalysisTo(targetItemId: string, source: any, srcUrl: string) {
+      const payload = {
+        wardrobe_item_id: targetItemId,
+        status: 'complete',
+        error: null,
+        metadata: source.metadata ?? null,
+        prompt_hint: source.prompt_hint ?? null,
+        confidence: source.confidence ?? null,
+        image_hash: source.image_hash ?? null,
+        analysis_version: source.analysis_version ?? null,
+        model_name: source.model_name ?? null,
+        source_image_url: source.source_image_url ?? srcUrl,
+        updated_at: new Date().toISOString(),
+      };
+      await admin
+        .from('wardrobe_garment_analysis')
+        .upsert(payload, { onConflict: 'wardrobe_item_id' });
+    }
+
+    type PerItem = {
+      wardrobe_item_id: string;
+      urlHash: string;
+      action: 'prelinked' | 'representative' | 'fanout' | 'skipped';
+      calledAnalyze: boolean;
+      analyzeStatus: number | null;
+      analyzeResponseSummary: string;
+      finalDbStatus: 'complete' | 'pending' | 'failed' | 'skipped' | 'missing';
+      finalDbError: string | null;
+    };
+    const perItem: PerItem[] = [];
+
+    let linkedWithoutWorker = 0;
+
+    // ---- Step A: Pre-link pass (no RunPod calls) ----
+    // For every eligible row whose URL already has a complete analysis elsewhere,
+    // copy that analysis into the row.
+    const remainingEligibleByUrl = new Map<string, typeof allRows>();
+    for (const [url, rows] of rowsByUrl.entries()) {
+      const urlHash = await shortUrlHash(url);
+      const source = completeByUrl.get(url);
+      const stillEligible: typeof allRows = [];
+      for (const r of rows) {
+        const a = byItem.get(r.id);
+        if (!isEligible(a)) continue;
+        if (source) {
+          try {
+            await copyAnalysisTo(r.id, source, url);
+            linkedWithoutWorker += 1;
+            perItem.push({
+              wardrobe_item_id: r.id,
+              urlHash,
+              action: 'prelinked',
+              calledAnalyze: false,
+              analyzeStatus: null,
+              analyzeResponseSummary: 'linked_from_existing',
+              finalDbStatus: 'complete',
+              finalDbError: null,
+            });
+          } catch (e: any) {
+            stillEligible.push(r);
+            perItem.push({
+              wardrobe_item_id: r.id,
+              urlHash,
+              action: 'skipped',
+              calledAnalyze: false,
+              analyzeStatus: null,
+              analyzeResponseSummary: 'prelink_failed',
+              finalDbStatus: 'missing',
+              finalDbError: e?.message ?? null,
+            });
+          }
+        } else {
+          stillEligible.push(r);
+        }
+      }
+      if (stillEligible.length > 0 && !source) {
+        remainingEligibleByUrl.set(url, stillEligible);
       }
     }
 
-    const queue = eligibleIds.slice(0, limit);
+    const uniqueUrlsRemaining = remainingEligibleByUrl.size;
 
-    // Auth headers for analyze:
-    // prefer x-trigger-secret if configured; otherwise pass user's Authorization.
+    // ---- Step B: One representative per remaining unique URL ----
+    const urlQueue: Array<{ url: string; rep: (typeof allRows)[number]; dupes: typeof allRows }> = [];
+    for (const [url, rows] of remainingEligibleByUrl.entries()) {
+      const sorted = rows.slice().sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const rep = sorted[0];
+      const dupes = sorted.slice(1);
+      urlQueue.push({ url, rep, dupes });
+    }
+    const dispatchQueue = urlQueue.slice(0, limit);
+
+    // Auth headers (unchanged).
     const triggerSecret = await getTriggerSecret();
     const analyzeUrl = `${SUPABASE_URL}/functions/v1/analyze-wardrobe-fashionclip`;
     const analyzeHeaders: Record<string, string> = {
@@ -368,34 +501,45 @@ Deno.serve(async (req) => {
     let authMode: 'trigger_secret' | 'user_jwt' = 'user_jwt';
     if (triggerSecret) {
       analyzeHeaders['x-trigger-secret'] = triggerSecret;
-      // Still send an Authorization to satisfy verify_jwt=true; use service role here
-      // because this is a server-to-server call and the trigger secret enforces the
-      // analyze-side authorization. Never logged or returned.
       analyzeHeaders['Authorization'] = `Bearer ${SERVICE_ROLE}`;
       authMode = 'trigger_secret';
     } else {
-      // Forward the signed-in user's Authorization so analyze can verify ownership.
       analyzeHeaders['Authorization'] = auth;
       authMode = 'user_jwt';
     }
 
-    type ItemDiag = {
-      wardrobe_item_id: string;
-      calledAnalyze: boolean;
+    type PerUrl = {
+      urlHash: string;
+      representativeItemId: string;
+      duplicateCount: number;
       analyzeStatus: number | null;
-      analyzeResponseSummary: string;
       finalDbStatus: 'complete' | 'pending' | 'failed' | 'skipped' | 'missing';
-      finalDbError: string | null;
+      fannedOutCount: number;
+      summary: string;
     };
-    const itemResults: ItemDiag[] = [];
+    const perUrl: PerUrl[] = [];
+    let workerCalls = 0;
+    let rowsCompletedByFanout = 0;
 
-    // Sequential chunked dispatch with awaited responses
-    for (let i = 0; i < queue.length; i += chunkSize) {
-      const chunk = queue.slice(i, i + chunkSize);
-      const chunkOutcomes = await Promise.all(
-        chunk.map(async (id) => {
-          const out: ItemDiag = {
-            wardrobe_item_id: id,
+    // Sequential chunked dispatch per representative URL.
+    for (let i = 0; i < dispatchQueue.length; i += chunkSize) {
+      const chunk = dispatchQueue.slice(i, i + chunkSize);
+      const outcomes = await Promise.all(
+        chunk.map(async ({ url, rep, dupes }) => {
+          const urlHash = await shortUrlHash(url);
+          const pu: PerUrl = {
+            urlHash,
+            representativeItemId: rep.id,
+            duplicateCount: dupes.length,
+            analyzeStatus: null,
+            finalDbStatus: 'missing',
+            fannedOutCount: 0,
+            summary: '',
+          };
+          const repItem: PerItem = {
+            wardrobe_item_id: rep.id,
+            urlHash,
+            action: 'representative',
             calledAnalyze: false,
             analyzeStatus: null,
             analyzeResponseSummary: '',
@@ -409,41 +553,98 @@ Deno.serve(async (req) => {
               method: 'POST',
               signal: c.signal,
               headers: analyzeHeaders,
-              body: JSON.stringify({ wardrobe_item_id: id, force: true }),
+              body: JSON.stringify({ wardrobe_item_id: rep.id, force: true }),
             });
             clearTimeout(t);
-            out.calledAnalyze = true;
-            out.analyzeStatus = r.status;
+            workerCalls += 1;
+            repItem.calledAnalyze = true;
+            repItem.analyzeStatus = r.status;
+            pu.analyzeStatus = r.status;
             const text = await r.text().catch(() => '');
-            out.analyzeResponseSummary = summarizeBody(text);
+            repItem.analyzeResponseSummary = summarizeBody(text);
+            pu.summary = repItem.analyzeResponseSummary;
           } catch (e: any) {
-            out.analyzeResponseSummary =
-              e?.name === 'AbortError' ? 'timeout' : 'unreachable';
+            const msg = e?.name === 'AbortError' ? 'timeout' : 'unreachable';
+            repItem.analyzeResponseSummary = msg;
+            pu.summary = msg;
           }
 
-          // Re-read DB row
+          // Re-read representative's analysis row.
           const { data: row } = await admin
             .from('wardrobe_garment_analysis')
-            .select('status, error')
-            .eq('wardrobe_item_id', id)
+            .select('status, error, metadata, prompt_hint, confidence, image_hash, analysis_version, model_name, source_image_url')
+            .eq('wardrobe_item_id', rep.id)
             .maybeSingle();
           if (row) {
-            out.finalDbStatus = (row as any).status ?? 'missing';
-            out.finalDbError = (row as any).error ?? null;
+            repItem.finalDbStatus = (row as any).status ?? 'missing';
+            repItem.finalDbError = (row as any).error ?? null;
+            pu.finalDbStatus = repItem.finalDbStatus;
           }
-          return out;
+          perItem.push(repItem);
+
+          // Fanout only if representative succeeded.
+          if (
+            row &&
+            (row as any).status === 'complete' &&
+            (row as any).prompt_hint &&
+            String((row as any).prompt_hint).trim() !== ''
+          ) {
+            for (const d of dupes) {
+              try {
+                await copyAnalysisTo(d.id, row, url);
+                rowsCompletedByFanout += 1;
+                pu.fannedOutCount += 1;
+                perItem.push({
+                  wardrobe_item_id: d.id,
+                  urlHash,
+                  action: 'fanout',
+                  calledAnalyze: false,
+                  analyzeStatus: null,
+                  analyzeResponseSummary: 'fanout_from_representative',
+                  finalDbStatus: 'complete',
+                  finalDbError: null,
+                });
+              } catch (e: any) {
+                perItem.push({
+                  wardrobe_item_id: d.id,
+                  urlHash,
+                  action: 'skipped',
+                  calledAnalyze: false,
+                  analyzeStatus: null,
+                  analyzeResponseSummary: 'fanout_failed',
+                  finalDbStatus: 'missing',
+                  finalDbError: e?.message ?? null,
+                });
+              }
+            }
+          } else {
+            // Do not fan out failures.
+            for (const d of dupes) {
+              perItem.push({
+                wardrobe_item_id: d.id,
+                urlHash,
+                action: 'skipped',
+                calledAnalyze: false,
+                analyzeStatus: null,
+                analyzeResponseSummary: 'representative_not_complete',
+                finalDbStatus: 'missing',
+                finalDbError: null,
+              });
+            }
+          }
+          return pu;
         }),
       );
-      itemResults.push(...chunkOutcomes);
+      perUrl.push(...outcomes);
     }
 
-    // Aggregate
+    // Aggregate final counts from perItem.
     let complete = 0,
       pending = 0,
       failed = 0,
       skipped = 0,
       missing = 0;
-    for (const r of itemResults) {
+    for (const r of perItem) {
       if (r.finalDbStatus === 'complete') complete += 1;
       else if (r.finalDbStatus === 'pending') pending += 1;
       else if (r.finalDbStatus === 'failed') failed += 1;
@@ -453,9 +654,13 @@ Deno.serve(async (req) => {
 
     console.log('[fashionclip-batch] done', {
       user: userId,
-      total,
-      eligible: eligibleIds.length,
-      queued: queue.length,
+      totalRows,
+      uniqueUrlsTotal,
+      uniqueUrlsAlreadyComplete,
+      uniqueUrlsRemaining,
+      linkedWithoutWorker,
+      workerCalls,
+      rowsCompletedByFanout,
       complete,
       pending,
       failed,
@@ -467,11 +672,16 @@ Deno.serve(async (req) => {
     });
 
     return jsonResponse({
-      total,
-      eligible: eligibleIds.length,
+      totalRows,
+      uniqueUrlsTotal,
+      uniqueUrlsAlreadyComplete,
+      uniqueUrlsRemaining,
+      linkedWithoutWorker,
+      workerCalls,
+      rowsCompletedByFanout,
       requestedLimit: limit,
       chunkSize,
-      queued: queue.length,
+      queued: workerCalls,
       complete,
       pending,
       failed,
@@ -479,7 +689,8 @@ Deno.serve(async (req) => {
       missing,
       ...wDiag,
       authMode,
-      items: itemResults,
+      perUrl,
+      perItem,
     });
   } catch (error: any) {
     console.error('[fashionclip-batch] error', error?.message);
