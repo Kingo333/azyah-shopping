@@ -57,13 +57,8 @@ async function sha256Hex(s: string): Promise<string> {
 
 async function getTriggerSecret(): Promise<string | null> {
   try {
-    const { data } = await admin
-      .schema('vault' as any)
-      .from('decrypted_secrets')
-      .select('decrypted_secret')
-      .eq('name', 'fashionclip_trigger_secret')
-      .maybeSingle();
-    return (data as any)?.decrypted_secret ?? null;
+    const { data } = await admin.rpc('get_fashionclip_trigger_secret' as any);
+    return (data as any) ?? null;
   } catch {
     return null;
   }
