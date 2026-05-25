@@ -207,9 +207,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ok = await authorize(req, item.user_id);
-    if (!ok) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+    const authMode = await authorize(req, item.user_id);
+    if (authMode === 'none') {
+      return new Response(JSON.stringify({
+        error: 'unauthorized',
+        authMode,
+        geminiApiConfigured: !!GEMINI_API_KEY,
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
