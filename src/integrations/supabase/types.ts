@@ -4695,6 +4695,65 @@ export type Database = {
         }
         Relationships: []
       }
+      wardrobe_garment_analysis: {
+        Row: {
+          analysis_version: string
+          confidence: number | null
+          created_at: string
+          error: string | null
+          id: string
+          image_hash: string | null
+          metadata: Json | null
+          model_name: string | null
+          prompt_hint: string | null
+          source_image_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          wardrobe_item_id: string
+        }
+        Insert: {
+          analysis_version?: string
+          confidence?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          image_hash?: string | null
+          metadata?: Json | null
+          model_name?: string | null
+          prompt_hint?: string | null
+          source_image_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          wardrobe_item_id: string
+        }
+        Update: {
+          analysis_version?: string
+          confidence?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          image_hash?: string | null
+          metadata?: Json | null
+          model_name?: string | null
+          prompt_hint?: string | null
+          source_image_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wardrobe_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wardrobe_garment_analysis_wardrobe_item_id_fkey"
+            columns: ["wardrobe_item_id"]
+            isOneToOne: true
+            referencedRelation: "wardrobe_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wardrobe_items: {
         Row: {
           affiliate_url: string | null
