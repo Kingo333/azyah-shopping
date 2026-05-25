@@ -74,17 +74,29 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
   const allOptions = useMemo<GarmentOption[]>(() => {
     const w: GarmentOption[] = (wardrobe ?? [])
       .filter((it) => !!it.image_url)
-      .map((it) => ({
-        id: it.id,
-        source: 'wardrobe_item' as const,
-        label: (it as any).name || it.brand || it.category || 'My item',
-        imageUrl: (it.image_bg_removed_url || it.image_url) as string,
-        category: it.category ?? undefined,
-        analysisPromptHint:
-          it.analysis?.status === 'complete' && it.analysis.prompt_hint
-            ? it.analysis.prompt_hint
-            : undefined,
-      }));
+      .map((it) => {
+        const a = it.analysis as any;
+        const geminiReady = !!(
+          a &&
+          a.primary_provider === 'gemini' &&
+          a.gemini_status === 'complete' &&
+          a.final_prompt_hint
+        );
+        const hint = geminiReady
+          ? (a.final_prompt_hint as string)
+          : a?.status === 'complete'
+            ? ((a.final_prompt_hint as string | undefined) || (a.prompt_hint as string | undefined))
+            : undefined;
+        return {
+          id: it.id,
+          source: 'wardrobe_item' as const,
+          label: (it as any).name || it.brand || it.category || 'My item',
+          imageUrl: (it.image_bg_removed_url || it.image_url) as string,
+          category: it.category ?? undefined,
+          analysisPromptHint: hint,
+          geminiReady,
+        };
+      });
     return [...w, ...extra];
   }, [wardrobe, extra]);
 
