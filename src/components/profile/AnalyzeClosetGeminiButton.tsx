@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
-// FashionCLIP closet backfill — original primary analyzer.
-// "Smoke test worker" probes the FashionCLIP worker. "Analyze closet items" runs the dedup/fanout batch.
+// Gemini Vision closet backfill — parallel to FashionCLIP, never replaces it.
+// Writes gemini_status / gemini_metadata; FashionCLIP's status / prompt_hint stay untouched.
 type Coverage = {
   totalRows: number;
   coveredRows: number;
@@ -19,7 +19,7 @@ function normalizeUrl(row: { image_url: string | null; image_bg_removed_url: str
   return (row.image_bg_removed_url || row.image_url || '').trim();
 }
 
-export const AnalyzeClosetButton: React.FC = () => {
+export const AnalyzeClosetGeminiButton: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [loadingMode, setLoadingMode] = useState<'smoke' | 'batch' | null>(null);
@@ -42,14 +42,14 @@ export const AnalyzeClosetButton: React.FC = () => {
       if (ids.length > 0) {
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis' as any)
-          .select('wardrobe_item_id, status, prompt_hint')
+          .select('wardrobe_item_id, gemini_status, gemini_metadata')
           .in('wardrobe_item_id', ids);
         const byItem = new Map<string, any>(
           (analyses ?? []).map((a: any) => [a.wardrobe_item_id, a]),
         );
         for (const r of rows) {
           const a = byItem.get(r.id);
-          if (a?.status === 'complete' && a.prompt_hint) {
+          if (a?.gemini_status === 'complete' && a.gemini_metadata) {
             completeUrls.add(normalizeUrl(r));
           }
         }
@@ -85,7 +85,7 @@ export const AnalyzeClosetButton: React.FC = () => {
           ? { mode: 'smoke-test' }
           : { limit: queueSize, chunkSize: 2 };
       const { data, error } = await supabase.functions.invoke(
-        'reanalyze-wardrobe-fashionclip-batch',
+        'reanalyze-wardrobe-gemini-batch',
         { body },
       );
       if (error) throw error;
@@ -95,14 +95,14 @@ export const AnalyzeClosetButton: React.FC = () => {
       if (mode === 'batch') {
         const d: any = data;
         toast.success(
-          `Worker calls ${d.workerCalls ?? 0} · linked ${d.linkedWithoutWorker ?? 0} · fanout ${d.rowsCompletedByFanout ?? 0}`,
+          `Gemini calls ${d.workerCalls ?? 0} · fanout ${d.rowsCompletedByFanout ?? 0}`,
         );
         queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
         queryClient.invalidateQueries({ queryKey: ['wardrobe_garment_analysis'] });
         await refreshCoverage();
       } else {
         toast.success(
-          `Ping ${(data as any).pingStatus ?? '—'} · Analyze ${(data as any).analyzeStatus ?? '—'}`,
+          `Gemini key: ${(data as any).geminiKeyConfigured ? 'ok' : 'missing'}`,
         );
       }
     } catch (e: any) {
@@ -118,10 +118,10 @@ export const AnalyzeClosetButton: React.FC = () => {
   const remaining = coverage?.uniqueUrlsRemaining ?? null;
   const allDone = remaining === 0 && (coverage?.totalRows ?? 0) > 0;
   const batchLabel = allDone
-    ? 'All items up to date'
+    ? 'All items analyzed (Gemini)'
     : remaining != null
-      ? `Analyze ${Math.min(25, remaining)} closet item${remaining === 1 ? '' : 's'}`
-      : 'Analyze closet items';
+      ? `Analyze ${Math.min(25, remaining)} item${remaining === 1 ? '' : 's'} with Gemini`
+      : 'Analyze with Gemini';
 
   return (
     <div className="px-4 pt-3 space-y-2">
@@ -138,7 +138,7 @@ export const AnalyzeClosetButton: React.FC = () => {
           ) : (
             <Activity className="h-4 w-4" />
           )}
-          Smoke test worker
+          Smoke test Gemini
         </Button>
         <Button
           onClick={() => run('batch')}
@@ -162,8 +162,8 @@ export const AnalyzeClosetButton: React.FC = () => {
         <div className="text-[11px] text-muted-foreground px-0.5">
           {coverageLoading ? 'Checking…' : (
             allDone
-              ? `${coverage.coveredRows} of ${coverage.totalRows} items analyzed`
-              : `${coverage.coveredRows} of ${coverage.totalRows} items analyzed · ${coverage.uniqueUrlsRemaining} unique image${coverage.uniqueUrlsRemaining === 1 ? '' : 's'} remaining`
+              ? `${coverage.coveredRows} of ${coverage.totalRows} items analyzed (Gemini)`
+              : `${coverage.coveredRows} of ${coverage.totalRows} items analyzed (Gemini) · ${coverage.uniqueUrlsRemaining} unique image${coverage.uniqueUrlsRemaining === 1 ? '' : 's'} remaining`
           )}
         </div>
       )}
@@ -174,40 +174,20 @@ export const AnalyzeClosetButton: React.FC = () => {
         </div>
       )}
 
-      {data && summary?.mode === 'smoke' && (
-        <div className="rounded-md border bg-card p-3 text-xs space-y-0.5 text-muted-foreground">
-          <div>workerConfigured: {String(data.workerConfigured)} · urlValid: {String(data.workerUrlValid)} · tokenConfigured: {String(data.workerTokenConfigured)} · runpodAuth: {String(data.runpodAuthConfigured)}</div>
-          <div>workerHost: {data.workerHost || '—'} · pathShape: {data.workerPathShape}</div>
-          <div>ping: {data.pingStatus ?? '—'} · {data.pingDurationMs ?? '—'}ms / {data.pingTimeoutMs ?? '—'}ms {data.pingError ? `(${data.pingError})` : ''}</div>
-          {data.pingBodySummary && (
-            <div className="text-[10px] opacity-75 break-all">pingBody: {String(data.pingBodySummary).slice(0, 200)}</div>
-          )}
-          <div>analyze: {data.analyzeStatus ?? '—'} · {data.analyzeDurationMs ?? '—'}ms / {data.analyzeTimeoutMs ?? '—'}ms {data.analyzeTimedOutBeforeResponse ? '· timedOut' : ''} {data.analyzeError ? `(${String(data.analyzeError).slice(0, 80)})` : ''}</div>
-          {(data.analyzeBodySummary || data.analyzeResponseSummary) && (
-            <div className="text-[10px] opacity-75 break-all">analyzeBody: {String(data.analyzeBodySummary || data.analyzeResponseSummary).slice(0, 200)}</div>
-          )}
-          <div>analyze response keys: {(data.analyzeResponseKeys || []).join(', ') || '—'}</div>
-        </div>
-      )}
-
       {data && summary?.mode === 'batch' && (
         <div className="rounded-md border bg-card p-3 text-xs space-y-1 text-muted-foreground">
           <div>
             totalRows: {data.totalRows} · uniqueUrls: {data.uniqueUrlsTotal} · alreadyComplete: {data.uniqueUrlsAlreadyComplete} · remaining: {data.uniqueUrlsRemaining}
           </div>
           <div>
-            workerCalls: {data.workerCalls} · linkedWithoutWorker: {data.linkedWithoutWorker} · fanout: {data.rowsCompletedByFanout}
+            workerCalls: {data.workerCalls} · fanout: {data.rowsCompletedByFanout} · complete: {data.complete} · cached: {data.cached} · failed: {data.failed} · skipped: {data.skipped}
           </div>
-          <div>
-            complete: {data.complete} · pending: {data.pending} · failed: {data.failed} · skipped: {data.skipped} · missing: {data.missing}
-          </div>
-          <div>host: {data.workerHost || '—'} · authMode: {data.authMode}</div>
           {Array.isArray(data.perUrl) && data.perUrl.length > 0 && (
             <div className="mt-2 space-y-1.5">
               {data.perUrl.map((u: any) => (
                 <div key={u.urlHash} className="rounded border border-border/50 p-2">
                   <div className="font-mono text-[10px]">url#{u.urlHash} · dup {u.duplicateCount} · fanout {u.fannedOutCount}</div>
-                  <div>analyze: {u.analyzeStatus ?? '—'} · dbStatus: {u.finalDbStatus}</div>
+                  <div>analyze: {u.analyzeStatus ?? '—'} · http {u.httpStatus}</div>
                   {u.summary && (
                     <div className="text-[10px] opacity-75 break-all">resp: {String(u.summary).slice(0, 200)}</div>
                   )}
@@ -217,8 +197,14 @@ export const AnalyzeClosetButton: React.FC = () => {
           )}
         </div>
       )}
+
+      {data && summary?.mode === 'smoke' && (
+        <div className="rounded-md border bg-card p-3 text-xs text-muted-foreground">
+          geminiKeyConfigured: {String(data.geminiKeyConfigured)}
+        </div>
+      )}
     </div>
   );
 };
 
-export default AnalyzeClosetButton;
+export default AnalyzeClosetGeminiButton;

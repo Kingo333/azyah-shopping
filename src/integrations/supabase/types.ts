@@ -5826,6 +5826,7 @@ export type Database = {
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
         }[]
       }
+      get_fashionclip_trigger_secret: { Args: never; Returns: string }
       get_minimal_brand_directory: {
         Args: never
         Returns: {
