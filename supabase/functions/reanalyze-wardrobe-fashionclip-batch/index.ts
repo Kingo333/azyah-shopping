@@ -133,13 +133,21 @@ Deno.serve(async (req) => {
     // SMOKE TEST MODE — probe worker /ping and /analyze with one user item
     // ====================================================================
     if (body.mode === 'smoke-test') {
+      const ANALYZE_TIMEOUT_MS = Number(Deno.env.get('FASHIONCLIP_WORKER_TIMEOUT_MS') ?? '90000') || 90_000;
+      const PING_TIMEOUT_MS = 8_000;
+
       const result: any = {
         mode: 'smoke-test',
         ...wDiag,
         pingStatus: null as number | null,
+        pingDurationMs: null as number | null,
         pingError: null as string | null,
         analyzeStatus: null as number | null,
+        analyzeDurationMs: null as number | null,
         analyzeError: null as string | null,
+        analyzeTimeoutMs: ANALYZE_TIMEOUT_MS,
+        analyzeTimedOutBeforeResponse: false,
+        analyzeResponseSummary: '',
         analyzeResponseKeys: [] as string[],
         usedWardrobeItem: false,
       };
@@ -154,22 +162,28 @@ Deno.serve(async (req) => {
       const base = CLEAN_WORKER_URL;
 
       // /ping
-      try {
+      {
         const c = new AbortController();
-        const t = setTimeout(() => c.abort(), 8_000);
-        const r = await fetch(`${base}/ping`, {
-          method: 'GET',
-          signal: c.signal,
-          headers: {
-            'Authorization': `Bearer ${RUNPOD_API_KEY}`,
-            'X-Worker-Token': WORKER_TOKEN,
-          },
-        });
-        clearTimeout(t);
-        result.pingStatus = r.status;
-        await r.text().catch(() => '');
-      } catch (e: any) {
-        result.pingError = e?.name === 'AbortError' ? 'timeout' : 'unreachable';
+        const t = setTimeout(() => c.abort(), PING_TIMEOUT_MS);
+        const startedAt = Date.now();
+        try {
+          const r = await fetch(`${base}/ping`, {
+            method: 'GET',
+            signal: c.signal,
+            headers: {
+              'Authorization': `Bearer ${RUNPOD_API_KEY}`,
+              'X-Worker-Token': WORKER_TOKEN,
+            },
+          });
+          clearTimeout(t);
+          result.pingStatus = r.status;
+          result.pingDurationMs = Date.now() - startedAt;
+          await r.text().catch(() => '');
+        } catch (e: any) {
+          clearTimeout(t);
+          result.pingDurationMs = Date.now() - startedAt;
+          result.pingError = e?.name === 'AbortError' ? 'timeout' : 'unreachable';
+        }
       }
 
       // pick one item owned by user (any item with an image)
@@ -194,43 +208,64 @@ Deno.serve(async (req) => {
       result.usedWardrobeItem = true;
 
       // /analyze
-      try {
+      {
         const c = new AbortController();
-        const t = setTimeout(() => c.abort(), 20_000);
-        const r = await fetch(`${base}/analyze`, {
-          method: 'POST',
-          signal: c.signal,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RUNPOD_API_KEY}`,
-            'X-Worker-Token': WORKER_TOKEN,
-          },
-          body: JSON.stringify({
-            wardrobe_item_id: 'smoke-test',
-            image_url: imageUrl,
-            category: (item as any).category ?? 'top',
-            category_hint: (item as any).category ?? 'top',
-          }),
-        });
-        clearTimeout(t);
-        result.analyzeStatus = r.status;
-        const text = await r.text().catch(() => '');
+        const t = setTimeout(() => c.abort(), ANALYZE_TIMEOUT_MS);
+        const startedAt = Date.now();
         try {
-          const json = JSON.parse(text);
-          result.analyzeResponseKeys = Object.keys(json || {});
-          if (!r.ok) result.analyzeError = summarizeBody(text);
-        } catch {
-          if (!r.ok) result.analyzeError = summarizeBody(text);
+          const r = await fetch(`${base}/analyze`, {
+            method: 'POST',
+            signal: c.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${RUNPOD_API_KEY}`,
+              'X-Worker-Token': WORKER_TOKEN,
+            },
+            body: JSON.stringify({
+              wardrobe_item_id: 'smoke-test',
+              image_url: imageUrl,
+              category: (item as any).category ?? 'top',
+              category_hint: (item as any).category ?? 'top',
+            }),
+          });
+          clearTimeout(t);
+          result.analyzeDurationMs = Date.now() - startedAt;
+          result.analyzeStatus = r.status;
+          const text = await r.text().catch(() => '');
+          try {
+            const json = JSON.parse(text);
+            result.analyzeResponseKeys = Object.keys(json || {});
+            if (!r.ok) {
+              result.analyzeError = summarizeBody(text);
+              result.analyzeResponseSummary = summarizeBody(text);
+            }
+          } catch {
+            if (!r.ok) {
+              result.analyzeError = summarizeBody(text);
+              result.analyzeResponseSummary = summarizeBody(text);
+            }
+          }
+        } catch (e: any) {
+          clearTimeout(t);
+          result.analyzeDurationMs = Date.now() - startedAt;
+          if (e?.name === 'AbortError') {
+            result.analyzeError = 'timeout';
+            result.analyzeTimedOutBeforeResponse = true;
+          } else {
+            result.analyzeError = 'unreachable';
+          }
         }
-      } catch (e: any) {
-        result.analyzeError = e?.name === 'AbortError' ? 'timeout' : 'unreachable';
       }
 
       console.log('[fashionclip-batch] smoke-test', {
         host: wDiag.workerHost,
         pathShape: wDiag.workerPathShape,
         pingStatus: result.pingStatus,
+        pingDurationMs: result.pingDurationMs,
         analyzeStatus: result.analyzeStatus,
+        analyzeDurationMs: result.analyzeDurationMs,
+        analyzeTimeoutMs: result.analyzeTimeoutMs,
+        analyzeTimedOutBeforeResponse: result.analyzeTimedOutBeforeResponse,
         pingError: result.pingError,
         analyzeError: result.analyzeError ? '(set)' : null,
       });
