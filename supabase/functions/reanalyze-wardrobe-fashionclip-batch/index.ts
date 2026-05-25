@@ -139,8 +139,13 @@ Deno.serve(async (req) => {
       const result: any = {
         mode: 'smoke-test',
         ...wDiag,
+        workerTokenConfigured: !!WORKER_TOKEN,
+        finalPingPath: `${CLEAN_WORKER_URL}/ping`,
+        finalAnalyzePath: `${CLEAN_WORKER_URL}/analyze`,
         pingStatus: null as number | null,
         pingDurationMs: null as number | null,
+        pingTimeoutMs: PING_TIMEOUT_MS,
+        pingBodySummary: '',
         pingError: null as string | null,
         analyzeStatus: null as number | null,
         analyzeDurationMs: null as number | null,
@@ -148,6 +153,7 @@ Deno.serve(async (req) => {
         analyzeTimeoutMs: ANALYZE_TIMEOUT_MS,
         analyzeTimedOutBeforeResponse: false,
         analyzeResponseSummary: '',
+        analyzeBodySummary: '',
         analyzeResponseKeys: [] as string[],
         usedWardrobeItem: false,
       };
@@ -178,7 +184,8 @@ Deno.serve(async (req) => {
           clearTimeout(t);
           result.pingStatus = r.status;
           result.pingDurationMs = Date.now() - startedAt;
-          await r.text().catch(() => '');
+          const pingText = await r.text().catch(() => '');
+          result.pingBodySummary = summarizeBody(pingText);
         } catch (e: any) {
           clearTimeout(t);
           result.pingDurationMs = Date.now() - startedAt;
@@ -232,17 +239,19 @@ Deno.serve(async (req) => {
           result.analyzeDurationMs = Date.now() - startedAt;
           result.analyzeStatus = r.status;
           const text = await r.text().catch(() => '');
+          const summary = summarizeBody(text);
+          result.analyzeBodySummary = summary;
           try {
             const json = JSON.parse(text);
             result.analyzeResponseKeys = Object.keys(json || {});
             if (!r.ok) {
-              result.analyzeError = summarizeBody(text);
-              result.analyzeResponseSummary = summarizeBody(text);
+              result.analyzeError = summary;
+              result.analyzeResponseSummary = summary;
             }
           } catch {
             if (!r.ok) {
-              result.analyzeError = summarizeBody(text);
-              result.analyzeResponseSummary = summarizeBody(text);
+              result.analyzeError = summary;
+              result.analyzeResponseSummary = summary;
             }
           }
         } catch (e: any) {
@@ -260,12 +269,16 @@ Deno.serve(async (req) => {
       console.log('[fashionclip-batch] smoke-test', {
         host: wDiag.workerHost,
         pathShape: wDiag.workerPathShape,
+        workerTokenConfigured: !!WORKER_TOKEN,
         pingStatus: result.pingStatus,
         pingDurationMs: result.pingDurationMs,
+        pingTimeoutMs: result.pingTimeoutMs,
+        pingBodyLen: (result.pingBodySummary || '').length,
         analyzeStatus: result.analyzeStatus,
         analyzeDurationMs: result.analyzeDurationMs,
         analyzeTimeoutMs: result.analyzeTimeoutMs,
         analyzeTimedOutBeforeResponse: result.analyzeTimedOutBeforeResponse,
+        analyzeBodyLen: (result.analyzeBodySummary || '').length,
         pingError: result.pingError,
         analyzeError: result.analyzeError ? '(set)' : null,
       });
@@ -276,6 +289,8 @@ Deno.serve(async (req) => {
     // ====================================================================
     // BACKFILL MODE
     // ====================================================================
+    const BACKFILL_ANALYZE_TIMEOUT_MS = Number(Deno.env.get('FASHIONCLIP_WORKER_TIMEOUT_MS') ?? '90000') || 90_000;
+    const BACKFILL_WRAPPER_TIMEOUT_MS = BACKFILL_ANALYZE_TIMEOUT_MS + 15_000;
     const limit = Math.min(
       Math.max(1, Math.floor(Number(body.limit ?? DEFAULT_LIMIT))),
       MAX_LIMIT,
@@ -389,7 +404,7 @@ Deno.serve(async (req) => {
           };
           try {
             const c = new AbortController();
-            const t = setTimeout(() => c.abort(), 30_000);
+            const t = setTimeout(() => c.abort(), BACKFILL_WRAPPER_TIMEOUT_MS);
             const r = await fetch(analyzeUrl, {
               method: 'POST',
               signal: c.signal,

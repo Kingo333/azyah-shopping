@@ -239,6 +239,10 @@ Deno.serve(async (req) => {
     clearTimeout(to);
     const analyzeDurationMs = Date.now() - startedAt;
 
+    // Read body once (safe summary used for both non-2xx and 2xx-invalid)
+    const rawText = await workerResp.text().catch(() => '');
+    const workerBodySummary = rawText.replace(/\s+/g, ' ').slice(0, 240);
+
     if (!workerResp.ok) {
       const reason = `worker_${workerResp.status}`;
       await upsertAnalysis({
@@ -251,17 +255,48 @@ Deno.serve(async (req) => {
         model_name: MODEL_NAME,
         error: reason,
       });
-      console.log('[fashionclip] failed', { wardrobe_item_id, reason });
-      return new Response(JSON.stringify({ status: 'failed', reason }), {
+      console.log('[fashionclip] failed', {
+        wardrobe_item_id,
+        reason,
+        analyzeDurationMs,
+        timeoutMs: WORKER_TIMEOUT_MS,
+        workerBodySummary,
+      });
+      return new Response(JSON.stringify({ status: 'failed', reason, analyzeDurationMs, timeoutMs: WORKER_TIMEOUT_MS, workerBodySummary }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const result = await workerResp.json().catch(() => ({} as any));
+    let result: any = {};
+    try { result = JSON.parse(rawText); } catch { result = {}; }
     const metadata = result?.metadata ?? null;
     const promptHint = typeof result?.prompt_hint === 'string' ? result.prompt_hint : null;
     const confidence =
       typeof result?.confidence === 'number' ? result.confidence : null;
+    const hasTopLevelError = result && typeof result === 'object' && 'error' in result && result.error;
+
+    if (hasTopLevelError || (!metadata && !promptHint)) {
+      const reason = 'worker_invalid_response';
+      await upsertAnalysis({
+        wardrobe_item_id,
+        user_id: item.user_id,
+        status: 'failed',
+        source_image_url: imageUrl,
+        image_hash: imageHash,
+        analysis_version: ANALYSIS_VERSION,
+        model_name: MODEL_NAME,
+        error: reason,
+      });
+      console.log('[fashionclip] failed', {
+        wardrobe_item_id,
+        reason,
+        analyzeDurationMs,
+        workerBodySummary,
+      });
+      return new Response(JSON.stringify({ status: 'failed', reason, analyzeDurationMs, workerBodySummary }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     await upsertAnalysis({
       wardrobe_item_id,
