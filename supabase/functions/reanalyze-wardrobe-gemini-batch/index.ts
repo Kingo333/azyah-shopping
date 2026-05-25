@@ -156,7 +156,12 @@ Deno.serve(async (req) => {
     let fanoutFromSelf = 0;
     const perUrl: any[] = [];
 
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const PACE_MS = 6800;
+
     for (let i = 0; i < queue.length; i += chunkSize) {
+      // Slow pacing for 429-safe serial mode.
+      if (i > 0 && chunkSize === 1) await sleep(PACE_MS);
       const chunk = queue.slice(i, i + chunkSize);
       const results = await Promise.all(
         chunk.map(async (g) => {
