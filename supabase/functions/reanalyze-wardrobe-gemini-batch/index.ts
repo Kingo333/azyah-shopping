@@ -48,15 +48,11 @@ async function getCallerUserId(req: Request): Promise<string | null> {
 }
 
 async function invokeAnalyze(wardrobe_item_id: string, force: boolean) {
-  // Use service-role token internally → analyzer's authorize() needs x-trigger-secret OR a user JWT.
-  // Easiest: fetch vault secret and pass as x-trigger-secret.
-  const { data: secret } = await admin
-    .schema('vault' as any)
-    .from('decrypted_secrets')
-    .select('decrypted_secret')
-    .eq('name', 'fashionclip_trigger_secret')
-    .maybeSingle();
-  const trigger = (secret as any)?.decrypted_secret ?? '';
+  // Read trigger secret via SECURITY DEFINER RPC (vault is not exposed through PostgREST,
+  // so the previous .schema('vault').from('decrypted_secrets') always returned null,
+  // causing the analyzer's authorize() to reject with 401).
+  const { data: secret } = await admin.rpc('get_fashionclip_trigger_secret' as any);
+  const trigger = (secret as any) ?? '';
 
   const url = `${SUPABASE_URL}/functions/v1/analyze-wardrobe-gemini`;
   const resp = await fetch(url, {
