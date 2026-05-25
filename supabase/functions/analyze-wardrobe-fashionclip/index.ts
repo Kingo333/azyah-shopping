@@ -18,9 +18,18 @@ const WORKER_TIMEOUT_MS = 20_000;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const WORKER_URL = Deno.env.get('FASHIONCLIP_WORKER_URL') ?? '';
+const WORKER_URL_RAW = Deno.env.get('FASHIONCLIP_WORKER_URL') ?? '';
 const WORKER_TOKEN = Deno.env.get('FASHIONCLIP_WORKER_TOKEN') ?? '';
 const RUNPOD_API_KEY = Deno.env.get('RUNPOD_API_KEY') ?? '';
+
+function normalizeWorkerUrl(raw: string): string {
+  let v = (raw ?? '').trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v.replace(/\/+$/, '');
+}
+const WORKER_URL = normalizeWorkerUrl(WORKER_URL_RAW);
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false },
@@ -147,18 +156,26 @@ Deno.serve(async (req) => {
     // Safe worker diagnostics
     let workerHost = '';
     let workerPathShape: 'base' | 'includes_ping' | 'includes_analyze' | 'other_path' = 'base';
+    let workerUrlValid = false;
+    let workerUrlError: string | null = null;
     try {
+      if (!WORKER_URL) throw new Error('empty');
       const u = new URL(WORKER_URL);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('bad_protocol');
       workerHost = u.hostname;
+      workerUrlValid = !!workerHost;
       const p = u.pathname.replace(/\/+$/, '');
       if (p === '' || p === '/') workerPathShape = 'base';
       else if (p.endsWith('/ping')) workerPathShape = 'includes_ping';
       else if (p.endsWith('/analyze')) workerPathShape = 'includes_analyze';
       else workerPathShape = 'other_path';
-    } catch { /* noop */ }
-    const workerConfigured = !!WORKER_URL && !!WORKER_TOKEN;
+    } catch {
+      workerUrlValid = false;
+      workerUrlError = 'invalid_absolute_url';
+    }
+    const workerConfigured = !!WORKER_URL && !!WORKER_TOKEN && workerUrlValid;
     const runpodAuthConfigured = !!RUNPOD_API_KEY;
-    console.log('[fashionclip] worker', { workerConfigured, runpodAuthConfigured, workerHost, workerPathShape });
+    console.log('[fashionclip] worker', { workerConfigured, runpodAuthConfigured, workerHost, workerPathShape, workerUrlValid, workerUrlError });
 
     // No worker configured -> skipped
     if (!workerConfigured || !runpodAuthConfigured) {
@@ -184,7 +201,7 @@ Deno.serve(async (req) => {
     const to = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS);
     let workerResp: Response;
     try {
-      workerResp = await fetch(`${WORKER_URL.replace(/\/$/, '')}/analyze`, {
+      workerResp = await fetch(`${WORKER_URL}/analyze`, {
         method: 'POST',
         signal: controller.signal,
         headers: {
