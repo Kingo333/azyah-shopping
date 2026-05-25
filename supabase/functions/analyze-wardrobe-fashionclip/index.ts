@@ -211,10 +211,10 @@ Deno.serve(async (req) => {
           'X-Worker-Token': WORKER_TOKEN,
         },
         body: JSON.stringify({
+          wardrobe_item_id: item.id,
           image_url: imageUrl,
+          category_hint: item.category ?? null,
           category: item.category ?? null,
-          name: item.name ?? null,
-          brand: item.brand ?? null,
         }),
       });
     } catch (e: any) {
@@ -241,7 +241,25 @@ Deno.serve(async (req) => {
 
     // Read body once (safe summary used for both non-2xx and 2xx-invalid)
     const rawText = await workerResp.text().catch(() => '');
-    const workerBodySummary = rawText.replace(/\s+/g, ' ').slice(0, 240);
+    let workerBodySummary = rawText.replace(/\s+/g, ' ').slice(0, 240);
+
+    // FastAPI 422 validation: surface exact missing/invalid field paths
+    if (workerResp.status === 422) {
+      try {
+        const parsed = JSON.parse(rawText);
+        const detail = Array.isArray(parsed?.detail) ? parsed.detail : null;
+        if (detail && detail.length > 0) {
+          const parts = detail.slice(0, 5).map((d: any) => {
+            const loc = Array.isArray(d?.loc) ? d.loc.join('.') : '?';
+            const msg = typeof d?.msg === 'string' ? d.msg : 'invalid';
+            return `${msg} ${loc}`;
+          });
+          workerBodySummary = `422: ${parts.join('; ')}`.slice(0, 240);
+        } else if (typeof parsed?.error === 'string') {
+          workerBodySummary = `422: ${parsed.error}`.slice(0, 240);
+        }
+      } catch { /* keep raw summary */ }
+    }
 
     if (!workerResp.ok) {
       const reason = `worker_${workerResp.status}`;
