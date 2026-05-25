@@ -289,6 +289,8 @@ Deno.serve(async (req) => {
     // ====================================================================
     // BACKFILL MODE
     // ====================================================================
+    const BACKFILL_ANALYZE_TIMEOUT_MS = Number(Deno.env.get('FASHIONCLIP_WORKER_TIMEOUT_MS') ?? '90000') || 90_000;
+    const BACKFILL_WRAPPER_TIMEOUT_MS = BACKFILL_ANALYZE_TIMEOUT_MS + 15_000;
     const limit = Math.min(
       Math.max(1, Math.floor(Number(body.limit ?? DEFAULT_LIMIT))),
       MAX_LIMIT,
