@@ -28,6 +28,7 @@ import { FavoritesSection } from '@/components/profile/FavoritesSection';
 import { BrandsSection } from '@/components/profile/BrandsSection';
 import { PostsSection } from '@/components/profile/PostsSection';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
+import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
 
 interface UserProfile {
   id: string;
