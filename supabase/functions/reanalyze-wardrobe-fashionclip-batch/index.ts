@@ -404,7 +404,7 @@ Deno.serve(async (req) => {
           };
           try {
             const c = new AbortController();
-            const t = setTimeout(() => c.abort(), 30_000);
+            const t = setTimeout(() => c.abort(), BACKFILL_WRAPPER_TIMEOUT_MS);
             const r = await fetch(analyzeUrl, {
               method: 'POST',
               signal: c.signal,
