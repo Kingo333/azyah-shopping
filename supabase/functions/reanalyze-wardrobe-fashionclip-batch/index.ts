@@ -139,8 +139,13 @@ Deno.serve(async (req) => {
       const result: any = {
         mode: 'smoke-test',
         ...wDiag,
+        workerTokenConfigured: !!WORKER_TOKEN,
+        finalPingPath: `${CLEAN_WORKER_URL}/ping`,
+        finalAnalyzePath: `${CLEAN_WORKER_URL}/analyze`,
         pingStatus: null as number | null,
         pingDurationMs: null as number | null,
+        pingTimeoutMs: PING_TIMEOUT_MS,
+        pingBodySummary: '',
         pingError: null as string | null,
         analyzeStatus: null as number | null,
         analyzeDurationMs: null as number | null,
@@ -148,6 +153,7 @@ Deno.serve(async (req) => {
         analyzeTimeoutMs: ANALYZE_TIMEOUT_MS,
         analyzeTimedOutBeforeResponse: false,
         analyzeResponseSummary: '',
+        analyzeBodySummary: '',
         analyzeResponseKeys: [] as string[],
         usedWardrobeItem: false,
       };
