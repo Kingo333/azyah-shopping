@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
           gemini_version: GEMINI_VERSION,
           primary_provider: 'gemini',
         });
-        return new Response(JSON.stringify({ status: 'fanout', source: 'twin' }), {
+        return new Response(JSON.stringify({ status: 'fanout', source: 'twin', authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'complete' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
