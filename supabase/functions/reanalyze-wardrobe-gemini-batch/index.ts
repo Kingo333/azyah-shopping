@@ -152,8 +152,9 @@ Deno.serve(async (req) => {
         chunk.map(async (g) => {
           const firstId = g.itemIds[0];
           workerCalls += 1;
-          const res = await invokeAnalyze(firstId, force);
+          const res = await invokeAnalyze(firstId, force, callerAuth);
           const status = res.json?.status ?? `http_${res.status}`;
+          const authMode = res.json?.authMode ?? null;
           if (status === 'complete') complete += 1;
           else if (status === 'fanout' || status === 'cached') cached += 1;
           else if (status === 'failed') failed += 1;
@@ -163,7 +164,7 @@ Deno.serve(async (req) => {
           let fanned = 0;
           if (status === 'complete' || status === 'fanout' || status === 'cached') {
             for (const id of g.itemIds.slice(1)) {
-              const r = await invokeAnalyze(id, false);
+              const r = await invokeAnalyze(id, false, callerAuth);
               if (r.json?.status === 'fanout' || r.json?.status === 'cached' || r.json?.status === 'complete') fanned += 1;
             }
             fanoutFromSelf += fanned;
@@ -174,7 +175,11 @@ Deno.serve(async (req) => {
             duplicateCount: g.itemIds.length,
             firstItemId: firstId,
             analyzeStatus: status,
+            authMode,
             httpStatus: res.status,
+            geminiHttpStatus: res.json?.httpStatus ?? null,
+            geminiStatus: res.json?.geminiStatus ?? null,
+            geminiError: res.json?.geminiError ?? null,
             summary: res.summary,
             fannedOutCount: fanned,
           };
