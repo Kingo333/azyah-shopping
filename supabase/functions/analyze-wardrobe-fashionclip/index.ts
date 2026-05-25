@@ -13,7 +13,7 @@ const corsHeaders = {
 
 const ANALYSIS_VERSION = 'fashionclip-v1';
 const MODEL_NAME = 'Marqo/marqo-fashionSigLIP';
-const WORKER_TIMEOUT_MS = 20_000;
+const WORKER_TIMEOUT_MS = Number(Deno.env.get('FASHIONCLIP_WORKER_TIMEOUT_MS') ?? '90000') || 90_000;
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
