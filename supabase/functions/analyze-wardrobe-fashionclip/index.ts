@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
       hasMetadata: !!metadata,
       hasPromptHint: !!promptHint,
       promptLen: promptHint?.length ?? 0,
+      analyzeDurationMs,
     });
 
     return new Response(JSON.stringify({ status: 'complete' }), {
