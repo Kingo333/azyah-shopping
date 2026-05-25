@@ -1,98 +1,78 @@
-## Goal
+## Audit summary (confirmed)
 
-Make Live Cam try-on prompts category-aware using existing metadata only. No AI vision, no schema changes, no protocol changes. New items added to Discover or My Closet are picked up automatically because the picker already reads from the database — the prompt builder uses whatever category/title/description is stored.
+- `wardrobe_garment_analysis` table, RLS, `ON DELETE CASCADE`, status check (`pending|complete|failed|skipped`), `UNIQUE(wardrobe_item_id)` — present.
+- Triggers on `wardrobe_items` `AFTER INSERT` and `AFTER UPDATE OF image_url, image_bg_removed_url, category` calling `dispatch_fashionclip_analysis()` via pg_net + Vault secret — present.
+- Edge Functions `analyze-wardrobe-fashionclip` (idempotent on `image_hash + analysis_version`) and `reanalyze-wardrobe-fashionclip-batch` — present.
+- Secrets `FASHIONCLIP_WORKER_URL` + `FASHIONCLIP_WORKER_TOKEN` — configured.
+- Frontend: `useWardrobeItems` joins analysis rows; `LiveCamGarmentPicker` merges `analysisPromptHint` with manual override into the Live Cam prompt.
+- DB state: **40 wardrobe items, 0 analysis rows** → backfill needed.
 
-## Files to change
+## Plan — backfill via Edge Function only (no UI)
 
-1. `src/components/ai-studio/live-cam/liveCamTypes.ts`
-2. `src/components/ai-studio/live-cam/LiveCamGarmentPicker.tsx`
-3. `src/components/ai-studio/live-cam/useLiveCamSession.ts`
-4. New: `src/components/ai-studio/live-cam/buildTryOnPrompt.ts`
+### 1. Update `reanalyze-wardrobe-fashionclip-batch`
 
-## 1. Extend `LiveCamGarmentSelection`
+Auth: signed-in user only. Only operates on rows where `wardrobe_items.user_id = auth.uid()`.
 
-Add optional metadata fields used only for prompt building:
+Request body:
+```json
+{ "limit": 3, "chunkSize": 1 }
+```
+- `limit` default 3, max 50.
+- `chunkSize` default 2, max 5.
 
-```ts
-category?: string;        // raw value from DB (slug, label, garment_type)
-description?: string;
+Eligibility (per signed-in user):
+- no `wardrobe_garment_analysis` row, OR
+- `status` in (`failed`, `skipped`), OR
+- `prompt_hint` is null or empty string.
+- Stale `pending` (>10 min) also eligible.
+
+Processing:
+- Sort eligible ids deterministically (oldest items first) and take `limit`.
+- Split into chunks of `chunkSize`.
+- For each chunk: `Promise.allSettled` calling `analyze-wardrobe-fashionclip` with `{ wardrobe_item_id, force: true }` and the trigger-secret header (server-to-server, ownership already enforced).
+- Process chunks **sequentially** (await between chunks). No retries.
+- After all chunks finish, re-read `wardrobe_garment_analysis` for the queued ids to compute the final summary.
+
+Response:
+```json
+{
+  "total": 40,
+  "eligible": 40,
+  "requestedLimit": 3,
+  "chunkSize": 1,
+  "queued": 3,
+  "complete": 2,
+  "pending": 0,
+  "failed": 1,
+  "skipped": 0,
+  "missing": 0,
+  "workerConfigured": true,
+  "errors": [{ "wardrobe_item_id": "…", "error": "worker_timeout" }]
+}
 ```
 
-`label` already carries the display name and is reused as the item name in the prompt.
+Safety:
+- Wrapped in try/catch with `catch (error: any)`.
+- Never throws on worker failure — failed items end up in `failed/skipped` and are reported.
+- Logs only ids and statuses. **Never log image URLs, tokens, or the trigger secret.**
+- `workerConfigured` reflects presence of both secrets so a missing config is obvious in the response.
 
-## 2. Picker — read existing metadata
+### 2. Test sequence (user-driven, via curl/Functions tester)
 
-Confirmed available columns (no schema changes):
+Run #1: `{ "limit": 3, "chunkSize": 1 }` → expect 1–3 `complete` rows with non-empty `prompt_hint`.
+Run #2 (after #1 OK): `{ "limit": 10, "chunkSize": 2 }`.
+Run #3 (after #2 stable): `{ "limit": 50, "chunkSize": 3 }`.
 
-- `products`: `title`, `description`, `category_slug`
-- `wardrobe_items`: `name`, `brand`, `category`
-- `event_brand_products`: `garment_type` (no description)
+### 3. Verification
 
-Update the two `supabase.from(...).select(...)` calls and the wardrobe mapping to also pull these columns, and pass `category` + `description` into the `LiveCamGarmentSelection` returned by `handlePick`. Nothing else in the picker UI changes.
+After Run #1:
+- `SELECT status, prompt_hint FROM wardrobe_garment_analysis WHERE wardrobe_item_id = '…'` → `complete` + non-empty hint.
+- Open AI Studio → Live Cam → pick that item.
+- Add a single `console.debug('[livecam] final prompt', finalPrompt)` in the Live Cam prompt-send path so the merged prompt is visible in the browser console. No protocol/scheduler change.
 
-This is the "self-aware" hook: any new row added to these tables flows into the picker and into the prompt builder automatically, with no code change needed.
+### 4. Out of scope (unchanged)
+RunPod FluxRT, Cloudflare, Discover, `event_brand_products`, WebSocket protocol, camera capture, scheduler, per-frame behavior. No UI button. No new schema. No new secrets. Live Cam keeps working with its existing fallback prompt if analysis is missing or failed.
 
-## 3. New `buildTryOnPrompt.ts`
-
-Pure function, no network, no AI:
-
-```ts
-type Category = 'tops' | 'bottoms' | 'dresses' | 'outerwear' | 'shoes' | 'bags' | 'accessories';
-
-export function buildTryOnPrompt(input: {
-  category?: string;
-  name?: string;
-  description?: string;
-  promptHint?: string;
-}): string
-```
-
-Steps:
-
-a. **Normalize category** with a keyword map applied to a lowercased input:
-
-```text
-tops       → top, shirt, tee, t-shirt, blouse, sweater, hoodie, jumper, cardigan, polo, tank, crop
-bottoms    → bottom, pant, trouser, jean, short, skirt, legging, jogger, chino
-dresses    → dress, gown, kaftan, abaya, jumpsuit, romper
-outerwear  → jacket, coat, blazer, parka, puffer, trench, vest, outerwear
-shoes      → shoe, sneaker, boot, heel, sandal, loafer, mule, footwear
-bags       → bag, purse, tote, clutch, backpack, handbag
-accessories→ accessory, hat, cap, scarf, belt, sunglass, glove, watch, jewel, ring, necklace, bracelet, earring
-```
-
-If no match, return `null` → universal base only.
-
-b. **Compose prompt** in this order:
-
-1. Universal base (the new wording from the request).
-2. Category-specific block (the 7 blocks verbatim from the request).
-3. `Selected item name: {name}.` if name present.
-4. `Item description: {description}.` if description present.
-5. `Additional item guidance: {promptHint}.` if promptHint present.
-
-Joined with single spaces. Missing fields are skipped silently — never guessed.
-
-## 4. `useLiveCamSession.ts`
-
-- Replace the current `DEFAULT_TRYON_PROMPT` constant + inline `hint ? ... : ...` with a call to `buildTryOnPrompt({ category, name: garment.label, description, promptHint })`.
-- Existing handshake order is already correct (ready → set_reference_image + ack → set_prompt + ack → frames) and is preserved as-is.
-- Add the requested temporary logs alongside the existing ones (no base64, no full prompt text):
-
-```text
-[live-cam] item id=<id> category=<raw> source=<source>
-[live-cam] name exists=<bool> description exists=<bool> promptHint exists=<bool>
-[live-cam] final prompt length=<n>
-[live-cam] set_reference_image ack=<bool>
-[live-cam] set_prompt ack=<bool>
-```
-
-The ack logs already exist; the rest are added at the same call sites.
-
-## Acceptance
-
-- Bottoms / tops / dresses / shoes / bags / accessories / outerwear each get their dedicated preservation clause.
-- Unknown or missing category falls back to universal base only.
-- `promptHint` is still appended.
-- New Discover or Closet items automatically benefit — no per-item code.
-- No schema, RunPod, Cloudflare, Supabase function, WS, capture, or render changes.
+### Files to change
+- `supabase/functions/reanalyze-wardrobe-fashionclip-batch/index.ts` — chunked sequential dispatch, richer summary, accept `chunkSize`.
+- `src/components/ai-studio/live-cam/…` — one `console.debug` line on prompt send (verification only).
