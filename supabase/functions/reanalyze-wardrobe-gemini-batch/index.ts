@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    const callerAuth = req.headers.get('Authorization');
     const userId = await getCallerUserId(req);
     if (!userId) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), {
@@ -85,13 +86,15 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as any;
 
     if (body?.mode === 'smoke-test') {
-      // Probe Gemini key presence + 1 cheap call shape (no DB write).
+      // Probe Gemini key + trigger secret presence (no values exposed).
       return new Response(JSON.stringify({
         ok: true,
         geminiKeyConfigured: !!GEMINI_API_KEY,
+        triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Accept { provider: 'gemini_only' } as an explicit no-op marker for the UI.
     const limit = Math.max(1, Math.min(50, Number(body?.limit ?? 3)));
     const chunkSize = Math.max(1, Math.min(5, Number(body?.chunkSize ?? 1)));
     const force = !!body?.force;
