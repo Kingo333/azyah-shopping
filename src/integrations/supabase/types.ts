@@ -4701,10 +4701,18 @@ export type Database = {
           confidence: number | null
           created_at: string
           error: string | null
+          fashionclip_metadata: Json | null
+          final_metadata: Json | null
+          final_prompt_hint: string | null
+          gemini_error: string | null
+          gemini_metadata: Json | null
+          gemini_status: string | null
+          gemini_version: string | null
           id: string
           image_hash: string | null
           metadata: Json | null
           model_name: string | null
+          primary_provider: string | null
           prompt_hint: string | null
           source_image_url: string | null
           status: string
@@ -4717,10 +4725,18 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           error?: string | null
+          fashionclip_metadata?: Json | null
+          final_metadata?: Json | null
+          final_prompt_hint?: string | null
+          gemini_error?: string | null
+          gemini_metadata?: Json | null
+          gemini_status?: string | null
+          gemini_version?: string | null
           id?: string
           image_hash?: string | null
           metadata?: Json | null
           model_name?: string | null
+          primary_provider?: string | null
           prompt_hint?: string | null
           source_image_url?: string | null
           status?: string
@@ -4733,10 +4749,18 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           error?: string | null
+          fashionclip_metadata?: Json | null
+          final_metadata?: Json | null
+          final_prompt_hint?: string | null
+          gemini_error?: string | null
+          gemini_metadata?: Json | null
+          gemini_status?: string | null
+          gemini_version?: string | null
           id?: string
           image_hash?: string | null
           metadata?: Json | null
           model_name?: string | null
+          primary_provider?: string | null
           prompt_hint?: string | null
           source_image_url?: string | null
           status?: string
