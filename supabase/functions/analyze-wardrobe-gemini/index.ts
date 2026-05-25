@@ -57,12 +57,37 @@ async function sha256Hex(s: string): Promise<string> {
 
 const GEMINI_TRIGGER_SECRET = Deno.env.get('GEMINI_TRIGGER_SECRET') ?? '';
 
+// Cache the vault-stored trigger secret so we don't hit the RPC on every request.
+let cachedVaultTriggerSecret: string | null = null;
+let cachedVaultTriggerSecretAt = 0;
+const VAULT_CACHE_TTL_MS = 5 * 60_000;
+
+async function getVaultTriggerSecret(): Promise<string> {
+  const now = Date.now();
+  if (cachedVaultTriggerSecret && now - cachedVaultTriggerSecretAt < VAULT_CACHE_TTL_MS) {
+    return cachedVaultTriggerSecret;
+  }
+  try {
+    const { data, error } = await admin.rpc('get_gemini_trigger_secret');
+    if (!error && typeof data === 'string' && data.length > 0) {
+      cachedVaultTriggerSecret = data;
+      cachedVaultTriggerSecretAt = now;
+      return data;
+    }
+  } catch (_e: any) {
+    // ignore — fall back to env-only comparison
+  }
+  return '';
+}
+
 type AuthMode = 'trigger_secret' | 'user_jwt' | 'none';
 
 async function authorize(req: Request, itemUserId: string): Promise<AuthMode> {
   const trig = req.headers.get('x-trigger-secret');
-  if (trig && GEMINI_TRIGGER_SECRET && trig === GEMINI_TRIGGER_SECRET) {
-    return 'trigger_secret';
+  if (trig) {
+    if (GEMINI_TRIGGER_SECRET && trig === GEMINI_TRIGGER_SECRET) return 'trigger_secret';
+    const vaultSecret = await getVaultTriggerSecret();
+    if (vaultSecret && trig === vaultSecret) return 'trigger_secret';
   }
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return 'none';
