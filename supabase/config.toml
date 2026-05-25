@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.reanalyze-wardrobe-fashionclip-batch]
 verify_jwt = false
+
+[functions.analyze-wardrobe-gemini]
+verify_jwt = false
+
+[functions.reanalyze-wardrobe-gemini-batch]
+verify_jwt = false
