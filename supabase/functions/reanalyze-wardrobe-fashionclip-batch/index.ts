@@ -49,25 +49,44 @@ async function getTriggerSecret(): Promise<string | null> {
   }
 }
 
+function normalizeWorkerUrl(raw: string): string {
+  let v = (raw ?? '').trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  v = v.replace(/\/+$/, '');
+  return v;
+}
+
+const CLEAN_WORKER_URL = normalizeWorkerUrl(WORKER_URL);
+
 function workerDiagnostics() {
   let host = '';
   let pathShape: 'base' | 'includes_ping' | 'includes_analyze' | 'other_path' = 'base';
+  let workerUrlValid = false;
+  let workerUrlError: string | null = null;
   try {
-    const u = new URL(WORKER_URL);
+    if (!CLEAN_WORKER_URL) throw new Error('empty');
+    const u = new URL(CLEAN_WORKER_URL);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('bad_protocol');
     host = u.hostname;
+    workerUrlValid = !!host;
     const p = u.pathname.replace(/\/+$/, '');
     if (p === '' || p === '/') pathShape = 'base';
     else if (p.endsWith('/ping')) pathShape = 'includes_ping';
     else if (p.endsWith('/analyze')) pathShape = 'includes_analyze';
     else pathShape = 'other_path';
   } catch {
-    /* noop */
+    workerUrlValid = false;
+    workerUrlError = 'invalid_absolute_url';
   }
   return {
-    workerConfigured: !!WORKER_URL && !!WORKER_TOKEN,
+    workerConfigured: !!CLEAN_WORKER_URL && !!WORKER_TOKEN,
     runpodAuthConfigured: !!RUNPOD_API_KEY,
     workerHost: host,
     workerPathShape: pathShape,
+    workerUrlValid,
+    workerUrlError,
   };
 }
 
@@ -125,12 +144,14 @@ Deno.serve(async (req) => {
         usedWardrobeItem: false,
       };
 
-      if (!wDiag.workerConfigured) {
-        result.analyzeError = 'worker_not_configured';
+      if (!wDiag.workerConfigured || !wDiag.workerUrlValid) {
+        result.analyzeError = !wDiag.workerConfigured
+          ? 'worker_not_configured'
+          : 'invalid_absolute_url';
         return jsonResponse(result);
       }
 
-      const base = WORKER_URL.replace(/\/$/, '');
+      const base = CLEAN_WORKER_URL;
 
       // /ping
       try {
