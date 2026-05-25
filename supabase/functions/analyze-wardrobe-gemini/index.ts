@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
         gemini_error: 'no_api_key',
         gemini_version: GEMINI_VERSION,
       });
-      return new Response(JSON.stringify({ status: 'skipped', reason: 'no_api_key' }), {
+      return new Response(JSON.stringify({ status: 'skipped', reason: 'no_api_key', authMode, geminiApiConfigured: false, geminiStatus: 'skipped', geminiError: 'no_api_key' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
