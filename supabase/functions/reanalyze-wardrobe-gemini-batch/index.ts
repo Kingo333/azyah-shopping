@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
     const limit = Math.max(1, Math.min(50, Number(body?.limit ?? 3)));
     const chunkSize = Math.max(1, Math.min(5, Number(body?.chunkSize ?? 1)));
     const force = !!body?.force;
+    const onlyFailed429 = !!body?.onlyFailed429;
 
     // Fetch all wardrobe items for caller.
     const { data: items, error: itemsErr } = await admin
@@ -121,19 +122,28 @@ Deno.serve(async (req) => {
     }
     const uniqueUrlsTotal = groups.size;
 
-    // Find which hashes already have a Gemini-complete row.
+    // Find existing analysis state per hash.
     const { data: existing } = await admin
       .from('wardrobe_garment_analysis')
-      .select('image_hash, gemini_status')
+      .select('image_hash, gemini_status, gemini_error')
       .in('image_hash', Array.from(groups.keys()));
     const doneHashes = new Set<string>();
+    const failed429Hashes = new Set<string>();
     for (const a of (existing ?? []) as any[]) {
       if (a.gemini_status === 'complete') doneHashes.add(a.image_hash);
+      if (a.gemini_status === 'failed' && typeof a.gemini_error === 'string' && a.gemini_error.startsWith('gemini_429')) {
+        failed429Hashes.add(a.image_hash);
+      }
     }
     const uniqueUrlsAlreadyComplete = doneHashes.size;
 
-    // Remaining to call worker for.
-    const remainingGroups = Array.from(groups.values()).filter((g) => force || !doneHashes.has(g.hash));
+    // Candidate selection.
+    let remainingGroups: Group[];
+    if (onlyFailed429) {
+      remainingGroups = Array.from(groups.values()).filter((g) => failed429Hashes.has(g.hash));
+    } else {
+      remainingGroups = Array.from(groups.values()).filter((g) => force || !doneHashes.has(g.hash));
+    }
     const queue = remainingGroups.slice(0, limit);
     const uniqueUrlsRemaining = remainingGroups.length;
 
@@ -146,7 +156,12 @@ Deno.serve(async (req) => {
     let fanoutFromSelf = 0;
     const perUrl: any[] = [];
 
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const PACE_MS = 6800;
+
     for (let i = 0; i < queue.length; i += chunkSize) {
+      // Slow pacing for 429-safe serial mode.
+      if (i > 0 && chunkSize === 1) await sleep(PACE_MS);
       const chunk = queue.slice(i, i + chunkSize);
       const results = await Promise.all(
         chunk.map(async (g) => {
@@ -201,6 +216,9 @@ Deno.serve(async (req) => {
       failed,
       skipped,
       perUrl,
+      onlyFailed429,
+      candidates: remainingGroups.length,
+      paceMs: chunkSize === 1 ? PACE_MS : 0,
       geminiKeyConfigured: !!GEMINI_API_KEY,
       triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

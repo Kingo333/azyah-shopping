@@ -9,6 +9,12 @@ export interface WardrobeGarmentAnalysis {
   prompt_hint: string | null;
   confidence: number | null;
   analysis_version: string | null;
+  final_prompt_hint: string | null;
+  final_metadata: any | null;
+  primary_provider: string | null;
+  gemini_metadata: any | null;
+  gemini_status: string | null;
+  gemini_error: string | null;
 }
 
 export interface WardrobeItem {
@@ -60,7 +66,7 @@ export const useWardrobeItems = () => {
         const ids = items.map((i) => i.id);
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis')
-          .select('wardrobe_item_id, status, prompt_hint, confidence, analysis_version')
+          .select('wardrobe_item_id, status, prompt_hint, confidence, analysis_version, final_prompt_hint, final_metadata, primary_provider, gemini_metadata, gemini_status, gemini_error')
           .in('wardrobe_item_id', ids);
         const map = new Map<string, WardrobeGarmentAnalysis>();
         for (const a of (analyses ?? []) as any[]) {
@@ -69,6 +75,12 @@ export const useWardrobeItems = () => {
             prompt_hint: a.prompt_hint,
             confidence: a.confidence,
             analysis_version: a.analysis_version,
+            final_prompt_hint: a.final_prompt_hint ?? null,
+            final_metadata: a.final_metadata ?? null,
+            primary_provider: a.primary_provider ?? null,
+            gemini_metadata: a.gemini_metadata ?? null,
+            gemini_status: a.gemini_status ?? null,
+            gemini_error: a.gemini_error ?? null,
           });
         }
         for (const it of items) it.analysis = map.get(it.id) ?? null;

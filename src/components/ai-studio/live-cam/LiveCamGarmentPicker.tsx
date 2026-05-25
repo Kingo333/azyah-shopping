@@ -17,8 +17,10 @@ interface GarmentOption {
   imageUrl: string;
   category?: string;
   description?: string;
-  /** FashionCLIP-derived hint, only set for wardrobe items with status='complete'. */
+  /** Gemini final_prompt_hint preferred; falls back to legacy prompt_hint. */
   analysisPromptHint?: string;
+  /** When true, do NOT merge any FashionCLIP hint into the final Live Cam prompt. */
+  geminiReady?: boolean;
 }
 
 interface SettingsRow {
@@ -72,17 +74,29 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
   const allOptions = useMemo<GarmentOption[]>(() => {
     const w: GarmentOption[] = (wardrobe ?? [])
       .filter((it) => !!it.image_url)
-      .map((it) => ({
-        id: it.id,
-        source: 'wardrobe_item' as const,
-        label: (it as any).name || it.brand || it.category || 'My item',
-        imageUrl: (it.image_bg_removed_url || it.image_url) as string,
-        category: it.category ?? undefined,
-        analysisPromptHint:
-          it.analysis?.status === 'complete' && it.analysis.prompt_hint
-            ? it.analysis.prompt_hint
-            : undefined,
-      }));
+      .map((it) => {
+        const a = it.analysis as any;
+        const geminiReady = !!(
+          a &&
+          a.primary_provider === 'gemini' &&
+          a.gemini_status === 'complete' &&
+          a.final_prompt_hint
+        );
+        const hint = geminiReady
+          ? (a.final_prompt_hint as string)
+          : a?.status === 'complete'
+            ? ((a.final_prompt_hint as string | undefined) || (a.prompt_hint as string | undefined))
+            : undefined;
+        return {
+          id: it.id,
+          source: 'wardrobe_item' as const,
+          label: (it as any).name || it.brand || it.category || 'My item',
+          imageUrl: (it.image_bg_removed_url || it.image_url) as string,
+          category: it.category ?? undefined,
+          analysisPromptHint: hint,
+          geminiReady,
+        };
+      });
     return [...w, ...extra];
   }, [wardrobe, extra]);
 
@@ -106,11 +120,13 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
 
   const handlePick = (opt: GarmentOption) => {
     const override = settings[opt.id];
-    // FashionCLIP hint first, manual per-garment override second.
+    // Gemini-only test: when Gemini final_prompt_hint exists, do NOT merge any FashionCLIP text.
+    // Manual per-garment override still appended last in both branches.
+    const parts = opt.geminiReady
+      ? [opt.analysisPromptHint, override?.prompt_hint]
+      : [opt.analysisPromptHint, override?.prompt_hint];
     const combinedHint =
-      [opt.analysisPromptHint, override?.prompt_hint || undefined]
-        .filter((s): s is string => !!s && s.trim().length > 0)
-        .join(' ') || undefined;
+      parts.filter((s): s is string => !!s && s.trim().length > 0).join(' ') || undefined;
     onChange({
       id: opt.id,
       source: opt.source,

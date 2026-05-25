@@ -279,6 +279,8 @@ Deno.serve(async (req) => {
           gemini_error: null,
           gemini_version: GEMINI_VERSION,
           primary_provider: 'gemini',
+          final_metadata: twin.gemini_metadata,
+          final_prompt_hint: promptHint,
         });
         return new Response(JSON.stringify({ status: 'fanout', source: 'twin', authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'complete' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -424,6 +426,8 @@ Deno.serve(async (req) => {
       gemini_error: null,
       gemini_version: GEMINI_VERSION,
       primary_provider: 'gemini',
+      final_metadata: gemini,
+      final_prompt_hint: promptHint,
     });
 
     console.log('[gemini] complete', {
