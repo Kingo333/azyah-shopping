@@ -80,7 +80,7 @@ export const AnalyzeClosetButton: React.FC = () => {
     setLoadingMode(mode);
     setSummary(null);
     try {
-      const queueSize = Math.max(1, Math.min(7, coverage?.uniqueUrlsRemaining ?? 7));
+      const queueSize = Math.max(1, Math.min(25, coverage?.uniqueUrlsRemaining ?? 25));
       const body =
         mode === 'smoke'
           ? { mode: 'smoke-test' }
@@ -121,7 +121,7 @@ export const AnalyzeClosetButton: React.FC = () => {
   const batchLabel = allDone
     ? 'All items up to date'
     : remaining != null
-      ? `Analyze ${Math.min(7, remaining)} closet item${remaining === 1 ? '' : 's'}`
+      ? `Analyze ${Math.min(25, remaining)} closet item${remaining === 1 ? '' : 's'}`
       : 'Analyze closet items';
 
   return (
