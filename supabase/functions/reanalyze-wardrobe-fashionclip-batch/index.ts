@@ -16,6 +16,7 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const WORKER_URL = Deno.env.get('FASHIONCLIP_WORKER_URL') ?? '';
 const WORKER_TOKEN = Deno.env.get('FASHIONCLIP_WORKER_TOKEN') ?? '';
+const RUNPOD_API_KEY = Deno.env.get('RUNPOD_API_KEY') ?? '';
 
 const STALE_PENDING_MIN = 10;
 const MAX_LIMIT = 50;
@@ -64,6 +65,7 @@ function workerDiagnostics() {
   }
   return {
     workerConfigured: !!WORKER_URL && !!WORKER_TOKEN,
+    runpodAuthConfigured: !!RUNPOD_API_KEY,
     workerHost: host,
     workerPathShape: pathShape,
   };
@@ -137,7 +139,10 @@ Deno.serve(async (req) => {
         const r = await fetch(`${base}/ping`, {
           method: 'GET',
           signal: c.signal,
-          headers: { 'X-Worker-Token': WORKER_TOKEN },
+          headers: {
+            'Authorization': `Bearer ${RUNPOD_API_KEY}`,
+            'X-Worker-Token': WORKER_TOKEN,
+          },
         });
         clearTimeout(t);
         result.pingStatus = r.status;
@@ -176,6 +181,7 @@ Deno.serve(async (req) => {
           signal: c.signal,
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RUNPOD_API_KEY}`,
             'X-Worker-Token': WORKER_TOKEN,
           },
           body: JSON.stringify({
