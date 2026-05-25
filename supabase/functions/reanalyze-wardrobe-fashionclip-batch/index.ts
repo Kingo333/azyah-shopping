@@ -52,19 +52,27 @@ Deno.serve(async (req) => {
   try {
     // --- Auth: signed-in user only
     const auth = req.headers.get('Authorization');
+    console.log('[fashionclip-batch] auth header present:', !!auth, 'startsWithBearer:', auth?.startsWith('Bearer '));
     if (!auth?.startsWith('Bearer ')) {
-      return jsonResponse({ error: 'unauthorized' }, 401);
+      return jsonResponse({ error: 'unauthorized', reason: 'missing_bearer' }, 401);
     }
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(
-      auth.replace('Bearer ', ''),
-    );
+    const token = auth.replace('Bearer ', '');
+    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
+    console.log('[fashionclip-batch] getClaims error:', claimsErr?.message, 'hasClaims:', !!claims?.claims);
     if (claimsErr || !claims?.claims) {
-      return jsonResponse({ error: 'unauthorized' }, 401);
+      // Fallback: try getUser
+      const { data: u, error: uErr } = await userClient.auth.getUser(token);
+      console.log('[fashionclip-batch] getUser fallback error:', uErr?.message, 'hasUser:', !!u?.user);
+      if (uErr || !u?.user) {
+        return jsonResponse({ error: 'unauthorized', reason: 'invalid_token', detail: claimsErr?.message ?? uErr?.message ?? null }, 401);
+      }
+      var userId = u.user.id as string;
+    } else {
+      var userId = claims.claims.sub as string;
     }
-    const userId = claims.claims.sub as string;
 
     // --- Body
     const body = (await req.json().catch(() => ({}))) as {
