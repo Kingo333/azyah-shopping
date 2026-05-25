@@ -1,36 +1,38 @@
 ## Plan
 
-`RUNPOD_API_KEY` is now stored. Wire it into the two FashionCLIP edge functions and validate.
+1. **Update only the FashionCLIP worker URL secret**
+   - Refresh `FASHIONCLIP_WORKER_URL` through the secure secrets form.
+   - Use the exact base URL format: `https://ik55d90xltg9id.api.runpod.ai`
+   - No trailing slash, spaces, or newline.
 
-### Changes
+2. **Keep Live Cam / Cloudflare untouched**
+   - Do not change the FluxRT Live Cam RunPod endpoint.
+   - Do not change Cloudflare, WebSocket streaming, camera capture, or scheduler code.
+   - `RUNPOD_API_KEY` remains separate from the FashionCLIP worker URL.
 
-1. **`supabase/functions/analyze-wardrobe-fashionclip/index.ts`**
-   - Read `RUNPOD_API_KEY` from env.
-   - On every fetch to `${FASHIONCLIP_WORKER_URL}/ping` and `/analyze`, send headers:
-     - `Authorization: Bearer ${RUNPOD_API_KEY}` (RunPod gateway)
-     - `X-Worker-Token: ${FASHIONCLIP_WORKER_TOKEN}` (app layer)
-     - `Content-Type: application/json`
-   - If `RUNPOD_API_KEY` missing → persist `skipped` with reason `runpod_auth_not_configured`.
+3. **Verify FashionCLIP smoke test**
+   - Re-run the deployed `reanalyze-wardrobe-fashionclip-batch` smoke test.
+   - Expected result:
+     - `workerConfigured: true`
+     - `workerHost: ik55d90xltg9id.api.runpod.ai`
+     - `ping status` no longer unreachable if the RunPod worker is awake
+     - `analyze status` should return a real HTTP status or response keys
 
-2. **`supabase/functions/reanalyze-wardrobe-fashionclip-batch/index.ts`**
-   - Smoke test calls `GET /ping` then `POST /analyze` with both headers above.
-   - Add `runpodAuthConfigured: boolean` to smoke-test and backfill responses.
-   - Keep diagnostics safe: no tokens, no signed URLs, no base64.
-   - Backfill remains 3-item cap; no 10/50 batches.
+4. **If still unreachable**
+   - Check whether the RunPod serverless endpoint is active/awake.
+   - Test whether the endpoint expects `/runsync`, `/run`, `/ping`, or a custom path.
+   - Adjust only the FashionCLIP edge-function request path if the worker requires a different shape.
 
-### Validation
+## Technical details
 
-1. Deploy both functions.
-2. User clicks **Smoke test worker** on `/profile`.
-3. Expect: `runpodAuthConfigured: true`, `pingStatus: 200`, `analyzeStatus: 200` or clear model error.
-4. Check RunPod worker logs for `GET /ping` and `POST /analyze`.
-5. Only then click **Analyze 3 closet items** and report per-item results, DB status counts, one example `prompt_hint` if complete.
+Recent logs still show:
 
-### Out of scope
-FluxRT Live Cam endpoint, Cloudflare, Live Cam streaming, camera capture, scheduler, Discover, event products, frontend env, 10/50-item batches.
+```text
+host: ""
+pathShape: "base"
+pingStatus: null
+analyzeStatus: null
+pingError: "unreachable"
+```
 
-### Files
-- `supabase/functions/analyze-wardrobe-fashionclip/index.ts`
-- `supabase/functions/reanalyze-wardrobe-fashionclip-batch/index.ts`
-
-No schema changes. No frontend changes.
+That means the edge function sees `FASHIONCLIP_WORKER_URL` as configured, but cannot parse a usable host from it. The next implementation step is to update that one secret and then validate the deployed smoke test.
