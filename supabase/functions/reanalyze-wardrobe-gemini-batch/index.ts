@@ -202,6 +202,7 @@ Deno.serve(async (req) => {
       skipped,
       perUrl,
       geminiKeyConfigured: !!GEMINI_API_KEY,
+      triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[gemini-batch] unhandled', error?.message);
