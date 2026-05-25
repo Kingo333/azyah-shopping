@@ -239,17 +239,19 @@ Deno.serve(async (req) => {
           result.analyzeDurationMs = Date.now() - startedAt;
           result.analyzeStatus = r.status;
           const text = await r.text().catch(() => '');
+          const summary = summarizeBody(text);
+          result.analyzeBodySummary = summary;
           try {
             const json = JSON.parse(text);
             result.analyzeResponseKeys = Object.keys(json || {});
             if (!r.ok) {
-              result.analyzeError = summarizeBody(text);
-              result.analyzeResponseSummary = summarizeBody(text);
+              result.analyzeError = summary;
+              result.analyzeResponseSummary = summary;
             }
           } catch {
             if (!r.ok) {
-              result.analyzeError = summarizeBody(text);
-              result.analyzeResponseSummary = summarizeBody(text);
+              result.analyzeError = summary;
+              result.analyzeResponseSummary = summary;
             }
           }
         } catch (e: any) {
