@@ -17,6 +17,8 @@ interface GarmentOption {
   imageUrl: string;
   category?: string;
   description?: string;
+  /** FashionCLIP-derived hint, only set for wardrobe items with status='complete'. */
+  analysisPromptHint?: string;
 }
 
 interface SettingsRow {
@@ -76,6 +78,10 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
         label: (it as any).name || it.brand || it.category || 'My item',
         imageUrl: (it.image_bg_removed_url || it.image_url) as string,
         category: it.category ?? undefined,
+        analysisPromptHint:
+          it.analysis?.status === 'complete' && it.analysis.prompt_hint
+            ? it.analysis.prompt_hint
+            : undefined,
       }));
     return [...w, ...extra];
   }, [wardrobe, extra]);
@@ -100,12 +106,17 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
 
   const handlePick = (opt: GarmentOption) => {
     const override = settings[opt.id];
+    // FashionCLIP hint first, manual per-garment override second.
+    const combinedHint =
+      [opt.analysisPromptHint, override?.prompt_hint || undefined]
+        .filter((s): s is string => !!s && s.trim().length > 0)
+        .join(' ') || undefined;
     onChange({
       id: opt.id,
       source: opt.source,
       label: opt.label,
       referenceImageUrl: override?.reference_image_url || opt.imageUrl,
-      promptHint: override?.prompt_hint || undefined,
+      promptHint: combinedHint,
       category: opt.category,
       description: opt.description,
     });

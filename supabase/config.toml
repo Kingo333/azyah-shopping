@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.delete-account]
 verify_jwt = false
+
+[functions.analyze-wardrobe-fashionclip]
+verify_jwt = false
+
+[functions.reanalyze-wardrobe-fashionclip-batch]
+verify_jwt = false
