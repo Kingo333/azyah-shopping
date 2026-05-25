@@ -29,6 +29,7 @@ import { BrandsSection } from '@/components/profile/BrandsSection';
 import { PostsSection } from '@/components/profile/PostsSection';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
+import AnalyzeClosetGeminiButton from '@/components/profile/AnalyzeClosetGeminiButton';
 
 interface UserProfile {
   id: string;
