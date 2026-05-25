@@ -5827,6 +5827,7 @@ export type Database = {
         }[]
       }
       get_fashionclip_trigger_secret: { Args: never; Returns: string }
+      get_gemini_trigger_secret: { Args: never; Returns: string }
       get_minimal_brand_directory: {
         Args: never
         Returns: {
