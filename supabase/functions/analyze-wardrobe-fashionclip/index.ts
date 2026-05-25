@@ -200,6 +200,7 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const to = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS);
     let workerResp: Response;
+    const startedAt = Date.now();
     try {
       workerResp = await fetch(`${WORKER_URL}/analyze`, {
         method: 'POST',
@@ -218,6 +219,7 @@ Deno.serve(async (req) => {
       });
     } catch (e: any) {
       clearTimeout(to);
+      const durationMs = Date.now() - startedAt;
       const reason = e?.name === 'AbortError' ? 'worker_timeout' : 'worker_unreachable';
       await upsertAnalysis({
         wardrobe_item_id,
@@ -229,12 +231,13 @@ Deno.serve(async (req) => {
         model_name: MODEL_NAME,
         error: reason,
       });
-      console.log('[fashionclip] failed', { wardrobe_item_id, reason });
-      return new Response(JSON.stringify({ status: 'failed', reason }), {
+      console.log('[fashionclip] failed', { wardrobe_item_id, reason, durationMs, timeoutMs: WORKER_TIMEOUT_MS });
+      return new Response(JSON.stringify({ status: 'failed', reason, durationMs, timeoutMs: WORKER_TIMEOUT_MS }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     clearTimeout(to);
+    const analyzeDurationMs = Date.now() - startedAt;
 
     if (!workerResp.ok) {
       const reason = `worker_${workerResp.status}`;
