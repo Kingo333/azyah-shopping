@@ -1,65 +1,55 @@
-## Switch closet analysis to Gemini-only (testing mode)
+## Goal
 
-Goal: pause FashionCLIP end-to-end, route everything (upload trigger + Profile "Analyze" button + Live Cam read) through Gemini Vision, and drop the merge layer so we only use the existing `prompt_hint` field.
+Restore the original FashionCLIP "Analyze closet items" button exactly as it was, and add a **parallel** Gemini Vision backfill button next to it. The two paths never touch each other.
 
-Nothing is deleted — FashionCLIP code and DB columns stay intact so we can re-enable later by reversing the toggle.
+## Scope guardrails
 
-### What FashionCLIP currently owns (audited)
+- **Do NOT modify** `analyze-wardrobe-fashionclip`, `reanalyze-wardrobe-fashionclip-batch`, the `dispatch_fashionclip_analysis` trigger, FashionCLIP secrets, FluxRT, RunPod, Cloudflare, camera, scheduler, payments, or auth.
+- All changes live in the Gemini lane + one revert of the FashionCLIP button to its original behavior.
 
-DB triggers on `wardrobe_items`:
-- `wardrobe_items_fashionclip_dispatch_ins` (AFTER INSERT)
-- `wardrobe_items_fashionclip_dispatch_upd` (AFTER UPDATE of image_url, image_bg_removed_url, category)
+## Changes
 
-Both call `public.dispatch_fashionclip_analysis()`, which HTTP-POSTs to `analyze-wardrobe-fashionclip`.
+### 1. Revert `AnalyzeClosetButton.tsx` to original FashionCLIP behavior
+- Invokes `reanalyze-wardrobe-fashionclip-batch`.
+- Coverage gated on `status='complete' && prompt_hint` (existing column).
+- Labels: "Analyze N closet items" / "All items up to date".
+- Remove all Gemini references from this file.
 
-Edge functions in play:
-- `analyze-wardrobe-fashionclip`
-- `reanalyze-wardrobe-fashionclip-batch` (the one wired to the Profile "Analyze closet items" button)
+### 2. New `AnalyzeClosetGeminiButton.tsx` (sibling, identical UX)
+- Invokes `reanalyze-wardrobe-gemini-batch`.
+- Coverage gated on `gemini_status='complete' && gemini_metadata` (already-existing columns from prior Gemini migration).
+- Labels: "Analyze N items with Gemini" / "All items analyzed (Gemini)".
+- Same smoke + batch + expandable result panel UI as the FashionCLIP button.
 
-Tables/columns FashionCLIP writes to in `wardrobe_garment_analysis`:
-- `status`, `metadata`, `prompt_hint`, `confidence`, `model_name`, `analysis_version`, `image_hash`, `source_image_url`, `error`
+### 3. Profile page — render both buttons stacked
+Where `AnalyzeClosetButton` currently mounts, render `AnalyzeClosetButton` then `AnalyzeClosetGeminiButton` underneath. No other Profile changes.
 
-Gemini-only columns we'll keep for traceability (no merge):
-- `gemini_metadata`, `gemini_status`, `gemini_error`, `gemini_version`, `primary_provider`
+### 4. Fix the Gemini 401 (root cause of the `http_401` errors)
+The vault read via `admin.schema('vault').from('decrypted_secrets')` returns `null` from edge runtime (vault is not exposed through PostgREST), so the `x-trigger-secret` header is empty and both Gemini functions fall through to a Bearer path that `getClaims` rejects.
 
-Merge columns we'll stop writing (left in place, unused, so we can re-enable later):
-- `final_metadata`, `final_prompt_hint`, `fashionclip_metadata`
+**Migration** — new SECURITY DEFINER RPC:
+```sql
+create or replace function public.get_fashionclip_trigger_secret()
+returns text language plpgsql security definer set search_path = public, vault as $$
+declare s text;
+begin
+  select decrypted_secret into s from vault.decrypted_secrets where name = 'FASHIONCLIP_TRIGGER_SECRET' limit 1;
+  return s;
+end $$;
+revoke all on function public.get_fashionclip_trigger_secret() from public, anon, authenticated;
+grant execute on function public.get_fashionclip_trigger_secret() to service_role;
+```
 
-### Changes
+**Edge function edits (Gemini lane only):**
+- `reanalyze-wardrobe-gemini-batch/index.ts` — replace its vault `.from('decrypted_secrets')` call with `admin.rpc('get_fashionclip_trigger_secret')`, then send it in `x-trigger-secret` when invoking `analyze-wardrobe-gemini`.
+- `analyze-wardrobe-gemini/index.ts` — keep the `x-trigger-secret` check as the primary auth path (now actually populated). Leave the user-JWT branch untouched for direct calls.
 
-1. **DB trigger repoint (migration)**
-   Update `dispatch_fashionclip_analysis()` body to POST to `/functions/v1/analyze-wardrobe-gemini` instead of `/analyze-wardrobe-fashionclip`. Trigger names stay the same so nothing else needs updating. To re-enable FashionCLIP later we just flip the URL back.
+FashionCLIP functions are not edited.
 
-2. **`analyze-wardrobe-gemini` edge function** — drop the merge layer
-   - Stop writing `final_metadata` / `final_prompt_hint`.
-   - Write Gemini's composed prompt directly into the existing `prompt_hint` column, plus mirror Gemini's raw JSON into `metadata`, set `status='complete'`, `confidence`, `model_name=gemini-2.5-flash`, `analysis_version=gemini-vision-v1`.
-   - Continue to set `gemini_metadata`/`gemini_status`/`gemini_version`/`primary_provider='gemini'` for traceability.
-   - Dedup logic (normalized URL hash) and twin fan-out unchanged.
-   - On failure: set `gemini_status='failed'` and leave `prompt_hint`/`status` untouched (so any stale FashionCLIP value isn't overwritten); Live Cam either keeps prior value or runs without hint.
+### 5. `useWardrobeItems` — no change
+It already reads `prompt_hint`, which FashionCLIP populates. Gemini writes to its own `gemini_metadata` + (parallel) `prompt_hint`, so Live Cam keeps working off whichever ran last; we can later choose a winner.
 
-3. **`useWardrobeItems` hook** — revert to read `prompt_hint` only
-   Remove the `final_prompt_hint` fallback I added last step. Live Cam goes back to the simple original read path, which now sees Gemini output because step 2 writes there.
+## Out of scope
+FashionCLIP code/config, scheduler, AR, camera, payments, auth, UI restyling beyond adding the second button.
 
-4. **Profile `AnalyzeClosetButton`** — point to Gemini batch
-   - Switch `supabase.functions.invoke('reanalyze-wardrobe-fashionclip-batch', …)` → `'reanalyze-wardrobe-gemini-batch'`.
-   - Coverage check stays as-is (`status='complete'` + non-empty `prompt_hint`) — still accurate because Gemini now writes those fields.
-   - Smoke-test branch calls the Gemini batch with `{ mode: 'smoke-test' }` (already supported).
-   - Label/disabled behavior unchanged: "Analyze N closet items" → "All items up to date".
-
-5. **FashionCLIP — paused, not deleted**
-   - Edge functions `analyze-wardrobe-fashionclip` and `reanalyze-wardrobe-fashionclip-batch` remain in repo and stay deployed but receive no traffic.
-   - Their DB columns remain populated for historical rows.
-   - To resume later: flip the trigger URL back and restore the button's function name.
-
-### Acceptance
-
-- New closet uploads call Gemini only; no FashionCLIP HTTP call fires.
-- Profile "Analyze closet items" button runs Gemini backfill on remaining unique images and shows the same counters.
-- Live Cam picks up Gemini's prompt automatically from `prompt_hint` with no Live Cam edits.
-- If Gemini fails on an item, Live Cam either keeps the existing prompt or runs without one — no crash.
-
-### Out of scope (unchanged)
-
-FluxRT/RunPod, FashionCLIP worker, Cloudflare, camera capture, scheduler, WebSocket protocol, Discover/event products, payments/auth, VITE env vars.
-
-Approve and I'll run the trigger migration first, then the three code edits in one pass.
+Confirm and I'll implement.
