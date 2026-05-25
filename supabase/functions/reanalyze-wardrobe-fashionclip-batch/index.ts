@@ -184,7 +184,8 @@ Deno.serve(async (req) => {
           clearTimeout(t);
           result.pingStatus = r.status;
           result.pingDurationMs = Date.now() - startedAt;
-          await r.text().catch(() => '');
+          const pingText = await r.text().catch(() => '');
+          result.pingBodySummary = summarizeBody(pingText);
         } catch (e: any) {
           clearTimeout(t);
           result.pingDurationMs = Date.now() - startedAt;
