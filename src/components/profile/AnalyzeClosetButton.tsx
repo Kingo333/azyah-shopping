@@ -106,11 +106,16 @@ export const AnalyzeClosetButton: React.FC = () => {
 
       {data && summary?.mode === 'smoke' && (
         <div className="rounded-md border bg-card p-3 text-xs space-y-0.5 text-muted-foreground">
-          <div>workerConfigured: {String(data.workerConfigured)}</div>
-          <div>workerHost: {data.workerHost || '—'}</div>
-          <div>workerPathShape: {data.workerPathShape}</div>
-          <div>ping status: {data.pingStatus ?? '—'} {data.pingError ? `(${data.pingError})` : ''}</div>
-          <div>analyze status: {data.analyzeStatus ?? '—'} {data.analyzeError ? `(${String(data.analyzeError).slice(0, 80)})` : ''}</div>
+          <div>workerConfigured: {String(data.workerConfigured)} · urlValid: {String(data.workerUrlValid)} · tokenConfigured: {String(data.workerTokenConfigured)} · runpodAuth: {String(data.runpodAuthConfigured)}</div>
+          <div>workerHost: {data.workerHost || '—'} · pathShape: {data.workerPathShape}</div>
+          <div>ping: {data.pingStatus ?? '—'} · {data.pingDurationMs ?? '—'}ms / {data.pingTimeoutMs ?? '—'}ms {data.pingError ? `(${data.pingError})` : ''}</div>
+          {data.pingBodySummary && (
+            <div className="text-[10px] opacity-75 break-all">pingBody: {String(data.pingBodySummary).slice(0, 200)}</div>
+          )}
+          <div>analyze: {data.analyzeStatus ?? '—'} · {data.analyzeDurationMs ?? '—'}ms / {data.analyzeTimeoutMs ?? '—'}ms {data.analyzeTimedOutBeforeResponse ? '· timedOut' : ''} {data.analyzeError ? `(${String(data.analyzeError).slice(0, 80)})` : ''}</div>
+          {(data.analyzeBodySummary || data.analyzeResponseSummary) && (
+            <div className="text-[10px] opacity-75 break-all">analyzeBody: {String(data.analyzeBodySummary || data.analyzeResponseSummary).slice(0, 200)}</div>
+          )}
           <div>analyze response keys: {(data.analyzeResponseKeys || []).join(', ') || '—'}</div>
         </div>
       )}
