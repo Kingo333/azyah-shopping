@@ -43,14 +43,14 @@ export const AnalyzeClosetButton: React.FC = () => {
       if (ids.length > 0) {
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis' as any)
-          .select('wardrobe_item_id, status, prompt_hint')
+          .select('wardrobe_item_id, gemini_status, gemini_metadata')
           .in('wardrobe_item_id', ids);
         const byItem = new Map<string, any>(
           (analyses ?? []).map((a: any) => [a.wardrobe_item_id, a]),
         );
         for (const r of rows) {
           const a = byItem.get(r.id);
-          if (a?.status === 'complete' && a.prompt_hint && String(a.prompt_hint).trim() !== '') {
+          if (a?.gemini_status === 'complete' && a.gemini_metadata) {
             completeUrls.add(normalizeUrl(r));
           }
         }
