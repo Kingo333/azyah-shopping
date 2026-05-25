@@ -55,29 +55,24 @@ async function sha256Hex(s: string): Promise<string> {
     .join('');
 }
 
-async function getTriggerSecret(): Promise<string | null> {
-  try {
-    const { data } = await admin.rpc('get_fashionclip_trigger_secret' as any);
-    return (data as any) ?? null;
-  } catch {
-    return null;
-  }
-}
+const GEMINI_TRIGGER_SECRET = Deno.env.get('GEMINI_TRIGGER_SECRET') ?? '';
 
-async function authorize(req: Request, itemUserId: string): Promise<boolean> {
+type AuthMode = 'trigger_secret' | 'user_jwt' | 'none';
+
+async function authorize(req: Request, itemUserId: string): Promise<AuthMode> {
   const trig = req.headers.get('x-trigger-secret');
-  if (trig) {
-    const expected = await getTriggerSecret();
-    return !!expected && trig === expected;
+  if (trig && GEMINI_TRIGGER_SECRET && trig === GEMINI_TRIGGER_SECRET) {
+    return 'trigger_secret';
   }
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return false;
+  if (!auth?.startsWith('Bearer ')) return 'none';
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: auth } },
   });
   const { data, error } = await userClient.auth.getClaims(auth.replace('Bearer ', ''));
-  if (error || !data?.claims) return false;
-  return data.claims.sub === itemUserId;
+  if (error || !data?.claims) return 'none';
+  if (data.claims.sub !== itemUserId) return 'none';
+  return 'user_jwt';
 }
 
 const GEMINI_PROMPT = `Analyze this garment image for live virtual try-on. Return only strict JSON matching the schema.
