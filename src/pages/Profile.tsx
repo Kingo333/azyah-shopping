@@ -270,6 +270,7 @@ const Profile: React.FC = () => {
           {/* 6. Wardrobe (Create & Earn + Add Items) */}
           <ClosetOutfitsSection />
           <AnalyzeClosetButton />
+          <AnalyzeClosetGeminiButton />
 
           {/* 7. Your Brands */}
           <BrandsSection />
