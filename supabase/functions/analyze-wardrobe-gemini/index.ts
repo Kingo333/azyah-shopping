@@ -55,29 +55,24 @@ async function sha256Hex(s: string): Promise<string> {
     .join('');
 }
 
-async function getTriggerSecret(): Promise<string | null> {
-  try {
-    const { data } = await admin.rpc('get_fashionclip_trigger_secret' as any);
-    return (data as any) ?? null;
-  } catch {
-    return null;
-  }
-}
+const GEMINI_TRIGGER_SECRET = Deno.env.get('GEMINI_TRIGGER_SECRET') ?? '';
 
-async function authorize(req: Request, itemUserId: string): Promise<boolean> {
+type AuthMode = 'trigger_secret' | 'user_jwt' | 'none';
+
+async function authorize(req: Request, itemUserId: string): Promise<AuthMode> {
   const trig = req.headers.get('x-trigger-secret');
-  if (trig) {
-    const expected = await getTriggerSecret();
-    return !!expected && trig === expected;
+  if (trig && GEMINI_TRIGGER_SECRET && trig === GEMINI_TRIGGER_SECRET) {
+    return 'trigger_secret';
   }
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return false;
+  if (!auth?.startsWith('Bearer ')) return 'none';
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: auth } },
   });
   const { data, error } = await userClient.auth.getClaims(auth.replace('Bearer ', ''));
-  if (error || !data?.claims) return false;
-  return data.claims.sub === itemUserId;
+  if (error || !data?.claims) return 'none';
+  if (data.claims.sub !== itemUserId) return 'none';
+  return 'user_jwt';
 }
 
 const GEMINI_PROMPT = `Analyze this garment image for live virtual try-on. Return only strict JSON matching the schema.
@@ -212,9 +207,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ok = await authorize(req, item.user_id);
-    if (!ok) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+    const authMode = await authorize(req, item.user_id);
+    if (authMode === 'none') {
+      return new Response(JSON.stringify({
+        error: 'unauthorized',
+        authMode,
+        geminiApiConfigured: !!GEMINI_API_KEY,
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -244,7 +243,7 @@ Deno.serve(async (req) => {
       existing.image_hash === imageHash &&
       existing.gemini_metadata
     ) {
-      return new Response(JSON.stringify({ status: 'cached', source: 'self' }), {
+      return new Response(JSON.stringify({ status: 'cached', source: 'self', authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'complete' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -281,7 +280,7 @@ Deno.serve(async (req) => {
           gemini_version: GEMINI_VERSION,
           primary_provider: 'gemini',
         });
-        return new Response(JSON.stringify({ status: 'fanout', source: 'twin' }), {
+        return new Response(JSON.stringify({ status: 'fanout', source: 'twin', authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'complete' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -297,7 +296,7 @@ Deno.serve(async (req) => {
         gemini_error: 'no_api_key',
         gemini_version: GEMINI_VERSION,
       });
-      return new Response(JSON.stringify({ status: 'skipped', reason: 'no_api_key' }), {
+      return new Response(JSON.stringify({ status: 'skipped', reason: 'no_api_key', authMode, geminiApiConfigured: false, geminiStatus: 'skipped', geminiError: 'no_api_key' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -340,7 +339,7 @@ Deno.serve(async (req) => {
         gemini_error: reason,
         gemini_version: GEMINI_VERSION,
       });
-      return new Response(JSON.stringify({ status: 'failed', reason }), {
+      return new Response(JSON.stringify({ status: 'failed', reason, authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'failed', geminiError: reason }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -397,7 +396,7 @@ Deno.serve(async (req) => {
         gemini_version: GEMINI_VERSION,
       });
       console.log('[gemini] failed', { wardrobe_item_id, reason, httpStatus, durationMs: Date.now() - startedAt, safeSummary });
-      return new Response(JSON.stringify({ status: 'failed', reason, httpStatus }), {
+      return new Response(JSON.stringify({ status: 'failed', reason, httpStatus, authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'failed', geminiError: reason }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -435,7 +434,7 @@ Deno.serve(async (req) => {
       hintLen: (gemini.tryon_prompt_hint || '').length,
     });
 
-    return new Response(JSON.stringify({ status: 'complete', category: gemini.category }), {
+    return new Response(JSON.stringify({ status: 'complete', category: gemini.category, httpStatus, authMode, geminiApiConfigured: true, geminiStatus: 'complete' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

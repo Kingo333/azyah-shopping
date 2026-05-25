@@ -14,6 +14,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const GEMINI_TRIGGER_SECRET = Deno.env.get('GEMINI_TRIGGER_SECRET') ?? '';
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
@@ -47,21 +48,20 @@ async function getCallerUserId(req: Request): Promise<string | null> {
   return data.claims.sub as string;
 }
 
-async function invokeAnalyze(wardrobe_item_id: string, force: boolean) {
-  // Read trigger secret via SECURITY DEFINER RPC (vault is not exposed through PostgREST,
-  // so the previous .schema('vault').from('decrypted_secrets') always returned null,
-  // causing the analyzer's authorize() to reject with 401).
-  const { data: secret } = await admin.rpc('get_fashionclip_trigger_secret' as any);
-  const trigger = (secret as any) ?? '';
+async function invokeAnalyze(wardrobe_item_id: string, force: boolean, callerAuth: string | null) {
+  // Prefer the caller's user JWT (analyzer will match claims.sub === item.user_id).
+  // Fall back to internal trigger secret only when no caller JWT is available.
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (callerAuth?.startsWith('Bearer ')) {
+    headers['Authorization'] = callerAuth;
+  } else if (GEMINI_TRIGGER_SECRET) {
+    headers['x-trigger-secret'] = GEMINI_TRIGGER_SECRET;
+  }
 
   const url = `${SUPABASE_URL}/functions/v1/analyze-wardrobe-gemini`;
   const resp = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-trigger-secret': trigger,
-      'Authorization': `Bearer ${SERVICE_ROLE}`,
-    },
+    headers,
     body: JSON.stringify({ wardrobe_item_id, force }),
   });
   const text = await resp.text();
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    const callerAuth = req.headers.get('Authorization');
     const userId = await getCallerUserId(req);
     if (!userId) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), {
@@ -85,13 +86,15 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as any;
 
     if (body?.mode === 'smoke-test') {
-      // Probe Gemini key presence + 1 cheap call shape (no DB write).
+      // Probe Gemini key + trigger secret presence (no values exposed).
       return new Response(JSON.stringify({
         ok: true,
         geminiKeyConfigured: !!GEMINI_API_KEY,
+        triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Accept { provider: 'gemini_only' } as an explicit no-op marker for the UI.
     const limit = Math.max(1, Math.min(50, Number(body?.limit ?? 3)));
     const chunkSize = Math.max(1, Math.min(5, Number(body?.chunkSize ?? 1)));
     const force = !!body?.force;
@@ -149,8 +152,9 @@ Deno.serve(async (req) => {
         chunk.map(async (g) => {
           const firstId = g.itemIds[0];
           workerCalls += 1;
-          const res = await invokeAnalyze(firstId, force);
+          const res = await invokeAnalyze(firstId, force, callerAuth);
           const status = res.json?.status ?? `http_${res.status}`;
+          const authMode = res.json?.authMode ?? null;
           if (status === 'complete') complete += 1;
           else if (status === 'fanout' || status === 'cached') cached += 1;
           else if (status === 'failed') failed += 1;
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
           let fanned = 0;
           if (status === 'complete' || status === 'fanout' || status === 'cached') {
             for (const id of g.itemIds.slice(1)) {
-              const r = await invokeAnalyze(id, false);
+              const r = await invokeAnalyze(id, false, callerAuth);
               if (r.json?.status === 'fanout' || r.json?.status === 'cached' || r.json?.status === 'complete') fanned += 1;
             }
             fanoutFromSelf += fanned;
@@ -171,7 +175,11 @@ Deno.serve(async (req) => {
             duplicateCount: g.itemIds.length,
             firstItemId: firstId,
             analyzeStatus: status,
+            authMode,
             httpStatus: res.status,
+            geminiHttpStatus: res.json?.httpStatus ?? null,
+            geminiStatus: res.json?.geminiStatus ?? null,
+            geminiError: res.json?.geminiError ?? null,
             summary: res.summary,
             fannedOutCount: fanned,
           };
@@ -194,6 +202,7 @@ Deno.serve(async (req) => {
       skipped,
       perUrl,
       geminiKeyConfigured: !!GEMINI_API_KEY,
+      triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('[gemini-batch] unhandled', error?.message);
