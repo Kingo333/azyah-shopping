@@ -86,7 +86,7 @@ export const AnalyzeClosetButton: React.FC = () => {
           ? { mode: 'smoke-test' }
           : { limit: queueSize, chunkSize: 2 };
       const { data, error } = await supabase.functions.invoke(
-        'reanalyze-wardrobe-fashionclip-batch',
+        'reanalyze-wardrobe-gemini-batch',
         { body },
       );
       if (error) throw error;
