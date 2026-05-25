@@ -6,9 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
-// Temporary diagnostic controls — signed-in users only.
-// "Smoke test worker" probes the Gemini analyzer pipeline (no batch writes).
-// "Analyze closet items" runs the Gemini dedup/fanout backfill (one Gemini call per unique image).
+// FashionCLIP closet backfill — original primary analyzer.
+// "Smoke test worker" probes the FashionCLIP worker. "Analyze closet items" runs the dedup/fanout batch.
 type Coverage = {
   totalRows: number;
   coveredRows: number;
@@ -39,18 +38,18 @@ export const AnalyzeClosetButton: React.FC = () => {
       const rows = (items ?? []).filter((r) => normalizeUrl(r));
       const totalRows = rows.length;
       const ids = rows.map((r) => r.id);
-      let completeUrls = new Set<string>();
+      const completeUrls = new Set<string>();
       if (ids.length > 0) {
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis' as any)
-          .select('wardrobe_item_id, gemini_status, gemini_metadata')
+          .select('wardrobe_item_id, status, prompt_hint')
           .in('wardrobe_item_id', ids);
         const byItem = new Map<string, any>(
           (analyses ?? []).map((a: any) => [a.wardrobe_item_id, a]),
         );
         for (const r of rows) {
           const a = byItem.get(r.id);
-          if (a?.gemini_status === 'complete' && a.gemini_metadata) {
+          if (a?.status === 'complete' && a.prompt_hint) {
             completeUrls.add(normalizeUrl(r));
           }
         }
@@ -64,7 +63,7 @@ export const AnalyzeClosetButton: React.FC = () => {
         uniqueUrlsRemaining: allUrls.size - completeUrls.size,
       });
     } catch {
-      // ignore — keep prior coverage
+      // ignore
     } finally {
       setCoverageLoading(false);
     }
@@ -86,7 +85,7 @@ export const AnalyzeClosetButton: React.FC = () => {
           ? { mode: 'smoke-test' }
           : { limit: queueSize, chunkSize: 2 };
       const { data, error } = await supabase.functions.invoke(
-        'reanalyze-wardrobe-gemini-batch',
+        'reanalyze-wardrobe-fashionclip-batch',
         { body },
       );
       if (error) throw error;
