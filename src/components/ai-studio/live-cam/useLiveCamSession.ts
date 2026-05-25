@@ -441,6 +441,7 @@ export function useLiveCamSession({
 
           // Step B: set_prompt
           console.log(`[live-cam] final prompt length=${finalPrompt.length}`);
+          console.debug('[livecam] final prompt', finalPrompt);
           const ackPrompt = waitForAck('set_prompt');
           const wsNow2 = wsRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
