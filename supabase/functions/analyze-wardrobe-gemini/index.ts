@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
       existing.image_hash === imageHash &&
       existing.gemini_metadata
     ) {
-      return new Response(JSON.stringify({ status: 'cached', source: 'self' }), {
+      return new Response(JSON.stringify({ status: 'cached', source: 'self', authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'complete' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
