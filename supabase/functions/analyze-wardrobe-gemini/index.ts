@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
     // Load this row (if any) + any other row with same image_hash that already has Gemini.
     const { data: existing } = await admin
       .from('wardrobe_garment_analysis')
-      .select('wardrobe_item_id, gemini_status, gemini_metadata, final_metadata, final_prompt_hint, prompt_hint, fashionclip_metadata, image_hash')
+      .select('wardrobe_item_id, gemini_status, gemini_metadata, prompt_hint, status, image_hash')
       .eq('wardrobe_item_id', wardrobe_item_id)
       .maybeSingle();
 
@@ -254,32 +254,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cross-row dedup: another row with the same image already analyzed?
+    // Cross-row dedup: another row with the same image already analyzed by Gemini?
     if (!force) {
       const { data: twins } = await admin
         .from('wardrobe_garment_analysis')
-        .select('gemini_metadata, fashionclip_metadata, final_metadata, final_prompt_hint, prompt_hint, confidence')
+        .select('gemini_metadata, prompt_hint, confidence')
         .eq('image_hash', imageHash)
         .eq('gemini_status', 'complete')
         .not('gemini_metadata', 'is', null)
         .limit(1);
       const twin = (twins ?? [])[0] as any;
       if (twin?.gemini_metadata) {
-        const fcHint = existing?.prompt_hint ?? null;
-        const finalHint = twin.final_prompt_hint ?? composeFinalPromptHint(twin.gemini_metadata, fcHint);
-        const finalMeta = twin.final_metadata ?? twin.gemini_metadata;
+        const promptHint = (twin.prompt_hint && String(twin.prompt_hint).trim())
+          ? twin.prompt_hint
+          : composeFinalPromptHint(twin.gemini_metadata);
         await upsertAnalysis({
           wardrobe_item_id,
           user_id: item.user_id,
-          status: existing?.prompt_hint ? 'complete' : (existing as any)?.status ?? 'pending',
+          status: 'complete',
           source_image_url: rawUrl,
           image_hash: imageHash,
+          metadata: twin.gemini_metadata,
+          prompt_hint: promptHint,
+          confidence: twin.confidence ?? null,
+          model_name: GEMINI_MODEL,
+          analysis_version: ANALYSIS_VERSION,
+          error: null,
           gemini_metadata: twin.gemini_metadata,
           gemini_status: 'complete',
           gemini_error: null,
           gemini_version: GEMINI_VERSION,
-          final_metadata: finalMeta,
-          final_prompt_hint: finalHint,
           primary_provider: 'gemini',
         });
         return new Response(JSON.stringify({ status: 'fanout', source: 'twin' }), {
