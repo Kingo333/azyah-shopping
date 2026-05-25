@@ -48,21 +48,20 @@ async function getCallerUserId(req: Request): Promise<string | null> {
   return data.claims.sub as string;
 }
 
-async function invokeAnalyze(wardrobe_item_id: string, force: boolean) {
-  // Read trigger secret via SECURITY DEFINER RPC (vault is not exposed through PostgREST,
-  // so the previous .schema('vault').from('decrypted_secrets') always returned null,
-  // causing the analyzer's authorize() to reject with 401).
-  const { data: secret } = await admin.rpc('get_fashionclip_trigger_secret' as any);
-  const trigger = (secret as any) ?? '';
+async function invokeAnalyze(wardrobe_item_id: string, force: boolean, callerAuth: string | null) {
+  // Prefer the caller's user JWT (analyzer will match claims.sub === item.user_id).
+  // Fall back to internal trigger secret only when no caller JWT is available.
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (callerAuth?.startsWith('Bearer ')) {
+    headers['Authorization'] = callerAuth;
+  } else if (GEMINI_TRIGGER_SECRET) {
+    headers['x-trigger-secret'] = GEMINI_TRIGGER_SECRET;
+  }
 
   const url = `${SUPABASE_URL}/functions/v1/analyze-wardrobe-gemini`;
   const resp = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-trigger-secret': trigger,
-      'Authorization': `Bearer ${SERVICE_ROLE}`,
-    },
+    headers,
     body: JSON.stringify({ wardrobe_item_id, force }),
   });
   const text = await resp.text();
