@@ -1,86 +1,65 @@
-# FashionCLIP diagnostics + timeout consistency patch
+## Switch closet analysis to Gemini-only (testing mode)
 
-Goal: surface enough safe diagnostic detail to determine whether the RunPod Serverless Load Balancer is returning a real HTTP status (401/403/404/5xx) or actually timing out before reaching FastAPI. Do not change endpoint mode. Do not touch FluxRT Live Cam, Cloudflare, camera capture, scheduler, or Discover/event products.
+Goal: pause FashionCLIP end-to-end, route everything (upload trigger + Profile "Analyze" button + Live Cam read) through Gemini Vision, and drop the merge layer so we only use the existing `prompt_hint` field.
 
-## Files to edit
+Nothing is deleted — FashionCLIP code and DB columns stay intact so we can re-enable later by reversing the toggle.
 
-1. `supabase/functions/reanalyze-wardrobe-fashionclip-batch/index.ts`
-2. `supabase/functions/analyze-wardrobe-fashionclip/index.ts`
-3. `src/components/profile/AnalyzeClosetButton.tsx`
+### What FashionCLIP currently owns (audited)
 
-No changes to `workers/fashionclip-worker/*`, `supabase/config.toml`, migrations, or any other file.
+DB triggers on `wardrobe_items`:
+- `wardrobe_items_fashionclip_dispatch_ins` (AFTER INSERT)
+- `wardrobe_items_fashionclip_dispatch_upd` (AFTER UPDATE of image_url, image_bg_removed_url, category)
 
-## Endpoint mode
+Both call `public.dispatch_fashionclip_analysis()`, which HTTP-POSTs to `analyze-wardrobe-fashionclip`.
 
-Keep exactly as-is:
-- `GET ${FASHIONCLIP_WORKER_URL}/ping`
-- `POST ${FASHIONCLIP_WORKER_URL}/analyze`
-- Headers: `Authorization: Bearer ${RUNPOD_API_KEY}` + `X-Worker-Token: ${FASHIONCLIP_WORKER_TOKEN}` (+ `Content-Type: application/json` on POST)
-- No `/runsync`, no `/run`, no `/status`, no queue API refactor.
+Edge functions in play:
+- `analyze-wardrobe-fashionclip`
+- `reanalyze-wardrobe-fashionclip-batch` (the one wired to the Profile "Analyze closet items" button)
 
-## Changes
+Tables/columns FashionCLIP writes to in `wardrobe_garment_analysis`:
+- `status`, `metadata`, `prompt_hint`, `confidence`, `model_name`, `analysis_version`, `image_hash`, `source_image_url`, `error`
 
-### 1. `reanalyze-wardrobe-fashionclip-batch/index.ts`
+Gemini-only columns we'll keep for traceability (no merge):
+- `gemini_metadata`, `gemini_status`, `gemini_error`, `gemini_version`, `primary_provider`
 
-Smoke-test branch only:
-- Read `/ping` body (always, even on 2xx) and produce `pingBodySummary`: first ~240 chars, whitespace collapsed, no tokens, no signed URLs.
-- Add to the returned JSON and to the existing `[fashionclip-batch] smoke-test` log:
-  - `pingTimeoutMs` (currently 8000)
-  - `pingBodySummary`
-  - `workerTokenConfigured` (boolean — `!!FASHIONCLIP_WORKER_TOKEN`)
-  - `finalPingPath` = `${base}/ping`
-  - `finalAnalyzePath` = `${base}/analyze`
-  - rename existing `analyzeResponseSummary` exposure consistent with new `analyzeBodySummary` field (keep both keys for one release to avoid breaking the current UI).
-- Keep all existing fields (`workerHost`, `workerPathShape`, `workerUrlValid`, `runpodAuthConfigured`, `pingStatus`, `pingDurationMs`, `pingError`, `analyzeStatus`, `analyzeDurationMs`, `analyzeTimeoutMs`, `analyzeTimedOutBeforeResponse`, `analyzeError`, `analyzeResponseKeys`).
+Merge columns we'll stop writing (left in place, unused, so we can re-enable later):
+- `final_metadata`, `final_prompt_hint`, `fashionclip_metadata`
 
-Backfill branch:
-- Replace hardcoded `30_000` wrapper timeout around internal analyze call with `ANALYZE_TIMEOUT_MS + 15_000` (default 105000, env-driven via same `FASHIONCLIP_WORKER_TIMEOUT_MS`). Reason: the wrapper currently aborts at 30s while the analyzer's own worker call has 90s — this produced false `missing`/`pending` rows.
-- No change to selection logic, chunking, or DB write logic.
+### Changes
 
-Hard rule: never log or return tokens, signed image URLs, JWTs, base64, or private keys.
+1. **DB trigger repoint (migration)**
+   Update `dispatch_fashionclip_analysis()` body to POST to `/functions/v1/analyze-wardrobe-gemini` instead of `/analyze-wardrobe-fashionclip`. Trigger names stay the same so nothing else needs updating. To re-enable FashionCLIP later we just flip the URL back.
 
-### 2. `analyze-wardrobe-fashionclip/index.ts`
+2. **`analyze-wardrobe-gemini` edge function** — drop the merge layer
+   - Stop writing `final_metadata` / `final_prompt_hint`.
+   - Write Gemini's composed prompt directly into the existing `prompt_hint` column, plus mirror Gemini's raw JSON into `metadata`, set `status='complete'`, `confidence`, `model_name=gemini-2.5-flash`, `analysis_version=gemini-vision-v1`.
+   - Continue to set `gemini_metadata`/`gemini_status`/`gemini_version`/`primary_provider='gemini'` for traceability.
+   - Dedup logic (normalized URL hash) and twin fan-out unchanged.
+   - On failure: set `gemini_status='failed'` and leave `prompt_hint`/`status` untouched (so any stale FashionCLIP value isn't overwritten); Live Cam either keeps prior value or runs without hint.
 
-When the worker responds with non-2xx:
-- Capture safe `workerBodySummary` (first ~240 chars, stripped) and include it in the JSON response and `[fashionclip] failed` log alongside existing `reason = worker_${status}`, `analyzeDurationMs`, `timeoutMs`.
-- Do not collapse non-2xx into `worker_timeout`. Keep the existing `worker_${status}` naming.
+3. **`useWardrobeItems` hook** — revert to read `prompt_hint` only
+   Remove the `final_prompt_hint` fallback I added last step. Live Cam goes back to the simple original read path, which now sees Gemini output because step 2 writes there.
 
-When the worker responds 2xx:
-- Validate parsed JSON: if missing `metadata` AND missing `prompt_hint`, OR if body contains a top-level `error` field, mark DB row as `failed` with `error: 'worker_invalid_response'` and return `{ status: 'failed', reason: 'worker_invalid_response', workerBodySummary }`.
-- Otherwise behave exactly as today (write `complete`).
+4. **Profile `AnalyzeClosetButton`** — point to Gemini batch
+   - Switch `supabase.functions.invoke('reanalyze-wardrobe-fashionclip-batch', …)` → `'reanalyze-wardrobe-gemini-batch'`.
+   - Coverage check stays as-is (`status='complete'` + non-empty `prompt_hint`) — still accurate because Gemini now writes those fields.
+   - Smoke-test branch calls the Gemini batch with `{ mode: 'smoke-test' }` (already supported).
+   - Label/disabled behavior unchanged: "Analyze N closet items" → "All items up to date".
 
-No change to URL normalization, auth header construction, timeout default (90000), or trigger-secret/JWT authorization.
+5. **FashionCLIP — paused, not deleted**
+   - Edge functions `analyze-wardrobe-fashionclip` and `reanalyze-wardrobe-fashionclip-batch` remain in repo and stay deployed but receive no traffic.
+   - Their DB columns remain populated for historical rows.
+   - To resume later: flip the trigger URL back and restore the button's function name.
 
-### 3. `src/components/profile/AnalyzeClosetButton.tsx`
+### Acceptance
 
-Smoke result block — extend the displayed list to include:
-- `workerUrlValid`
-- `runpodAuthConfigured`
-- `workerTokenConfigured`
-- `pingDurationMs`, `pingTimeoutMs`
-- `pingBodySummary` (truncated to 200 chars, break-all)
-- `analyzeDurationMs`, `analyzeTimeoutMs`, `analyzeTimedOutBeforeResponse`
-- `analyzeBodySummary` (truncated to 200 chars, break-all) — fall back to existing `analyzeResponseSummary` if not present
+- New closet uploads call Gemini only; no FashionCLIP HTTP call fires.
+- Profile "Analyze closet items" button runs Gemini backfill on remaining unique images and shows the same counters.
+- Live Cam picks up Gemini's prompt automatically from `prompt_hint` with no Live Cam edits.
+- If Gemini fails on an item, Live Cam either keeps the existing prompt or runs without one — no crash.
 
-Batch result block — extend per-item display to include `workerBodySummary` when present.
+### Out of scope (unchanged)
 
-No layout overhaul, no new buttons, no behavior changes. Same two buttons, same invoke bodies.
+FluxRT/RunPod, FashionCLIP worker, Cloudflare, camera capture, scheduler, WebSocket protocol, Discover/event products, payments/auth, VITE env vars.
 
-## Out of scope
-
-- FluxRT Live Cam endpoint, Cloudflare livestream, camera capture, scheduler, Discover/event products.
-- Worker repo code (`workers/fashionclip-worker/app.py`, README) — repo `/healthz` vs deployed `/ping` mismatch is noted but not in scope; deployed RunPod worker is the source of truth.
-- DB schema, migrations, RLS policies, trigger function, linter findings.
-- Refactor to `/runsync` or any RunPod queue API.
-- Auth header changes.
-
-## Validation
-
-After deploy, run **Smoke test worker only**. Expected:
-- `pingStatus`: a real HTTP code (200/401/403/404) with `pingBodySummary` populated, OR `timeout` with `pingDurationMs ≈ 8000`.
-- `analyzeStatus`: a real HTTP code with `analyzeBodySummary`, OR `timeout` with `analyzeTimedOutBeforeResponse: true` and `analyzeDurationMs ≈ 90000`.
-- `workerTokenConfigured: true`, `runpodAuthConfigured: true`, `workerUrlValid: true`.
-
-If both still time out at 90s with empty bodies, the blocker is on the RunPod side (gateway not forwarding to FastAPI / wrong auth scope / endpoint routing). Report RunPod-side logs (model loading started, model loaded, POST /analyze received, CUDA errors, image fetch errors, timeout before model loaded) before any further code change.
-
-Do NOT run **Analyze 3 closet items** until smoke test returns a non-timeout `analyzeStatus`.
+Approve and I'll run the trigger migration first, then the three code edits in one pass.
