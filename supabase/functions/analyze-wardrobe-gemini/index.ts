@@ -408,27 +408,27 @@ Deno.serve(async (req) => {
     }
     clearTimeout(to);
 
-    // Compose final metadata + prompt hint, with FashionCLIP fallback only when Gemini is weak.
-    const fcHint = existing?.prompt_hint ?? null;
-    const low = geminiLooksLow(gemini);
-    const finalMeta: any = { ...(gemini || {}) };
-    if (low && existing?.fashionclip_metadata) {
-      finalMeta.supporting = existing.fashionclip_metadata;
-      finalMeta.fallback_used = 'fashionclip';
-    }
-    const finalPromptHint = composeFinalPromptHint(gemini, low ? fcHint : null);
+    // Gemini-only mode: write result directly into the canonical prompt_hint/status/metadata
+    // columns so Live Cam reads it transparently. FashionCLIP merge layer disabled while testing.
+    const promptHint = composeFinalPromptHint(gemini);
+    const conf = typeof gemini?.confidence === 'number' ? gemini.confidence : null;
 
     await upsertAnalysis({
       wardrobe_item_id,
       user_id: item.user_id,
       source_image_url: rawUrl,
       image_hash: imageHash,
+      status: 'complete',
+      metadata: gemini,
+      prompt_hint: promptHint,
+      confidence: conf,
+      model_name: GEMINI_MODEL,
+      analysis_version: ANALYSIS_VERSION,
+      error: null,
       gemini_metadata: gemini,
       gemini_status: 'complete',
       gemini_error: null,
       gemini_version: GEMINI_VERSION,
-      final_metadata: finalMeta,
-      final_prompt_hint: finalPromptHint,
       primary_provider: 'gemini',
     });
 
@@ -438,10 +438,9 @@ Deno.serve(async (req) => {
       category: gemini.category,
       confidence: gemini.confidence,
       hintLen: (gemini.tryon_prompt_hint || '').length,
-      low,
     });
 
-    return new Response(JSON.stringify({ status: 'complete', low, category: gemini.category }), {
+    return new Response(JSON.stringify({ status: 'complete', category: gemini.category }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
