@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 // Temporary diagnostic controls — signed-in users only.
-// "Smoke test worker" probes the FashionCLIP worker safely (no batch DB writes).
-// "Analyze closet items" runs the dedup/fanout backfill (one /analyze per unique image).
+// "Smoke test worker" probes the Gemini analyzer pipeline (no batch writes).
+// "Analyze closet items" runs the Gemini dedup/fanout backfill (one Gemini call per unique image).
 type Coverage = {
   totalRows: number;
   coveredRows: number;
