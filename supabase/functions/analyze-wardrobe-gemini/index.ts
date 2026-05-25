@@ -13,6 +13,7 @@ const corsHeaders = {
 
 const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
 const GEMINI_VERSION = `gemini-vision-v1:${GEMINI_MODEL}`;
+const ANALYSIS_VERSION = `gemini-vision-v1`;
 const GEMINI_TIMEOUT_MS = Number(Deno.env.get('GEMINI_TIMEOUT_MS') ?? '60000') || 60_000;
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
 
@@ -161,19 +162,15 @@ const UNIVERSAL_BASE =
 const REFERENCE_TRUTH =
   'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
 
-function composeFinalPromptHint(g: any, fcHint: string | null): string {
+function composeFinalPromptHint(g: any): string {
   const region = (g?.body_region_to_replace || 'garment region').toString();
   const detail = (g?.tryon_prompt_hint || '').toString().trim();
   const parts = [
     UNIVERSAL_BASE,
     `Replace only the ${region}.`,
     detail,
+    REFERENCE_TRUTH,
   ];
-  // FashionCLIP supports only when Gemini detail is thin.
-  if ((!detail || detail.length < 24) && fcHint && fcHint.trim()) {
-    parts.push(`Supporting detail: ${fcHint.trim()}`);
-  }
-  parts.push(REFERENCE_TRUTH);
   return parts.filter(Boolean).join(' ');
 }
 
@@ -242,7 +239,7 @@ Deno.serve(async (req) => {
     // Load this row (if any) + any other row with same image_hash that already has Gemini.
     const { data: existing } = await admin
       .from('wardrobe_garment_analysis')
-      .select('wardrobe_item_id, gemini_status, gemini_metadata, final_metadata, final_prompt_hint, prompt_hint, fashionclip_metadata, image_hash')
+      .select('wardrobe_item_id, gemini_status, gemini_metadata, prompt_hint, status, image_hash')
       .eq('wardrobe_item_id', wardrobe_item_id)
       .maybeSingle();
 
@@ -257,32 +254,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cross-row dedup: another row with the same image already analyzed?
+    // Cross-row dedup: another row with the same image already analyzed by Gemini?
     if (!force) {
       const { data: twins } = await admin
         .from('wardrobe_garment_analysis')
-        .select('gemini_metadata, fashionclip_metadata, final_metadata, final_prompt_hint, prompt_hint, confidence')
+        .select('gemini_metadata, prompt_hint, confidence')
         .eq('image_hash', imageHash)
         .eq('gemini_status', 'complete')
         .not('gemini_metadata', 'is', null)
         .limit(1);
       const twin = (twins ?? [])[0] as any;
       if (twin?.gemini_metadata) {
-        const fcHint = existing?.prompt_hint ?? null;
-        const finalHint = twin.final_prompt_hint ?? composeFinalPromptHint(twin.gemini_metadata, fcHint);
-        const finalMeta = twin.final_metadata ?? twin.gemini_metadata;
+        const promptHint = (twin.prompt_hint && String(twin.prompt_hint).trim())
+          ? twin.prompt_hint
+          : composeFinalPromptHint(twin.gemini_metadata);
         await upsertAnalysis({
           wardrobe_item_id,
           user_id: item.user_id,
-          status: existing?.prompt_hint ? 'complete' : (existing as any)?.status ?? 'pending',
+          status: 'complete',
           source_image_url: rawUrl,
           image_hash: imageHash,
+          metadata: twin.gemini_metadata,
+          prompt_hint: promptHint,
+          confidence: twin.confidence ?? null,
+          model_name: GEMINI_MODEL,
+          analysis_version: ANALYSIS_VERSION,
+          error: null,
           gemini_metadata: twin.gemini_metadata,
           gemini_status: 'complete',
           gemini_error: null,
           gemini_version: GEMINI_VERSION,
-          final_metadata: finalMeta,
-          final_prompt_hint: finalHint,
           primary_provider: 'gemini',
         });
         return new Response(JSON.stringify({ status: 'fanout', source: 'twin' }), {
@@ -407,27 +408,27 @@ Deno.serve(async (req) => {
     }
     clearTimeout(to);
 
-    // Compose final metadata + prompt hint, with FashionCLIP fallback only when Gemini is weak.
-    const fcHint = existing?.prompt_hint ?? null;
-    const low = geminiLooksLow(gemini);
-    const finalMeta: any = { ...(gemini || {}) };
-    if (low && existing?.fashionclip_metadata) {
-      finalMeta.supporting = existing.fashionclip_metadata;
-      finalMeta.fallback_used = 'fashionclip';
-    }
-    const finalPromptHint = composeFinalPromptHint(gemini, low ? fcHint : null);
+    // Gemini-only mode: write result directly into the canonical prompt_hint/status/metadata
+    // columns so Live Cam reads it transparently. FashionCLIP merge layer disabled while testing.
+    const promptHint = composeFinalPromptHint(gemini);
+    const conf = typeof gemini?.confidence === 'number' ? gemini.confidence : null;
 
     await upsertAnalysis({
       wardrobe_item_id,
       user_id: item.user_id,
       source_image_url: rawUrl,
       image_hash: imageHash,
+      status: 'complete',
+      metadata: gemini,
+      prompt_hint: promptHint,
+      confidence: conf,
+      model_name: GEMINI_MODEL,
+      analysis_version: ANALYSIS_VERSION,
+      error: null,
       gemini_metadata: gemini,
       gemini_status: 'complete',
       gemini_error: null,
       gemini_version: GEMINI_VERSION,
-      final_metadata: finalMeta,
-      final_prompt_hint: finalPromptHint,
       primary_provider: 'gemini',
     });
 
@@ -437,10 +438,9 @@ Deno.serve(async (req) => {
       category: gemini.category,
       confidence: gemini.confidence,
       hintLen: (gemini.tryon_prompt_hint || '').length,
-      low,
     });
 
-    return new Response(JSON.stringify({ status: 'complete', low, category: gemini.category }), {
+    return new Response(JSON.stringify({ status: 'complete', category: gemini.category }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

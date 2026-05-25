@@ -54,22 +54,19 @@ export const useWardrobeItems = () => {
 
       if (items.length === 0) return items;
 
-      // Best-effort attach FashionCLIP analysis. Failures must not break the list.
+      // Best-effort attach garment analysis. Failures must not break the list.
+      // Gemini-only mode: writes directly into prompt_hint/status (merge layer disabled).
       try {
         const ids = items.map((i) => i.id);
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis')
-          .select('wardrobe_item_id, status, prompt_hint, final_prompt_hint, confidence, analysis_version, gemini_status, primary_provider')
+          .select('wardrobe_item_id, status, prompt_hint, confidence, analysis_version')
           .in('wardrobe_item_id', ids);
         const map = new Map<string, WardrobeGarmentAnalysis>();
         for (const a of (analyses ?? []) as any[]) {
-          // Live Cam priority: final_prompt_hint (Gemini/hybrid) → prompt_hint (FashionCLIP fallback).
-          const effectiveHint = (a.final_prompt_hint && String(a.final_prompt_hint).trim())
-            ? a.final_prompt_hint
-            : a.prompt_hint;
           map.set(a.wardrobe_item_id, {
-            status: a.gemini_status === 'complete' ? 'complete' : a.status,
-            prompt_hint: effectiveHint,
+            status: a.status,
+            prompt_hint: a.prompt_hint,
             confidence: a.confidence,
             analysis_version: a.analysis_version,
           });
