@@ -434,7 +434,7 @@ Deno.serve(async (req) => {
       hintLen: (gemini.tryon_prompt_hint || '').length,
     });
 
-    return new Response(JSON.stringify({ status: 'complete', category: gemini.category }), {
+    return new Response(JSON.stringify({ status: 'complete', category: gemini.category, httpStatus, authMode, geminiApiConfigured: true, geminiStatus: 'complete' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
