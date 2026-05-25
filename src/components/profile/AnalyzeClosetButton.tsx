@@ -121,7 +121,7 @@ export const AnalyzeClosetButton: React.FC = () => {
   const batchLabel = allDone
     ? 'All items up to date'
     : remaining != null
-      ? `Analyze ${Math.min(7, remaining)} closet item${remaining === 1 ? '' : 's'}`
+      ? `Analyze ${Math.min(25, remaining)} closet item${remaining === 1 ? '' : 's'}`
       : 'Analyze closet items';
 
   return (
