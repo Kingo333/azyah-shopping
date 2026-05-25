@@ -216,6 +216,9 @@ Deno.serve(async (req) => {
       failed,
       skipped,
       perUrl,
+      onlyFailed429,
+      candidates: remainingGroups.length,
+      paceMs: chunkSize === 1 ? PACE_MS : 0,
       geminiKeyConfigured: !!GEMINI_API_KEY,
       triggerSecretConfigured: !!GEMINI_TRIGGER_SECRET,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
