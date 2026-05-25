@@ -143,8 +143,23 @@ Deno.serve(async (req) => {
       error: null,
     });
 
+    // Safe worker diagnostics
+    let workerHost = '';
+    let workerPathShape: 'base' | 'includes_ping' | 'includes_analyze' | 'other_path' = 'base';
+    try {
+      const u = new URL(WORKER_URL);
+      workerHost = u.hostname;
+      const p = u.pathname.replace(/\/+$/, '');
+      if (p === '' || p === '/') workerPathShape = 'base';
+      else if (p.endsWith('/ping')) workerPathShape = 'includes_ping';
+      else if (p.endsWith('/analyze')) workerPathShape = 'includes_analyze';
+      else workerPathShape = 'other_path';
+    } catch { /* noop */ }
+    const workerConfigured = !!WORKER_URL && !!WORKER_TOKEN;
+    console.log('[fashionclip] worker', { workerConfigured, workerHost, workerPathShape });
+
     // No worker configured -> skipped
-    if (!WORKER_URL || !WORKER_TOKEN) {
+    if (!workerConfigured) {
       await upsertAnalysis({
         wardrobe_item_id,
         user_id: item.user_id,
@@ -156,7 +171,7 @@ Deno.serve(async (req) => {
         error: 'worker_not_configured',
       });
       console.log('[fashionclip] skipped', { wardrobe_item_id, reason: 'worker_not_configured' });
-      return new Response(JSON.stringify({ status: 'skipped' }), {
+      return new Response(JSON.stringify({ status: 'skipped', workerConfigured, workerHost, workerPathShape }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
