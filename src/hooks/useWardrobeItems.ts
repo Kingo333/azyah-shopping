@@ -9,6 +9,12 @@ export interface WardrobeGarmentAnalysis {
   prompt_hint: string | null;
   confidence: number | null;
   analysis_version: string | null;
+  final_prompt_hint: string | null;
+  final_metadata: any | null;
+  primary_provider: string | null;
+  gemini_metadata: any | null;
+  gemini_status: string | null;
+  gemini_error: string | null;
 }
 
 export interface WardrobeItem {
