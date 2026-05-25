@@ -28,6 +28,7 @@ import { FavoritesSection } from '@/components/profile/FavoritesSection';
 import { BrandsSection } from '@/components/profile/BrandsSection';
 import { PostsSection } from '@/components/profile/PostsSection';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
+import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
 
 interface UserProfile {
   id: string;
@@ -267,6 +268,7 @@ const Profile: React.FC = () => {
 
           {/* 6. Wardrobe (Create & Earn + Add Items) */}
           <ClosetOutfitsSection />
+          <AnalyzeClosetButton />
 
           {/* 7. Your Brands */}
           <BrandsSection />
