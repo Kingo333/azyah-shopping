@@ -396,7 +396,7 @@ Deno.serve(async (req) => {
         gemini_version: GEMINI_VERSION,
       });
       console.log('[gemini] failed', { wardrobe_item_id, reason, httpStatus, durationMs: Date.now() - startedAt, safeSummary });
-      return new Response(JSON.stringify({ status: 'failed', reason, httpStatus }), {
+      return new Response(JSON.stringify({ status: 'failed', reason, httpStatus, authMode, geminiApiConfigured: !!GEMINI_API_KEY, geminiStatus: 'failed', geminiError: reason }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
