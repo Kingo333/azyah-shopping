@@ -4,6 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { awardPointsAsync } from '@/hooks/useAwardPoints';
 
+export interface WardrobeGarmentAnalysis {
+  status: 'pending' | 'complete' | 'failed' | 'skipped';
+  prompt_hint: string | null;
+  confidence: number | null;
+  analysis_version: string | null;
+}
+
 export interface WardrobeItem {
   id: string;
   user_id: string;
@@ -24,6 +31,8 @@ export interface WardrobeItem {
   source_product_id?: string | null;
   source_url?: string | null;
   source_vendor_name?: string | null;
+  // FashionCLIP-derived analysis (optional, joined client-side)
+  analysis?: WardrobeGarmentAnalysis | null;
 }
 
 export const useWardrobeItems = () => {
@@ -33,7 +42,7 @@ export const useWardrobeItems = () => {
     queryKey: ['wardrobe-items', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
+
       const { data, error } = await supabase
         .from('wardrobe_items')
         .select('*')
@@ -41,7 +50,32 @@ export const useWardrobeItems = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as WardrobeItem[];
+      const items = (data ?? []) as WardrobeItem[];
+
+      if (items.length === 0) return items;
+
+      // Best-effort attach FashionCLIP analysis. Failures must not break the list.
+      try {
+        const ids = items.map((i) => i.id);
+        const { data: analyses } = await supabase
+          .from('wardrobe_garment_analysis')
+          .select('wardrobe_item_id, status, prompt_hint, confidence, analysis_version')
+          .in('wardrobe_item_id', ids);
+        const map = new Map<string, WardrobeGarmentAnalysis>();
+        for (const a of (analyses ?? []) as any[]) {
+          map.set(a.wardrobe_item_id, {
+            status: a.status,
+            prompt_hint: a.prompt_hint,
+            confidence: a.confidence,
+            analysis_version: a.analysis_version,
+          });
+        }
+        for (const it of items) it.analysis = map.get(it.id) ?? null;
+      } catch {
+        // ignore — analysis is optional
+      }
+
+      return items;
     },
     enabled: !!user,
   });
