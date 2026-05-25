@@ -59,13 +59,17 @@ export const useWardrobeItems = () => {
         const ids = items.map((i) => i.id);
         const { data: analyses } = await supabase
           .from('wardrobe_garment_analysis')
-          .select('wardrobe_item_id, status, prompt_hint, confidence, analysis_version')
+          .select('wardrobe_item_id, status, prompt_hint, final_prompt_hint, confidence, analysis_version, gemini_status, primary_provider')
           .in('wardrobe_item_id', ids);
         const map = new Map<string, WardrobeGarmentAnalysis>();
         for (const a of (analyses ?? []) as any[]) {
+          // Live Cam priority: final_prompt_hint (Gemini/hybrid) → prompt_hint (FashionCLIP fallback).
+          const effectiveHint = (a.final_prompt_hint && String(a.final_prompt_hint).trim())
+            ? a.final_prompt_hint
+            : a.prompt_hint;
           map.set(a.wardrobe_item_id, {
-            status: a.status,
-            prompt_hint: a.prompt_hint,
+            status: a.gemini_status === 'complete' ? 'complete' : a.status,
+            prompt_hint: effectiveHint,
             confidence: a.confidence,
             analysis_version: a.analysis_version,
           });
