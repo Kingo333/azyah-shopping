@@ -13,6 +13,7 @@ const corsHeaders = {
 
 const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
 const GEMINI_VERSION = `gemini-vision-v1:${GEMINI_MODEL}`;
+const ANALYSIS_VERSION = `gemini-vision-v1`;
 const GEMINI_TIMEOUT_MS = Number(Deno.env.get('GEMINI_TIMEOUT_MS') ?? '60000') || 60_000;
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
 
