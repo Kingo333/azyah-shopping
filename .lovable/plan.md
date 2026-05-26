@@ -1,80 +1,80 @@
-# Gemini-only Live Cam test — implementation plan
 
-Scope: Live Cam reads Gemini `final_prompt_hint` only for Gemini-complete rows during this test. FashionCLIP stays in DB as backup but is NOT merged into the Live Cam prompt for those rows. Manual per-garment override still wins.
+# Extend Gemini metadata with texture & fabric attributes
 
-## 1. `src/hooks/useWardrobeItems.ts`
-Extend `WardrobeGarmentAnalysis` and the analysis projection to include:
-`final_prompt_hint`, `final_metadata`, `primary_provider`, `gemini_metadata`, `gemini_status`, `gemini_error` (alongside existing `status`, `prompt_hint`, `confidence`, `analysis_version`). Map them through into `it.analysis`.
+Scope: edit only `supabase/functions/analyze-wardrobe-gemini/index.ts`. No DB schema change (existing `gemini_metadata`, `final_metadata`, `metadata` columns are `jsonb` and absorb new keys automatically). No changes to FluxRT, RunPod, Cloudflare, Live Cam, FashionCLIP, scheduler, secrets, or trigger auth.
 
-## 2. `src/components/ai-studio/live-cam/LiveCamGarmentPicker.tsx`
-Replace `analysisPromptHint` derivation with Gemini-first logic:
+## 1. Extend `RESPONSE_SCHEMA`
+
+Add these properties (alongside existing ones, nothing removed):
+
+- `material_appearance` — string (already present, keep)
+- `surface_texture` — string
+- `fabric_structure` — string (enum-ish: flowy | draped | soft | structured | stiff | tailored | unknown)
+- `fabric_weight` — string (lightweight | midweight | heavy | unknown)
+- `opacity` — string (opaque | semi-sheer | sheer | unknown)
+- `finish` — string (matte | slightly glossy | glossy | metallic | brushed | unknown)
+- `construction_details` — array of strings
+- `texture_confidence` — number
+
+Add `surface_texture`, `fabric_structure`, `finish` to `required` so Gemini reliably returns them (others remain optional → safe to be "unknown" or omitted).
+
+## 2. Lightly extend `GEMINI_PROMPT`
+
+Append a short bullet group after the existing visual-facts list — no rewrite:
+
+```
+Also describe how the fabric looks and behaves:
+- material_appearance (knit, woven, denim, satin-like, chiffon-like, jersey, lace, mesh, leather-like, unknown)
+- surface_texture (ribbed, smooth, fuzzy, quilted, pleated, crinkled, embroidered, glossy, matte, unknown)
+- fabric_structure (flowy, draped, soft, structured, stiff, tailored, unknown)
+- fabric_weight, opacity, finish
+- construction_details (ribbing, pleats, ruffles, smocking, quilting, gathering, embroidery, lace overlay, visible seams)
+Use "unknown" when not clearly visible. Do not invent.
+```
+
+Existing wording, schema requirements, and `tryon_prompt_hint` instruction stay intact.
+
+## 3. Extend `composeFinalPromptHint(g)`
+
+Keep current structure (`UNIVERSAL_BASE` + region + `tryon_prompt_hint` + `REFERENCE_TRUTH`). Insert one optional sentence built from the new fields, only when values exist and are not "unknown":
 
 ```ts
-const a = it.analysis;
-const geminiReady =
-  a?.primary_provider === 'gemini' &&
-  a?.gemini_status === 'complete' &&
-  !!a?.final_prompt_hint;
-const analysisPromptHint = geminiReady
-  ? a!.final_prompt_hint!
-  : (a?.status === 'complete' ? (a?.final_prompt_hint ?? a?.prompt_hint ?? undefined) : undefined);
+function textureSentence(g) {
+  const parts = [];
+  const tex = clean(g.surface_texture);
+  const mat = clean(g.material_appearance);
+  if (tex && mat) parts.push(`${tex} ${mat} texture`);
+  else if (mat) parts.push(`${mat} texture`);
+  else if (tex) parts.push(`${tex} texture`);
+  const struct = clean(g.fabric_structure);
+  if (struct) parts.push(`${struct} fabric structure`);
+  const fin = clean(g.finish);
+  if (fin) parts.push(`${fin} surface finish`);
+  const details = (g.construction_details || []).filter(d => clean(d)).slice(0, 4);
+  if (details.length) parts.push(`with ${details.join(', ')}`);
+  if (!parts.length) return '';
+  return `Preserve the ${parts.join(', ')}.`;
+}
 ```
+where `clean(v)` returns trimmed lowercase string or empty when missing / "unknown".
 
-Update `handlePick` so when `geminiReady` is true, **do NOT concatenate FashionCLIP `prompt_hint`** — only optionally append the manual `override.prompt_hint`:
+Sentence is appended between `tryon_prompt_hint` and `REFERENCE_TRUTH`. If all fields unknown → nothing added (existing prompt unchanged).
 
-```ts
-const combinedHint = geminiReady
-  ? [opt.analysisPromptHint, override?.prompt_hint].filter(Boolean).join(' ').trim() || undefined
-  : [opt.analysisPromptHint, override?.prompt_hint].filter(Boolean).join(' ').trim() || undefined;
-```
-(geminiReady branch never includes FashionCLIP text because `analysisPromptHint` is already Gemini-only.) Track `geminiReady` on the option so handlePick can branch.
+## 4. Persistence
 
-Non-Gemini rows keep existing behavior so the 3 failed-429 items still work via FashionCLIP `prompt_hint`.
+No code change needed beyond what's already there: `upsertAnalysis` writes the whole Gemini object into `gemini_metadata`, `final_metadata`, and `metadata`. New fields ride along automatically. `final_prompt_hint` updates because `composeFinalPromptHint` now includes the texture sentence when applicable.
 
-## 3. `supabase/functions/analyze-wardrobe-gemini/index.ts`
-On Gemini success, also write:
-- `final_metadata = gemini` (full JSON)
-- `final_prompt_hint = composeFinalPromptHint(gemini)`
-- `primary_provider = 'gemini'` (already set)
+## 5. Testing (post-approval, build mode)
 
-Apply the same to the cross-row twin fan-out branch (write `final_metadata`, `final_prompt_hint` from twin). Keep writing legacy `prompt_hint` / `metadata` for backward compatibility.
+After redeploy:
+1. Pick 1–3 items via `supabase--read_query` filtering for visually distinct garments (ribbed/knit, flowy, structured).
+2. Invoke `analyze-wardrobe-gemini` with `{ wardrobe_item_id, force: true }` for each (service-role curl with `x-trigger-secret` from vault).
+3. Read back `gemini_metadata`, `final_metadata`, `final_prompt_hint` and report:
+   - New fields present and populated when visible
+   - `unknown` values gracefully omitted from `final_prompt_hint`
+   - Existing fields (category, garment_type, colors, etc.) untouched
+   - Live Cam still only reads `final_prompt_hint` (no new analyzer calls)
 
-## 4. `supabase/functions/reanalyze-wardrobe-gemini-batch/index.ts`
-Add:
-- `onlyFailed429: boolean` body flag. When true, restrict candidate hashes to those where an existing `wardrobe_garment_analysis` row has `gemini_status='failed'` AND `gemini_error LIKE 'gemini_429%'` (or just equals `'gemini_429'`).
-- Slow pacing: when `chunkSize === 1`, `await sleep(6800)` between items in the queue (not before the first). Use a small `sleep = (ms) => new Promise(r => setTimeout(r, ms))`.
-- Echo `onlyFailed429` and the candidate count in the response.
+## Hard rules respected
 
-## 5. One-time data sync (no Gemini re-call)
-Run via insert/update tool for the 7 Gemini-complete rows missing `final_*`:
-
-```sql
-UPDATE wardrobe_garment_analysis
-   SET final_prompt_hint = COALESCE(final_prompt_hint, prompt_hint),
-       final_metadata    = COALESCE(final_metadata, gemini_metadata),
-       primary_provider  = COALESCE(primary_provider, 'gemini')
- WHERE gemini_status = 'complete'
-   AND gemini_metadata IS NOT NULL
-   AND (final_prompt_hint IS NULL OR final_metadata IS NULL OR primary_provider IS NULL);
-```
-
-## 6. Retry only the 3 failed 429 rows (after deploy)
-User triggers from the Profile button (or curl) with:
-```json
-{ "provider": "gemini_only", "limit": 1, "chunkSize": 1, "force": true, "onlyFailed429": true }
-```
-Three times, one item each, ~7s pacing handled server-side.
-
-## Not changed
-FluxRT, FashionCLIP worker, RunPod, Cloudflare, camera capture, scheduler, WebSocket streaming, Discover/event products, FashionCLIP DB rows.
-
-## Post-implementation report (will produce)
-- Live Cam reads `final_prompt_hint` first (yes/no).
-- Gemini-complete rows use Gemini-only hints (yes/no, no FC merge).
-- Count of rows with `final_prompt_hint` populated.
-- Count of rows with `primary_provider='gemini'`.
-- Whether each of the 3 429 rows was retried and outcome.
-- One sample Gemini-only `final_prompt_hint`.
-- Side-by-side: that item's old FashionCLIP `prompt_hint` vs new Gemini `final_prompt_hint` (no merging in Live Cam).
-
-Switch to build mode to apply.
+No edits to FluxRT, RunPod, Cloudflare, camera capture, scheduler, WebSocket, FashionCLIP worker, Live Cam endpoint, Gemini API key, or trigger-secret auth. No DB migration. No full backfill — only 1–3 targeted force re-analyses.

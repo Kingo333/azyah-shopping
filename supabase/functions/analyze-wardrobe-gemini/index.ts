@@ -122,6 +122,17 @@ Focus on visual facts that help a try-on model preserve the garment accurately:
 - body region to replace
 - body regions to preserve
 
+Also describe how the fabric looks and behaves (general garment attributes, not just prints):
+- material_appearance (knit, woven, denim, satin-like, chiffon-like, jersey, cotton-like, linen-like, leather-like, lace, mesh, unknown)
+- surface_texture (ribbed, smooth, fuzzy, quilted, pleated, crinkled, crocheted, embroidered, textured, glossy, matte, unknown)
+- fabric_structure (flowy, draped, soft, structured, stiff, tailored, unknown)
+- fabric_weight (lightweight, midweight, heavy, unknown)
+- opacity (opaque, semi-sheer, sheer, unknown)
+- finish (matte, slightly glossy, glossy, metallic, brushed, unknown)
+- construction_details (ribbing, pleats, ruffles, smocking, quilting, gathering, layering, embroidery, lace overlay, visible seams)
+- texture_confidence (0.0 to 1.0)
+Use "unknown" when not clearly visible. Do not invent.
+
 The reference image is the source of truth.
 
 The tryon_prompt_hint must tell FluxRT exactly what to preserve from the reference image.
@@ -150,6 +161,13 @@ const RESPONSE_SCHEMA = {
     pattern_type: { type: 'string' },
     pattern_placement: { type: 'string' },
     material_appearance: { type: 'string' },
+    surface_texture: { type: 'string' },
+    fabric_structure: { type: 'string' },
+    fabric_weight: { type: 'string' },
+    opacity: { type: 'string' },
+    finish: { type: 'string' },
+    construction_details: { type: 'array', items: { type: 'string' } },
+    texture_confidence: { type: 'number' },
     logo_or_text: { type: 'boolean' },
     visible_text: { type: 'array', items: { type: 'string' } },
     important_visual_details: { type: 'array', items: { type: 'string' } },
@@ -167,6 +185,9 @@ const RESPONSE_SCHEMA = {
     'main_colors',
     'pattern_type',
     'material_appearance',
+    'surface_texture',
+    'fabric_structure',
+    'finish',
     'body_region_to_replace',
     'tryon_prompt_hint',
   ],
@@ -177,27 +198,50 @@ const UNIVERSAL_BASE =
 const REFERENCE_TRUTH =
   'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
 
+function cleanTextureValue(v: any): string {
+  if (v === undefined || v === null) return '';
+  const s = String(v).trim().toLowerCase();
+  if (!s || s === 'unknown' || s === 'n/a' || s === 'none') return '';
+  return s;
+}
+
+function buildTextureSentence(g: any): string {
+  const tex = cleanTextureValue(g?.surface_texture);
+  const mat = cleanTextureValue(g?.material_appearance);
+  const struct = cleanTextureValue(g?.fabric_structure);
+  const fin = cleanTextureValue(g?.finish);
+  const weight = cleanTextureValue(g?.fabric_weight);
+  const opacity = cleanTextureValue(g?.opacity);
+  const details = Array.isArray(g?.construction_details)
+    ? g.construction_details.map(cleanTextureValue).filter(Boolean).slice(0, 4)
+    : [];
+
+  const parts: string[] = [];
+  if (tex && mat) parts.push(`${tex} ${mat} texture`);
+  else if (mat) parts.push(`${mat} texture`);
+  else if (tex) parts.push(`${tex} texture`);
+  if (struct) parts.push(`${struct} fabric structure`);
+  if (weight) parts.push(`${weight} fabric weight`);
+  if (opacity) parts.push(`${opacity} opacity`);
+  if (fin) parts.push(`${fin} surface finish`);
+  if (details.length) parts.push(`with ${details.join(', ')}`);
+
+  if (!parts.length) return '';
+  return `Preserve the ${parts.join(', ')}.`;
+}
+
 function composeFinalPromptHint(g: any): string {
   const region = (g?.body_region_to_replace || 'garment region').toString();
   const detail = (g?.tryon_prompt_hint || '').toString().trim();
+  const texture = buildTextureSentence(g);
   const parts = [
     UNIVERSAL_BASE,
     `Replace only the ${region}.`,
     detail,
+    texture,
     REFERENCE_TRUTH,
   ];
   return parts.filter(Boolean).join(' ');
-}
-
-function geminiLooksLow(g: any): boolean {
-  if (!g) return true;
-  const conf = typeof g.confidence === 'number' ? g.confidence : 0;
-  const unknownish = (v: any) => !v || String(v).toLowerCase() === 'unknown';
-  return (
-    conf < 0.35 ||
-    (unknownish(g.category) && unknownish(g.garment_type)) ||
-    (unknownish(g.sleeve_length) && unknownish(g.pattern_type))
-  );
 }
 
 async function upsertAnalysis(row: Record<string, unknown>) {
