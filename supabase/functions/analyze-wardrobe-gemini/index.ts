@@ -198,15 +198,6 @@ const UNIVERSAL_BASE =
 const REFERENCE_TRUTH =
   'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
 
-function composeFinalPromptHint(g: any): string {
-  const region = (g?.body_region_to_replace || 'garment region').toString();
-  const detail = (g?.tryon_prompt_hint || '').toString().trim();
-  const parts = [
-    UNIVERSAL_BASE,
-    `Replace only the ${region}.`,
-    detail,
-    REFERENCE_TRUTH,
-  ];
 function cleanTextureValue(v: any): string {
   if (v === undefined || v === null) return '';
   const s = String(v).trim().toLowerCase();
