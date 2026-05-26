@@ -207,18 +207,50 @@ function composeFinalPromptHint(g: any): string {
     detail,
     REFERENCE_TRUTH,
   ];
-  return parts.filter(Boolean).join(' ');
+function cleanTextureValue(v: any): string {
+  if (v === undefined || v === null) return '';
+  const s = String(v).trim().toLowerCase();
+  if (!s || s === 'unknown' || s === 'n/a' || s === 'none') return '';
+  return s;
 }
 
-function geminiLooksLow(g: any): boolean {
-  if (!g) return true;
-  const conf = typeof g.confidence === 'number' ? g.confidence : 0;
-  const unknownish = (v: any) => !v || String(v).toLowerCase() === 'unknown';
-  return (
-    conf < 0.35 ||
-    (unknownish(g.category) && unknownish(g.garment_type)) ||
-    (unknownish(g.sleeve_length) && unknownish(g.pattern_type))
-  );
+function buildTextureSentence(g: any): string {
+  const tex = cleanTextureValue(g?.surface_texture);
+  const mat = cleanTextureValue(g?.material_appearance);
+  const struct = cleanTextureValue(g?.fabric_structure);
+  const fin = cleanTextureValue(g?.finish);
+  const weight = cleanTextureValue(g?.fabric_weight);
+  const opacity = cleanTextureValue(g?.opacity);
+  const details = Array.isArray(g?.construction_details)
+    ? g.construction_details.map(cleanTextureValue).filter(Boolean).slice(0, 4)
+    : [];
+
+  const parts: string[] = [];
+  if (tex && mat) parts.push(`${tex} ${mat} texture`);
+  else if (mat) parts.push(`${mat} texture`);
+  else if (tex) parts.push(`${tex} texture`);
+  if (struct) parts.push(`${struct} fabric structure`);
+  if (weight) parts.push(`${weight} fabric weight`);
+  if (opacity) parts.push(`${opacity} opacity`);
+  if (fin) parts.push(`${fin} surface finish`);
+  if (details.length) parts.push(`with ${details.join(', ')}`);
+
+  if (!parts.length) return '';
+  return `Preserve the ${parts.join(', ')}.`;
+}
+
+function composeFinalPromptHint(g: any): string {
+  const region = (g?.body_region_to_replace || 'garment region').toString();
+  const detail = (g?.tryon_prompt_hint || '').toString().trim();
+  const texture = buildTextureSentence(g);
+  const parts = [
+    UNIVERSAL_BASE,
+    `Replace only the ${region}.`,
+    detail,
+    texture,
+    REFERENCE_TRUTH,
+  ];
+  return parts.filter(Boolean).join(' ');
 }
 
 async function upsertAnalysis(row: Record<string, unknown>) {
