@@ -122,6 +122,17 @@ Focus on visual facts that help a try-on model preserve the garment accurately:
 - body region to replace
 - body regions to preserve
 
+Also describe how the fabric looks and behaves (general garment attributes, not just prints):
+- material_appearance (knit, woven, denim, satin-like, chiffon-like, jersey, cotton-like, linen-like, leather-like, lace, mesh, unknown)
+- surface_texture (ribbed, smooth, fuzzy, quilted, pleated, crinkled, crocheted, embroidered, textured, glossy, matte, unknown)
+- fabric_structure (flowy, draped, soft, structured, stiff, tailored, unknown)
+- fabric_weight (lightweight, midweight, heavy, unknown)
+- opacity (opaque, semi-sheer, sheer, unknown)
+- finish (matte, slightly glossy, glossy, metallic, brushed, unknown)
+- construction_details (ribbing, pleats, ruffles, smocking, quilting, gathering, layering, embroidery, lace overlay, visible seams)
+- texture_confidence (0.0 to 1.0)
+Use "unknown" when not clearly visible. Do not invent.
+
 The reference image is the source of truth.
 
 The tryon_prompt_hint must tell FluxRT exactly what to preserve from the reference image.
