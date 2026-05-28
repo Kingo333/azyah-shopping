@@ -133,8 +133,6 @@ Also describe how the fabric looks and behaves (general garment attributes, not 
 - texture_confidence (0.0 to 1.0)
 Use "unknown" when not clearly visible. Do not invent.
 
-Also describe placement, color distribution, fabric/texture, and the highest-priority visual details for try-on preservation. Fill color_profile, fabric_texture_profile, design_placement_profile, priority_details (top 3-6 short phrases, preserve original casing for logos/text like "AF1", "NYC", "Nike"), and uncertain_fields. Use "unknown" inside any field you cannot clearly see. The reference image is the source of truth - do not guess details that are not visible.
-
 The reference image is the source of truth.
 
 The tryon_prompt_hint must tell FluxRT exactly what to preserve from the reference image.
@@ -142,7 +140,6 @@ The tryon_prompt_hint must tell FluxRT exactly what to preserve from the referen
 Do not invent a different garment.
 Do not add unrelated styling.
 Do not change category if uncertain.`;
-
 
 const RESPONSE_SCHEMA = {
   type: 'object',
@@ -177,48 +174,6 @@ const RESPONSE_SCHEMA = {
     body_region_to_replace: { type: 'string' },
     body_regions_to_preserve: { type: 'array', items: { type: 'string' } },
     tryon_prompt_hint: { type: 'string' },
-    color_profile: {
-      type: 'object',
-      properties: {
-        base_color: { type: 'string' },
-        primary_colors: { type: 'array', items: { type: 'string' } },
-        accent_colors: { type: 'array', items: { type: 'string' } },
-        pattern_colors: { type: 'array', items: { type: 'string' } },
-        trim_colors: { type: 'array', items: { type: 'string' } },
-        color_distribution: { type: 'string' },
-        gradient_or_ombre: { type: 'string' },
-        color_blocking: { type: 'string' },
-        color_confidence: { type: 'number' },
-      },
-    },
-    fabric_texture_profile: {
-      type: 'object',
-      properties: {
-        material_appearance: { type: 'string' },
-        surface_texture: { type: 'string' },
-        fabric_structure: { type: 'string' },
-        fabric_weight: { type: 'string' },
-        opacity: { type: 'string' },
-        finish: { type: 'string' },
-        construction_details: { type: 'array', items: { type: 'string' } },
-        texture_confidence: { type: 'number' },
-      },
-    },
-    design_placement_profile: {
-      type: 'object',
-      properties: {
-        main_design_location: { type: 'string' },
-        pattern_distribution: { type: 'string' },
-        design_scale: { type: 'string' },
-        design_orientation: { type: 'string' },
-        symmetry: { type: 'string' },
-        avoid_regions: { type: 'array', items: { type: 'string' } },
-        preserve_regions: { type: 'array', items: { type: 'string' } },
-        placement_confidence: { type: 'number' },
-      },
-    },
-    priority_details: { type: 'array', items: { type: 'string' } },
-    uncertain_fields: { type: 'array', items: { type: 'string' } },
   },
   required: [
     'provider',
@@ -238,14 +193,10 @@ const RESPONSE_SCHEMA = {
   ],
 };
 
-
 const UNIVERSAL_BASE =
   'Preserve face, identity, body shape, pose, skin tone, lighting, camera angle, and background. Only change the selected garment region.';
 const REFERENCE_TRUTH =
-  'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment. If any description above conflicts with the reference image, follow the reference image.';
-
-const FINAL_PROMPT_MAX = 1200;
-const FINAL_PROMPT_SOFT = 900;
+  'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
 
 function cleanTextureValue(v: any): string {
   if (v === undefined || v === null) return '';
@@ -254,40 +205,16 @@ function cleanTextureValue(v: any): string {
   return s;
 }
 
-// Preserve original casing (e.g. "AF1", "NYC"). Trim only.
-function cleanDetailValue(v: any): string {
-  if (v === undefined || v === null) return '';
-  const s = String(v).trim();
-  if (!s) return '';
-  const low = s.toLowerCase();
-  if (low === 'unknown' || low === 'n/a' || low === 'none') return '';
-  return s;
-}
-
-function dedupCaseInsensitive(arr: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const v of arr) {
-    const k = v.toLowerCase();
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(v);
-  }
-  return out;
-}
-
 function buildTextureSentence(g: any): string {
-  const ft = g?.fabric_texture_profile ?? {};
-  const tex = cleanTextureValue(ft.surface_texture ?? g?.surface_texture);
-  const mat = cleanTextureValue(ft.material_appearance ?? g?.material_appearance);
-  const struct = cleanTextureValue(ft.fabric_structure ?? g?.fabric_structure);
-  const fin = cleanTextureValue(ft.finish ?? g?.finish);
-  const weight = cleanTextureValue(ft.fabric_weight ?? g?.fabric_weight);
-  const opacity = cleanTextureValue(ft.opacity ?? g?.opacity);
-  const rawDetails = Array.isArray(ft.construction_details)
-    ? ft.construction_details
-    : (Array.isArray(g?.construction_details) ? g.construction_details : []);
-  const details = rawDetails.map(cleanTextureValue).filter(Boolean).slice(0, 4);
+  const tex = cleanTextureValue(g?.surface_texture);
+  const mat = cleanTextureValue(g?.material_appearance);
+  const struct = cleanTextureValue(g?.fabric_structure);
+  const fin = cleanTextureValue(g?.finish);
+  const weight = cleanTextureValue(g?.fabric_weight);
+  const opacity = cleanTextureValue(g?.opacity);
+  const details = Array.isArray(g?.construction_details)
+    ? g.construction_details.map(cleanTextureValue).filter(Boolean).slice(0, 4)
+    : [];
 
   const parts: string[] = [];
   if (tex && mat) parts.push(`${tex} ${mat} texture`);
@@ -303,124 +230,19 @@ function buildTextureSentence(g: any): string {
   return `Preserve the ${parts.join(', ')}.`;
 }
 
-function buildColorSentence(g: any): string {
-  const cp = g?.color_profile;
-  if (!cp || typeof cp !== 'object') return '';
-  if (typeof cp.color_confidence === 'number' && cp.color_confidence < 0.5) return '';
-
-  const base = cleanTextureValue(cp.base_color);
-  const accentsRaw = [
-    ...(Array.isArray(cp.primary_colors) ? cp.primary_colors : []),
-    ...(Array.isArray(cp.accent_colors) ? cp.accent_colors : []),
-    ...(Array.isArray(cp.pattern_colors) ? cp.pattern_colors : []),
-    ...(Array.isArray(cp.trim_colors) ? cp.trim_colors : []),
-  ].map(cleanTextureValue).filter(Boolean);
-  const accents = dedupCaseInsensitive(accentsRaw).filter((c) => c !== base).slice(0, 4);
-  const distribution = cleanTextureValue(cp.color_distribution);
-
-  const clauses: string[] = [];
-  if (base) clauses.push(`${base} base color`);
-  if (accents.length) clauses.push(`${accents.join(', ')} accents`);
-  if (distribution) clauses.push(`${distribution} color distribution`);
-  if (!clauses.length) return '';
-  return `Preserve the ${clauses.join(', ')}.`;
-}
-
-function buildPlacementSentence(g: any): string {
-  const dp = g?.design_placement_profile;
-  if (!dp || typeof dp !== 'object') return '';
-  if (typeof dp.placement_confidence === 'number' && dp.placement_confidence < 0.5) return '';
-
-  const loc = cleanTextureValue(dp.main_design_location);
-  const dist = cleanTextureValue(dp.pattern_distribution);
-  const scale = cleanTextureValue(dp.design_scale);
-  const sym = cleanTextureValue(dp.symmetry);
-  const preserve = (Array.isArray(dp.preserve_regions) ? dp.preserve_regions : [])
-    .map(cleanTextureValue).filter(Boolean).slice(0, 4);
-  const avoid = (Array.isArray(dp.avoid_regions) ? dp.avoid_regions : [])
-    .map(cleanTextureValue).filter(Boolean).slice(0, 4);
-
-  const sentences: string[] = [];
-  if (loc || scale || dist || sym) {
-    const modifiers = [scale, loc].filter(Boolean).join(' ');
-    const qualifiers = [dist, sym].filter(Boolean).join(', ');
-    let s = 'Keep the';
-    if (modifiers) s += ` ${modifiers} design`;
-    else s += ' design placement';
-    if (qualifiers) s += ` (${qualifiers})`;
-    s += '.';
-    sentences.push(s);
-  }
-  if (preserve.length) sentences.push(`Preserve ${preserve.join(', ')}.`);
-  if (avoid.length) sentences.push(`Avoid altering ${avoid.join(', ')}.`);
-  return sentences.join(' ');
-}
-
-function buildPriorityDetailsSentence(g: any): string {
-  const raw = Array.isArray(g?.priority_details) ? g.priority_details : [];
-  const cleaned = raw.map(cleanDetailValue).filter(Boolean);
-  const deduped = dedupCaseInsensitive(cleaned).slice(0, 6);
-  if (!deduped.length) return '';
-  return `Highest-priority details to preserve: ${deduped.join('; ')}.`;
-}
-
 function composeFinalPromptHint(g: any): string {
   const region = (g?.body_region_to_replace || 'garment region').toString();
   const detail = (g?.tryon_prompt_hint || '').toString().trim();
-  const regionSentence = `Replace only the ${region}.`;
-  const color = buildColorSentence(g);
   const texture = buildTextureSentence(g);
-  const placement = buildPlacementSentence(g);
-  const priority = buildPriorityDetailsSentence(g);
-
-  // Strip duplicate "reference image is the source of truth" / region phrasing
-  // from Gemini's tryon_prompt_hint to avoid repeating wording already in
-  // UNIVERSAL_BASE / REFERENCE_TRUTH / regionSentence.
-  const dedupedDetail = detail
-    .replace(/the reference image is the source of truth\.?/gi, '')
-    .replace(/replace only the [^.]*\.?/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const full = [
+  const parts = [
     UNIVERSAL_BASE,
-    regionSentence,
-    dedupedDetail,
-    color,
+    `Replace only the ${region}.`,
+    detail,
     texture,
-    placement,
-    priority,
     REFERENCE_TRUTH,
-  ].filter(Boolean).join(' ');
-
-  if (full.length <= FINAL_PROMPT_MAX) return full;
-
-  // Over budget: prioritize body region, gemini hint, placement, top-3 priority, reference truth.
-  const topPriority = (() => {
-    const raw = Array.isArray(g?.priority_details) ? g.priority_details : [];
-    const cleaned = raw.map(cleanDetailValue).filter(Boolean);
-    const deduped = dedupCaseInsensitive(cleaned).slice(0, 3);
-    return deduped.length ? `Highest-priority details to preserve: ${deduped.join('; ')}.` : '';
-  })();
-
-  const trimmed = [
-    UNIVERSAL_BASE,
-    regionSentence,
-    dedupedDetail,
-    placement,
-    topPriority,
-    REFERENCE_TRUTH,
-  ].filter(Boolean).join(' ');
-
-  if (trimmed.length <= FINAL_PROMPT_MAX) return trimmed;
-
-  // Still too long: hard truncate at soft budget on a sentence boundary.
-  const cap = trimmed.slice(0, FINAL_PROMPT_SOFT);
-  const lastPeriod = cap.lastIndexOf('.');
-  const base = lastPeriod > 200 ? cap.slice(0, lastPeriod + 1) : cap;
-  return `${base} ${REFERENCE_TRUTH}`.trim();
+  ];
+  return parts.filter(Boolean).join(' ');
 }
-
 
 async function upsertAnalysis(row: Record<string, unknown>) {
   const { error } = await admin
