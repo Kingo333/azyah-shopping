@@ -177,6 +177,48 @@ const RESPONSE_SCHEMA = {
     body_region_to_replace: { type: 'string' },
     body_regions_to_preserve: { type: 'array', items: { type: 'string' } },
     tryon_prompt_hint: { type: 'string' },
+    color_profile: {
+      type: 'object',
+      properties: {
+        base_color: { type: 'string' },
+        primary_colors: { type: 'array', items: { type: 'string' } },
+        accent_colors: { type: 'array', items: { type: 'string' } },
+        pattern_colors: { type: 'array', items: { type: 'string' } },
+        trim_colors: { type: 'array', items: { type: 'string' } },
+        color_distribution: { type: 'string' },
+        gradient_or_ombre: { type: 'string' },
+        color_blocking: { type: 'string' },
+        color_confidence: { type: 'number' },
+      },
+    },
+    fabric_texture_profile: {
+      type: 'object',
+      properties: {
+        material_appearance: { type: 'string' },
+        surface_texture: { type: 'string' },
+        fabric_structure: { type: 'string' },
+        fabric_weight: { type: 'string' },
+        opacity: { type: 'string' },
+        finish: { type: 'string' },
+        construction_details: { type: 'array', items: { type: 'string' } },
+        texture_confidence: { type: 'number' },
+      },
+    },
+    design_placement_profile: {
+      type: 'object',
+      properties: {
+        main_design_location: { type: 'string' },
+        pattern_distribution: { type: 'string' },
+        design_scale: { type: 'string' },
+        design_orientation: { type: 'string' },
+        symmetry: { type: 'string' },
+        avoid_regions: { type: 'array', items: { type: 'string' } },
+        preserve_regions: { type: 'array', items: { type: 'string' } },
+        placement_confidence: { type: 'number' },
+      },
+    },
+    priority_details: { type: 'array', items: { type: 'string' } },
+    uncertain_fields: { type: 'array', items: { type: 'string' } },
   },
   required: [
     'provider',
@@ -195,6 +237,7 @@ const RESPONSE_SCHEMA = {
     'tryon_prompt_hint',
   ],
 };
+
 
 const UNIVERSAL_BASE =
   'Preserve face, identity, body shape, pose, skin tone, lighting, camera angle, and background. Only change the selected garment region.';
