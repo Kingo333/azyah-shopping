@@ -133,6 +133,8 @@ Also describe how the fabric looks and behaves (general garment attributes, not 
 - texture_confidence (0.0 to 1.0)
 Use "unknown" when not clearly visible. Do not invent.
 
+Also describe placement, color distribution, fabric/texture, and the highest-priority visual details for try-on preservation. Fill color_profile, fabric_texture_profile, design_placement_profile, priority_details (top 3-6 short phrases, preserve original casing for logos/text like "AF1", "NYC", "Nike"), and uncertain_fields. Use "unknown" inside any field you cannot clearly see. The reference image is the source of truth - do not guess details that are not visible.
+
 The reference image is the source of truth.
 
 The tryon_prompt_hint must tell FluxRT exactly what to preserve from the reference image.
@@ -140,6 +142,7 @@ The tryon_prompt_hint must tell FluxRT exactly what to preserve from the referen
 Do not invent a different garment.
 Do not add unrelated styling.
 Do not change category if uncertain.`;
+
 
 const RESPONSE_SCHEMA = {
   type: 'object',
