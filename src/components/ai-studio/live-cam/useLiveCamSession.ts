@@ -96,6 +96,9 @@ export function useLiveCamSession({
   const retryTimerRef = useRef<number | null>(null);
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
+  const lastPromptHashRef = useRef<string | null>(null);
+  const setPromptCountRef = useRef<number>(0);
+
 
   const cleanupLocal = useCallback(() => {
     abortRef.current = true;
