@@ -575,7 +575,7 @@ Deno.serve(async (req) => {
 
     // Gemini-only mode: write result directly into the canonical prompt_hint/status/metadata
     // columns so Live Cam reads it transparently. FashionCLIP merge layer disabled while testing.
-    const promptHint = composeFinalPromptHint(gemini);
+    const promptHint = composeFinalPromptHint(gemini, { wardrobe_item_id });
     const conf = typeof gemini?.confidence === 'number' ? gemini.confidence : null;
 
     await upsertAnalysis({
