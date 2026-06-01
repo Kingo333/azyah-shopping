@@ -1,80 +1,107 @@
+# Safe Live Cam hardening + compact Gemini detail booster + backfill reset
 
-# Extend Gemini metadata with texture & fabric attributes
+Small, additive changes only. No FluxRT/RunPod/Worker/WS/camera/scheduler/auth/schema changes.
 
-Scope: edit only `supabase/functions/analyze-wardrobe-gemini/index.ts`. No DB schema change (existing `gemini_metadata`, `final_metadata`, `metadata` columns are `jsonb` and absorb new keys automatically). No changes to FluxRT, RunPod, Cloudflare, Live Cam, FashionCLIP, scheduler, secrets, or trigger auth.
+## 1. Live Cam: `set_prompt` dedupe + safe instrumentation
 
-## 1. Extend `RESPONSE_SCHEMA`
+File: `src/components/ai-studio/live-cam/useLiveCamSession.ts`
 
-Add these properties (alongside existing ones, nothing removed):
+- Add module-scope helper `hashPrompt(s)` (djb2 → 8-char hex).
+- Add `SetPromptReason` type (`initial_start | duplicate_skipped | garment_changed | manual_override_changed | analysis_refresh | unknown`).
+- Inside the hook, add two refs:
+  - `lastPromptHashRef: useRef<string | null>(null)`
+  - `setPromptCountRef: useRef<number>(0)`
+- In `cleanupLocal()`, reset both to `null` / `0`.
+- In `runHandshake()`, right before the existing `set_prompt` send:
+  - Compute `hash = hashPrompt(finalPrompt)`.
+  - If `hash === lastPromptHashRef.current` and session id unchanged → skip the send AND the `waitForAck('set_prompt')`; log `reason=duplicate_skipped` and return into `startFrameLoop()` directly. (No-op today; protects future regressions.)
+  - Otherwise send, await ack, then `lastPromptHashRef.current = hash`, `setPromptCountRef.current += 1`.
+- Replace the existing `console.log('[live-cam] set_prompt ack=true')` with a single structured log:
+  ```
+  [live-cam] set_prompt sent ts=<iso> sessionId=<id> garmentId=<id> len=<n> hash=<8hex> count=<n> reason=initial_start
+  ```
+  No full prompt, no base64, no URLs, no tokens.
 
-- `material_appearance` — string (already present, keep)
-- `surface_texture` — string
-- `fabric_structure` — string (enum-ish: flowy | draped | soft | structured | stiff | tailored | unknown)
-- `fabric_weight` — string (lightweight | midweight | heavy | unknown)
-- `opacity` — string (opaque | semi-sheer | sheer | unknown)
-- `finish` — string (matte | slightly glossy | glossy | metallic | brushed | unknown)
-- `construction_details` — array of strings
-- `texture_confidence` — number
+Frame loop, WS protocol, ack registry, retry logic unchanged.
 
-Add `surface_texture`, `fabric_structure`, `finish` to `required` so Gemini reliably returns them (others remain optional → safe to be "unknown" or omitted).
+## 2. Gemini: compact detail booster + length safety
 
-## 2. Lightly extend `GEMINI_PROMPT`
+File: `supabase/functions/analyze-wardrobe-gemini/index.ts`
 
-Append a short bullet group after the existing visual-facts list — no rewrite:
-
-```
-Also describe how the fabric looks and behaves:
-- material_appearance (knit, woven, denim, satin-like, chiffon-like, jersey, lace, mesh, leather-like, unknown)
-- surface_texture (ribbed, smooth, fuzzy, quilted, pleated, crinkled, embroidered, glossy, matte, unknown)
-- fabric_structure (flowy, draped, soft, structured, stiff, tailored, unknown)
-- fabric_weight, opacity, finish
-- construction_details (ribbing, pleats, ruffles, smocking, quilting, gathering, embroidery, lace overlay, visible seams)
-Use "unknown" when not clearly visible. Do not invent.
-```
-
-Existing wording, schema requirements, and `tryon_prompt_hint` instruction stay intact.
-
-## 3. Extend `composeFinalPromptHint(g)`
-
-Keep current structure (`UNIVERSAL_BASE` + region + `tryon_prompt_hint` + `REFERENCE_TRUTH`). Insert one optional sentence built from the new fields, only when values exist and are not "unknown":
+Add a new helper above `composeFinalPromptHint`:
 
 ```ts
-function textureSentence(g) {
-  const parts = [];
-  const tex = clean(g.surface_texture);
-  const mat = clean(g.material_appearance);
-  if (tex && mat) parts.push(`${tex} ${mat} texture`);
-  else if (mat) parts.push(`${mat} texture`);
-  else if (tex) parts.push(`${tex} texture`);
-  const struct = clean(g.fabric_structure);
-  if (struct) parts.push(`${struct} fabric structure`);
-  const fin = clean(g.finish);
-  if (fin) parts.push(`${fin} surface finish`);
-  const details = (g.construction_details || []).filter(d => clean(d)).slice(0, 4);
-  if (details.length) parts.push(`with ${details.join(', ')}`);
-  if (!parts.length) return '';
-  return `Preserve the ${parts.join(', ')}.`;
+function buildCompactDetailBooster(g: any, existingHint: string): string {
+  // Return one short sentence (≤250 chars) or '' for plain/unknown/duplicative cases.
 }
 ```
-where `clean(v)` returns trimmed lowercase string or empty when missing / "unknown".
 
-Sentence is appended between `tryon_prompt_hint` and `REFERENCE_TRUTH`. If all fields unknown → nothing added (existing prompt unchanged).
+Detection — booster only if at least one is true:
+- `pattern_type` present and not in {solid, plain, none, unknown}
+- `important_visual_details` array has ≥1 meaningful entry
+- `surface_texture` meaningful (not in {smooth, unknown})
+- `construction_details` array has ≥1 meaningful entry
+- `accent_colors` array has ≥1 entry
+- `pattern_placement` meaningful
+- `logo_or_text === true`
 
-## 4. Persistence
+Skip if:
+- existingHint already contains the same color word(s) AND "preserve" — avoids duplication
+- final composed hint would exceed length cap
 
-No code change needed beyond what's already there: `upsertAnalysis` writes the whole Gemini object into `gemini_metadata`, `final_metadata`, and `metadata`. New fields ride along automatically. `final_prompt_hint` updates because `composeFinalPromptHint` now includes the texture sentence when applicable.
+Sentence shape (assemble only non-empty parts, cap at 250 chars):
+```
+Preserve the <pattern_placement+pattern_type> placement, <main_colors[0..1]> base color, <sleeve_length>, <neckline_or_collar>, and <surface_texture+material_appearance> texture. Keep details on the garment and follow the reference image.
+```
+Use only fields that pass `cleanTextureValue`. Truncate to 250 chars at last space.
 
-## 5. Testing (post-approval, build mode)
+Update `composeFinalPromptHint(g)`:
+```ts
+const parts = [
+  UNIVERSAL_BASE,
+  `Replace only the ${region}.`,
+  detail,
+  texture,
+  buildCompactDetailBooster(g, detail),  // NEW
+  REFERENCE_TRUTH,
+].filter(Boolean);
+let hint = parts.join(' ');
+// Length guard — drop booster first if over 700 chars.
+if (hint.length > 700) {
+  hint = [UNIVERSAL_BASE, `Replace only the ${region}.`, detail, texture, REFERENCE_TRUTH]
+    .filter(Boolean).join(' ');
+}
+return hint;
+```
 
-After redeploy:
-1. Pick 1–3 items via `supabase--read_query` filtering for visually distinct garments (ribbed/knit, flowy, structured).
-2. Invoke `analyze-wardrobe-gemini` with `{ wardrobe_item_id, force: true }` for each (service-role curl with `x-trigger-secret` from vault).
-3. Read back `gemini_metadata`, `final_metadata`, `final_prompt_hint` and report:
-   - New fields present and populated when visible
-   - `unknown` values gracefully omitted from `final_prompt_hint`
-   - Existing fields (category, garment_type, colors, etc.) untouched
-   - Live Cam still only reads `final_prompt_hint` (no new analyzer calls)
+Add safe debug log after compose (no full prompt):
+```
+[gemini] composed wardrobe_item_id=<id> hintLen=<n> boosterAdded=<bool> boosterSkipReason=<str|''>
+```
 
-## Hard rules respected
+No JSON dumping. No second Gemini call. No FashionCLIP merge. No schema changes.
 
-No edits to FluxRT, RunPod, Cloudflare, camera capture, scheduler, WebSocket, FashionCLIP worker, Live Cam endpoint, Gemini API key, or trigger-secret auth. No DB migration. No full backfill — only 1–3 targeted force re-analyses.
+## 3. Reset Gemini backfill (data-only migration)
+
+Single `UPDATE` on `wardrobe_garment_analysis` setting these to NULL across all rows:
+`gemini_status, gemini_metadata, gemini_error, gemini_version, primary_provider, final_metadata, final_prompt_hint, prompt_hint, metadata, status, confidence, model_name, analysis_version, error`.
+
+This clears every analysis so the next click of **Analyze with Gemini** re-runs the new composer (with compact booster) on all 10 unique image hashes; the 3 other accounts auto-fan-out via image_hash twin cache.
+
+## 4. Test plan (after approval + build)
+
+Pick 2 items in `shopper@test.com`:
+- 1 plain garment (e.g. a solid bottom)
+- 1 detailed garment (e.g. dress with pattern or top with graphic)
+
+Trigger Gemini analyze on just those 2 (not full backfill). Then for each, report:
+- old vs new `final_prompt_hint` (length + booster added/skipped + skip reason)
+- final prompt length after `buildTryOnPrompt()`
+- a 30-second Live Cam session: confirm exactly one `[live-cam] set_prompt sent count=1 reason=initial_start` log
+- Live Cam responsiveness unchanged
+
+Only after that, run full backfill.
+
+## Out of scope (not modified)
+
+FluxRT, RunPod, Cloudflare Worker, WebSocket protocol, camera capture, frame loop, scheduler, Gemini auth/trigger flow, DB schema, FashionCLIP worker, Live Cam endpoint, payments, auth, Discover/event products.
