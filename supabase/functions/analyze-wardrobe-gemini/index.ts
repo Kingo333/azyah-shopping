@@ -176,6 +176,11 @@ const RESPONSE_SCHEMA = {
     body_region_to_replace: { type: 'string' },
     body_regions_to_preserve: { type: 'array', items: { type: 'string' } },
     tryon_prompt_hint: { type: 'string' },
+    detail_location: { type: 'string' },
+    detail_type: { type: 'string' },
+    detail_scale: { type: 'string' },
+    detail_orientation: { type: 'string' },
+    detail_confidence: { type: 'number' },
   },
   required: [
     'provider',
