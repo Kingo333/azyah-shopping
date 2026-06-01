@@ -462,17 +462,44 @@ export function useLiveCamSession({
           await ackRef;
           console.log('[live-cam] set_reference_image ack=true');
 
-          // Step B: set_prompt
+          // Step B: set_prompt — dedupe by hash so we never re-send within a session.
           console.log(`[live-cam] final prompt length=${finalPrompt.length}`);
           console.debug('[livecam] final prompt', finalPrompt);
-          const ackPrompt = waitForAck('set_prompt');
-          const wsNow2 = wsRef.current;
-          if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
-            throw new Error('WebSocket closed before prompt could be sent');
+          const promptHash = hashPrompt(finalPrompt);
+          const sid = sessionIdRef.current ?? '';
+          const baseLog = {
+            ts: new Date().toISOString(),
+            sessionId: sid,
+            garmentId: garment?.id ?? '',
+            len: finalPrompt.length,
+            hash: promptHash,
+          };
+
+          if (lastPromptHashRef.current === promptHash) {
+            console.log('[live-cam] set_prompt sent', {
+              ...baseLog,
+              count: setPromptCountRef.current,
+              reason: 'duplicate_skipped' as SetPromptReason,
+            });
+          } else {
+            const ackPrompt = waitForAck('set_prompt');
+            const wsNow2 = wsRef.current;
+            if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
+              throw new Error('WebSocket closed before prompt could be sent');
+            }
+            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+            await ackPrompt;
+            lastPromptHashRef.current = promptHash;
+            setPromptCountRef.current += 1;
+            const reason: SetPromptReason =
+              setPromptCountRef.current === 1 ? 'initial_start' : 'unknown';
+            console.log('[live-cam] set_prompt sent', {
+              ...baseLog,
+              count: setPromptCountRef.current,
+              reason,
+            });
           }
-          wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
-          await ackPrompt;
-          console.log('[live-cam] set_prompt ack=true');
+
 
           startFrameLoop();
         } catch (e) {
