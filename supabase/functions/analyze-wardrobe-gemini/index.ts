@@ -230,19 +230,119 @@ function buildTextureSentence(g: any): string {
   return `Preserve the ${parts.join(', ')}.`;
 }
 
-function composeFinalPromptHint(g: any): string {
+function isMeaningful(v: any, blocked: string[] = []): boolean {
+  const s = cleanTextureValue(v);
+  if (!s) return false;
+  return !blocked.includes(s);
+}
+
+function meaningfulArray(v: any, blocked: string[] = []): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => cleanTextureValue(x)).filter((s) => s && !blocked.includes(s));
+}
+
+// Compact, single-sentence guidance — only for detailed garments. ≤250 chars.
+// Returns either the sentence or '' (with a reason captured on the helper-owned ref via console).
+function buildCompactDetailBooster(g: any, existingHint: string): { sentence: string; skipReason: string } {
+  const pattern = cleanTextureValue(g?.pattern_type);
+  const patternPlacement = cleanTextureValue(g?.pattern_placement);
+  const tex = cleanTextureValue(g?.surface_texture);
+  const mat = cleanTextureValue(g?.material_appearance);
+  const accents = meaningfulArray(g?.accent_colors);
+  const visualDetails = meaningfulArray(g?.important_visual_details);
+  const construction = meaningfulArray(g?.construction_details);
+  const mains = meaningfulArray(g?.main_colors);
+  const sleeves = cleanTextureValue(g?.sleeve_length);
+  const neckline = cleanTextureValue(g?.neckline_or_collar);
+  const logoOrText = g?.logo_or_text === true;
+
+  const plainPatterns = ['solid', 'plain', 'none'];
+  const blandTexture = ['smooth'];
+
+  const isDetailed =
+    (pattern && !plainPatterns.includes(pattern)) ||
+    visualDetails.length > 0 ||
+    (tex && !blandTexture.includes(tex)) ||
+    construction.length > 0 ||
+    accents.length > 0 ||
+    !!patternPlacement ||
+    logoOrText;
+
+  if (!isDetailed) return { sentence: '', skipReason: 'plain_or_unknown' };
+
+  // Build compact sentence — only include parts that are meaningful.
+  const segs: string[] = [];
+  const placementBit = [patternPlacement, pattern].filter(Boolean).join(' ').trim();
+  if (placementBit) segs.push(`${placementBit} placement`);
+  if (mains.length) segs.push(`${mains.slice(0, 2).join(' and ')} base color`);
+  if (accents.length) segs.push(`${accents.slice(0, 2).join(' and ')} accents`);
+  if (sleeves && sleeves !== 'unknown') segs.push(sleeves.replace(/_/g, ' '));
+  if (neckline && neckline !== 'unknown') segs.push(`${neckline} neckline`);
+  const textureBit = [tex, mat].filter(Boolean).join(' ').trim();
+  if (textureBit) segs.push(`${textureBit} texture`);
+  if (visualDetails.length) segs.push(visualDetails.slice(0, 2).join(' and '));
+
+  if (segs.length === 0) return { sentence: '', skipReason: 'no_useful_fields' };
+
+  let sentence = `Preserve the ${segs.join(', ')}. Keep details on the garment and follow the reference image.`;
+  if (sentence.length > 250) {
+    sentence = sentence.slice(0, 247);
+    const lastSpace = sentence.lastIndexOf(' ');
+    if (lastSpace > 200) sentence = sentence.slice(0, lastSpace);
+    sentence += '.';
+  }
+
+  // Duplication guard — if the existing hint already says "preserve" with same first color, skip.
+  const lowerHint = (existingHint || '').toLowerCase();
+  if (mains[0] && lowerHint.includes('preserve') && lowerHint.includes(mains[0])) {
+    return { sentence: '', skipReason: 'duplicate_of_hint' };
+  }
+
+  return { sentence, skipReason: '' };
+}
+
+function composeFinalPromptHint(g: any, debugCtx?: { wardrobe_item_id?: string }): string {
   const region = (g?.body_region_to_replace || 'garment region').toString();
   const detail = (g?.tryon_prompt_hint || '').toString().trim();
   const texture = buildTextureSentence(g);
-  const parts = [
+  const { sentence: booster, skipReason } = buildCompactDetailBooster(g, detail);
+
+  const withBooster = [
     UNIVERSAL_BASE,
     `Replace only the ${region}.`,
     detail,
     texture,
+    booster,
     REFERENCE_TRUTH,
-  ];
-  return parts.filter(Boolean).join(' ');
+  ].filter(Boolean).join(' ');
+
+  let finalHint = withBooster;
+  let boosterAdded = !!booster;
+  let lengthSkipReason = skipReason;
+
+  // Length guard — drop booster first if over 700 chars.
+  if (finalHint.length > 700 && boosterAdded) {
+    finalHint = [
+      UNIVERSAL_BASE,
+      `Replace only the ${region}.`,
+      detail,
+      texture,
+      REFERENCE_TRUTH,
+    ].filter(Boolean).join(' ');
+    boosterAdded = false;
+    lengthSkipReason = 'length_guard_dropped';
+  }
+
+  console.log('[gemini] composed', {
+    wardrobe_item_id: debugCtx?.wardrobe_item_id ?? null,
+    hintLen: finalHint.length,
+    boosterAdded,
+    boosterSkipReason: lengthSkipReason,
+  });
+
+  return finalHint;
 }
+
 
 async function upsertAnalysis(row: Record<string, unknown>) {
   const { error } = await admin
