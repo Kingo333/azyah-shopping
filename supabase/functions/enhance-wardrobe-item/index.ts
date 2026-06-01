@@ -69,56 +69,43 @@ serve(async (req) => {
       throw new Error('Failed to fetch user credits');
     }
 
-    const { wardrobe_credits, is_premium } = creditsData[0];
+    const { wardrobe_credits } = creditsData[0];
 
-    // Check if user has enough wardrobe credits
+    // Check credits up front, deduct only after full success
     if (wardrobe_credits < CREDITS_REQUIRED) {
       throw new Error(`Insufficient credits. You need ${CREDITS_REQUIRED} credit to enhance an item. Wardrobe credits reset daily.`);
     }
 
-    // Deduct wardrobe credit using the new function
-    const { data: deductResult, error: deductError } = await supabaseClient
-      .rpc('deduct_wardrobe_credit', { 
-        target_user_id: user.id,
-        amount: CREDITS_REQUIRED 
-      });
-
-    if (deductError || !deductResult) {
-      throw new Error('Failed to deduct wardrobe credit');
-    }
-
-    console.log(`Wardrobe credit deducted. Remaining: ${wardrobe_credits - CREDITS_REQUIRED}`);
-
     console.log('Enhancing item:', item_id, 'Category:', item.category);
 
-    // Get The New Black credentials
-    const THE_NEW_BLACK_EMAIL = Deno.env.get('THE_NEW_BLACK_EMAIL');
-    const THE_NEW_BLACK_PASSWORD = Deno.env.get('THE_NEW_BLACK_PASSWORD');
-    
-    if (!THE_NEW_BLACK_EMAIL || !THE_NEW_BLACK_PASSWORD) {
-      throw new Error('The New Black API credentials not configured');
+    // Get The New Black API key (same auth format as thenewblack-picture / thenewblack-video)
+    const apiKey = Deno.env.get('THE_NEW_BLACK_API_KEY');
+    if (!apiKey) {
+      throw new Error('THE_NEW_BLACK_API_KEY not configured');
     }
 
     // Map category to The New Black type
     const clothingType = categoryMapping[item.category] || 'clothing';
 
     // Step 1: Call The New Black API for ghost mannequin
+    // api_key goes in URL query string per TNB API; FormData carries only workflow inputs
     console.log('Calling The New Black API...');
     const formData = new FormData();
-    formData.append('email', THE_NEW_BLACK_EMAIL);
-    formData.append('password', THE_NEW_BLACK_PASSWORD);
     formData.append('image', item.image_url);
     formData.append('type', clothingType);
 
-    const newBlackResponse = await fetch('https://thenewblack.ai/api/1.1/wf/image-to-ghost', {
-      method: 'POST',
-      body: formData,
-    });
+    const newBlackResponse = await fetch(
+      `https://thenewblack.ai/api/1.1/wf/image-to-ghost?api_key=${apiKey}`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
 
     if (!newBlackResponse.ok) {
       const errorText = await newBlackResponse.text();
       console.error('The New Black API error:', newBlackResponse.status, errorText);
-      throw new Error('Failed to enhance image with The New Black API');
+      throw new Error(`The New Black API ${newBlackResponse.status}: ${errorText.slice(0, 200)}`);
     }
 
     const enhancedImageUrl = await newBlackResponse.text();
