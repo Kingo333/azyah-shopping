@@ -15,6 +15,23 @@ const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
+// djb2 hash → 8-char hex. Cheap, deterministic, safe to log.
+function hashPrompt(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(16).padStart(8, '0').slice(0, 8);
+}
+
+type SetPromptReason =
+  | 'initial_start'
+  | 'duplicate_skipped'
+  | 'garment_changed'
+  | 'manual_override_changed'
+  | 'analysis_refresh'
+  | 'unknown';
+
+
+
 
 
 interface UseLiveCamSessionArgs {
