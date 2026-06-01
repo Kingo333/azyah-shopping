@@ -196,6 +196,20 @@ serve(async (req) => {
       throw new Error('Failed to update item');
     }
 
+    // Deduct wardrobe credit ONLY after full success
+    const { data: deductResult, error: deductError } = await supabaseClient
+      .rpc('deduct_wardrobe_credit', {
+        target_user_id: user.id,
+        amount: CREDITS_REQUIRED,
+      });
+
+    if (deductError || !deductResult) {
+      console.error('Credit deduction failed after successful enhancement:', deductError);
+      // Don't fail the request — user got their enhancement
+    } else {
+      console.log(`Wardrobe credit deducted. Remaining: ${wardrobe_credits - CREDITS_REQUIRED}`);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       image_url: publicUrl
