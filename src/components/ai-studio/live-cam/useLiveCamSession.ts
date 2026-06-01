@@ -15,6 +15,23 @@ const STARTING_TIMEOUT_MS = 180_000;
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
+// djb2 hash → 8-char hex. Cheap, deterministic, safe to log.
+function hashPrompt(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(16).padStart(8, '0').slice(0, 8);
+}
+
+type SetPromptReason =
+  | 'initial_start'
+  | 'duplicate_skipped'
+  | 'garment_changed'
+  | 'manual_override_changed'
+  | 'analysis_refresh'
+  | 'unknown';
+
+
+
 
 
 interface UseLiveCamSessionArgs {
@@ -79,6 +96,9 @@ export function useLiveCamSession({
   const retryTimerRef = useRef<number | null>(null);
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
+  const lastPromptHashRef = useRef<string | null>(null);
+  const setPromptCountRef = useRef<number>(0);
+
 
   const cleanupLocal = useCallback(() => {
     abortRef.current = true;
@@ -111,7 +131,10 @@ export function useLiveCamSession({
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
     lastFrameCanvasRef.current = null;
+    lastPromptHashRef.current = null;
+    setPromptCountRef.current = 0;
   }, [localVideoRef]);
+
 
   const callEnd = useCallback(async () => {
     const sid = sessionIdRef.current;
@@ -439,17 +462,44 @@ export function useLiveCamSession({
           await ackRef;
           console.log('[live-cam] set_reference_image ack=true');
 
-          // Step B: set_prompt
+          // Step B: set_prompt — dedupe by hash so we never re-send within a session.
           console.log(`[live-cam] final prompt length=${finalPrompt.length}`);
           console.debug('[livecam] final prompt', finalPrompt);
-          const ackPrompt = waitForAck('set_prompt');
-          const wsNow2 = wsRef.current;
-          if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
-            throw new Error('WebSocket closed before prompt could be sent');
+          const promptHash = hashPrompt(finalPrompt);
+          const sid = sessionIdRef.current ?? '';
+          const baseLog = {
+            ts: new Date().toISOString(),
+            sessionId: sid,
+            garmentId: garment?.id ?? '',
+            len: finalPrompt.length,
+            hash: promptHash,
+          };
+
+          if (lastPromptHashRef.current === promptHash) {
+            console.log('[live-cam] set_prompt sent', {
+              ...baseLog,
+              count: setPromptCountRef.current,
+              reason: 'duplicate_skipped' as SetPromptReason,
+            });
+          } else {
+            const ackPrompt = waitForAck('set_prompt');
+            const wsNow2 = wsRef.current;
+            if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
+              throw new Error('WebSocket closed before prompt could be sent');
+            }
+            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+            await ackPrompt;
+            lastPromptHashRef.current = promptHash;
+            setPromptCountRef.current += 1;
+            const reason: SetPromptReason =
+              setPromptCountRef.current === 1 ? 'initial_start' : 'unknown';
+            console.log('[live-cam] set_prompt sent', {
+              ...baseLog,
+              count: setPromptCountRef.current,
+              reason,
+            });
           }
-          wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
-          await ackPrompt;
-          console.log('[live-cam] set_prompt ack=true');
+
 
           startFrameLoop();
         } catch (e) {
