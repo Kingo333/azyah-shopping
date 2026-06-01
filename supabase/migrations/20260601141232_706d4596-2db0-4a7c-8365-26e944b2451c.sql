@@ -1,0 +1,1 @@
+DELETE FROM public.wardrobe_garment_analysis;
