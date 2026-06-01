@@ -145,7 +145,7 @@ serve(async (req) => {
     if (!picsartResponse.ok) {
       const errorText = await picsartResponse.text();
       console.error('Picsart API error:', picsartResponse.status, errorText);
-      throw new Error('Background removal failed');
+      throw new Error(`Picsart API ${picsartResponse.status}: ${errorText.slice(0, 200)}`);
     }
 
     const picsartData = await picsartResponse.json();
