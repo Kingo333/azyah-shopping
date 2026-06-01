@@ -139,7 +139,9 @@ The tryon_prompt_hint must tell FluxRT exactly what to preserve from the referen
 
 Do not invent a different garment.
 Do not add unrelated styling.
-Do not change category if uncertain.`;
+Do not change category if uncertain.
+
+If the garment has a visible graphic, logo, text, embroidery, border, trim, stripe, floral print, or other design detail, identify its simple placement using detail_location, detail_type, detail_scale, detail_orientation, and detail_confidence. Use "unknown" when uncertain. The reference image remains the source of truth.`;
 
 const RESPONSE_SCHEMA = {
   type: 'object',
@@ -174,6 +176,11 @@ const RESPONSE_SCHEMA = {
     body_region_to_replace: { type: 'string' },
     body_regions_to_preserve: { type: 'array', items: { type: 'string' } },
     tryon_prompt_hint: { type: 'string' },
+    detail_location: { type: 'string' },
+    detail_type: { type: 'string' },
+    detail_scale: { type: 'string' },
+    detail_orientation: { type: 'string' },
+    detail_confidence: { type: 'number' },
   },
   required: [
     'provider',
@@ -196,7 +203,7 @@ const RESPONSE_SCHEMA = {
 const UNIVERSAL_BASE =
   'Preserve face, identity, body shape, pose, skin tone, lighting, camera angle, and background. Only change the selected garment region.';
 const REFERENCE_TRUTH =
-  'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
+  'The reference image is the source of truth. If any text description conflicts with the reference image, follow the reference image.';
 
 function cleanTextureValue(v: any): string {
   if (v === undefined || v === null) return '';
@@ -230,74 +237,43 @@ function buildTextureSentence(g: any): string {
   return `Preserve the ${parts.join(', ')}.`;
 }
 
-function isMeaningful(v: any, blocked: string[] = []): boolean {
-  const s = cleanTextureValue(v);
-  if (!s) return false;
-  return !blocked.includes(s);
-}
+// Small optional placement sentence — only fires when Gemini is confident about a visible design detail.
+function buildSmallPlacementSentence(
+  g: any,
+  existingHint: string,
+): { sentence: string; skipReason: string } {
+  const conf = typeof g?.detail_confidence === 'number' ? g.detail_confidence : 0;
+  if (conf < 0.6) return { sentence: '', skipReason: 'low_confidence' };
 
-function meaningfulArray(v: any, blocked: string[] = []): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map((x) => cleanTextureValue(x)).filter((s) => s && !blocked.includes(s));
-}
+  const loc = cleanTextureValue(g?.detail_location);
+  const type = cleanTextureValue(g?.detail_type);
+  if (!loc || !type) return { sentence: '', skipReason: 'unknown_location_or_type' };
 
-// Compact, single-sentence guidance — only for detailed garments. ≤250 chars.
-// Returns either the sentence or '' (with a reason captured on the helper-owned ref via console).
-function buildCompactDetailBooster(g: any, existingHint: string): { sentence: string; skipReason: string } {
-  const pattern = cleanTextureValue(g?.pattern_type);
-  const patternPlacement = cleanTextureValue(g?.pattern_placement);
-  const tex = cleanTextureValue(g?.surface_texture);
-  const mat = cleanTextureValue(g?.material_appearance);
-  const accents = meaningfulArray(g?.accent_colors);
-  const visualDetails = meaningfulArray(g?.important_visual_details);
-  const construction = meaningfulArray(g?.construction_details);
-  const mains = meaningfulArray(g?.main_colors);
-  const sleeves = cleanTextureValue(g?.sleeve_length);
-  const neckline = cleanTextureValue(g?.neckline_or_collar);
-  const logoOrText = g?.logo_or_text === true;
+  const scale = cleanTextureValue(g?.detail_scale);
+  const orient = cleanTextureValue(g?.detail_orientation);
 
-  const plainPatterns = ['solid', 'plain', 'none'];
-  const blandTexture = ['smooth'];
-
-  const isDetailed =
-    (pattern && !plainPatterns.includes(pattern)) ||
-    visualDetails.length > 0 ||
-    (tex && !blandTexture.includes(tex)) ||
-    construction.length > 0 ||
-    accents.length > 0 ||
-    !!patternPlacement ||
-    logoOrText;
-
-  if (!isDetailed) return { sentence: '', skipReason: 'plain_or_unknown' };
-
-  // Build compact sentence — only include parts that are meaningful.
-  const segs: string[] = [];
-  const placementBit = [patternPlacement, pattern].filter(Boolean).join(' ').trim();
-  if (placementBit) segs.push(`${placementBit} placement`);
-  if (mains.length) segs.push(`${mains.slice(0, 2).join(' and ')} base color`);
-  if (accents.length) segs.push(`${accents.slice(0, 2).join(' and ')} accents`);
-  if (sleeves && sleeves !== 'unknown') segs.push(sleeves.replace(/_/g, ' '));
-  if (neckline && neckline !== 'unknown') segs.push(`${neckline} neckline`);
-  const textureBit = [tex, mat].filter(Boolean).join(' ').trim();
-  if (textureBit) segs.push(`${textureBit} texture`);
-  if (visualDetails.length) segs.push(visualDetails.slice(0, 2).join(' and '));
-
-  if (segs.length === 0) return { sentence: '', skipReason: 'no_useful_fields' };
-
-  let sentence = `Preserve the ${segs.join(', ')}. Keep details on the garment and follow the reference image.`;
-  if (sentence.length > 250) {
-    sentence = sentence.slice(0, 247);
-    const lastSpace = sentence.lastIndexOf(' ');
-    if (lastSpace > 200) sentence = sentence.slice(0, lastSpace);
-    sentence += '.';
+  let sentence: string;
+  if (type === 'graphic' || type === 'logo' || type === 'text') {
+    const size = scale && scale !== 'unknown' ? `${scale} ` : '';
+    sentence = `Keep the ${size}${type} on the ${loc} and contained within the garment area.`;
+  } else if (type === 'embroidery' || type === 'trim' || type === 'border') {
+    sentence = `Preserve the ${type} placement along the ${loc}.`;
+  } else if (type === 'stripes' || type === 'floral print' || type === 'texture') {
+    const dir = orient && orient !== 'unknown' ? `${orient} ` : '';
+    sentence = `Keep the ${dir}${type} placement on the ${loc}.`;
+  } else {
+    sentence = `Preserve the ${type} placement on the ${loc}.`;
   }
 
-  // Duplication guard — if the existing hint already says "preserve" with same first color, skip.
-  const lowerHint = (existingHint || '').toLowerCase();
-  if (mains[0] && lowerHint.includes('preserve') && lowerHint.includes(mains[0])) {
+  if (sentence.length > 180) {
+    sentence = sentence.slice(0, 178).replace(/\s+\S*$/, '') + '.';
+  }
+
+  // Duplication guard — skip if existing tryon_prompt_hint already mentions both type and location.
+  const lower = (existingHint || '').toLowerCase();
+  if (lower.includes(type) && lower.includes(loc)) {
     return { sentence: '', skipReason: 'duplicate_of_hint' };
   }
-
   return { sentence, skipReason: '' };
 }
 
@@ -305,23 +281,23 @@ function composeFinalPromptHint(g: any, debugCtx?: { wardrobe_item_id?: string }
   const region = (g?.body_region_to_replace || 'garment region').toString();
   const detail = (g?.tryon_prompt_hint || '').toString().trim();
   const texture = buildTextureSentence(g);
-  const { sentence: booster, skipReason } = buildCompactDetailBooster(g, detail);
+  const { sentence: placement, skipReason } = buildSmallPlacementSentence(g, detail);
 
-  const withBooster = [
+  const withPlacement = [
     UNIVERSAL_BASE,
     `Replace only the ${region}.`,
     detail,
     texture,
-    booster,
+    placement,
     REFERENCE_TRUTH,
   ].filter(Boolean).join(' ');
 
-  let finalHint = withBooster;
-  let boosterAdded = !!booster;
-  let lengthSkipReason = skipReason;
+  let finalHint = withPlacement;
+  let added = !!placement;
+  let reason = skipReason;
 
-  // Length guard — drop booster first if over 700 chars.
-  if (finalHint.length > 700 && boosterAdded) {
+  // Length guard — drop placement sentence first if over 700 chars.
+  if (finalHint.length > 700 && added) {
     finalHint = [
       UNIVERSAL_BASE,
       `Replace only the ${region}.`,
@@ -329,19 +305,21 @@ function composeFinalPromptHint(g: any, debugCtx?: { wardrobe_item_id?: string }
       texture,
       REFERENCE_TRUTH,
     ].filter(Boolean).join(' ');
-    boosterAdded = false;
-    lengthSkipReason = 'length_guard_dropped';
+    added = false;
+    reason = 'length_guard_dropped';
   }
 
   console.log('[gemini] composed', {
     wardrobe_item_id: debugCtx?.wardrobe_item_id ?? null,
     hintLen: finalHint.length,
-    boosterAdded,
-    boosterSkipReason: lengthSkipReason,
+    placementAdded: added,
+    placementSkipReason: reason,
   });
 
   return finalHint;
 }
+
+
 
 
 async function upsertAnalysis(row: Record<string, unknown>) {
