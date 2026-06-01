@@ -131,7 +131,10 @@ export function useLiveCamSession({
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
     lastFrameCanvasRef.current = null;
+    lastPromptHashRef.current = null;
+    setPromptCountRef.current = 0;
   }, [localVideoRef]);
+
 
   const callEnd = useCallback(async () => {
     const sid = sessionIdRef.current;
