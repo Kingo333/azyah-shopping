@@ -139,7 +139,9 @@ The tryon_prompt_hint must tell FluxRT exactly what to preserve from the referen
 
 Do not invent a different garment.
 Do not add unrelated styling.
-Do not change category if uncertain.`;
+Do not change category if uncertain.
+
+If the garment has a visible graphic, logo, text, embroidery, border, trim, stripe, floral print, or other design detail, identify its simple placement using detail_location, detail_type, detail_scale, detail_orientation, and detail_confidence. Use "unknown" when uncertain. The reference image remains the source of truth.`;
 
 const RESPONSE_SCHEMA = {
   type: 'object',
