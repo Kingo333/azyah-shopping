@@ -430,7 +430,7 @@ Deno.serve(async (req) => {
       if (twin?.gemini_metadata) {
         const promptHint = (twin.prompt_hint && String(twin.prompt_hint).trim())
           ? twin.prompt_hint
-          : composeFinalPromptHint(twin.gemini_metadata);
+          : composeFinalPromptHint(twin.gemini_metadata, { wardrobe_item_id });
         await upsertAnalysis({
           wardrobe_item_id,
           user_id: item.user_id,
