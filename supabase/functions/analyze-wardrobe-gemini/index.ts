@@ -203,7 +203,7 @@ const RESPONSE_SCHEMA = {
 const UNIVERSAL_BASE =
   'Preserve face, identity, body shape, pose, skin tone, lighting, camera angle, and background. Only change the selected garment region.';
 const REFERENCE_TRUTH =
-  'The reference image is the source of truth. Preserve visible garment details, proportions, hem, cuffs, neckline, pattern placement, material appearance, and silhouette. Do not simplify, redesign, or invent a different garment.';
+  'The reference image is the source of truth. If any text description conflicts with the reference image, follow the reference image.';
 
 function cleanTextureValue(v: any): string {
   if (v === undefined || v === null) return '';
