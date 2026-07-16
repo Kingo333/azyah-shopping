@@ -1,5 +1,8 @@
 project_id = "klwolsopucgswhtdlsps"
 
+[functions.mcp]
+verify_jwt = false
+
 [functions.share-meta]
 verify_jwt = false
 
