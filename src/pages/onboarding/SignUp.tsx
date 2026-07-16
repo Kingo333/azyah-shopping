@@ -53,6 +53,21 @@ export default function SignUp() {
     navigate('/dashboard');
   };
 
+  const nextParam = searchParams.get('next');
+
+  const resolveRedirect = (fallback: string) => {
+    if (!nextParam) return fallback;
+    try {
+      const url = new URL(nextParam, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith('/')) {
+        return url.pathname + url.search;
+      }
+    } catch {
+      // ignore malformed URLs
+    }
+    return fallback;
+  };
+
   // Handle role-based signup, login mode, and referral code from URL params
   useEffect(() => {
     const roleParam = searchParams.get('role');
