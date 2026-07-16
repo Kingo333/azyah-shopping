@@ -301,6 +301,7 @@ function AppContent() {
                       </ErrorBoundary>
                     }
                   />
+                  <Route path="/oauth/consent" element={<OAuthConsent />} />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>
