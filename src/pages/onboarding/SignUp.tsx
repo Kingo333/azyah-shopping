@@ -173,13 +173,13 @@ export default function SignUp() {
           toast.error('Incorrect password. Please try again.');
         } else {
           toast.success('Welcome back!');
-          // Redirect based on role
+          // Redirect based on role, honoring any `next` parameter from OAuth consent
           if (userRole === 'brand') {
-            navigate('/brand-portal');
+            navigate(resolveRedirect('/brand-portal'));
           } else if (userRole === 'retailer') {
-            navigate('/retailer-portal');
+            navigate(resolveRedirect('/retailer-portal'));
           } else {
-            navigate('/dashboard');
+            navigate(resolveRedirect('/dashboard'));
           }
         }
       } else {
