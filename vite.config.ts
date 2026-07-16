@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { execSync } from 'node:child_process';
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // Build identifier injected into the AR HUD so screenshots can be linked
 // back to a specific commit. Hardcoded BUILD_ID was masking which version
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
+    mcpPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {

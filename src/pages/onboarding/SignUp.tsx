@@ -53,6 +53,21 @@ export default function SignUp() {
     navigate('/dashboard');
   };
 
+  const nextParam = searchParams.get('next');
+
+  const resolveRedirect = (fallback: string) => {
+    if (!nextParam) return fallback;
+    try {
+      const url = new URL(nextParam, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith('/')) {
+        return url.pathname + url.search;
+      }
+    } catch {
+      // ignore malformed URLs
+    }
+    return fallback;
+  };
+
   // Handle role-based signup, login mode, and referral code from URL params
   useEffect(() => {
     const roleParam = searchParams.get('role');
@@ -158,13 +173,13 @@ export default function SignUp() {
           toast.error('Incorrect password. Please try again.');
         } else {
           toast.success('Welcome back!');
-          // Redirect based on role
+          // Redirect based on role, honoring any `next` parameter from OAuth consent
           if (userRole === 'brand') {
-            navigate('/brand-portal');
+            navigate(resolveRedirect('/brand-portal'));
           } else if (userRole === 'retailer') {
-            navigate('/retailer-portal');
+            navigate(resolveRedirect('/retailer-portal'));
           } else {
-            navigate('/dashboard');
+            navigate(resolveRedirect('/dashboard'));
           }
         }
       } else {

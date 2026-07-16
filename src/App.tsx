@@ -75,6 +75,7 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import OnboardingCalibration from './pages/OnboardingCalibration';
 import ExtensionAuth from './pages/ExtensionAuth';
+import OAuthConsent from './pages/OAuthConsent';
 import Profile from './pages/Profile';
 
 const queryClient = new QueryClient({
@@ -300,6 +301,7 @@ function AppContent() {
                       </ErrorBoundary>
                     }
                   />
+                  <Route path="/oauth/consent" element={<OAuthConsent />} />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>

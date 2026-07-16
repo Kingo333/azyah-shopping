@@ -1,41 +1,59 @@
-# Fix Enhance — align with working video try-on TNB format
+Add an OAuth-protected MCP server to the app so ChatGPT/Claude/Cursor can connect as the signed-in user and call tools scoped to that user.
 
-## Root cause
-The working `thenewblack-picture` / `thenewblack-video` functions authenticate by passing `?api_key=${THE_NEW_BLACK_API_KEY}` in the **URL query string** and only send the workflow inputs in `FormData`.
+## Background
+- The Supabase OAuth 2.1 server is enabled with dynamic client registration.
+- Authorization path is set to `/oauth/consent`, so the consent page must live at that exact route.
+- This project uses React Router + Vite + Supabase Edge Functions, so the MCP server is authored via `@lovable.dev/mcp-js` and emitted to `supabase/functions/mcp` by the Vite plugin.
 
-The `enhance-wardrobe-item` function still uses the old contract: it appends `email` and `password` to FormData and posts to a clean URL. TNB now rejects this with `400 MISSING_DATA`. The API key itself is fine — it's the format that's wrong.
+## What to build
 
-## Changes (1 file)
+### 1. Dependencies + Vite plugin
+- Install `@lovable.dev/mcp-js` (zod is already present).
+- Add `mcpPlugin()` from `@lovable.dev/mcp-js/stacks/supabase/vite` to `vite.config.ts`.
 
-### `supabase/functions/enhance-wardrobe-item/index.ts`
+### 2. MCP server entry (`src/lib/mcp/index.ts`)
+- Define the server with `defineMcp`.
+- Wire `auth.oauth.issuer` to `https://klwolsopucgswhtdlsps.supabase.co/auth/v1` (built from `import.meta.env.VITE_SUPABASE_PROJECT_ID`).
+- Set a name, title, version, and instructions describing the app’s tools.
+- Register the initial user-scoped tools listed below.
 
-1. **Auth swap** — replace email/password with `api_key` in URL, mirroring `thenewblack-picture`:
-   ```ts
-   const apiKey = Deno.env.get('THE_NEW_BLACK_API_KEY');
-   if (!apiKey) throw new Error('THE_NEW_BLACK_API_KEY not configured');
+### 3. Initial user-scoped tools (`src/lib/mcp/tools/`)
+Each tool is a default-exported `defineTool` that receives the validated input and a `ToolContext`. It forwards the caller’s Supabase access token via a `createClient` instance so RLS runs as that user. No tool takes a `user_id` from input.
 
-   const formData = new FormData();
-   formData.append('image', item.image_url);
-   formData.append('type', clothingType);
+- `list_wardrobe_items` — list the caller’s wardrobe items (read-only).
+- `add_wardrobe_item` — add a wardrobe item by URL or public item ID.
+- `list_liked_products` — list products the caller liked.
+- `list_wishlist_items` — list products the caller wishlisted.
+- `list_user_outfits` — list outfits created by the caller.
+- `get_user_profile` — return the caller’s public profile metadata (no sensitive fields).
 
-   const newBlackResponse = await fetch(
-     `https://thenewblack.ai/api/1.1/wf/image-to-ghost?api_key=${apiKey}`,
-     { method: 'POST', body: formData }
-   );
-   ```
-   Remove the `THE_NEW_BLACK_EMAIL` / `THE_NEW_BLACK_PASSWORD` env reads entirely.
+### 4. Consent route (`/oauth/consent`)
+- Add a new `OAuthConsent` page at `src/pages/OAuthConsent.tsx`.
+- Read `authorization_id` from the query string.
+- If the user is not signed in, redirect to `/onboarding/signup?mode=login&next=<encoded-consent-url>` and ensure the sign-in/sign-up flow returns the user to the original consent URL after authentication.
+- If signed in, call `supabase.auth.oauth.getAuthorizationDetails(authorization_id)` to load the client/app name and scopes.
+- Render approve/deny buttons; call `supabase.auth.oauth.approveAuthorization` / `denyAuthorization`; navigate to the returned `redirect_url`.
+- Handle loading, error, and expired-authorization states.
+- Register the route in `src/App.tsx` as a public route (no `ProtectedRoute`).
 
-2. **Credit deduction moved to after success** — validate `wardrobe_credits >= 1` up front (return early if not), but only call `deduct_wardrobe_credit` AFTER TNB + Picsart + upload + DB update all succeed. Prevents users losing a credit on a TNB or Picsart failure.
+### 5. Auth redirect preservation
+- Update `OAuthConsent` and the sign-in flow to validate and use a `next` parameter as a same-origin relative path, so users land back on the consent screen after signing in.
 
-3. **Better error surfacing** — include TNB/Picsart HTTP status and response body snippet in the thrown error so the UI toast shows the real reason:
-   ```ts
-   throw new Error(`The New Black API ${newBlackResponse.status}: ${errorText.slice(0, 200)}`);
-   ```
+### 6. Favicon
+- Ensure the app has a favicon at `/favicon.ico` (Lovable’s connector list uses it). If missing, add a simple branded icon.
+
+### 7. Manifest + deploy
+- After code changes, run the MCP manifest extractor to update `.lovable/mcp/manifest.json`.
+- Deploy the `mcp` Edge Function so the live endpoint is available at `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/mcp`.
 
 ## Out of scope
-- No frontend changes (`WardrobeItemDetailModal`, `useEnhanceWardrobeItem` untouched).
-- Picsart step unchanged.
-- No DB / RLS / config.toml changes.
+- No new database tables or RLS changes; tools reuse existing tables and rely on current RLS policies.
+- No public/no-auth MCP variant; the server requires OAuth user identity.
 
-## Verification
-After deploy: click Enhance on a wardrobe item → TNB returns 200 with a ghost-mannequin URL → Picsart removes bg → image saved to `wardrobe-items` bucket → `image_bg_removed_url` updated → 1 wardrobe credit deducted. On any failure, no credit is deducted and the toast shows the upstream status.
+## Acceptance criteria
+- OAuth consent page loads at `/oauth/consent?authorization_id=...`.
+- Unauthenticated users are redirected through sign-in and return to the same consent URL.
+- Approving/denying completes the OAuth flow and redirects to the client app.
+- The MCP manifest lists the tools correctly.
+- The `mcp` Edge Function deploys without errors.
+- Connected clients (ChatGPT/Claude/Cursor) can list tools and call them as the signed-in user.
