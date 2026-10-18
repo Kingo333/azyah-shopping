@@ -1,0 +1,17 @@
+# Cloudflare Worker: fluxrt-orchestrator
+# Secrets are set with `wrangler secret put <NAME>` and never stored here.
+name = "fluxrt-orchestrator"
+main = "src/index.js"
+# CHECK before first deploy: match the compatibility date shown for this Worker
+# in the Cloudflare dashboard (Settings -> Runtime). It was not readable via the API.
+compatibility_date = "2024-09-23"
+workers_dev = true
+# Keep variables already set in the dashboard (e.g. RUNPOD_LB_ENDPOINT_ID).
+keep_vars = true
+
+[vars]
+SESSION_MAX_SECONDS = "300"
+SESSION_CONNECT_TTL_STANDARD = "300"
+SESSION_CONNECT_TTL_PREMIUM = "360"
+PREMIUM_FALLBACK_TO_STANDARD = "true"
+# PREMIUM_RUNPOD_LB_ENDPOINT_ID is added once the JoyAI endpoint exists.
