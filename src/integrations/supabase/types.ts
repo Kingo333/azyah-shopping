@@ -2558,6 +2558,8 @@ export type Database = {
           pod_id: string | null
           started_at: string
           status: string
+          tier: string
+          tier_served: string | null
           user_id: string
           ws_url: string | null
         }
@@ -2573,6 +2575,8 @@ export type Database = {
           pod_id?: string | null
           started_at?: string
           status?: string
+          tier?: string
+          tier_served?: string | null
           user_id: string
           ws_url?: string | null
         }
@@ -2588,6 +2592,8 @@ export type Database = {
           pod_id?: string | null
           started_at?: string
           status?: string
+          tier?: string
+          tier_served?: string | null
           user_id?: string
           ws_url?: string | null
         }

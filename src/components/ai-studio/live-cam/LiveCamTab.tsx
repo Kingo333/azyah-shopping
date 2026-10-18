@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Play, Square } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Play, Sparkles, Square } from 'lucide-react';
 import { LiveCamCameraView } from './LiveCamCameraView';
 import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
 import { LiveCamSnapshotButton } from './LiveCamSnapshotButton';
 import { useLiveCamSession } from './useLiveCamSession';
-import type { LiveCamGarmentSelection } from './liveCamTypes';
+import { LIVE_CAM_TIER_CONFIG, isPremiumUiEnabled, isPremiumUnavailable } from './liveCamTier';
+import type { LiveCamGarmentSelection, LiveCamTier } from './liveCamTypes';
+
+const TIER_LABEL: Record<LiveCamTier, string> = { standard: 'Standard', premium: 'Premium HD' };
 
 const supportsLiveCam = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -14,12 +18,18 @@ const supportsLiveCam = (): boolean => {
 export const LiveCamTab: React.FC = () => {
   const [garment, setGarment] = useState<LiveCamGarmentSelection | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [tier, setTier] = useState<LiveCamTier>('standard');
+  const showTierPicker = isPremiumUiEnabled();
+  const navigate = useNavigate();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
   const supported = supportsLiveCam();
 
-  const { status, errorMessage, latencyMs, session, start, stop, redrawLastFrame } = useLiveCamSession({
+  const {
+    status, errorMessage, errorCode, notice, latencyMs, session, activeTier, start, stop, redrawLastFrame,
+  } = useLiveCamSession({
     garment,
+    tier: showTierPicker ? tier : 'standard',
     localVideoRef,
     remoteCanvasRef,
   });
@@ -51,6 +61,14 @@ export const LiveCamTab: React.FC = () => {
   const isRunning = status === 'running';
   const isStarting = status === 'starting' || status === 'warming';
   const isWarming = status === 'warming';
+  const servedTier: LiveCamTier = session?.tierServed ?? activeTier;
+  const fellBack = !!session && session.tier !== session.tierServed;
+  const warmingLabel = LIVE_CAM_TIER_CONFIG[servedTier].warmupLabel;
+
+  const startStandardInstead = () => {
+    setTier('standard');
+    void start('standard');
+  };
 
   return (
     <div className="space-y-4">
@@ -59,6 +77,47 @@ export const LiveCamTab: React.FC = () => {
         onChange={setGarment}
         disabled={isRunning || isStarting}
       />
+
+      {showTierPicker && (
+        <div className="space-y-1">
+          <div
+            role="radiogroup"
+            aria-label="Live try-on quality"
+            className="grid grid-cols-2 gap-2"
+          >
+            {(['standard', 'premium'] as LiveCamTier[]).map((t) => {
+              const selected = tier === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setTier(t)}
+                  disabled={isRunning || isStarting}
+                  className={`h-10 px-3 rounded-lg text-sm flex items-center justify-center gap-1.5 border transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                    selected
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {t === 'premium' && <Sparkles className="h-4 w-4" />}
+                  {TIER_LABEL[t]}
+                  {t === 'premium' && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide ${
+                        selected ? 'bg-white/20' : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      Beta
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <LiveCamCameraView
         localVideoRef={localVideoRef}
@@ -73,6 +132,12 @@ export const LiveCamTab: React.FC = () => {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs">
           <StatusBadge status={status} />
+          {(isRunning || isStarting) && (
+            <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{TIER_LABEL[servedTier]}</span>
+          )}
+          {fellBack && (isRunning || isStarting) && (
+            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Running on Standard</span>
+          )}
           {isRunning && latencyMs !== null && (
             <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{latencyMs} ms</span>
           )}
@@ -89,7 +154,7 @@ export const LiveCamTab: React.FC = () => {
               className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95"
             >
               {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {isWarming ? 'Warming up GPU… up to 3 min' : isStarting ? 'Spinning up GPU…' : 'Start Live Try-On'}
+              {isWarming ? warmingLabel : isStarting ? 'Spinning up GPU…' : 'Start Live Try-On'}
             </button>
           ) : (
             <button
@@ -104,7 +169,37 @@ export const LiveCamTab: React.FC = () => {
         </div>
       </div>
 
-      {status === 'failed' && errorMessage && (
+      {notice && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm p-3">{notice}</div>
+      )}
+
+      {status === 'failed' && isPremiumUnavailable(errorCode) && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3 flex items-center justify-between gap-2">
+          <span>Premium HD is coming soon.</span>
+          <button
+            type="button"
+            onClick={startStandardInstead}
+            className="px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs hover:opacity-95"
+          >
+            Start Standard instead
+          </button>
+        </div>
+      )}
+
+      {status === 'failed' && errorCode === 'premium_required' && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3 flex items-center justify-between gap-2">
+          <span>Premium HD is included with Azyah Premium.</span>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/upgrade')}
+            className="px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs hover:opacity-95"
+          >
+            Upgrade
+          </button>
+        </div>
+      )}
+
+      {status === 'failed' && errorMessage && !isPremiumUnavailable(errorCode) && errorCode !== 'premium_required' && (
         <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm p-3 flex items-center justify-between gap-2">
           <span>{errorMessage}</span>
           <button

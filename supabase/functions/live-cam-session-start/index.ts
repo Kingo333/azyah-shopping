@@ -1,6 +1,7 @@
 // Live Cam: start a FluxRT session via the Worker orchestrator.
 // Auth required. Resolves user_id from JWT; ignores any client-sent user_id.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { decidePremiumAccess, parseAccessMode, parseTier, type LiveCamTier } from './tier.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,8 @@ const DEFAULT_WORKER_URL = 'https://fluxrt-orchestrator.abdullahiking33.workers.
 interface StartBody {
   garment_id: string;
   garment_source: 'product' | 'event_brand_product' | 'wardrobe_item';
+  /** Optional, defaults to 'standard'. */
+  tier?: unknown;
 }
 
 const ALLOWED_SOURCES = new Set(['product', 'event_brand_product', 'wardrobe_item']);
@@ -44,6 +47,35 @@ Deno.serve(async (req) => {
       return json({ error: 'Invalid payload' }, 400);
     }
 
+    const tier = parseTier(body.tier);
+    if (!tier) {
+      return json({ error: 'Invalid tier', code: 'invalid_tier' }, 400);
+    }
+
+    // Premium access switch: all | premium_only | off. Unknown or missing blocks Premium.
+    const access = await decidePremiumAccess(
+      tier,
+      parseAccessMode(Deno.env.get('LIVE_CAM_PREMIUM_ACCESS')),
+      async () => {
+        // Service role so the check cannot be influenced by the caller.
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (!serviceKey) return null; // fail closed
+        const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
+        const { data } = await admin
+          .from('profiles')
+          .select('is_premium, premium_expires_at')
+          .eq('id', userId)
+          .maybeSingle();
+        return data ?? null;
+      },
+    );
+    if (!access.allowed) {
+      const message = access.code === 'premium_required'
+        ? 'Premium HD needs an Azyah Premium subscription.'
+        : 'Premium HD is coming soon.';
+      return json({ error: message, code: access.code }, 403);
+    }
+
     // Read-only access check using caller JWT — existing RLS enforces access.
     const sourceTable =
       body.garment_source === 'product'
@@ -70,6 +102,7 @@ Deno.serve(async (req) => {
         garment_id: body.garment_id,
         garment_source: body.garment_source,
         status: 'starting',
+        tier,
       })
       .select('id')
       .single();
@@ -93,6 +126,7 @@ Deno.serve(async (req) => {
     let gpuUsed: string | null = null;
     let cloudUsed: string | null = null;
     let attempts: unknown = null;
+    let tierServed: LiveCamTier = 'standard';
     try {
       const upstream = await fetch(`${orchestratorUrl.replace(/\/$/, '')}/sessions/start`, {
         method: 'POST',
@@ -100,7 +134,7 @@ Deno.serve(async (req) => {
           'Authorization': `Bearer ${orchestratorKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId, garment_id: body.garment_id }),
+        body: JSON.stringify({ user_id: userId, garment_id: body.garment_id, tier }),
       });
       const text = await upstream.text();
       let parsed: any = null;
@@ -119,6 +153,12 @@ Deno.serve(async (req) => {
           })
           .eq('id', session.id);
 
+        if (errCode === 'premium_not_configured') {
+          return json({
+            error: 'Premium HD is coming soon.',
+            code: 'premium_not_configured',
+          }, 503);
+        }
         if (errCode === 'runpod_no_capacity') {
           return json({
             error: 'All GPUs are temporarily unavailable, please try again in a minute.',
@@ -142,6 +182,8 @@ Deno.serve(async (req) => {
       gpuUsed = (parsed.gpu_used as string) ?? null;
       cloudUsed = (parsed.cloud_used as string) ?? null;
       attempts = parsed.attempts ?? null;
+      // Old Workers don't send tier_served; they only ever served Standard.
+      tierServed = parseTier(parsed.tier_served) ?? 'standard';
 
       if (!wsUrl) {
         await supabase
@@ -189,11 +231,11 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('live_cam_sessions')
-      .update({ pod_id: podId, ws_url: wsUrl, status: 'running', gpu_used: gpuUsed, cloud_used: cloudUsed, attempts })
+      .update({ pod_id: podId, ws_url: wsUrl, status: 'running', gpu_used: gpuUsed, cloud_used: cloudUsed, attempts, tier_served: tierServed })
       .eq('id', session.id);
 
 
-    return json({ session_id: session.id, ws_url: wsUrl, pod_id: podId });
+    return json({ session_id: session.id, ws_url: wsUrl, pod_id: podId, tier, tier_served: tierServed });
   } catch (e: any) {
     return json({ error: 'Server error', message: e?.message ?? String(e) }, 500);
   }
