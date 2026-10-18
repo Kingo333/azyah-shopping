@@ -121,87 +121,26 @@ export function usePremium(): PremiumStatus {
 }
 
 /**
- * Update user's premium status in profiles table
- * This is called after a successful IAP purchase
+ * Wait until the server has recorded premium for this user.
+ *
+ * Premium is granted only by the server (RevenueCat / Stripe webhooks using the
+ * service role). The database rejects premium writes from the app, so after a
+ * purchase or restore we poll until the webhook has landed.
  */
-export async function updatePremiumStatus(
+export async function waitForServerPremium(
   userId: string,
-  isPremium: boolean,
-  planType: 'monthly' | 'yearly' | null,
-  expiresAt: Date | null
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
+  timeoutMs = 15_000,
+  intervalMs = 1_500,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const { data } = await supabase
       .from('profiles')
-      .update({
-        is_premium: isPremium,
-        plan_type: planType,
-        premium_expires_at: expiresAt?.toISOString() ?? null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Error updating premium status:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error('Unexpected error updating premium status:', err);
-    return { 
-      success: false, 
-      error: err instanceof Error ? err.message : 'Unknown error' 
-    };
+      .select('is_premium')
+      .eq('id', userId)
+      .maybeSingle();
+    if (data?.is_premium) return true;
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
-}
-
-/**
- * Also update the subscriptions table for consistency
- * Note: This only writes non-sensitive fields. Apple transaction IDs are 
- * written by the RevenueCat webhook (service role) for security.
- */
-export async function syncSubscriptionRecord(
-  userId: string,
-  planType: 'monthly' | 'yearly',
-  expiresAt: Date | null
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Only write non-sensitive subscription fields from client
-    // Sensitive payment IDs (apple_transaction_id, etc.) are written 
-    // by RevenueCat webhook using service role
-    const { error } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: userId,
-        plan: planType,
-        plan_tier: planType,
-        status: 'active',
-        currency: 'AED',
-        price_cents: planType === 'yearly' ? 20000 : 3000,
-        current_period_end: expiresAt?.toISOString() ?? null,
-        features_granted: {
-          ugc_collaboration: true,
-          ai_tryon_limit: 10,
-          early_access: true,
-          premium_support: true
-        },
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (error) {
-      console.error('Error syncing subscription record:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error('Unexpected error syncing subscription:', err);
-    return { 
-      success: false, 
-      error: err instanceof Error ? err.message : 'Unknown error' 
-    };
-  }
+  return false;
 }
