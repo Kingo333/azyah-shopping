@@ -15,6 +15,7 @@ const STATUS_NOTICES: Record<string, string> = {
   waiting_face: 'Face the camera to start the try-on.',
   no_person: 'No one in frame. Step into view.',
   session_reset: 'Refreshing the try-on…',
+  queued: 'Waiting for a free Premium GPU…',
 };
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
