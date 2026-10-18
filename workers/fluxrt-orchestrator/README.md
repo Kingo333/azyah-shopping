@@ -45,6 +45,22 @@ are still accepted as Standard.
 | unset | `true` | Standard endpoint, `tier_served: "standard"` |
 | unset | not `true` | 503 `premium_not_configured` |
 
+## One endpoint, engine switched on RunPod (current plan)
+
+The GPU image in `Kingo333/fluxrt-serverless` (`livecam-dual-v1`) runs FluxRT or
+JoyAI depending on `LIVECAM_ENGINE` on the RunPod endpoint (see that repo's
+`LIVECAM_ENGINES.md`). Both engines accept Standard and Premium tokens, so the
+Worker needs no code change to flip:
+
+| RunPod endpoint runs | Worker setting | What shoppers see |
+|---|---|---|
+| FluxRT | `PREMIUM_FALLBACK_TO_STANDARD=true`, `PREMIUM_RUNPOD_LB_ENDPOINT_ID` empty | Premium requests run FluxRT with a "Running on Standard" badge |
+| JoyAI | `PREMIUM_RUNPOD_LB_ENDPOINT_ID` = **the same endpoint ID** as `RUNPOD_LB_ENDPOINT_ID` | Premium requests show Premium HD (300 s warm-up label); Standard requests also run JoyAI but are labeled Standard |
+
+When JoyAI is on, keep at least one active worker or warm it with
+`POST /admin/load {"tier":"premium"}`. A cold JoyAI start can exceed the app's
+3-minute Standard warm-up timeout.
+
 ## Env
 
 | Name | Kind | Notes |
@@ -53,7 +69,7 @@ are still accepted as Standard.
 | RUNPOD_API_KEY | secret | Injected into upstream requests |
 | SESSION_SIGNING_SECRET | secret | **Required.** Must equal the GPU workers' value. No fallback. |
 | RUNPOD_LB_ENDPOINT_ID | var | Standard (FluxRT) endpoint |
-| PREMIUM_RUNPOD_LB_ENDPOINT_ID | var | Premium (JoyAI) endpoint, empty for now |
+| PREMIUM_RUNPOD_LB_ENDPOINT_ID | var | Premium endpoint. Empty while FluxRT runs; the same ID as `RUNPOD_LB_ENDPOINT_ID` while the endpoint runs JoyAI |
 | PREMIUM_FALLBACK_TO_STANDARD | var | `true` while testing |
 | SESSION_MAX_SECONDS | var | 300 |
 | SESSION_CONNECT_TTL_STANDARD / _PREMIUM | var | 300 / 360 |

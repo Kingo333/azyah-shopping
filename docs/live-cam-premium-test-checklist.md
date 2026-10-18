@@ -40,3 +40,10 @@ service role / webhook, not from the app).
 - [ ] `await supabase.from('subscriptions').insert({ user_id: user.id, status: 'active', current_period_end: '2030-01-01' })` → error.
 - [ ] Editing other profile fields (name, avatar) still works.
 - [ ] A sandbox purchase/restore on iOS still activates Premium (via the RevenueCat webhook) within a few seconds.
+
+## Engine flip on the RunPod endpoint (fluxrt-serverless `livecam-dual-v1`)
+- [ ] Endpoint image `livecam-dual-v1-<sha>`, `LIVECAM_ENGINE=fluxrt`, 48 GB GPU → Standard behaves exactly as before.
+- [ ] Flip: `LIVECAM_ENGINE=joyai`, 32 GB PRO GPU, `azyah-joyai` volume attached, Worker `PREMIUM_RUNPOD_LB_ENDPOINT_ID` = same endpoint ID.
+- [ ] Warm it (`POST /admin/load {"tier":"premium"}`), then Premium HD → frames stream at 480×840, no "Running on Standard" badge.
+- [ ] Session stops at 5 minutes with the limit message.
+- [ ] Flip back: `LIVECAM_ENGINE=fluxrt`, 48 GB GPU, clear `PREMIUM_RUNPOD_LB_ENDPOINT_ID` → Standard works; Premium shows the badge again.
