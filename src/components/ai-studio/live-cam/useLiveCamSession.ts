@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
-import { buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
+import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
+import { LIVE_CAM_TIER_CONFIG, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
   LiveCamStatus,
+  LiveCamTier,
 } from './liveCamTypes';
 
-const TARGET_WIDTH = 288;
-const TARGET_HEIGHT = 512;
-const FPS_CAP = 12;
-const STARTING_TIMEOUT_MS = 180_000;
+// Messages for the optional `status` frames a GPU worker may send.
+const STATUS_NOTICES: Record<string, string> = {
+  waiting_face: 'Face the camera to start the try-on.',
+  no_person: 'No one in frame. Step into view.',
+  session_reset: 'Refreshing the try-on…',
+  queued: 'Waiting for a free Premium GPU…',
+};
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
@@ -36,6 +41,8 @@ type SetPromptReason =
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
+  /** Tier to request when start() is called without an override. Defaults to standard. */
+  tier?: LiveCamTier;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
@@ -43,9 +50,15 @@ interface UseLiveCamSessionArgs {
 interface UseLiveCamSessionReturn {
   status: LiveCamStatus;
   errorMessage: string | null;
+  /** Machine-readable error code from the server, e.g. premium_required. */
+  errorCode: string | null;
+  /** Short live hint from the GPU worker (e.g. "No one in frame"). */
+  notice: string | null;
   latencyMs: number | null;
   session: LiveCamSessionInfo | null;
-  start: () => Promise<void>;
+  /** Tier the current/last start used (after any override). */
+  activeTier: LiveCamTier;
+  start: (tierOverride?: LiveCamTier) => Promise<void>;
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
 }
@@ -75,11 +88,17 @@ function base64ToBlob(b64: string, mime = 'image/jpeg'): Blob {
 
 export function useLiveCamSession({
   garment,
+  tier = 'standard',
   localVideoRef,
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [activeTier, setActiveTier] = useState<LiveCamTier>(tier);
+  // Settings for the tier actually being served; read inside frame callbacks.
+  const cfgRef = useRef<LiveCamTierConfig>(LIVE_CAM_TIER_CONFIG.standard);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [session, setSession] = useState<LiveCamSessionInfo | null>(null);
 
@@ -97,6 +116,9 @@ export function useLiveCamSession({
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
   const lastPromptHashRef = useRef<string | null>(null);
+  // Mid-session garment swap (no reconnect). Set while a session is running.
+  const swapGarmentRef = useRef<((next: LiveCamGarmentSelection) => Promise<void>) | null>(null);
+  const activeGarmentIdRef = useRef<string | null>(null);
   const setPromptCountRef = useRef<number>(0);
 
 
@@ -133,6 +155,8 @@ export function useLiveCamSession({
     lastFrameCanvasRef.current = null;
     lastPromptHashRef.current = null;
     setPromptCountRef.current = 0;
+    swapGarmentRef.current = null;
+    activeGarmentIdRef.current = null;
   }, [localVideoRef]);
 
 
@@ -175,8 +199,9 @@ export function useLiveCamSession({
       if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
 
       // Pin visible canvas bitmap to FluxRT output dimensions; do not mutate per frame.
-      if (canvas.width !== TARGET_WIDTH) canvas.width = TARGET_WIDTH;
-      if (canvas.height !== TARGET_HEIGHT) canvas.height = TARGET_HEIGHT;
+      const { captureWidth, captureHeight } = cfgRef.current;
+      if (canvas.width !== captureWidth) canvas.width = captureWidth;
+      if (canvas.height !== captureHeight) canvas.height = captureHeight;
 
       // Contain-fit on a black backdrop — full frame visible, centered, never cropped.
       ctx.fillStyle = '#000';
@@ -210,8 +235,9 @@ export function useLiveCamSession({
     if (!cache || !canvas || cache.width === 0 || cache.height === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    if (canvas.width !== TARGET_WIDTH) canvas.width = TARGET_WIDTH;
-    if (canvas.height !== TARGET_HEIGHT) canvas.height = TARGET_HEIGHT;
+    const { captureWidth, captureHeight } = cfgRef.current;
+    if (canvas.width !== captureWidth) canvas.width = captureWidth;
+    if (canvas.height !== captureHeight) canvas.height = captureHeight;
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     const scale = Math.min(canvas.width / cache.width, canvas.height / cache.height);
@@ -222,7 +248,13 @@ export function useLiveCamSession({
     ctx.drawImage(cache, dx, dy, dw, dh);
   }, [remoteCanvasRef]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (tierOverride?: LiveCamTier) => {
+    const requestedTier: LiveCamTier = tierOverride ?? tier;
+    setActiveTier(requestedTier);
+    setErrorCode(null);
+    setNotice(null);
+    // Until the server says otherwise, use the requested tier's settings.
+    cfgRef.current = LIVE_CAM_TIER_CONFIG[requestedTier];
     if (!garment) {
       setErrorMessage('Select a garment first.');
       setStatus('failed');
@@ -241,24 +273,36 @@ export function useLiveCamSession({
     latencyEmaRef.current = null;
     lastSendTsRef.current = null;
 
+    const warmupTimeoutMs = LIVE_CAM_TIER_CONFIG[requestedTier].warmupTimeoutMs;
     startTimeoutRef.current = window.setTimeout(() => {
-      setErrorMessage('GPU pod took too long to start. Please retry.');
+      setErrorMessage('GPU took too long to start. Please retry.');
       setStatus('failed');
       cleanupLocal();
-    }, STARTING_TIMEOUT_MS);
+    }, warmupTimeoutMs);
 
     try {
       // 1. Provision the pod via edge function.
       const { data, error } = await supabase.functions.invoke<{
         session_id: string; ws_url: string; pod_id: string | null;
+        tier?: LiveCamTier; tier_served?: LiveCamTier;
       }>('live-cam-session-start', {
-        body: { garment_id: garment.id, garment_source: garment.source },
+        body: { garment_id: garment.id, garment_source: garment.source, tier: requestedTier },
       });
       if (error || !data?.ws_url || !data?.session_id) {
-        throw new Error(error?.message || 'Failed to start session');
+        const details = error ? await readFunctionError(error) : { code: null, message: null };
+        if (details.code) setErrorCode(details.code);
+        throw new Error(details.message || 'Failed to start session');
       }
+      const tierServed: LiveCamTier = data.tier_served === 'premium' ? 'premium' : 'standard';
+      cfgRef.current = LIVE_CAM_TIER_CONFIG[tierServed];
       sessionIdRef.current = data.session_id;
-      setSession({ sessionId: data.session_id, podId: data.pod_id, wsUrl: data.ws_url });
+      setSession({
+        sessionId: data.session_id,
+        podId: data.pod_id,
+        wsUrl: data.ws_url,
+        tier: requestedTier,
+        tierServed,
+      });
 
       // 2. Acquire camera.
       const video = localVideoRef.current;
@@ -274,7 +318,7 @@ export function useLiveCamSession({
 
       // 4. Open WS with cold-start retry-with-backoff (FluxRT pods need 60–180s to warm up).
       setStatus('warming');
-      const deadline = Date.now() + STARTING_TIMEOUT_MS - 5_000;
+      const deadline = Date.now() + warmupTimeoutMs - 5_000;
       let ws: WebSocket | null = null;
       let attemptNum = 0;
       while (true) {
@@ -330,6 +374,13 @@ export function useLiveCamSession({
       const description = garment.description?.trim();
       const hint = garment.promptHint?.trim();
       const finalPrompt = buildTryOnPrompt({
+        category: garment.category,
+        name,
+        description,
+        promptHint: hint,
+      });
+      // Short edit instruction for JoyAI (Premium HD); FluxRT ignores it.
+      const finalInstruction = buildTryOnInstruction({
         category: garment.category,
         name,
         description,
@@ -401,9 +452,10 @@ export function useLiveCamSession({
         }
         setStatus('running');
 
+        const { captureWidth, captureHeight, fpsCap } = cfgRef.current;
         const cap = document.createElement('canvas');
-        cap.width = TARGET_WIDTH;
-        cap.height = TARGET_HEIGHT;
+        cap.width = captureWidth;
+        cap.height = captureHeight;
         captureCanvasRef.current = cap;
         const capCtx = cap.getContext('2d');
         if (!capCtx) {
@@ -413,13 +465,13 @@ export function useLiveCamSession({
           return;
         }
 
-        const intervalMs = Math.floor(1000 / FPS_CAP);
+        const intervalMs = Math.floor(1000 / fpsCap);
         frameTimerRef.current = window.setInterval(() => {
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
           if (wsNow2.bufferedAmount > 2_000_000) return;
-          capCtx.drawImage(v, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+          capCtx.drawImage(v, 0, 0, captureWidth, captureHeight);
           cap.toBlob(
             async (blob) => {
               if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
@@ -487,7 +539,7 @@ export function useLiveCamSession({
             if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
               throw new Error('WebSocket closed before prompt could be sent');
             }
-            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt, instruction: finalInstruction }));
             await ackPrompt;
             lastPromptHashRef.current = promptHash;
             setPromptCountRef.current += 1;
@@ -501,6 +553,7 @@ export function useLiveCamSession({
           }
 
 
+          activeGarmentIdRef.current = garment.id;
           startFrameLoop();
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -510,6 +563,32 @@ export function useLiveCamSession({
           void callEnd();
           sessionIdRef.current = null;
         }
+      };
+
+      // Swap the garment on the open socket: new reference image + prompt,
+      // acknowledged like the initial handshake. No reconnect, no new GPU.
+      swapGarmentRef.current = async (next: LiveCamGarmentSelection) => {
+        const wsSwap = wsRef.current;
+        if (!wsSwap || wsSwap.readyState !== WebSocket.OPEN) throw new Error('Session is not running');
+        const resp = await fetch(next.referenceImageUrl, { mode: 'cors' });
+        if (!resp.ok) throw new Error(`Reference image fetch failed (${resp.status})`);
+        const nextRef = arrayBufferToBase64(await resp.arrayBuffer());
+        const meta = {
+          category: next.category,
+          name: next.label?.trim(),
+          description: next.description?.trim(),
+          promptHint: next.promptHint?.trim(),
+        };
+        const ackRef = waitForAck('set_reference_image');
+        wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
+        await ackRef;
+        const nextPrompt = buildTryOnPrompt(meta);
+        const ackPrompt = waitForAck('set_prompt');
+        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta) }));
+        await ackPrompt;
+        lastPromptHashRef.current = hashPrompt(nextPrompt);
+        activeGarmentIdRef.current = next.id;
+        console.log(`[live-cam] garment swapped id=${next.id} category=${next.category ?? ''}`);
       };
 
       // 8. Bind message handler — handle warming | ready | ack | error | frame.
@@ -533,7 +612,20 @@ export function useLiveCamSession({
         if (t === 'ready') {
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
+          setNotice((n) => (n === null ? n : null));
           void renderRemoteFrame(parsed.frame_b64);
+        } else if (t === 'status' && typeof parsed.status === 'string') {
+          if (parsed.status === 'session_limit') {
+            // GPU worker ended the session at the time cap; the socket closes next.
+            setErrorMessage(null);
+            setNotice('Session ended: 5-minute limit reached. Start again to continue.');
+            setStatus('ended');
+            cleanupLocal();
+            void callEnd();
+            sessionIdRef.current = null;
+          } else {
+            setNotice(STATUS_NOTICES[parsed.status] ?? null);
+          }
         } else if (t === 'error') {
           const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
           rejectAllPending(msg);
@@ -561,7 +653,23 @@ export function useLiveCamSession({
       await callEnd();
       sessionIdRef.current = null;
     }
-  }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame]);
+  }, [garment, tier, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame]);
+
+  // Picking a different garment while running swaps it in place.
+  useEffect(() => {
+    if (status !== 'running' || !garment) return;
+    const active = activeGarmentIdRef.current;
+    const swap = swapGarmentRef.current;
+    if (!swap || active === null || active === garment.id) return;
+    let cancelled = false;
+    setNotice('Switching garment…');
+    swap(garment)
+      .then(() => { if (!cancelled) setNotice(null); })
+      .catch((e: unknown) => {
+        if (!cancelled) setNotice(`Could not switch garment: ${e instanceof Error ? e.message : String(e)}`);
+      });
+    return () => { cancelled = true; };
+  }, [garment, status]);
 
   // Auto-cleanup on unmount + on logout + on page unload + on tab hide.
   useEffect(() => {
@@ -625,5 +733,16 @@ export function useLiveCamSession({
     };
   }, [cleanupLocal, callEnd, stop]);
 
-  return { status, errorMessage, latencyMs, session, start, stop, redrawLastFrame };
+  return {
+    status,
+    errorMessage,
+    errorCode,
+    notice,
+    latencyMs,
+    session,
+    activeTier,
+    start,
+    stop,
+    redrawLastFrame,
+  };
 }

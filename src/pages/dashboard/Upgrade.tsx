@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, ChevronDown, Star, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
-import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
+import { usePremium, waitForServerPremium } from '@/hooks/usePremium';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   isNativeIOS, 
@@ -143,19 +143,15 @@ export default function Upgrade() {
           return;
         }
 
-        const planType = selectedPlan as 'monthly' | 'yearly';
-        const expiresAt = result.expiresAt || 
-          new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
-
-        const updateResult = await updatePremiumStatus(user.id, true, planType, expiresAt);
-        if (!updateResult.success) {
-          console.error('Failed to update premium status:', updateResult.error);
-        }
-
-        await syncSubscriptionRecord(user.id, planType, expiresAt);
+        // Premium is recorded by the RevenueCat webhook (server side). Wait for it.
+        const confirmed = await waitForServerPremium(user.id);
         await refetchPremium();
 
-        toast.success('Azyah Premium activated – enjoy unlimited outfits and salon rewards ✨');
+        if (confirmed) {
+          toast.success('Azyah Premium activated – enjoy unlimited outfits and salon rewards ✨');
+        } else {
+          toast.success('Purchase complete – Premium will appear in a moment.');
+        }
         navigate('/dashboard');
         return;
       } else {
@@ -225,11 +221,8 @@ export default function Upgrade() {
         return;
       }
 
-      const planType: 'monthly' | 'yearly' = 
-        result.activeProductId === PRODUCT_IDS.YEARLY ? 'yearly' : 'monthly';
-
-      await updatePremiumStatus(user.id, true, planType, result.expiresAt || null);
-      await syncSubscriptionRecord(user.id, planType, result.expiresAt || null);
+      // Restores are recorded by the RevenueCat webhook (server side). Wait for it.
+      await waitForServerPremium(user.id);
       await refetchPremium();
 
       toast.success('Premium restored on this device ✅');
