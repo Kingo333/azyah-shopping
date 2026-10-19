@@ -72,10 +72,11 @@ export const LiveCamTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Changing the garment while running swaps it live (no reconnect). */}
       <LiveCamGarmentPicker
         value={garment}
         onChange={setGarment}
-        disabled={isRunning || isStarting}
+        disabled={isStarting}
       />
 
       {showTierPicker && (

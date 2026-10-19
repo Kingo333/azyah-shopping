@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
-import { buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
+import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LIVE_CAM_TIER_CONFIG, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -116,6 +116,9 @@ export function useLiveCamSession({
   const retryAbortRef = useRef<(() => void) | null>(null);
   const abortRef = useRef(false);
   const lastPromptHashRef = useRef<string | null>(null);
+  // Mid-session garment swap (no reconnect). Set while a session is running.
+  const swapGarmentRef = useRef<((next: LiveCamGarmentSelection) => Promise<void>) | null>(null);
+  const activeGarmentIdRef = useRef<string | null>(null);
   const setPromptCountRef = useRef<number>(0);
 
 
@@ -152,6 +155,8 @@ export function useLiveCamSession({
     lastFrameCanvasRef.current = null;
     lastPromptHashRef.current = null;
     setPromptCountRef.current = 0;
+    swapGarmentRef.current = null;
+    activeGarmentIdRef.current = null;
   }, [localVideoRef]);
 
 
@@ -374,6 +379,13 @@ export function useLiveCamSession({
         description,
         promptHint: hint,
       });
+      // Short edit instruction for JoyAI (Premium HD); FluxRT ignores it.
+      const finalInstruction = buildTryOnInstruction({
+        category: garment.category,
+        name,
+        description,
+        promptHint: hint,
+      });
 
       const sleeveInference = inferSleeveLength({
         category: garment.category,
@@ -527,7 +539,7 @@ export function useLiveCamSession({
             if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
               throw new Error('WebSocket closed before prompt could be sent');
             }
-            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt }));
+            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt, instruction: finalInstruction }));
             await ackPrompt;
             lastPromptHashRef.current = promptHash;
             setPromptCountRef.current += 1;
@@ -541,6 +553,7 @@ export function useLiveCamSession({
           }
 
 
+          activeGarmentIdRef.current = garment.id;
           startFrameLoop();
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -550,6 +563,32 @@ export function useLiveCamSession({
           void callEnd();
           sessionIdRef.current = null;
         }
+      };
+
+      // Swap the garment on the open socket: new reference image + prompt,
+      // acknowledged like the initial handshake. No reconnect, no new GPU.
+      swapGarmentRef.current = async (next: LiveCamGarmentSelection) => {
+        const wsSwap = wsRef.current;
+        if (!wsSwap || wsSwap.readyState !== WebSocket.OPEN) throw new Error('Session is not running');
+        const resp = await fetch(next.referenceImageUrl, { mode: 'cors' });
+        if (!resp.ok) throw new Error(`Reference image fetch failed (${resp.status})`);
+        const nextRef = arrayBufferToBase64(await resp.arrayBuffer());
+        const meta = {
+          category: next.category,
+          name: next.label?.trim(),
+          description: next.description?.trim(),
+          promptHint: next.promptHint?.trim(),
+        };
+        const ackRef = waitForAck('set_reference_image');
+        wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
+        await ackRef;
+        const nextPrompt = buildTryOnPrompt(meta);
+        const ackPrompt = waitForAck('set_prompt');
+        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta) }));
+        await ackPrompt;
+        lastPromptHashRef.current = hashPrompt(nextPrompt);
+        activeGarmentIdRef.current = next.id;
+        console.log(`[live-cam] garment swapped id=${next.id} category=${next.category ?? ''}`);
       };
 
       // 8. Bind message handler — handle warming | ready | ack | error | frame.
@@ -615,6 +654,22 @@ export function useLiveCamSession({
       sessionIdRef.current = null;
     }
   }, [garment, tier, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame]);
+
+  // Picking a different garment while running swaps it in place.
+  useEffect(() => {
+    if (status !== 'running' || !garment) return;
+    const active = activeGarmentIdRef.current;
+    const swap = swapGarmentRef.current;
+    if (!swap || active === null || active === garment.id) return;
+    let cancelled = false;
+    setNotice('Switching garment…');
+    swap(garment)
+      .then(() => { if (!cancelled) setNotice(null); })
+      .catch((e: unknown) => {
+        if (!cancelled) setNotice(`Could not switch garment: ${e instanceof Error ? e.message : String(e)}`);
+      });
+    return () => { cancelled = true; };
+  }, [garment, status]);
 
   // Auto-cleanup on unmount + on logout + on page unload + on tab hide.
   useEffect(() => {

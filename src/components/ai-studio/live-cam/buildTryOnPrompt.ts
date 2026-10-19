@@ -169,3 +169,25 @@ export function buildTryOnPrompt(input: BuildTryOnPromptInput): string {
 
   return parts.join(' ');
 }
+
+// Short, Lucy-VTON-style edit instruction for instruction-following video
+// editors (JoyAI). FluxRT ignores it and keeps using the long prompt above.
+const INSTRUCTIONS: Record<TryOnCategory, string> = {
+  tops: 'Substitute the current top with the garment in the reference image.',
+  bottoms: 'Substitute the current pants or skirt with the garment in the reference image.',
+  dresses: 'Substitute the current outfit with the dress in the reference image.',
+  outerwear: 'Put the outerwear from the reference image on the person, over their current outfit.',
+  shoes: 'Substitute the current shoes with the shoes in the reference image.',
+  bags: 'Have the person carry the bag from the reference image.',
+  accessories: 'Put the accessory from the reference image on the person.',
+};
+const INSTRUCTION_FALLBACK = 'Substitute the matching clothing item with the garment in the reference image.';
+const INSTRUCTION_KEEP = "Keep the person's face, body, pose and the background unchanged.";
+
+export function buildTryOnInstruction(input: BuildTryOnPromptInput): string {
+  const cat =
+    normalizeCategory(input.category) ??
+    normalizeCategory(input.name) ??
+    normalizeCategory(input.promptHint);
+  return `${cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK} ${INSTRUCTION_KEEP}`;
+}
