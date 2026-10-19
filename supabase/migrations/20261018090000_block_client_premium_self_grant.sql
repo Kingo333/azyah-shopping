@@ -49,8 +49,7 @@ begin
 end;
 $$;
 
-drop trigger if exists guard_profile_premium_fields on public.profiles;
-create trigger guard_profile_premium_fields
+create or replace trigger guard_profile_premium_fields
   before insert or update on public.profiles
   for each row execute function public.guard_profile_premium_fields();
 
@@ -93,7 +92,6 @@ begin
 end;
 $$;
 
-drop trigger if exists guard_subscription_entitlement_fields on public.subscriptions;
-create trigger guard_subscription_entitlement_fields
+create or replace trigger guard_subscription_entitlement_fields
   before insert or update on public.subscriptions
   for each row execute function public.guard_subscription_entitlement_fields();
