@@ -102,7 +102,6 @@ Deno.serve(async (req) => {
         garment_id: body.garment_id,
         garment_source: body.garment_source,
         status: 'starting',
-        tier,
       })
       .select('id')
       .single();
@@ -110,6 +109,15 @@ Deno.serve(async (req) => {
     if (insertErr || !session) {
       return json({ error: 'Failed to create session', detail: insertErr?.message }, 500);
     }
+
+    // tier / tier_served are written separately and best-effort, so Standard
+    // keeps working even if this function is deployed before the
+    // live_cam_sessions tier migration.
+    const recordTier = async (fields: { tier?: LiveCamTier; tier_served?: LiveCamTier }) => {
+      const { error } = await supabase.from('live_cam_sessions').update(fields).eq('id', session.id);
+      if (error) console.warn('live_cam_sessions tier columns not written', { message: error.message });
+    };
+    await recordTier({ tier });
 
     const orchestratorUrl = Deno.env.get('ORCHESTRATOR_URL');
     const orchestratorKey = Deno.env.get('ORCHESTRATOR_API_KEY');
@@ -231,8 +239,9 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('live_cam_sessions')
-      .update({ pod_id: podId, ws_url: wsUrl, status: 'running', gpu_used: gpuUsed, cloud_used: cloudUsed, attempts, tier_served: tierServed })
+      .update({ pod_id: podId, ws_url: wsUrl, status: 'running', gpu_used: gpuUsed, cloud_used: cloudUsed, attempts })
       .eq('id', session.id);
+    await recordTier({ tier_served: tierServed });
 
 
     return json({ session_id: session.id, ws_url: wsUrl, pod_id: podId, tier, tier_served: tierServed });
