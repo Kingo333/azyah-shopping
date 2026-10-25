@@ -7,6 +7,8 @@ export interface LiveCamTierConfig {
   captureWidth: number;
   captureHeight: number;
   fpsCap: number;
+  /** JPEG quality (0-1) of the camera frames sent to the worker. */
+  jpegQuality: number;
   /** How long to wait for the GPU worker to become ready. */
   warmupTimeoutMs: number;
   warmupLabel: string;
@@ -17,18 +19,65 @@ export const LIVE_CAM_TIER_CONFIG: Record<LiveCamTier, LiveCamTierConfig> = {
     captureWidth: 288,
     captureHeight: 512,
     fpsCap: 12,
+    jpegQuality: 0.7,
     warmupTimeoutMs: 180_000,
     warmupLabel: 'Warming up GPU… up to 3 min',
   },
-  // Placeholders until JoyAI is live: same capture size as Standard.
+  // JoyAI works at 480x840, 24 fps. Smaller frames get upscaled and lose face and garment detail.
   premium: {
-    captureWidth: 288,
-    captureHeight: 512,
-    fpsCap: 12,
+    captureWidth: 480,
+    captureHeight: 840,
+    fpsCap: 24,
+    jpegQuality: 0.85,
     warmupTimeoutMs: 300_000,
     warmupLabel: 'Warming up Premium GPU… this can take a few minutes',
   },
 };
+
+/**
+ * The JoyAI worker's "ready" message says which frames it wants
+ * ({engine: "joyai", input_width, input_height, input_fps, input_jpeg_quality}).
+ * Use them whatever tier was requested, because the endpoint decides the engine.
+ * FluxRT sends no engine field, so its tier config is kept.
+ */
+export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, unknown>): LiveCamTierConfig {
+  if (ready?.engine !== 'joyai') return cfg;
+  const num = (v: unknown, min: number, max: number): number | null =>
+    typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : null;
+  const w = num(ready.input_width, 128, 1920);
+  const h = num(ready.input_height, 128, 1920);
+  const fps = num(ready.input_fps, 1, 30);
+  const q = num(ready.input_jpeg_quality, 0.3, 1);
+  return {
+    ...cfg,
+    captureWidth: w !== null && h !== null ? Math.round(w) : cfg.captureWidth,
+    captureHeight: w !== null && h !== null ? Math.round(h) : cfg.captureHeight,
+    fpsCap: fps ?? cfg.fpsCap,
+    jpegQuality: q ?? cfg.jpegQuality,
+  };
+}
+
+/**
+ * Source rectangle that center-crops a camera frame to the capture aspect ratio,
+ * so a landscape camera isn't squeezed into a portrait frame (faces looked thin).
+ */
+export function coverCropRect(
+  videoWidth: number,
+  videoHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+): { sx: number; sy: number; sw: number; sh: number } {
+  if (videoWidth <= 0 || videoHeight <= 0 || targetWidth <= 0 || targetHeight <= 0) {
+    return { sx: 0, sy: 0, sw: Math.max(0, videoWidth), sh: Math.max(0, videoHeight) };
+  }
+  const target = targetWidth / targetHeight;
+  if (videoWidth / videoHeight > target) {
+    const sw = videoHeight * target;
+    return { sx: (videoWidth - sw) / 2, sy: 0, sw, sh: videoHeight };
+  }
+  const sh = videoWidth / target;
+  return { sx: 0, sy: (videoHeight - sh) / 2, sw: videoWidth, sh };
+}
 
 export const LIVE_CAM_ERROR_CODES = [
   'premium_required',

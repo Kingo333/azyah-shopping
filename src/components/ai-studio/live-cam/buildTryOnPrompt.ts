@@ -184,10 +184,44 @@ const INSTRUCTIONS: Record<TryOnCategory, string> = {
 const INSTRUCTION_FALLBACK = 'Substitute the matching clothing item with the garment in the reference image.';
 const INSTRUCTION_KEEP = "Keep the person's face, body, pose and the background unchanged.";
 
+const INSTRUCTION_FIDELITY =
+  'Match its exact color, pattern, print, logo, fabric and construction details.';
+const MAX_DETAIL_CHARS = 320;
+
+/** Plain, short product text: no HTML, URLs or line breaks, cut at a word boundary. */
+export function cleanProductText(raw: string | null | undefined, maxChars = MAX_DETAIL_CHARS): string {
+  if (!raw) return '';
+  let s = raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (s.length > maxChars) {
+    const cut = s.slice(0, maxChars);
+    const lastSpace = cut.lastIndexOf(' ');
+    s = (lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, '');
+  }
+  return s;
+}
+
+/**
+ * Edit instruction for JoyAI (Premium HD). JoyAI follows prompts that name the
+ * garment's concrete visible features, so the product name and description are
+ * added when the item has them.
+ */
 export function buildTryOnInstruction(input: BuildTryOnPromptInput): string {
   const cat =
     normalizeCategory(input.category) ??
     normalizeCategory(input.name) ??
     normalizeCategory(input.promptHint);
-  return `${cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK} ${INSTRUCTION_KEEP}`;
+  const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
+  const name = cleanProductText(input.name, 120);
+  const description = cleanProductText(input.description);
+  if (name || description) {
+    const label = name ? `The reference garment is the ${name}` : 'The reference garment';
+    parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);
+    parts.push(INSTRUCTION_FIDELITY);
+  }
+  parts.push(INSTRUCTION_KEEP);
+  return parts.join(' ');
 }

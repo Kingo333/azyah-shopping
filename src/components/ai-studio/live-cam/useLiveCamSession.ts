@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
-import { LIVE_CAM_TIER_CONFIG, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
+import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -452,7 +452,7 @@ export function useLiveCamSession({
         }
         setStatus('running');
 
-        const { captureWidth, captureHeight, fpsCap } = cfgRef.current;
+        const { captureWidth, captureHeight, fpsCap, jpegQuality } = cfgRef.current;
         const cap = document.createElement('canvas');
         cap.width = captureWidth;
         cap.height = captureHeight;
@@ -471,7 +471,9 @@ export function useLiveCamSession({
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
           if (wsNow2.bufferedAmount > 2_000_000) return;
-          capCtx.drawImage(v, 0, 0, captureWidth, captureHeight);
+          // Center-crop to the capture aspect instead of stretching the camera frame.
+          const { sx, sy, sw, sh } = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
+          capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
           cap.toBlob(
             async (blob) => {
               if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
@@ -487,7 +489,7 @@ export function useLiveCamSession({
               }
             },
             'image/jpeg',
-            0.7,
+            jpegQuality,
           );
         }, intervalMs);
       };
@@ -610,6 +612,13 @@ export function useLiveCamSession({
         }
 
         if (t === 'ready') {
+          // JoyAI says which frame size, fps and JPEG quality it wants; FluxRT doesn't.
+          const before = cfgRef.current;
+          cfgRef.current = applyEngineHints(before, parsed);
+          if (cfgRef.current !== before) {
+            const c = cfgRef.current;
+            console.log(`[live-cam] engine=joyai capture=${c.captureWidth}x${c.captureHeight} fps=${c.fpsCap} q=${c.jpegQuality}`);
+          }
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
