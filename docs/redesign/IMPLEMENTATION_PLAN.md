@@ -17,6 +17,7 @@ Audit docs, baseline numbers (CURRENT_STATE_AUDIT.md §1), proposed security mig
 | 1.5 Pull the 41 live-only Edge Function sources into git (read-only) | Every deployed function has source | — |
 
 ## Phase 2 — Navigation & shells (frontend only)
+- 2.0 Regression tests for the current Globe (`Explore` tabs Brands/Follow/People/Deals, drawers, `?tab=` deep links) and the hidden Your Fit entry points, before any nav change.
 - 2.1 Lazy-load all routes (`React.lazy` + `Suspense`) — no UI change. *Acceptance:* main chunk < 1 MB; all routes render; tests pass.
 - 2.2 New `ShopperShell` with 4 stable tabs (Discover, Try On, Community, Profile), no auto-hide, desktop rail; old routes redirect (table in INFORMATION_ARCHITECTURE.md). Behind flag `nav_v2` so it can be switched off.
 - 2.3 Make discovery routes public (no guest-mode flag needed); gate only actions (save, follow, post, start live session) with one `RequireAccount` prompt.
@@ -26,7 +27,7 @@ Audit docs, baseline numbers (CURRENT_STATE_AUDIT.md §1), proposed security mig
 ## Phase 3 — Discover & Community
 - 3.1 Discover For You = existing Swipe screen in the new shell.
 - 3.2 Unified Search (products, outfits, people, brands) as a hook + page; bounded queries.
-- 3.3 Globe layers People / Outfits / Brands with server-side country counts (RPC respecting profile visibility); Following as a filter.
+- 3.3 ~~Globe layers~~ Dropped (owner 2026-10-26): Globe stays exactly as today; only its Fit tab is hidden (flag `your_fit`).
 - 3.4 Community feed merging public `fits` and `posts`; Create sheet → Post or Outfit canvas; visibility choice; report/block on every item.
 - 3.5 Hide Feed mock, Forum, FashionFeed, UGC tab, Cart behind flags; redirects.
 *Tests:* search returns each entity type; private fits never appear in feed (RLS test); canvas save → reload → identical layout.

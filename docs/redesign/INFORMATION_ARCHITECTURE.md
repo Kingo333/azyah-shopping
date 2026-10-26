@@ -22,7 +22,7 @@ One loop for shoppers: **see something → try it on → save, share or create w
 ## Discover in detail
 - `/discover` (default **For You**). `?mode=search&q=…`, `?mode=globe&layer=brands|people|outfits&country=AE`.
 - **Search** covers products, outfits (public fits/posts), people, brands, in one result page with filter chips. One search implementation (today's `GlobalSearch.tsx` logic moved into a hook).
-- **Globe** has 3 layers only: **People** (opt-in public profiles with a country), **Outfits** (public outfits by creator country), **Brands** (by `brands.country_code`). Tapping a country opens a sheet with cards and clear actions (Follow, View outfit, Shop brand, Try On). Following/Your Fit/Deals tabs are removed from the globe: Following becomes a filter chip ("People I follow"), Your Fit is hidden behind a flag (owner: no longer needed), Deals goes behind a flag.
+- **Globe** stays **exactly as it works today** (owner decision 2026-10-26): the current `Explore` page with tabs Brands / Follow / People / Deals, pins, country drawer, Following and Deals drawers, search and Skip to Feed. Only the Fit tab is hidden. No layer rework.
 - Globe stays lazily loaded (already its own 166 KB chunk) and never requests location permission; country comes from the profile field the user set.
 
 ## Try On in detail
@@ -49,7 +49,7 @@ One loop for shoppers: **see something → try it on → save, share or create w
 | Old | New |
 |---|---|
 | `/swipe` | `/discover` (redirect, keep query) |
-| `/explore?tab=brands|shoppers|following` | `/discover?mode=globe&layer=brands|people|people&following=1` |
+| `/explore`, `/explore?tab=…` | unchanged (Globe kept as is); `?tab=your-fit` → `?tab=brands` |
 | `/dashboard`, `/favorites`, `/wishlist`, `/likes` | `/profile` sections (redirect) |
 | `/dress-me*` | unchanged paths (canvas and wardrobe stay); entry moves to Community/Profile |
 | `/fashion-feed`, `/feed`, `/forum` | `/community` |
@@ -65,7 +65,7 @@ Shopper
 ├─ Discover (/discover)
 │   ├─ For You (swipe / grid)        → Product sheet → Try On | Save | Share | Brand page
 │   ├─ Search (products, outfits, people, brands)
-│   └─ Globe (People | Outfits | Brands) → Country sheet → cards
+│   └─ Globe (today's Explore: Brands | Follow | People | Deals) → Country drawer
 ├─ Try On (/try-on)
 │   ├─ Live (default)  → session → swap garment → snapshot/share
 │   ├─ Photo
