@@ -1,6 +1,6 @@
 # Session State
 
-_Last updated: 2026-10-26 (session 2: security fix APPLIED to live; Phase 2 next)_
+_Last updated: 2026-10-27 (session 2 end). **Start with `docs/redesign/AUDIT_CHECKLIST.md`**: every item, its status and what's left._
 
 ## Deployed / live
 - App `main` at `228dcdf` (Live Cam JoyAI full-size frames, PR #2). Vercel auto-deploys `main`.
@@ -65,6 +65,12 @@ The session-2 kickoff message left all five blank.
 - Advisors after all three: anon SECURITY DEFINER 155 → 150, no new lints, no ERRORs.
 - **Remaining:** owner opens the draft PR for `claude/partner-and-event-lockdown`, phone-tests the Vercel preview (portal pending/publish, settings email, events page), then merge (needs owner OK). First real event try-on after that = first paid end-to-end check.
 - After A: approving a new partner = `update brands set verification_status='approved', verification_updated_at=now() where id=…` (run by the server/admin; no admin screen yet).
+
+## Session 2, final round (2026-10-27)
+- Branch `claude/nav-v2` (from main): Phase 2 built behind a per-device flag (`?nav_v2=1`), lazy routes (main bundle 4.39 → 0.70 MB), Your Fit hidden (`your_fit=false`), Globe unchanged except the Fit tab. Design + plan in `docs/superpowers/`. Tests 158/158, Live Cam 31/31, build passes. NOT merged; needs owner phone test.
+- Branch `claude/partner-and-event-lockdown` got (not applied): `20261027090000_credits_owner_only_and_partner_approval.sql` (S15 + `admin_set_partner_verification`, probes 12/12), `20261027091000_pin_function_search_path.sql` (S14, 0 behaviour differences), and `/admin/partners`. Tests 177/177.
+- GitHub push needs the owner to sign in again (saved login expired); nav-v2 and the last partner commits are local only until then.
+- Edge Function source download (Phase 1.5) blocked: MCP `get_edge_function` errors for every function.
 
 ## Next step
 Finish Phase 2 brainstorming (above), then the written design and plan.
