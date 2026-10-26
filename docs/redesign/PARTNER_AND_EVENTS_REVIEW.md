@@ -104,7 +104,7 @@ Live data: 1 event ("Fashion week", active, 31 Jan–30 Apr 2026, **already ende
 ### 3.5 The New Black connection
 - Keep The New Black as the **Photo** try-on engine for events (and everywhere Photo mode is used). Live stays JoyAI.
 - **One path:** event photo try-on goes through the same Try On › Photo flow and the same credit rules as `thenewblack-picture`. Event items arrive pre-selected (`/try-on?event_item=<id>`). Retire the separate modal once the new screen ships.
-- **Server checks** in the event try-on function: event is active, item belongs to the event, person photo is the caller's own upload, and credits (or an event-sponsored free allowance, decision below) are deducted.
+- **Server checks** in the event try-on function: event is active, item belongs to the event, person photo is the caller's own upload, and the shopper's credits are deducted (owner decision: no sponsored allowance).
 - **Private buckets and expiring links** for person photos and results; stop logging photo URLs.
 - Fix the provider labels (`thenewblack`) and remove the unused BitStudio/Gemini selector code.
 
@@ -114,7 +114,7 @@ Live data: 1 event ("Fashion week", active, 31 Jan–30 Apr 2026, **already ende
 |---|---|---|---|
 | Products: shoppers see only active (P8) | `products` SELECT policies | 1.4 (DB only) | Applying the migration |
 | Partner write rules (P1, P2), public columns (P3), policy cleanup (P4, P6) | `brands`, `retailers`, `products` policies; signup trigger | 1.4 / 5.2 | Migration |
-| Verification status | `brands`, `retailers` columns, admin approve tool; Discover queries filter on it | 5.2 | Migration; decision 3 |
+| Verification status (decided: manual approval) | `brands`, `retailers` columns, admin approve tool; Discover queries filter on it | 5.2 | Migration |
 | Event try-on checks and credits (E3), private buckets (E4) | `thenewblack-event-tryon`, buckets, `EventTryOnModal`, `Events.tsx` image URLs | 1.4 (buckets) + 4 (flow) | Edge Function deploy, migration |
 | Bulk upload as draft + publish checklist (P7) | `AddProductModal`, `ImportWizardModal`, portal product lists | 5.1 | — (frontend; PR review) |
 | Product try-on readiness (P9) | `products` columns, readiness check, portal "Try-on readiness" page | 5.3 | Migration |
@@ -122,8 +122,8 @@ Live data: 1 event ("Fashion week", active, 31 Jan–30 Apr 2026, **already ende
 | Events in Discover, brand page, garment tray; public browsing (E6) | Discover, BrandDetail, Try On tray, `ProtectedRoute` | 3 / 4 | Your phone test (Try On) |
 | Partner Workspace shell | new `/partner`, redirects from both portals | 5.1 | — |
 
-## 5. Decisions for the owner
-1. **Who pays for event try-ons?** Recommended: the shopper's normal credits, with an optional organiser-sponsored free allowance per event later.
-2. **Guest brands at events** (brands without an Azyah account): allow the retailer to add them? Recommended: yes, marked "guest", claimable by the brand later.
-3. **Browse events without logging in?** Recommended: yes; logging in is only needed to try on or save.
-4. **Partner verification** (open since session 1): manual approval before shoppers see a partner's products? Recommended: yes.
+## 5. Owner decisions (2026-10-26)
+1. **Event try-ons use the shopper's own credits.** Event organisers pay Azyah directly, outside the app, to be on it, so there is **no in-app organiser billing and no sponsored try-on allowance**. Event try-on follows exactly the same credit rules as any other Photo try-on.
+2. **Guest brands: yes.** A retailer can add a brand that has no Azyah account yet. It's marked "guest" and managed by the retailer; the real brand can claim it later.
+3. **Browse events without logging in: yes.** Logging in is only needed to try on or save.
+4. **Partner verification: yes, manual approval.** New brands and retailers can set up their catalog, but shoppers only see their products once an admin approves them.

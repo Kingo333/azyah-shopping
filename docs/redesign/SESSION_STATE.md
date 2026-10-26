@@ -28,7 +28,7 @@ _Last updated: 2026-10-26 (session 2: security fix APPLIED to live; Phase 2 next
 The session-2 kickoff message left all five blank.
 1. ~~Security fix~~: done (no branch; applied to live 2026-10-26).
 2. Who gets Live Cam? [Any signed-in user, free time limit, more for Premium.]
-3. Partner verification before brands/retailers publish? [Yes, manual approval.]
+3. ~~Partner verification~~: decided yes, manual approval (2026-10-26).
 4. Hide cart/checkout and UGC collaborations behind flags? [Yes.]
 5. Kiosk engine? [Live Cam (JoyAI), AR as fallback; ≈ $12.60 per 8-hour day per stand on an RTX 5090.]
 
@@ -52,7 +52,7 @@ The session-2 kickoff message left all five blank.
 - `docs/redesign/PARTNER_AND_EVENTS_REVIEW.md`: brand/retailer login, adding products, events end to end, The New Black link. Nothing applied.
 - Headlines: login/roles fine after the fix; any user can create a brand/retailer profile (P1); retailers can write under any brand (P2); bulk upload publishes placeholders live (P7); archived products visible (P8); event brands are free text and event items aren't real products (E1/E2); event try-on uses The New Black with no credits or checks (E3); event photos public (E4).
 - Recommended: one Partner Workspace with a thin "Events & pop-ups" section; events reference real brands and products (keep all ids, so QR/AR links survive); shoppers meet events in Discover, brand pages, the Try On tray and an event page browsable without login; all try-ons through the one Try On screen.
-- Owner decisions open: who pays for event try-ons; guest brands at events; browse events without login; partner verification.
+- Owner decisions (2026-10-26): event try-ons use the **shopper's credits** (organisers pay outside the app; no sponsored allowance); **guest brands allowed**; **events browsable without login**; **partner verification = manual approval**.
 
 ## Next step
 Finish Phase 2 brainstorming (above), then the written design and plan.
