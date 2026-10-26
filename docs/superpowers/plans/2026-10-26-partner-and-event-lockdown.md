@@ -10,6 +10,12 @@
 
 **Spec:** `docs/redesign/PARTNER_AND_EVENTS_REVIEW.md` (branch `claude/busy-hypatia-ipst1p`), findings P1, P2, P4, P6, P8, E3, E4 and owner decisions §5.
 
+## As built (2026-10-26)
+- Migration A: probes 17/30 without, **30/30 with**; rollback restores all 20 policies exactly (fingerprint match). Live verified unchanged.
+- Migration B: probes 6/14 without, **14/14 with**; rollback restores all 123 storage policies and bucket flags exactly.
+- Change from the plan: event try-on **results** are stored in `ai-tryon-results` (same as photo try-on), so saved results keep working in the AI Studio gallery, which shows saved links directly. Shopper **photos** are fully private. Making all try-on results private is a separate AI Studio change (needs the owner's phone test). `resultPath` is now `${userId}/event_${eventId}_${productId}_${now}.png`.
+- Not in scope (from the review): bulk upload as drafts (P7), contact-email privacy (P3).
+
 ## Global Constraints
 - Owner decisions: event try-ons use the **shopper's own AI credits** (same rules as `thenewblack-picture`); partner verification = **manual approval**; guest brands allowed (not built here); events browsable without login (not built here).
 - Nothing is applied to the live database, deployed, or merged without the owner's explicit OK. Probes on live run only inside one transaction that ends with a RAISE.
