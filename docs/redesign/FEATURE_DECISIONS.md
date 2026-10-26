@@ -41,3 +41,9 @@ Status: **recommendations awaiting approval.** "Hide" means the route and data s
 3. Cart/checkout: confirm it should be hidden.
 4. UGC collaborations: hide now, revisit later?
 5. Kiosk engine: Live Cam (JoyAI) as the kiosk experience, AR as fallback?
+
+## Owner decisions (session 2, 2026-10-26)
+| Capability | Decision | Notes |
+|---|---|---|
+| Globe | **Keep, must work well.** Lives in Discover › Globe with three layers: People, Outfits, Brands, plus an "I follow" filter. Tapping a country opens a sheet with cards and actions. | Today's 5 globe tabs → 3 layers; Following becomes a filter; Deals behind a flag. Globe still lazy-loaded. Phase 2 must keep it reachable (`/explore` and `?tab=` redirect) and working; layer rework is Phase 3.3. |
+| Your Fit (body-measurement matching) | **Hide behind a flag (`your_fit`, off). No longer needed.** Data and code stay. | Hide every entry point: Explore globe tab + `YourFitDrawer`, Community "Your Fit" tab (`YourFitContent`), Profile `YourFitPill`, ProfileSettings measurements section (`AddYourFitModal`), onboarding measurements step, RoleDashboard "Your fit" button. `/explore?tab=your-fit` → Discover › Globe. Not affected: the swipe "fit preference" style label (relaxed/tailored) and DressMe's "save your fit" (= outfit). |

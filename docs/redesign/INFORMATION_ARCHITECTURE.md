@@ -12,7 +12,7 @@ One loop for shoppers: **see something → try it on → save, share or create w
 | **Discover** | `/discover` | Mode switch at top: **For You** (swipe / grid, today's `/swipe`), **Search**, **Globe**. Product and outfit cards everywhere have **Try On**, **Save**, **Share**, **Brand**. | Feed tab (`/swipe`), Explore tab (`/explore`), GlobalSearch modal, Trending/Featured pages |
 | **Try On** | `/try-on` | Live camera first (big Start button, current garment, garment tray: Saved, Wardrobe, Recently viewed). "Photo" and "Video" as secondary modes. | AiStudioModal (picture/video/live tabs), ProductTryOnModal (BitStudio), Live Cam's hidden tab |
 | **Community** | `/community` | One feed of public posts and outfits. Floating **Create** button → "Post" or "Outfit (canvas)". Outfit detail, comments, likes, report/block. | `/community`, `/dress-me/community`, `/fashion-feed`, mock `/feed`, `/forum` |
-| **Profile** | `/profile` | Me: Saved (likes/wishlist), My outfits & boards, Wardrobe, My posts, Your Fit, Following, Rewards, Settings, Upgrade. | Profile dashboard, Favorites, Dress Me wardrobe entry, Rewards, Affiliate |
+| **Profile** | `/profile` | Me: Saved (likes/wishlist), My outfits & boards, Wardrobe, My posts, Following, Rewards, Settings, Upgrade. (Your Fit hidden.) | Profile dashboard, Favorites, Dress Me wardrobe entry, Rewards, Affiliate |
 
 - The bar is **always visible** on these four tabs (no auto-hide). It hides only inside full-screen tools: Live camera session, canvas editor, AR, kiosk.
 - One visual style for the bar on every screen. Active state: filled icon + label + accent colour. Labels always shown. Touch targets ≥ 44 px.
@@ -22,7 +22,7 @@ One loop for shoppers: **see something → try it on → save, share or create w
 ## Discover in detail
 - `/discover` (default **For You**). `?mode=search&q=…`, `?mode=globe&layer=brands|people|outfits&country=AE`.
 - **Search** covers products, outfits (public fits/posts), people, brands, in one result page with filter chips. One search implementation (today's `GlobalSearch.tsx` logic moved into a hook).
-- **Globe** has 3 layers only: **People** (opt-in public profiles with a country), **Outfits** (public outfits by creator country), **Brands** (by `brands.country_code`). Tapping a country opens a sheet with cards and clear actions (Follow, View outfit, Shop brand, Try On). Following/Your Fit/Deals tabs are removed from the globe: Following becomes a filter chip ("People I follow"), Your Fit moves to Profile, Deals goes behind a flag.
+- **Globe** has 3 layers only: **People** (opt-in public profiles with a country), **Outfits** (public outfits by creator country), **Brands** (by `brands.country_code`). Tapping a country opens a sheet with cards and clear actions (Follow, View outfit, Shop brand, Try On). Following/Your Fit/Deals tabs are removed from the globe: Following becomes a filter chip ("People I follow"), Your Fit is hidden behind a flag (owner: no longer needed), Deals goes behind a flag.
 - Globe stays lazily loaded (already its own 166 KB chunk) and never requests location permission; country comes from the profile field the user set.
 
 ## Try On in detail
@@ -74,7 +74,7 @@ Shopper
 │   ├─ Feed (For You | Following)    → Outfit/Post detail → like/comment/share/report
 │   └─ Create → Post | Outfit canvas (/dress-me/canvas) → publish
 └─ Profile (/profile)
-    ├─ Saved · Outfits & boards · Wardrobe · Posts · Your Fit · Following
+    ├─ Saved · Outfits & boards · Wardrobe · Posts · Following  (Your Fit hidden, owner 2026-10-26)
     └─ Rewards · Upgrade · Settings
 
 Partner (/partner) — brand / retailer

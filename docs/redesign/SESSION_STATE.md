@@ -43,5 +43,10 @@ The session-2 kickoff message left all five blank.
 - `gh` (GitHub CLI) is not installed on the owner's PC, so the app could not subscribe to PR #3. PR state was read from the public GitHub API instead.
 - Session 2 works in a git worktree at `.claude/worktrees/redesign` (branch `claude/busy-hypatia-ipst1p`), so the owner's uncommitted Lens Studio files on `main` stay untouched.
 
+## Phase 2 (navigation shell): brainstorming in progress
+- Mockups shown in chat (session 2): 4 tabs Discover / Try On / Community / Profile, always-visible bottom bar, desktop left rail; Discover › Globe mode with People / Outfits / Brands layers + "I follow" filter and a country sheet; Profile without Your Fit.
+- Owner decisions: **Globe must stay and work well. Your Fit hidden behind a flag (no longer needed).** Recorded in FEATURE_DECISIONS.md and INFORMATION_ARCHITECTURE.md.
+- Still open: owner's answer to "what should a first-time user see and do in the first ten seconds"; then written design (docs/superpowers/specs/) → builder check → owner approval → writing-plans.
+
 ## Next step
-Phase 2 (navigation shell) per IMPLEMENTATION_PLAN.md (brainstorm + mockups first).
+Finish Phase 2 brainstorming (above), then the written design and plan.
