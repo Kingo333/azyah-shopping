@@ -32,6 +32,8 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
+import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
+import { productStatusLabel } from '@/lib/productPublishing';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 
@@ -187,7 +189,8 @@ const BrandPortal: React.FC = () => {
         if (userRole === 'brand' || userRole === 'admin') {
           const newBrand = await createBrandForUser();
           if (newBrand && mountedRef.current) {
-            setBrand(newBrand);
+            // The email is stored privately; show it from the private table.
+            setBrand(withContactEmail(newBrand, await loadContactEmail(supabase as any, 'brand', newBrand.id)));
             toast({
               title: "Welcome to Azyah!",
               description: "Your brand portal has been created. Complete your profile in Settings to get started."
@@ -200,8 +203,9 @@ const BrandPortal: React.FC = () => {
         return;
       }
       console.log('Successfully setting brand data:', data);
+      const contactEmail = await loadContactEmail(supabase as any, 'brand', data.id);
       if (mountedRef.current) {
-        setBrand(data);
+        setBrand(withContactEmail(data, contactEmail));
         setBrandLoading(false);
       }
     } catch (error) {
@@ -739,7 +743,7 @@ const BrandPortal: React.FC = () => {
                                  {formatPrice(product.price_cents)}
                                </span>
                                <Badge variant={getStatusColor(product.status) as any} className="text-xs px-1 md:px-2 py-0.5">
-                                 {product.status.replace('_', ' ')}
+                                 {productStatusLabel(product.status)}
                                </Badge>
                              </div>
                              <div className="flex justify-between gap-1">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { loadContactEmail } from '@/lib/partnerContacts';
 
 interface ProfileCompletionData {
   percentage: number;
@@ -44,7 +45,7 @@ export function useProfileCompletion() {
     const checkBrandCompletion = async () => {
       const { data: brand } = await supabase
         .from('brands')
-        .select('name, logo_url, bio, website, contact_email, socials, currency, shipping_regions, category')
+        .select('id, name, logo_url, bio, website, contact_email, socials, currency, shipping_regions, category')
         .eq('owner_user_id', user.id)
         .single();
 
@@ -52,6 +53,8 @@ export function useProfileCompletion() {
         setCompletion({ percentage: 0, missingFields: ['Brand Profile'], isComplete: false, isLoading: false });
         return;
       }
+      // The email is stored privately (owner-only table)
+      brand.contact_email = (await loadContactEmail(supabase as any, 'brand', brand.id)) ?? brand.contact_email;
 
       const isFashionBrand = brand.category === 'fashion_brand';
       const regionLabel = isFashionBrand ? 'Shipping Regions' : 'Service Regions';
@@ -72,7 +75,7 @@ export function useProfileCompletion() {
     const checkRetailerCompletion = async () => {
       const { data: retailer } = await supabase
         .from('retailers')
-        .select('name, logo_url, bio, website, contact_email, socials')
+        .select('id, name, logo_url, bio, website, contact_email, socials')
         .eq('owner_user_id', user.id)
         .single();
 
@@ -80,6 +83,8 @@ export function useProfileCompletion() {
         setCompletion({ percentage: 0, missingFields: ['Retailer Profile'], isComplete: false, isLoading: false });
         return;
       }
+      // The email is stored privately (owner-only table)
+      retailer.contact_email = (await loadContactEmail(supabase as any, 'retailer', retailer.id)) ?? retailer.contact_email;
 
       const fields = {
         name: { value: retailer.name && retailer.name !== 'My Store', weight: 20, label: 'Store Name' },
