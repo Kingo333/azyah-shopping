@@ -1,4 +1,4 @@
--- ROLLBACK for 20261026230000_partner_verification_and_product_access.sql
+-- ROLLBACK for 20261026183904_partner_verification_and_product_access.sql
 -- Restores the previous (insecure) policies exactly as they were on
 -- 2026-10-26 (copied from pg_policies). Run by hand only if needed.
 -- Kept outside supabase/migrations on purpose.

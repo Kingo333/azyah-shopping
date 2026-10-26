@@ -1,11 +1,11 @@
 -- Partner verification and product access.
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Rename the file to the
--- version live records when it is applied.
+-- STATUS: APPLIED to live 2026-10-26 with owner approval (version 20261026183904).
+-- Post-apply probes 30/30; advisors unchanged.
 -- Review: docs/redesign/PARTNER_AND_EVENTS_REVIEW.md (P1, P2, P4, P6, P8).
 -- Tests:  supabase/tests/partner_products_probes.sql (on production, only in
 --         rollback mode; see its header).
--- Rollback: supabase/rollbacks/20261026230000_partner_verification_and_product_access.rollback.sql
+-- Rollback: supabase/rollbacks/20261026183904_partner_verification_and_product_access.rollback.sql
 --
 -- What it does:
 --   1. Partner verification (owner decision: manual approval). New brands and
