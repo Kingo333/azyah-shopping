@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
@@ -13,70 +13,72 @@ import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { useAuthNavigation } from '@/hooks/useAuthNavigation';
 import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
 import { useTryOnJobMonitor } from '@/hooks/useTryOnJobMonitor';
-
-import Index from './pages/Index';
-import Landing from './pages/Landing';
-import UserProfile from './pages/UserProfile';
-import ProfileSettings from './pages/ProfileSettings';
-import Swipe from './pages/Swipe';
-import Wishlist from './pages/Wishlist';
-import Likes from './pages/Likes';
-import ShoppingCart from './pages/ShoppingCart';
-import DressMe from './pages/DressMe';
-import DressMeWardrobe from './pages/DressMeWardrobe';
-import DressMeCanvas from './pages/DressMeCanvas';
-import DressMeCommunity from './pages/DressMeCommunity';
-import Community from './pages/Community';
-import OutfitDetail from './pages/OutfitDetail';
-import ClothingItemDetail from './pages/ClothingItemDetail';
-import DressMeOutfitDetail from './pages/DressMeOutfitDetail';
-import Feed from './pages/Feed';
-import FashionFeed from './pages/FashionFeed';
-import Forum from './pages/Forum';
-import Explore from './pages/Explore';
-import TrendingStyles from './pages/TrendingStyles';
-import FeaturedBrands from './pages/FeaturedBrands';
-import BrandDetail from './pages/BrandDetail';
-import Affiliate from './pages/Affiliate';
-
-import Events from './pages/Events';
-import UGCCollaborations from './pages/UGCCollaborations';
-import Favorites from './pages/Favorites';
-import Upgrade from './pages/dashboard/Upgrade';
-import Rewards from './pages/Rewards';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import CookiePolicy from './pages/CookiePolicy';
-
-
-import BrandPortal from './pages/BrandPortal';
-import RetailerPortal from './pages/RetailerPortal';
-import RetailerBrandDetail from './pages/RetailerBrandDetail';
-import NotFound from './pages/NotFound';
-import PhotoCloseup from './components/PhotoCloseup';
-import UserDeletionTool from './components/UserDeletionTool';
-import PublicOutfitView from './pages/PublicOutfitView';
-import PublicItemView from './pages/PublicItemView';
-import StyleLinkPage from './pages/StyleLinkPage';
-import PublicDealsPage from './pages/PublicDealsPage';
-import AffiliateRedirect from './pages/AffiliateRedirect';
-import ARExperience from './pages/ARExperience';
+import { lazyPage } from '@/lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
-
-import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
 import { StatusBarScrim } from './components/StatusBarScrim';
 
+// Pages load on demand (smaller first download); see src/lib/lazyPage.ts.
+const Index = lazyPage(() => import('./pages/Index'));
+const Landing = lazyPage(() => import('./pages/Landing'));
+const UserProfile = lazyPage(() => import('./pages/UserProfile'));
+const ProfileSettings = lazyPage(() => import('./pages/ProfileSettings'));
+const Swipe = lazyPage(() => import('./pages/Swipe'));
+const Wishlist = lazyPage(() => import('./pages/Wishlist'));
+const Likes = lazyPage(() => import('./pages/Likes'));
+const ShoppingCart = lazyPage(() => import('./pages/ShoppingCart'));
+const DressMe = lazyPage(() => import('./pages/DressMe'));
+const DressMeWardrobe = lazyPage(() => import('./pages/DressMeWardrobe'));
+const DressMeCanvas = lazyPage(() => import('./pages/DressMeCanvas'));
+const DressMeCommunity = lazyPage(() => import('./pages/DressMeCommunity'));
+const Community = lazyPage(() => import('./pages/Community'));
+const OutfitDetail = lazyPage(() => import('./pages/OutfitDetail'));
+const ClothingItemDetail = lazyPage(() => import('./pages/ClothingItemDetail'));
+const DressMeOutfitDetail = lazyPage(() => import('./pages/DressMeOutfitDetail'));
+const Feed = lazyPage(() => import('./pages/Feed'));
+const FashionFeed = lazyPage(() => import('./pages/FashionFeed'));
+const Forum = lazyPage(() => import('./pages/Forum'));
+const Explore = lazyPage(() => import('./pages/Explore'));
+const TrendingStyles = lazyPage(() => import('./pages/TrendingStyles'));
+const FeaturedBrands = lazyPage(() => import('./pages/FeaturedBrands'));
+const BrandDetail = lazyPage(() => import('./pages/BrandDetail'));
+const Affiliate = lazyPage(() => import('./pages/Affiliate'));
+
+const Events = lazyPage(() => import('./pages/Events'));
+const UGCCollaborations = lazyPage(() => import('./pages/UGCCollaborations'));
+const Favorites = lazyPage(() => import('./pages/Favorites'));
+const Upgrade = lazyPage(() => import('./pages/dashboard/Upgrade'));
+const Rewards = lazyPage(() => import('./pages/Rewards'));
+const Terms = lazyPage(() => import('./pages/Terms'));
+const Privacy = lazyPage(() => import('./pages/Privacy'));
+const CookiePolicy = lazyPage(() => import('./pages/CookiePolicy'));
+
+
+const BrandPortal = lazyPage(() => import('./pages/BrandPortal'));
+const RetailerPortal = lazyPage(() => import('./pages/RetailerPortal'));
+const RetailerBrandDetail = lazyPage(() => import('./pages/RetailerBrandDetail'));
+const NotFound = lazyPage(() => import('./pages/NotFound'));
+const PhotoCloseup = lazyPage(() => import('./components/PhotoCloseup'));
+const UserDeletionTool = lazyPage(() => import('./components/UserDeletionTool'));
+const PublicOutfitView = lazyPage(() => import('./pages/PublicOutfitView'));
+const PublicItemView = lazyPage(() => import('./pages/PublicItemView'));
+const StyleLinkPage = lazyPage(() => import('./pages/StyleLinkPage'));
+const PublicDealsPage = lazyPage(() => import('./pages/PublicDealsPage'));
+const AffiliateRedirect = lazyPage(() => import('./pages/AffiliateRedirect'));
+const ARExperience = lazyPage(() => import('./pages/ARExperience'));
+
+const DebugHealthPage = lazyPage(() => import('./components/DebugHealthPage').then((m) => ({ default: m.DebugHealthPage })));
+
 // Onboarding pages
-import IntroCarousel from './pages/onboarding/IntroCarousel';
-import SignUp from './pages/onboarding/SignUp';
-import ResetPasswordRequest from './pages/ResetPasswordRequest';
-import ResetPassword from './pages/ResetPassword';
-import AuthCallback from './pages/AuthCallback';
-import OnboardingCalibration from './pages/OnboardingCalibration';
-import ExtensionAuth from './pages/ExtensionAuth';
-import OAuthConsent from './pages/OAuthConsent';
-import Profile from './pages/Profile';
+const IntroCarousel = lazyPage(() => import('./pages/onboarding/IntroCarousel'));
+const SignUp = lazyPage(() => import('./pages/onboarding/SignUp'));
+const ResetPasswordRequest = lazyPage(() => import('./pages/ResetPasswordRequest'));
+const ResetPassword = lazyPage(() => import('./pages/ResetPassword'));
+const AuthCallback = lazyPage(() => import('./pages/AuthCallback'));
+const OnboardingCalibration = lazyPage(() => import('./pages/OnboardingCalibration'));
+const ExtensionAuth = lazyPage(() => import('./pages/ExtensionAuth'));
+const OAuthConsent = lazyPage(() => import('./pages/OAuthConsent'));
+const Profile = lazyPage(() => import('./pages/Profile'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,6 +91,14 @@ const queryClient = new QueryClient({
   },
 });
 
+function PageLoading() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+    </div>
+  );
+}
+
 function AppContent() {
   useSessionMonitor();
   useAuthNavigation(); // Set up soft navigation for auth recovery
@@ -97,6 +107,7 @@ function AppContent() {
   return (
     <>
       <StatusBarScrim />
+      <Suspense fallback={<PageLoading />}>
       <Routes>
                   {/* Root route - show IntroCarousel only if NOT authenticated */}
                   <Route path="/" element={
@@ -305,6 +316,7 @@ function AppContent() {
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       <Toaster />
       <SonnerToaster position="top-center" />
       <BottomNavigation />
