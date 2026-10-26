@@ -25,6 +25,7 @@ import { useUserReferralCode, useReferralStats, shareReferralCode, copyReferralC
 import { cn } from '@/lib/utils';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { getCurrencyForCountry, getCountryCodeFromName } from '@/lib/countryCurrency';
+import { features } from '@/lib/features';
 interface ProfileData {
   name: string;
   username: string;
@@ -847,7 +848,8 @@ const ProfileSettings: React.FC = () => {
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Your Fit / Measurements - Collapsible */}
+          {/* Your Fit / Measurements - hidden while the your_fit feature is off */}
+          {features.your_fit && (
           <Collapsible open={yourFitOpen} onOpenChange={setYourFitOpen}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
@@ -873,6 +875,7 @@ const ProfileSettings: React.FC = () => {
               </Button>
             </CollapsibleContent>
           </Collapsible>
+          )}
 
           {/* Invite Friends - Collapsible */}
           <Collapsible open={inviteOpen} onOpenChange={setInviteOpen}>

@@ -17,8 +17,12 @@ import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
 import GlobalSearch from '@/components/GlobalSearch';
 import { getCountryCodeFromName } from '@/lib/countryCurrency';
+import { features } from '@/lib/features';
+import { resolveExploreTab, visibleExploreTabs, type ExploreTab } from '@/lib/exploreTabs';
 
-type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit' | 'deals';
+// Your Fit is hidden (owner decision); everything else on the Globe is unchanged.
+const YOUR_FIT_ENABLED = features.your_fit;
+const VISIBLE_TAB_COUNT = visibleExploreTabs(YOUR_FIT_ENABLED).length;
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
@@ -35,8 +39,9 @@ const Explore: React.FC = () => {
   // Sync tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['brands', 'following', 'shoppers', 'your-fit', 'deals'].includes(tab)) {
-      setActiveTab(tab as ExploreTab);
+    if (tab) {
+      // Known tabs open as before; an old Your Fit link (or any unknown tab) opens Brands.
+      setActiveTab(resolveExploreTab(tab, YOUR_FIT_ENABLED));
     }
   }, [searchParams]);
 
@@ -300,7 +305,10 @@ const Explore: React.FC = () => {
           {/* Filter Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid grid-cols-5 gap-1">
+              <TabsList
+                className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid gap-1"
+                style={{ gridTemplateColumns: `repeat(${VISIBLE_TAB_COUNT}, minmax(0, 1fr))` }}
+              >
                 <TabsTrigger 
                   value="brands" 
                   className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-1.5"
@@ -322,13 +330,15 @@ const Explore: React.FC = () => {
                   <Users className="h-3 w-3 mr-0.5" />
                   People
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="your-fit" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-1.5"
-                >
-                  <Ruler className="h-3 w-3 mr-0.5" />
-                  Fit
-                </TabsTrigger>
+                {YOUR_FIT_ENABLED && (
+                  <TabsTrigger
+                    value="your-fit"
+                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-1.5"
+                  >
+                    <Ruler className="h-3 w-3 mr-0.5" />
+                    Fit
+                  </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="deals" 
                   className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5"
