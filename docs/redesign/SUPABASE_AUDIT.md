@@ -36,7 +36,16 @@ Guidance used: the Supabase agent skill's security checklist (user_metadata neve
 - `deduct_wardrobe_credit(target_user_id, amount)` stays callable by signed-in users (enhance-wardrobe-item uses the user's login), but accepts any `target_user_id` and a negative `amount`: deducting −100 adds 100 credits.
 - Fix (added to the same migration): positive amounts only; users may only deduct their own credits; service role may deduct for anyone.
 
-**Tests:** `supabase/tests/security_lockdown_probes.sql` (about 45 probes; run on a branch only).
+**Tests:** `supabase/tests/security_lockdown_probes.sql` (64 probes).
+
+### Dry-run results (session 2, 2026-10-26, live project, fully rolled back)
+The owner chose not to use a Supabase branch. Instead each run executed on the live database inside **one transaction that ends by raising an error**, so everything (test accounts, migration, attacks) was undone. Checked first: the SQL tool runs a multi-statement call as one transaction; the only trigger that calls the network (`dispatch_gemini_analysis`) uses `pg_net`, which only sends after commit. Checked after: 0 test users, 0 test points rows, 0 new triggers, empty `pg_net` queue, grants unchanged.
+- **Without the fix:** 30 of 63 pass. Every attack probe fails (holes confirmed). Three tightened probes also fail without the fix: shopper sets own `users.role = 'brand'`, user spends another user's points via `redeem_points_for_credits`, shopper sets metadata `role: brand` and `users.role` follows.
+- **With the fix:** **64 of 64 pass**, including signup, profile edit, account deletion, picture try-on credit deduction, wardrobe enhance, bg-remove counter and monthly reset, `get_user_credits`, and a real points redemption.
+
+Corrections from the dry run:
+- S2: a CHECK constraint (`role <> 'admin' OR auth.role() = 'service_role'`) already stops users setting `users.role = 'admin'`. The live escalation is shopper → **brand/retailer** (skips partner verification). The guard trigger blocks it.
+- S3: confirmed and worse than the users table: signup with `role: admin` metadata inserts an **admin row in `user_roles`**, which the frontend route guards trust. (The `users` insert fails on the CHECK constraint and the error is swallowed, leaving no `users` row.) 0 admin rows exist today, so it has not been abused.
 
 **Proposed fix for S1–S4:** `supabase/migrations/20261026120000_lock_down_privileged_functions.sql` (rollback in `supabase/rollbacks/`). **Not applied.** It:
 1. Revokes EXECUTE from `public, anon, authenticated` on the service-only functions (keeps `service_role`). `deduct_wardrobe_credit` stays callable by `authenticated` until `enhance-wardrobe-item` switches to the service client.

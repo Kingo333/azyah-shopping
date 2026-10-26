@@ -11,15 +11,13 @@ _Last updated: 2026-10-26 (session 2: security fix review, before branch test)_
 ## Pending (in repo, not applied)
 - `supabase/migrations/20261026120000_lock_down_privileged_functions.sql`: **critical security fix (S1–S4c in SUPABASE_AUDIT.md)**. Never executed anywhere. Rollback: `supabase/rollbacks/20261026120000_lock_down_privileged_functions.rollback.sql`.
   - Session 2 adversarial review added S4b (`guard_user_credits` trigger: users could set their own credit amounts) and S4c (`deduct_wardrobe_credit`: negative amounts / other users).
-  - Probe script: `supabase/tests/security_lockdown_probes.sql`. Not run yet.
+  - Probe script: `supabase/tests/security_lockdown_probes.sql` (64 probes). On live, only run it wrapped so it rolls back (replace the final SELECT with a RAISE), never as-is.
 - `supabase/migrations/20261018090100_live_cam_sessions_tier.sql` (from earlier sessions).
 
-## Phase 1 test plan (waiting on owner OK for branch cost)
-1. Create Supabase branch. Cost: **$0.01344/hour** (checked 2026-10-26 with get_cost). Plan: about 1 hour, then delete.
-2. Run the probe script BEFORE the migration: attack probes should fail (proves they detect the holes).
-3. Apply the migration on the branch, run the probes again: every row should pass.
-4. Report → owner approves → apply to production → `get_advisors` again → delete branch.
-- Caveat: a branch is rebuilt from migration history. If live functions were created outside migrations, the branch may differ; check function presence first.
+## Phase 1 test status
+- Owner said no Supabase branch. Tested instead with rollback-only dry runs on live (details and safety checks in SUPABASE_AUDIT.md "Dry-run results").
+- Without fix: 30/63 pass (holes confirmed). With fix: **64/64 pass**. Live database confirmed unchanged afterwards.
+- **Waiting on owner approval to apply the migration to production.** After applying: re-run the probe script in rollback mode against live (expect 64/64), run `get_advisors`, watch function logs.
 
 ## Open PRs
 - [Kingo333/azyah-shopping#3](https://github.com/Kingo333/azyah-shopping/pull/3): audit docs + proposed security migration + probe script. Open, draft. Branch `claude/busy-hypatia-ipst1p`. Only adds files, so merging it changes nothing live.
@@ -27,7 +25,7 @@ _Last updated: 2026-10-26 (session 2: security fix review, before branch test)_
 
 ## Decisions waiting on the owner (recommended default in brackets)
 The session-2 kickoff message left all five blank.
-1. Test the security migration on a Supabase branch, then apply to production? [Yes. Cost above.]
+1. ~~Test on a Supabase branch?~~ Owner: no branch. Remaining: approve applying to production.
 2. Who gets Live Cam? [Any signed-in user, free time limit, more for Premium.]
 3. Partner verification before brands/retailers publish? [Yes, manual approval.]
 4. Hide cart/checkout and UGC collaborations behind flags? [Yes.]
@@ -45,4 +43,4 @@ The session-2 kickoff message left all five blank.
 - Session 2 works in a git worktree at `.claude/worktrees/redesign` (branch `claude/busy-hypatia-ipst1p`), so the owner's uncommitted Lens Studio files on `main` stay untouched.
 
 ## Next step
-Owner OK on branch cost → run the Phase 1 test plan above → apply to production with approval → Phase 2 (navigation shell) per IMPLEMENTATION_PLAN.md (brainstorm + mockups first).
+Owner approval → apply the migration to production → re-run probes (rollback mode) + get_advisors → Phase 2 (navigation shell) per IMPLEMENTATION_PLAN.md (brainstorm + mockups first).

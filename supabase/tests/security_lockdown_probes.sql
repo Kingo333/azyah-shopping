@@ -1,8 +1,10 @@
 -- Security probes for 20261026120000_lock_down_privileged_functions.sql
 --
--- RUN ONLY ON A SUPABASE BRANCH, never on production. It creates and deletes
--- five test accounts (emails end in @probe.example.test) and runs attacks
--- against them.
+-- It creates five test accounts (emails end in @probe.example.test) and runs
+-- attacks against them. On a branch, run it as-is. On PRODUCTION, never run
+-- it as-is: send the whole file as ONE call (one transaction) and replace the
+-- final SELECT with a DO block that RAISEs the results, so everything rolls
+-- back (this is how it was run in session 2; see SUPABASE_AUDIT.md).
 --
 -- How to run: paste the whole file into the SQL editor (or MCP execute_sql)
 -- on the branch. The last statement returns one row per probe with
@@ -131,7 +133,8 @@ insert into public.user_credits (user_id, ai_studio_credits, wardrobe_credits, b
 values ('00000000-0000-4000-a000-00000000000a', 4, 20, 0, 0, 0, current_date),
        ('00000000-0000-4000-a000-00000000000b', 4, 20, 0, 0, 0, current_date);
 insert into public.points_ledger (user_id, type, action_type, amount, idempotency_key)
-values ('00000000-0000-4000-a000-00000000000a', 'earn', 'daily_checkin', 300, 'probe-seed-a');
+values ('00000000-0000-4000-a000-00000000000a', 'earn', 'daily_checkin', 300, 'probe-seed-a'),
+       ('00000000-0000-4000-a000-00000000000b', 'earn', 'daily_checkin', 300, 'probe-seed-v');
 
 -- ---------------------------------------------------------------------------
 -- S3. Signup and metadata
@@ -154,6 +157,13 @@ select pg_temp.probe('S2 role', 'user sets own users.role = admin', 'deny', 'aut
   '00000000-0000-4000-a000-00000000000a',
   $q$update public.users set role = 'admin' where id = '00000000-0000-4000-a000-00000000000a'$q$,
   $q$select role::text = 'admin' from public.users where id = '00000000-0000-4000-a000-00000000000a'$q$);
+update public.users set role = 'shopper' where id = '00000000-0000-4000-a000-00000000000a';
+-- (A CHECK constraint already blocks 'admin' above; 'brand' is the real
+-- escalation: it would skip partner verification.)
+select pg_temp.probe('S2 role', 'user sets own users.role = brand', 'deny', 'authenticated',
+  '00000000-0000-4000-a000-00000000000a',
+  $q$update public.users set role = 'brand' where id = '00000000-0000-4000-a000-00000000000a'$q$,
+  $q$select role::text = 'brand' from public.users where id = '00000000-0000-4000-a000-00000000000a'$q$);
 update public.users set role = 'shopper' where id = '00000000-0000-4000-a000-00000000000a';
 
 select pg_temp.probe('S2 role', 'user still edits own name', 'ok', 'authenticated',
@@ -300,12 +310,13 @@ select pg_temp.probe('Flows', 'service role deducts a wardrobe credit', 'ok', 's
 
 -- ---------------------------------------------------------------------------
 -- S3 (after signup). Changing metadata must not change the role.
--- Simulates supabase.auth.updateUser({ data: { role: 'admin' } }).
+-- Simulates supabase.auth.updateUser({ data: { role: 'brand' } }) by shopper A.
+-- ('admin' would be stopped by the CHECK constraint; 'brand' was not.)
 -- ---------------------------------------------------------------------------
-update auth.users set raw_user_meta_data = raw_user_meta_data || '{"role":"admin"}'
-  where id = '00000000-0000-4000-a000-00000000000c';
-select pg_temp.check_fact('S3 metadata', 'metadata role=admin after signup does not change users.role',
-  (select role::text from public.users where id = '00000000-0000-4000-a000-00000000000c') = 'shopper');
+update auth.users set raw_user_meta_data = raw_user_meta_data || '{"role":"brand"}'
+  where id = '00000000-0000-4000-a000-00000000000a';
+select pg_temp.check_fact('S3 metadata', 'shopper sets metadata role=brand: users.role stays shopper',
+  (select role::text from public.users where id = '00000000-0000-4000-a000-00000000000a') = 'shopper');
 
 -- ---------------------------------------------------------------------------
 -- Account deletion (delete-account edge function: service role, then Auth
