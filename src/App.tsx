@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from 'next-themes';
@@ -15,7 +15,7 @@ import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
 import { useTryOnJobMonitor } from '@/hooks/useTryOnJobMonitor';
 import { lazyPage } from '@/lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { BottomNavigation } from './components/BottomNavigation';
+import { AppNavigation, NavV2Gate } from './components/nav/NavV2Gate';
 import { StatusBarScrim } from './components/StatusBarScrim';
 
 // Pages load on demand (smaller first download); see src/lib/lazyPage.ts.
@@ -79,6 +79,7 @@ const OnboardingCalibration = lazyPage(() => import('./pages/OnboardingCalibrati
 const ExtensionAuth = lazyPage(() => import('./pages/ExtensionAuth'));
 const OAuthConsent = lazyPage(() => import('./pages/OAuthConsent'));
 const Profile = lazyPage(() => import('./pages/Profile'));
+const TryOn = lazyPage(() => import('./pages/TryOn'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +98,12 @@ function PageLoading() {
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
     </div>
   );
+}
+
+// /discover (navigation v2 links) is the swipe feed; keep the query.
+function DiscoverRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={'/swipe' + search} replace />;
 }
 
 function AppContent() {
@@ -199,9 +206,11 @@ function AppContent() {
                     </ProtectedRoute>
                   } />
                   <Route path="/dress-me/community" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <DressMeCommunity />
-                    </ProtectedRoute>
+                    <NavV2Gate>
+                      <ProtectedRoute roles={['shopper', 'admin']}>
+                        <DressMeCommunity />
+                      </ProtectedRoute>
+                    </NavV2Gate>
                   } />
                   <Route path="/dress-me/outfit/:id" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
@@ -212,23 +221,36 @@ function AppContent() {
                   <Route path="/community/outfit/:id" element={<OutfitDetail />} />
                   <Route path="/community/item/:id" element={<ClothingItemDetail />} />
                   <Route path="/feed" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <Feed />
-                    </ProtectedRoute>
+                    <NavV2Gate>
+                      <ProtectedRoute roles={['shopper', 'admin']}>
+                        <Feed />
+                      </ProtectedRoute>
+                    </NavV2Gate>
                   } />
                   <Route path="/fashion-feed" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <FashionFeed />
-                    </ProtectedRoute>
+                    <NavV2Gate>
+                      <ProtectedRoute roles={['shopper', 'admin']}>
+                        <FashionFeed />
+                      </ProtectedRoute>
+                    </NavV2Gate>
                   } />
                   <Route path="/forum" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <Forum />
-                    </ProtectedRoute>
+                    <NavV2Gate>
+                      <ProtectedRoute roles={['shopper', 'admin']}>
+                        <Forum />
+                      </ProtectedRoute>
+                    </NavV2Gate>
                   } />
                   <Route path="/explore" element={
                     <ProtectedRoute>
                       <Explore />
+                    </ProtectedRoute>
+                  } />
+                  {/* Navigation v2 (off unless this device opted in with ?nav_v2=1) */}
+                  <Route path="/discover" element={<DiscoverRedirect />} />
+                  <Route path="/try-on" element={
+                    <ProtectedRoute roles={['shopper', 'admin']}>
+                      <TryOn />
                     </ProtectedRoute>
                   } />
                   <Route path="/trending-styles" element={<TrendingStyles />} />
@@ -319,7 +341,7 @@ function AppContent() {
       </Suspense>
       <Toaster />
       <SonnerToaster position="top-center" />
-      <BottomNavigation />
+      <AppNavigation />
     </>
   );
 }

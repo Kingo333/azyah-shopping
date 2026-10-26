@@ -22,9 +22,12 @@ import { ProductMasonryGrid } from '@/components/ProductMasonryGrid';
 import CategoryGrid from '@/components/CategoryGrid';
 import AiStudioModal from '@/components/AiStudioModal';
 import PostLoginUpgradeModal from '@/components/PostLoginUpgradeModal';
+import { useNavV2 } from '@/hooks/useNavV2';
 
 const Swipe = () => {
   const navigate = useNavigate();
+  // With navigation v2 the shared 4-tab bar replaces this page's own list-view bar.
+  const navV2 = useNavV2();
   const {
     user,
     loading
@@ -362,6 +365,7 @@ const Swipe = () => {
             </div>
 
             {/* Floating Icon-Only Bottom Nav for List View */}
+            {!navV2 && (
             <div 
               className="fixed z-40 left-4 right-4
                          bg-white/50 backdrop-blur-xl
@@ -382,6 +386,7 @@ const Swipe = () => {
                 </button>
               ))}
             </div>
+            )}
           </div>}
           
         {/* AI Studio Modal - for try-on from list view */}
