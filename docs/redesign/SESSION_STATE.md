@@ -48,5 +48,11 @@ The session-2 kickoff message left all five blank.
 - Owner decisions: **Globe stays exactly as it works today (only its Fit tab hidden). Your Fit hidden everywhere behind a flag (no longer needed).** Live-site check in the browser pane failed (site approval refused/hidden pane); verified from code instead. Globe has no tests: add regression tests first in Phase 2. Recorded in FEATURE_DECISIONS.md and INFORMATION_ARCHITECTURE.md.
 - Still open: owner's answer to "what should a first-time user see and do in the first ten seconds"; then written design (docs/superpowers/specs/) → builder check → owner approval → writing-plans.
 
+## Partner and events review (session 2, read-only)
+- `docs/redesign/PARTNER_AND_EVENTS_REVIEW.md`: brand/retailer login, adding products, events end to end, The New Black link. Nothing applied.
+- Headlines: login/roles fine after the fix; any user can create a brand/retailer profile (P1); retailers can write under any brand (P2); bulk upload publishes placeholders live (P7); archived products visible (P8); event brands are free text and event items aren't real products (E1/E2); event try-on uses The New Black with no credits or checks (E3); event photos public (E4).
+- Recommended: one Partner Workspace with a thin "Events & pop-ups" section; events reference real brands and products (keep all ids, so QR/AR links survive); shoppers meet events in Discover, brand pages, the Try On tray and an event page browsable without login; all try-ons through the one Try On screen.
+- Owner decisions open: who pays for event try-ons; guest brands at events; browse events without login; partner verification.
+
 ## Next step
 Finish Phase 2 brainstorming (above), then the written design and plan.
