@@ -20,7 +20,7 @@ One loop for shoppers: **see something → try it on → save, share or create w
 - Each tab keeps its own state (scroll, filters, search query, selected globe layer) when switching tabs (React Query cache + URL search params).
 
 ## Discover in detail
-- `/discover` (default **For You**). `?mode=search&q=…`, `?mode=globe&layer=brands|people|outfits&country=AE`.
+- `/discover` (default **For You**). `?mode=search&q=…`. Globe mode shows today's `/explore` page unchanged (its own `?tab=` links keep working).
 - **Search** covers products, outfits (public fits/posts), people, brands, in one result page with filter chips. One search implementation (today's `GlobalSearch.tsx` logic moved into a hook).
 - **Globe** stays **exactly as it works today** (owner decision 2026-10-26): the current `Explore` page with tabs Brands / Follow / People / Deals, pins, country drawer, Following and Deals drawers, search and Skip to Feed. Only the Fit tab is hidden. No layer rework.
 - Globe stays lazily loaded (already its own 166 KB chunk) and never requests location permission; country comes from the profile field the user set.

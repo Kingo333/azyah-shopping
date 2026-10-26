@@ -27,7 +27,7 @@ flowchart LR
 
 ## D. Globe discovery
 **Current:** Explore tab → Brands tab default → tap country → brand drawer. Shoppers tab: counts wrong (RLS, see SUPABASE_AUDIT). Following/Your Fit/Deals tabs open full-screen drawers and blank the globe. "Home" goes to Profile, "Skip to Feed" goes to Swipe. Problems: AB, DE, BB, MF (wrong counts).
-**Proposed:** Discover › Globe → choose People / Outfits / Brands (segmented control) → tap country → sheet with cards → Follow / View outfit / Shop brand / Try On. Back closes the sheet, then returns to the previous Discover mode.
+**Decided (owner, 2026-10-26):** keep this flow exactly as it is today, reached from Discover › Globe. Only the Fit tab is hidden. (An earlier People / Outfits / Brands redesign was dropped.)
 
 ## E. Real-time fitting
 **Current:** Swipe → AI Studio button → modal → "Live" tab (shoppers only) → pick from wardrobe / 12 arbitrary products / 12 event items → Start → warm-up (up to minutes on cold start) → session → swap → stop. Problems: DF, RU, CL (cold start), hidden for non-shoppers.

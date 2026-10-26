@@ -23,7 +23,7 @@
 --   S4c deduct_wardrobe_credit accepted any user and negative amounts.
 --       Added in session 2.
 --
--- Tests: supabase/tests/security_lockdown_probes.sql (run on a branch only).
+-- Tests: supabase/tests/security_lockdown_probes.sql (on production, only in rollback mode; see its header).
 --
 -- Callers checked (2026-10-26):
 --   delete_user_completely: only edge functions delete-account and

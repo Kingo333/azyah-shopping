@@ -24,7 +24,7 @@
 | Search & filters | Unit tests for query builders; Playwright result smoke |
 | Swipe, likes, saves, follows, comments | Existing component tests + Playwright |
 | Post creation, canvas save/reload, publish visibility | Playwright + RLS probe (private fit not visible to others) |
-| Globe | Render smoke; counts RPC unit test; no location prompt |
+| Globe | Regression tests of today's behaviour first (Phase 2.0): 4 tabs Brands/Follow/People/Deals (no Fit), `?tab=` deep links, country drawer opens on pin tap, Following/Deals drawers open; render smoke; no location prompt |
 | Product → Try On handoff | Unit (GarmentRef resolution) + Playwright (URL param preselects garment) |
 | Camera denied / unsupported | Playwright with permissions denied |
 | Live session start/stop, swap, disconnect, cold start | Mocked WebSocket tests for state machine; **owner phone test** on preview against a warm worker |

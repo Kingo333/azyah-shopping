@@ -55,7 +55,7 @@ Corrections from the dry run:
 
 It does not touch any Live Cam table, function or Edge Function (checked by search).
 
-**How to verify before/after (proposed test plan, needs approval to run):** apply on a Supabase **branch** first, then as `anon` and as a test `authenticated` user: call each revoked RPC (expect permission denied), `update users set role='admin'` (expect 42501), sign up with `role: admin` metadata (expect shopper), redeem with a fake package or another user's id (expect error), redeem a real package (expect success). Then run `get_advisors` again; the 0028/0029 counts should drop.
+**How to verify before/after (session 1 plan; done in session 2 without a branch, see "Dry-run results" below):** apply on a Supabase **branch** first, then as `anon` and as a test `authenticated` user: call each revoked RPC (expect permission denied), `update users set role='admin'` (expect 42501), sign up with `role: admin` metadata (expect shopper), redeem with a fake package or another user's id (expect error), redeem a real package (expect success). Then run `get_advisors` again; the 0028/0029 counts should drop.
 
 ## High / medium findings
 
