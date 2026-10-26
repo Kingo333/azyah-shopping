@@ -10,8 +10,8 @@ Audit docs, baseline numbers (CURRENT_STATE_AUDIT.md §1), proposed security mig
 ## Phase 1 — Security lockdown (first; needs approval to apply)
 | Task | Acceptance | Tests |
 |---|---|---|
-| 1.1 Apply `20261026120000_lock_down_privileged_functions.sql` on a **Supabase branch**, run the checks in SUPABASE_AUDIT.md | All S1–S4 probes denied; real flows (signup, account delete, picture try-on credits, points redemption, Live Cam) still work | SQL probe script committed under `supabase/tests/` |
-| 1.2 Apply to production (owner approval) | Advisors 0028/0029 counts drop; no errors in function logs for 24 h | Re-run probes |
+| 1.1 ✅ Done 2026-10-26: tested with rollback-only dry runs on live (owner chose no branch), probes in SUPABASE_AUDIT.md | All S1–S4 probes denied; real flows (signup, account delete, picture try-on credits, points redemption, Live Cam) still work | SQL probe script committed under `supabase/tests/` |
+| 1.2 ✅ Applied to production 2026-10-26 (owner approval). Watch function logs for 24 h | Advisors 0028/0029 counts drop; no errors in function logs for 24 h | Re-run probes |
 | 1.3 Switch `enhance-wardrobe-item` to the service client for credit deduction, then revoke `deduct_wardrobe_credit` from authenticated | Wardrobe enhance still deducts | Function test |
 | 1.4 S6 products policy, S7 private photo buckets with signed URLs, S10 WITH CHECK clauses | Archived products hidden from anon; photo URLs expire | SQL probes |
 | 1.5 Pull the 41 live-only Edge Function sources into git (read-only) | Every deployed function has source | — |

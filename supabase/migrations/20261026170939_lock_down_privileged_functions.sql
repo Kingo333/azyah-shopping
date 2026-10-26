@@ -1,6 +1,7 @@
 -- Lock down privileged database functions and role assignment.
 --
--- STATUS: PROPOSED. Not applied to the live project. Needs owner approval.
+-- STATUS: APPLIED to live (klwolsopucgswhtdlsps) on 2026-10-26 with owner approval,
+-- recorded as migration version 20261026170939. Post-apply probes: 64/64 pass.
 -- See docs/redesign/SUPABASE_AUDIT.md (findings S1-S4) for the evidence.
 --
 -- What this fixes:
@@ -37,7 +38,7 @@
 --     (passes the caller's own id and fixed package values, which the new
 --     checks below accept).
 --
--- Rollback: supabase/rollbacks/20261026120000_lock_down_privileged_functions.rollback.sql
+-- Rollback: supabase/rollbacks/20261026170939_lock_down_privileged_functions.rollback.sql
 
 begin;
 

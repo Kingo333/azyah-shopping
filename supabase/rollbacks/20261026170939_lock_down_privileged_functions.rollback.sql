@@ -1,4 +1,4 @@
--- ROLLBACK for 20261026120000_lock_down_privileged_functions.sql
+-- ROLLBACK for 20261026170939_lock_down_privileged_functions.sql
 -- Restores the previous (insecure) behaviour exactly. Run manually only if the
 -- lockdown breaks something and a forward fix is not possible.
 -- NOTE: kept outside supabase/migrations on purpose so it never runs as a

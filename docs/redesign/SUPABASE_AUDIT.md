@@ -47,7 +47,7 @@ Corrections from the dry run:
 - S2: a CHECK constraint (`role <> 'admin' OR auth.role() = 'service_role'`) already stops users setting `users.role = 'admin'`. The live escalation is shopper → **brand/retailer** (skips partner verification). The guard trigger blocks it.
 - S3: confirmed and worse than the users table: signup with `role: admin` metadata inserts an **admin row in `user_roles`**, which the frontend route guards trust. (The `users` insert fails on the CHECK constraint and the error is swallowed, leaving no `users` row.) 0 admin rows exist today, so it has not been abused.
 
-**Proposed fix for S1–S4:** `supabase/migrations/20261026120000_lock_down_privileged_functions.sql` (rollback in `supabase/rollbacks/`). **Not applied.** It:
+**Fix for S1–S4c:** `supabase/migrations/20261026170939_lock_down_privileged_functions.sql` (rollback in `supabase/rollbacks/`). **Applied to live 2026-10-26** (owner approved). It:
 1. Revokes EXECUTE from `public, anon, authenticated` on the service-only functions (keeps `service_role`). `deduct_wardrobe_credit` stays callable by `authenticated` until `enhance-wardrobe-item` switches to the service client.
 2. Adds a `guard_users_role` trigger (same pattern as the live `guard_profile_premium_fields`) so only the server can change `users.role`; clients may only insert their own row as `shopper`.
 3. Stops accepting `admin` from metadata at signup and stops syncing role from metadata afterwards.
@@ -95,3 +95,8 @@ It does not touch any Live Cam table, function or Edge Function (checked by sear
 - `user_roles` is not client-writable; the route guard uses it.
 - Premium self-grant is blocked (`guard_profile_premium_fields`, live).
 - Share pages use slug RPCs (`get_public_outfit_by_slug`), not raw table reads.
+
+### Applied to live (2026-10-26)
+- Applied with owner approval as migration `lock_down_privileged_functions` (version `20261026170939`).
+- Post-apply probes on live (rollback mode): **64 of 64 pass**. No test data left; 0 admin rows in `user_roles`.
+- `get_advisors` (security) after apply: `anon_security_definer_function_executable` 173 → 155, `authenticated_security_definer_function_executable` 173 → 157. No ERROR-level lints. Still open: 14 mutable `search_path` (S14), leaked-password protection off (S12), Postgres patch (S13), 2 RLS-enabled-no-policy (S17, INFO). `redeem_points_for_credits` and `deduct_wardrobe_credit` stay callable by signed-in users on purpose; both now check `auth.uid()`. The remaining SECURITY DEFINER exposure is S5 (Phase 3).

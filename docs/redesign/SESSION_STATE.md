@@ -1,31 +1,32 @@
 # Session State
 
-_Last updated: 2026-10-26 (session 2: security fix review, before branch test)_
+_Last updated: 2026-10-26 (session 2: security fix APPLIED to live; Phase 2 next)_
 
 ## Deployed / live
 - App `main` at `228dcdf` (Live Cam JoyAI full-size frames, PR #2). Vercel auto-deploys `main`.
-- Supabase (`klwolsopucgswhtdlsps`, org `odzvviqburgmslcipzfh`): `block_client_premium_self_grant` applied. `live_cam_sessions_tier` **not** applied (no tier columns on `live_cam_sessions`). `live-cam-session-start` live at v38 (old, no tier parsing). No Supabase branches exist.
+- Supabase (`klwolsopucgswhtdlsps`, org `odzvviqburgmslcipzfh`): `block_client_premium_self_grant` applied. **`lock_down_privileged_functions` applied 2026-10-26 (version `20261026170939`, owner approved).** `live_cam_sessions_tier` **not** applied (no tier columns on `live_cam_sessions`). `live-cam-session-start` live at v38 (old, no tier parsing). No Supabase branches exist.
+  - Post-apply: probes 64/64 pass (rollback mode), 0 test data left, 0 admin rows in `user_roles`.
+  - Advisors after apply: anon-executable SECURITY DEFINER 173 → 155, authenticated 173 → 157, no ERROR-level lints. Remaining: 14 mutable search_path, leaked-password protection off, Postgres patch pending, 2 RLS-no-policy (INFO). `redeem_points_for_credits` and `deduct_wardrobe_credit` stay authenticated on purpose (they now check `auth.uid()`). Trigger functions (`handle_new_user` etc.) show as executable but can't be called as RPCs; tidy in Phase 3 (S5).
+  - Follow-ups: watch Edge Function logs for 24 h (wardrobe enhance, bg-remove, picture try-on, delete-account); 1.3 switch `enhance-wardrobe-item` to the service client; 1.4 (S6/S7/S10); S15 `get_user_credits` for any user.
 - Cloudflare Worker `fluxrt-orchestrator`: May 22 version (legacy tokens). New source not deployed.
 - RunPod endpoint `hb1m4x2ngdtbou` on JoyAI (per the brief; not re-checked). Balance was negative on Oct 25: top-up needed before any Live Cam test.
 
-## Pending (in repo, not applied)
-- `supabase/migrations/20261026120000_lock_down_privileged_functions.sql`: **critical security fix (S1–S4c in SUPABASE_AUDIT.md)**. Never executed anywhere. Rollback: `supabase/rollbacks/20261026120000_lock_down_privileged_functions.rollback.sql`.
-  - Session 2 adversarial review added S4b (`guard_user_credits` trigger: users could set their own credit amounts) and S4c (`deduct_wardrobe_credit`: negative amounts / other users).
+## Security fix (applied)
+- `supabase/migrations/20261026170939_lock_down_privileged_functions.sql` (renamed from `20261026120000` to match the live migration version, so `supabase db push` won't re-run it; it is idempotent anyway). Rollback: `supabase/rollbacks/20261026170939_lock_down_privileged_functions.rollback.sql`.
+  - Session 2 adversarial review added S4b (`guard_user_credits` trigger) and S4c (`deduct_wardrobe_credit` checks).
   - Probe script: `supabase/tests/security_lockdown_probes.sql` (64 probes). On live, only run it wrapped so it rolls back (replace the final SELECT with a RAISE), never as-is.
+  - Tested without a branch (owner's choice): rollback-only dry runs on live. Without fix 30/63, with fix 64/64, after real apply 64/64.
+
+## Pending (in repo, not applied)
 - `supabase/migrations/20261018090100_live_cam_sessions_tier.sql` (from earlier sessions).
 
-## Phase 1 test status
-- Owner said no Supabase branch. Tested instead with rollback-only dry runs on live (details and safety checks in SUPABASE_AUDIT.md "Dry-run results").
-- Without fix: 30/63 pass (holes confirmed). With fix: **64/64 pass**. Live database confirmed unchanged afterwards.
-- **Waiting on owner approval to apply the migration to production.** After applying: re-run the probe script in rollback mode against live (expect 64/64), run `get_advisors`, watch function logs.
-
 ## Open PRs
-- [Kingo333/azyah-shopping#3](https://github.com/Kingo333/azyah-shopping/pull/3): audit docs + proposed security migration + probe script. Open, draft. Branch `claude/busy-hypatia-ipst1p`. Only adds files, so merging it changes nothing live.
+- [Kingo333/azyah-shopping#3](https://github.com/Kingo333/azyah-shopping/pull/3): audit docs + security migration (already applied to live directly) + probe script. Open, draft. Branch `claude/busy-hypatia-ipst1p`. Only adds files, so merging it changes nothing live.
 - fluxrt-serverless #14: superseded by #15. Close with owner OK.
 
 ## Decisions waiting on the owner (recommended default in brackets)
 The session-2 kickoff message left all five blank.
-1. ~~Test on a Supabase branch?~~ Owner: no branch. Remaining: approve applying to production.
+1. ~~Security fix~~: done (no branch; applied to live 2026-10-26).
 2. Who gets Live Cam? [Any signed-in user, free time limit, more for Premium.]
 3. Partner verification before brands/retailers publish? [Yes, manual approval.]
 4. Hide cart/checkout and UGC collaborations behind flags? [Yes.]
@@ -43,4 +44,4 @@ The session-2 kickoff message left all five blank.
 - Session 2 works in a git worktree at `.claude/worktrees/redesign` (branch `claude/busy-hypatia-ipst1p`), so the owner's uncommitted Lens Studio files on `main` stay untouched.
 
 ## Next step
-Owner approval → apply the migration to production → re-run probes (rollback mode) + get_advisors → Phase 2 (navigation shell) per IMPLEMENTATION_PLAN.md (brainstorm + mockups first).
+Phase 2 (navigation shell) per IMPLEMENTATION_PLAN.md (brainstorm + mockups first).

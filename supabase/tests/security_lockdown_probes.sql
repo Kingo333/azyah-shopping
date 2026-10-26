@@ -1,4 +1,4 @@
--- Security probes for 20261026120000_lock_down_privileged_functions.sql
+-- Security probes for 20261026170939_lock_down_privileged_functions.sql
 --
 -- It creates five test accounts (emails end in @probe.example.test) and runs
 -- attacks against them. On a branch, run it as-is. On PRODUCTION, never run
