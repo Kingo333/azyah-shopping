@@ -1,10 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isEventOpen, resolvePersonPath, resultPath } from "./rules.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+const PHOTO_BUCKET = 'event-user-photos';
+const RESULT_BUCKET = 'event-tryon-results';
+const PERSON_LINK_SECONDS = 600;   // long enough for the provider to fetch the photo
+const RESULT_LINK_SECONDS = 3600;
+
+const TNB_PROMPT = 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.';
+
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,234 +30,153 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const apiKey = Deno.env.get('THE_NEW_BLACK_API_KEY');
-
     if (!apiKey) {
       console.error('[TNB Event TryOn] THE_NEW_BLACK_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ ok: false, error: 'API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ ok: false, error: 'API key not configured' }, 500);
     }
 
-    // Validate auth
+    // 1. Signed-in user
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    if (!authHeader) return json({ ok: false, error: 'Unauthorized' }, 401);
     const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
-
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    const user = { id: claimsData.claims.sub };
+    if (claimsError || !claimsData?.claims?.sub) return json({ ok: false, error: 'Unauthorized' }, 401);
+    const userId = claimsData.claims.sub as string;
 
-    // Parse and validate request body
+    // 2. Request
     const body = await req.json();
-    const { event_id, product_id, person_image_url } = body;
-
-    if (!event_id || !product_id || !person_image_url) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'event_id, product_id, and person_image_url are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const { event_id, product_id, person_image_path, person_image_url } = body ?? {};
+    if (!event_id || !product_id || (!person_image_path && !person_image_url)) {
+      return json({ ok: false, error: 'event_id, product_id and person_image_path are required' }, 400);
     }
-
-    console.log('[TNB Event TryOn] Starting for user:', user.id, 'product:', product_id);
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get product's outfit image
-    const { data: product, error: productError } = await serviceClient
-      .from('event_brand_products')
-      .select('image_url, try_on_data, try_on_config')
-      .eq('id', product_id)
-      .single();
-
-    if (productError || !product) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Product not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // 3. Event must be running
+    const { data: event } = await serviceClient
+      .from('retail_events')
+      .select('id, status, event_date, end_date')
+      .eq('id', event_id)
+      .maybeSingle();
+    if (!event || !isEventOpen(event, new Date().toISOString().slice(0, 10))) {
+      return json({ ok: false, error: "This event isn't running right now" }, 403);
     }
 
-    // Resolve outfit image URL (prefer try_on_config, fall back to product image)
-    const outfitImageUrl = 
-      product.try_on_config?.outfit_image_url || 
-      product.try_on_data?.outfit_image_url || 
+    // 4. Item must belong to this event
+    const { data: product } = await serviceClient
+      .from('event_brand_products')
+      .select('image_url, try_on_data, try_on_config, event_brand_id')
+      .eq('id', product_id)
+      .maybeSingle();
+    const { data: eventBrand } = product
+      ? await serviceClient.from('event_brands').select('event_id').eq('id', product.event_brand_id).maybeSingle()
+      : { data: null };
+    if (!product || eventBrand?.event_id !== event_id) {
+      return json({ ok: false, error: 'Product not found' }, 404);
+    }
+    const outfitImageUrl =
+      product.try_on_config?.outfit_image_url ||
+      product.try_on_data?.outfit_image_url ||
       product.image_url;
 
-    console.log('[TNB Event TryOn] Person:', person_image_url);
-    console.log('[TNB Event TryOn] Outfit:', outfitImageUrl);
-
-    // Resolve person image URL (might be a storage path)
-    let resolvedPersonUrl = person_image_url;
-    if (!person_image_url.startsWith('http')) {
-      const { data: urlData } = serviceClient.storage
-        .from('event-user-photos')
-        .getPublicUrl(person_image_url);
-      resolvedPersonUrl = urlData.publicUrl;
+    // 5. Photo must be the caller's own upload for this event
+    const personPath = resolvePersonPath({ person_image_path, person_image_url }, event_id, userId, supabaseUrl);
+    if (!personPath) return json({ ok: false, error: 'Please upload your photo again' }, 403);
+    const { data: personLink, error: personLinkError } = await serviceClient.storage
+      .from(PHOTO_BUCKET)
+      .createSignedUrl(personPath, PERSON_LINK_SECONDS);
+    if (personLinkError || !personLink?.signedUrl) {
+      return json({ ok: false, error: 'Please upload your photo again' }, 404);
     }
 
-    // Create job record for history tracking
+    // 6. Credits: same rules as thenewblack-picture (one AI credit per try-on)
+    const { data: credits, error: creditsError } = await serviceClient.rpc('get_user_credits', { target_user_id: userId });
+    if (creditsError || !credits || credits.length === 0) {
+      return json({ ok: false, error: 'Failed to get credits' }, 500);
+    }
+    const creditsBefore = credits[0].ai_studio_credits;
+    if (creditsBefore <= 0) {
+      return json({ ok: false, error: 'No picture credits remaining', credits_remaining: 0 }, 402);
+    }
+    const { error: deductError } = await serviceClient.rpc('deduct_ai_studio_credit', { target_user_id: userId });
+    if (deductError) {
+      console.error('[TNB Event TryOn] Failed to deduct credit:', deductError.message);
+      return json({ ok: false, error: 'Failed to deduct credit' }, 500);
+    }
+    const refund = () => serviceClient.from('user_credits')
+      .update({ ai_studio_credits: creditsBefore })
+      .eq('user_id', userId);
+
+    // 7. Job record
     const { data: job, error: jobError } = await serviceClient
       .from('event_tryon_jobs')
       .insert({
         event_id,
         product_id,
-        user_id: user.id,
-        input_person_path: person_image_url,
+        user_id: userId,
+        input_person_path: personPath,
         input_outfit_path: outfitImageUrl,
         provider: 'thenewblack',
         status: 'processing',
-        started_at: new Date().toISOString()
+        started_at: new Date().toISOString(),
+        credits_used: 1,
       })
       .select('id')
       .single();
+    if (jobError) console.error('[TNB Event TryOn] Job creation error:', jobError.message);
+    const markJob = (fields: Record<string, unknown>) => job
+      ? serviceClient.from('event_tryon_jobs').update({ ...fields, completed_at: new Date().toISOString() }).eq('id', job.id)
+      : Promise.resolve();
 
-    if (jobError) {
-      console.error('[TNB Event TryOn] Job creation error:', jobError);
-    }
-
-    // Call The New Black API
+    // 8. The New Black
     const formData = new FormData();
-    formData.append('model_photo', resolvedPersonUrl);
+    formData.append('model_photo', personLink.signedUrl);
     formData.append('clothing_photo', outfitImageUrl);
     formData.append('ratio', 'auto');
-    formData.append('prompt', 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.');
-
-    console.log('[TNB Event TryOn] Calling The New Black API...');
-
-    const apiResponse = await fetch(
-      `https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${apiKey}`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-
+    formData.append('prompt', TNB_PROMPT);
+    const apiResponse = await fetch(`https://thenewblack.ai/api/1.1/wf/vto_stream?api_key=${apiKey}`, {
+      method: 'POST',
+      body: formData,
+    });
     if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      console.error('[TNB Event TryOn] API error:', apiResponse.status, errorText);
-
-      if (job) {
-        await serviceClient.from('event_tryon_jobs').update({
-          status: 'failed',
-          error: `API error: ${apiResponse.status}`,
-          completed_at: new Date().toISOString()
-        }).eq('id', job.id);
-      }
-
-      return new Response(
-        JSON.stringify({ ok: false, error: `API error: ${apiResponse.status}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[TNB Event TryOn] API error:', apiResponse.status);
+      await refund();
+      await markJob({ status: 'failed', error: `API error: ${apiResponse.status}`, credits_used: 0 });
+      return json({ ok: false, error: `API error: ${apiResponse.status}` }, 500);
+    }
+    const resultUrl = (await apiResponse.text()).trim();
+    if (!resultUrl.startsWith('http')) {
+      await refund();
+      await markJob({ status: 'failed', error: 'Invalid response from API', credits_used: 0 });
+      return json({ ok: false, error: 'Invalid response from API' }, 500);
     }
 
-    const resultUrl = await apiResponse.text();
-    console.log('[TNB Event TryOn] Result URL:', resultUrl);
-
-    if (!resultUrl || !resultUrl.trim().startsWith('http')) {
-      if (job) {
-        await serviceClient.from('event_tryon_jobs').update({
-          status: 'failed',
-          error: 'Invalid response from API',
-          completed_at: new Date().toISOString()
-        }).eq('id', job.id);
-      }
-
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Invalid response from API' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Download and store result in Supabase storage
-    console.log('[TNB Event TryOn] Downloading result image...');
-    const imageResponse = await fetch(resultUrl.trim());
-    
+    // 9. Store the result privately and return an expiring link
+    const imageResponse = await fetch(resultUrl);
     if (!imageResponse.ok) {
-      // Return the direct URL if download fails
-      if (job) {
-        await serviceClient.from('event_tryon_jobs').update({
-          status: 'succeeded',
-          output_path: resultUrl.trim(),
-          completed_at: new Date().toISOString()
-        }).eq('id', job.id);
-      }
-
-      return new Response(
-        JSON.stringify({ ok: true, result_url: resultUrl.trim() }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await markJob({ status: 'succeeded', output_path: resultUrl });
+      return json({ ok: true, result_url: resultUrl, job_id: job?.id });
     }
-
-    const imageBlob = await imageResponse.blob();
-    const fileName = `${event_id}/${product_id}/${user.id}_${Date.now()}.png`;
-
+    const outputPath = resultPath(event_id, userId, product_id, Date.now());
     const { error: uploadError } = await serviceClient.storage
-      .from('event-tryon-results')
-      .upload(fileName, imageBlob, {
-        contentType: 'image/png',
-        upsert: true
-      });
-
+      .from(RESULT_BUCKET)
+      .upload(outputPath, await imageResponse.blob(), { contentType: 'image/png', upsert: true });
     if (uploadError) {
-      console.error('[TNB Event TryOn] Upload error:', uploadError);
-      // Return direct URL as fallback
-      if (job) {
-        await serviceClient.from('event_tryon_jobs').update({
-          status: 'succeeded',
-          output_path: resultUrl.trim(),
-          completed_at: new Date().toISOString()
-        }).eq('id', job.id);
-      }
-
-      return new Response(
-        JSON.stringify({ ok: true, result_url: resultUrl.trim() }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('[TNB Event TryOn] Upload error:', uploadError.message);
+      await markJob({ status: 'succeeded', output_path: resultUrl });
+      return json({ ok: true, result_url: resultUrl, job_id: job?.id });
     }
+    await markJob({ status: 'succeeded', output_path: outputPath });
+    const { data: resultLink } = await serviceClient.storage
+      .from(RESULT_BUCKET)
+      .createSignedUrl(outputPath, RESULT_LINK_SECONDS);
 
-    const { data: publicUrl } = serviceClient.storage
-      .from('event-tryon-results')
-      .getPublicUrl(fileName);
-
-    // Update job as succeeded
-    if (job) {
-      await serviceClient.from('event_tryon_jobs').update({
-        status: 'succeeded',
-        output_path: fileName,
-        completed_at: new Date().toISOString()
-      }).eq('id', job.id);
-    }
-
-    console.log('[TNB Event TryOn] Complete:', publicUrl.publicUrl);
-
-    return new Response(
-      JSON.stringify({ 
-        ok: true, 
-        result_url: publicUrl.publicUrl,
-        job_id: job?.id
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: any) {
-    console.error('[TNB Event TryOn] Error:', error);
-    return new Response(
-      JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ ok: true, result_url: resultLink?.signedUrl ?? null, result_path: outputPath, job_id: job?.id });
+  } catch (error) {
+    console.error('[TNB Event TryOn] Error:', error instanceof Error ? error.message : error);
+    return json({ ok: false, error: 'Something went wrong. Please try again.' }, 500);
   }
 });
