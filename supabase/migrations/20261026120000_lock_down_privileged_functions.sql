@@ -15,7 +15,14 @@
 --       (sync_user_role_with_metadata). 'admin' was accepted.
 --   S4  redeem_points_for_credits took target_user_id, credit_amount and
 --       points_cost from the client, so a caller could grant credits to anyone
---       for any (or negative) points.
+--       for any number of points. (A negative points_cost is already
+--       blocked by the points_ledger CHECK (amount > 0).)
+--   S4b Users could edit their own user_credits row directly (credit
+--       amounts, last_reset_date). Added in session 2.
+--   S4c deduct_wardrobe_credit accepted any user and negative amounts.
+--       Added in session 2.
+--
+-- Tests: supabase/tests/security_lockdown_probes.sql (run on a branch only).
 --
 -- Callers checked (2026-10-26):
 --   delete_user_completely: only edge functions delete-account and
@@ -300,5 +307,128 @@ $function$;
 
 revoke execute on function public.redeem_points_for_credits(uuid, text, integer, integer) from public, anon;
 grant execute on function public.redeem_points_for_credits(uuid, text, integer, integer) to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- S4b. Users could edit their own user_credits row directly (RLS policies
+-- "Users can insert/update their own credits", no column limits), e.g.
+-- ai_studio_credits = 999, or backdate last_reset_date so get_user_credits
+-- refills everything. The bg-remove edge function writes this table with the
+-- user's login, so instead of removing the policies, guard the columns:
+--   - credit amounts: server only
+--   - last_reset_date: may only be set to today
+--   - bg_removals_used_monthly: may go up; may go back to 0 only when the
+--     row moves into a new month (what bg-remove does)
+--   - insert: only a default row
+-- Same pattern as guard_profile_premium_fields. SECURITY DEFINER functions
+-- and the service role run as other roles, so they are unaffected.
+-- ---------------------------------------------------------------------------
+create or replace function public.guard_user_credits()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_user not in ('anon', 'authenticated') then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    if coalesce(new.credits_remaining, 4) <> 4
+       or coalesce(new.credits_used_today, 0) <> 0
+       or coalesce(new.ai_studio_credits, 4) <> 4
+       or coalesce(new.beauty_credits, 4) <> 4
+       or coalesce(new.wardrobe_credits, 20) <> 20
+       or coalesce(new.video_credits, 1) <> 1
+       or coalesce(new.bonus_ai_credits, 0) <> 0
+       or coalesce(new.bonus_beauty_credits, 0) <> 0
+       or coalesce(new.bonus_video_credits, 0) <> 0
+       or coalesce(new.bg_removals_used_monthly, 0) <> 0
+       or coalesce(new.bg_removals_quota_monthly, 30) <> 30
+       or coalesce(new.last_reset_date, current_date) <> current_date then
+      raise exception 'credits can only be set by the server' using errcode = '42501';
+    end if;
+    return new;
+  end if;
+
+  if new.user_id is distinct from old.user_id
+     or new.credits_remaining is distinct from old.credits_remaining
+     or new.credits_used_today is distinct from old.credits_used_today
+     or new.ai_studio_credits is distinct from old.ai_studio_credits
+     or new.beauty_credits is distinct from old.beauty_credits
+     or new.wardrobe_credits is distinct from old.wardrobe_credits
+     or new.video_credits is distinct from old.video_credits
+     or new.bonus_ai_credits is distinct from old.bonus_ai_credits
+     or new.bonus_beauty_credits is distinct from old.bonus_beauty_credits
+     or new.bonus_video_credits is distinct from old.bonus_video_credits
+     or new.bg_removals_quota_monthly is distinct from old.bg_removals_quota_monthly then
+    raise exception 'credits can only be set by the server' using errcode = '42501';
+  end if;
+
+  if new.last_reset_date is distinct from old.last_reset_date
+     and new.last_reset_date is distinct from current_date then
+    raise exception 'credits can only be set by the server' using errcode = '42501';
+  end if;
+
+  if coalesce(new.bg_removals_used_monthly, 0) < coalesce(old.bg_removals_used_monthly, 0)
+     and not (
+       new.last_reset_date = current_date
+       and date_trunc('month', old.last_reset_date) < date_trunc('month', current_date)
+     ) then
+    raise exception 'credits can only be set by the server' using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_user_credits on public.user_credits;
+create trigger guard_user_credits
+  before insert or update on public.user_credits
+  for each row execute function public.guard_user_credits();
+
+-- ---------------------------------------------------------------------------
+-- S4c. deduct_wardrobe_credit stays callable by signed-in users (see header),
+-- but it accepted any target user and a negative amount ("deduct -100" adds
+-- 100). Now: positive amounts only, and a user may only deduct their own
+-- credits. The service role may deduct for anyone.
+-- ---------------------------------------------------------------------------
+create or replace function public.deduct_wardrobe_credit(target_user_id uuid, amount integer default 1)
+returns boolean
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+DECLARE
+  current_credits INTEGER;
+BEGIN
+  IF amount IS NULL OR amount <= 0 THEN
+    RAISE EXCEPTION 'amount must be positive' USING ERRCODE = '22023';
+  END IF;
+
+  IF coalesce(auth.jwt()->>'role', '') <> 'service_role'
+     AND target_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Not allowed' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT wardrobe_credits INTO current_credits
+  FROM user_credits
+  WHERE user_id = target_user_id;
+
+  IF current_credits IS NULL OR current_credits < amount THEN
+    RETURN FALSE;
+  END IF;
+
+  UPDATE user_credits
+  SET
+    wardrobe_credits = wardrobe_credits - amount,
+    updated_at = NOW()
+  WHERE user_id = target_user_id;
+
+  RETURN TRUE;
+END;
+$function$;
+
+revoke execute on function public.deduct_wardrobe_credit(uuid, integer) from public, anon;
+grant execute on function public.deduct_wardrobe_credit(uuid, integer) to authenticated, service_role;
 
 commit;

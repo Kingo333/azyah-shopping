@@ -25,7 +25,18 @@ Guidance used: the Supabase agent skill's security checklist (user_metadata neve
 - Brand/retailer self-selection at signup is a product feature, but there is **no verification** of businesses (see P1).
 
 ### S4. Free credits for anyone — HIGH, confirmed
-- `redeem_points_for_credits(target_user_id, credit_type, credit_amount, points_cost)` trusts all four client values and has no `auth.uid()` check. A negative `points_cost` passes the balance check and *adds* points. Anyone can grant any user any number of AI/video credits (real provider cost).
+- `redeem_points_for_credits(target_user_id, credit_type, credit_amount, points_cost)` trusts all four client values and has no `auth.uid()` check. Anyone can grant any user any number of AI/video credits (real provider cost). *(Session 2 correction: a negative `points_cost` does not work, because `points_ledger` has `CHECK (amount > 0)`. The fake-package attack does.)*
+
+### S4b. Users can edit their own credits row — HIGH, found in session 2
+- RLS policies "Users can insert/update their own credits" on `user_credits` have no column limits and no guard trigger. A signed-in user can `update user_credits set ai_studio_credits = 999` on their own row, or set `last_reset_date` in the past so the next `get_user_credits` call refills all daily credits.
+- The policies can't simply be removed: `bg-remove` writes `user_credits` (insert default row, bump `bg_removals_used_monthly`, monthly reset) with the user's login.
+- Fix (added to the same migration): `guard_user_credits` trigger. Credit amounts are server-only; `last_reset_date` can only be set to today; the bg-removal counter can go up, and back to 0 only in a new month; client inserts must be a default row.
+
+### S4c. Negative wardrobe "deduction" — HIGH, found in session 2
+- `deduct_wardrobe_credit(target_user_id, amount)` stays callable by signed-in users (enhance-wardrobe-item uses the user's login), but accepts any `target_user_id` and a negative `amount`: deducting −100 adds 100 credits.
+- Fix (added to the same migration): positive amounts only; users may only deduct their own credits; service role may deduct for anyone.
+
+**Tests:** `supabase/tests/security_lockdown_probes.sql` (about 45 probes; run on a branch only).
 
 **Proposed fix for S1–S4:** `supabase/migrations/20261026120000_lock_down_privileged_functions.sql` (rollback in `supabase/rollbacks/`). **Not applied.** It:
 1. Revokes EXECUTE from `public, anon, authenticated` on the service-only functions (keeps `service_role`). `deduct_wardrobe_credit` stays callable by `authenticated` until `enhance-wardrobe-item` switches to the service client.

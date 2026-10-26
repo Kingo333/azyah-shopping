@@ -9,6 +9,25 @@ begin;
 drop trigger if exists guard_users_role on public.users;
 drop function if exists public.guard_users_role();
 
+drop trigger if exists guard_user_credits on public.user_credits;
+drop function if exists public.guard_user_credits();
+
+create or replace function public.deduct_wardrobe_credit(target_user_id uuid, amount integer default 1)
+returns boolean language plpgsql security definer set search_path to 'public'
+as $function$
+DECLARE
+  current_credits INTEGER;
+BEGIN
+  SELECT wardrobe_credits INTO current_credits FROM user_credits WHERE user_id = target_user_id;
+  IF current_credits IS NULL OR current_credits < amount THEN
+    RETURN FALSE;
+  END IF;
+  UPDATE user_credits SET wardrobe_credits = wardrobe_credits - amount, updated_at = NOW()
+  WHERE user_id = target_user_id;
+  RETURN TRUE;
+END;
+$function$;
+
 grant execute on function public.delete_user_completely(uuid) to public, anon, authenticated;
 grant execute on function public.delete_user_completely(text) to public, anon, authenticated;
 grant execute on function public.delete_user_completely(text, boolean) to public, anon, authenticated;
