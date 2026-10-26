@@ -31,6 +31,7 @@ import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, Shopping
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
+import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 
@@ -621,6 +622,9 @@ const BrandPortal: React.FC = () => {
             </Card>
           </div>
         )}
+
+        {/* Approval status (shoppers only see approved partners' products) */}
+        <PendingApprovalBanner status={(brand as { verification_status?: string } | null)?.verification_status} />
 
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner />

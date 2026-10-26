@@ -46,7 +46,10 @@ export function isEventOpen(
   return true;
 }
 
-/** Where a result image is stored: one folder per event, then per user. */
+/**
+ * Where a result image is stored in the ai-tryon-results bucket: the user's
+ * folder, same as photo try-on, so it also works in the AI Studio gallery.
+ */
 export function resultPath(eventId: string, userId: string, productId: string, now: number): string {
-  return `${eventId}/${userId}/${productId}_${now}.png`;
+  return `${userId}/event_${eventId}_${productId}_${now}.png`;
 }

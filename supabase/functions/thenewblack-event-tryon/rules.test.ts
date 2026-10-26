@@ -70,7 +70,7 @@ describe('isEventOpen', () => {
 });
 
 describe('resultPath', () => {
-  it('stores results under event, then user', () => {
-    expect(resultPath(EVENT, USER, 'prod-1', 1700000000000)).toBe(`${EVENT}/${USER}/prod-1_1700000000000.png`);
+  it('stores results in the user\'s folder, like photo try-on results', () => {
+    expect(resultPath(EVENT, USER, 'prod-1', 1700000000000)).toBe(`${USER}/event_${EVENT}_prod-1_1700000000000.png`);
   });
 });

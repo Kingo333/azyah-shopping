@@ -185,21 +185,16 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     try {
       setStatus('generating');
       
-      // Resolve person image URL
-      let personImageUrl = personImageId;
-      if (!personImageId.startsWith('http')) {
-        const { data: urlData } = supabase.storage
-          .from('event-user-photos')
-          .getPublicUrl(personImageId);
-        personImageUrl = urlData.publicUrl;
-      }
+      // Send the storage path (photos are private); the server makes an
+      // expiring link for the provider and checks the photo is ours.
+      const isUrl = personImageId.startsWith('http');
 
       // Call The New Black event try-on edge function (synchronous)
       const { data, error } = await supabase.functions.invoke('thenewblack-event-tryon', {
         body: {
           event_id: eventId,
           product_id: product.id,
-          person_image_url: personImageUrl,
+          ...(isUrl ? { person_image_url: personImageId } : { person_image_path: personImageId }),
         },
       });
 

@@ -39,6 +39,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
+import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 
 const RetailerPortal = () => {
   const { user } = useAuth();
@@ -491,6 +492,9 @@ const RetailerPortal = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Approval status (shoppers only see approved partners' products) */}
+        <PendingApprovalBanner status={retailer?.verification_status} />
 
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner />

@@ -8,9 +8,11 @@ const corsHeaders = {
 };
 
 const PHOTO_BUCKET = 'event-user-photos';
-const RESULT_BUCKET = 'event-tryon-results';
+// Results go where photo try-on results go, so they keep working in the
+// AI Studio gallery (permanent, unguessable links). Making all try-on results
+// private is a separate change to AI Studio.
+const RESULT_BUCKET = 'ai-tryon-results';
 const PERSON_LINK_SECONDS = 600;   // long enough for the provider to fetch the photo
-const RESULT_LINK_SECONDS = 3600;
 
 const TNB_PROMPT = 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.';
 
@@ -154,7 +156,7 @@ serve(async (req) => {
       return json({ ok: false, error: 'Invalid response from API' }, 500);
     }
 
-    // 9. Store the result privately and return an expiring link
+    // 9. Store the result with the other try-on results
     const imageResponse = await fetch(resultUrl);
     if (!imageResponse.ok) {
       await markJob({ status: 'succeeded', output_path: resultUrl });
@@ -169,12 +171,10 @@ serve(async (req) => {
       await markJob({ status: 'succeeded', output_path: resultUrl });
       return json({ ok: true, result_url: resultUrl, job_id: job?.id });
     }
-    await markJob({ status: 'succeeded', output_path: outputPath });
-    const { data: resultLink } = await serviceClient.storage
-      .from(RESULT_BUCKET)
-      .createSignedUrl(outputPath, RESULT_LINK_SECONDS);
+    const { data: stored } = serviceClient.storage.from(RESULT_BUCKET).getPublicUrl(outputPath);
+    await markJob({ status: 'succeeded', output_path: stored.publicUrl });
 
-    return json({ ok: true, result_url: resultLink?.signedUrl ?? null, result_path: outputPath, job_id: job?.id });
+    return json({ ok: true, result_url: stored.publicUrl, job_id: job?.id });
   } catch (error) {
     console.error('[TNB Event TryOn] Error:', error instanceof Error ? error.message : error);
     return json({ ok: false, error: 'Something went wrong. Please try again.' }, 500);
