@@ -1,4 +1,4 @@
--- ROLLBACK for 20261026231000_private_event_media.sql
+-- ROLLBACK for 20261026192808_private_event_media.sql
 -- Restores the previous (public) buckets and storage policies exactly as they
 -- were on 2026-10-26 (copied from pg_policies). Run by hand only if needed.
 

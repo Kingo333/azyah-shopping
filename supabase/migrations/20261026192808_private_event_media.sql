@@ -1,12 +1,11 @@
 -- Private event media.
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Apply only AFTER the
--- app change that shows event photos/results through expiring links is live
--- (Events.tsx, EventTryOnModal.tsx) and the updated thenewblack-event-tryon
--- function is deployed. Rename to the version live records when applied.
+-- STATUS: APPLIED to live 2026-10-26 with owner approval (version 20261026192808),
+-- after the updated thenewblack-event-tryon (v51) was deployed. Post-apply
+-- probes 14/14; old public photo links return 400.
 -- Review: docs/redesign/PARTNER_AND_EVENTS_REVIEW.md (E4, S7 for events).
 -- Tests:  supabase/tests/event_media_probes.sql (rollback mode on production).
--- Rollback: supabase/rollbacks/20261026231000_private_event_media.rollback.sql
+-- Rollback: supabase/rollbacks/20261026192808_private_event_media.rollback.sql
 --
 -- What it does:
 --   - Makes event-user-photos (shopper photos), event-tryon-results (old event

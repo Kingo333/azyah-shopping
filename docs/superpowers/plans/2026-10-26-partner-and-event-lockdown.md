@@ -16,6 +16,14 @@
 - Change from the plan: event try-on **results** are stored in `ai-tryon-results` (same as photo try-on), so saved results keep working in the AI Studio gallery, which shows saved links directly. Shopper **photos** are fully private. Making all try-on results private is a separate AI Studio change (needs the owner's phone test). `resultPath` is now `${userId}/event_${eventId}_${productId}_${now}.png`.
 - Not in scope (from the review): bulk upload as drafts (P7), contact-email privacy (P3).
 
+## Live status (2026-10-26, owner approved each step)
+- Migration A applied (20261026183904): probes 30/30 on live.
+- Contact emails applied (20261026190151): probes 17/17 on live.
+- `thenewblack-event-tryon` v51 deployed (verify_jwt off as before; the function checks the login itself). Smoke test on live: OPTIONS 200, no login 401, fake login 401. A full paid try-on was not run (no event is running).
+- Event media applied (20261026192808): probes 14/14 on live; old public photo link returns 400.
+- Security advisors after all three: anon-executable SECURITY DEFINER 155 → 150, no new lint types, no ERRORs.
+- App changes on this branch are NOT merged yet (owner phone test on the Vercel preview first).
+
 ## Global Constraints
 - Owner decisions: event try-ons use the **shopper's own AI credits** (same rules as `thenewblack-picture`); partner verification = **manual approval**; guest brands allowed (not built here); events browsable without login (not built here).
 - Nothing is applied to the live database, deployed, or merged without the owner's explicit OK. Probes on live run only inside one transaction that ends with a RAISE.

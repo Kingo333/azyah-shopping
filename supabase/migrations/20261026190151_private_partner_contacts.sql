@@ -1,10 +1,10 @@
 -- Private partner contact emails.
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Rename to the version
--- live records when applied.
+-- STATUS: APPLIED to live 2026-10-26 with owner approval (version 20261026190151).
+-- Post-apply probes 17/17; the one existing email moved to brand_contacts.
 -- Review: docs/redesign/PARTNER_AND_EVENTS_REVIEW.md (P3).
 -- Tests:  supabase/tests/partner_contact_probes.sql (rollback mode on production).
--- Rollback: supabase/rollbacks/20261026232000_private_partner_contacts.rollback.sql
+-- Rollback: supabase/rollbacks/20261026190151_private_partner_contacts.rollback.sql
 --
 -- Problem: brands.contact_email and retailers.contact_email were readable by
 -- everyone (the public read rule covers every column), and five unused

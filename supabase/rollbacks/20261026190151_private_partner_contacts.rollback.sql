@@ -1,4 +1,4 @@
--- ROLLBACK for 20261026232000_private_partner_contacts.sql
+-- ROLLBACK for 20261026190151_private_partner_contacts.sql
 -- Puts the emails back on brands/retailers (public again), removes the private
 -- tables and triggers, and restores the five contact functions exactly as they
 -- were on 2026-10-26. Run by hand only if needed.
