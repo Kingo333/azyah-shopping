@@ -54,5 +54,14 @@ The session-2 kickoff message left all five blank.
 - Recommended: one Partner Workspace with a thin "Events & pop-ups" section; events reference real brands and products (keep all ids, so QR/AR links survive); shoppers meet events in Discover, brand pages, the Try On tray and an event page browsable without login; all try-ons through the one Try On screen.
 - Owner decisions (2026-10-26): event try-ons use the **shopper's credits** (organisers pay outside the app; no sponsored allowance); **guest brands allowed**; **events browsable without login**; **partner verification = manual approval**.
 
+## Partner and event lockdown (session 2, built and tested, NOT applied)
+- Branch `claude/partner-and-event-lockdown` (from main), worktree `.claude/worktrees/partner-lockdown`. Plan: `docs/superpowers/plans/2026-10-26-partner-and-event-lockdown.md`. No PR opened yet (`gh` not installed): open a draft from https://github.com/Kingo333/azyah-shopping/pull/new/claude/partner-and-event-lockdown
+- Migration A `20261026230000_partner_verification_and_product_access.sql`: partner verification (existing partners approved, new ones pending), shoppers only see active non-event products from approved partners, only brand/retailer accounts create profiles, retailers can't post under another company's claimed brand. Probes 17/30 → 30/30; rollback verified identical.
+- Edge Function `thenewblack-event-tryon`: event running, item belongs to event, photo is caller's own, one AI credit (refund on failure), expiring link to the provider, results stored in `ai-tryon-results`. Not deployed. Accepts the old app request.
+- App: Events page and try-on modal use expiring links; portals show "waiting for approval". Tests 159/159, Live Cam 31/31, build passes.
+- Migration B `20261026231000_private_event_media.sql`: four event buckets private, owner-only photo/result rules. Probes 6/14 → 14/14; rollback verified identical. **Apply only after the function is deployed and the app change is live.**
+- Rollout, each step needs the owner's OK: apply A → deploy function → owner phone test on Vercel preview + merge → apply B → get_advisors.
+- After A: approving a new partner = `update brands set verification_status='approved', verification_updated_at=now() where id=…` (run by the server/admin; no admin screen yet).
+
 ## Next step
 Finish Phase 2 brainstorming (above), then the written design and plan.
