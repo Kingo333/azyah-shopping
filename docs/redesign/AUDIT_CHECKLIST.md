@@ -46,9 +46,9 @@ Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-even
 ## 5. Security follow-ups (session 2, this round)
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 5.1 | S15: credits readable/creatable for any user, even logged out | 🟡 | Migration `20261027090000…`; probes 3/7 without, 12/12 with; rollback verified. Needs apply OK. |
-| 5.2 | Admin partner approval (function + `/admin/partners` page) | 🟡 | Same migration + page. **shopper@test.com now has the admin role (live, owner approved)** alongside shopper; the app still shows it the shopper site (role lookup picks shopper; checked the way the app sorts). The page checks the admin role itself because the app's normal admin role locks accounts out of every page. |
-| 5.3 | S14: 14 functions without a fixed search_path | 🟡 | Migration `20261027091000…`; dry run: 0 behaviour differences, 0 left unpinned. Needs apply OK. |
+| 5.1 | S15: credits readable/creatable for any user, even logged out | ✅ live | `20261027080215` (owner approved 2026-10-27); post-apply probes 13/13 on live. |
+| 5.2 | Admin partner approval (function + `/admin/partners` page) | ✅ function live / 🟡 page | Function live in `20261027080215`; the real admin account approved a test brand in the post-apply check. Page on the partner branch (needs merge). **shopper@test.com now has the admin role (live, owner approved)** alongside shopper; the app still shows it the shopper site (role lookup picks shopper; checked the way the app sorts). The page checks the admin role itself because the app's normal admin role locks accounts out of every page. |
+| 5.3 | S14: 14 functions without a fixed search_path | ✅ live | `20261027080234`; post-apply: 0 left unpinned, share links and new share slugs still work; the advisor lint is gone. |
 | 5.4 | Phase 1.3: wardrobe enhance → server key, then revoke from users | ✅ not needed | `deduct_wardrobe_credit` is already safe (own account, positive amounts only, live since 3.7). Changing the deployed function could undo Lovable-only changes, so left as is. |
 | 5.5 | Phase 1.5: download the 41 live-only Edge Function sources | ⛔ | The MCP `get_edge_function` tool errors for every function. Owner can run `npx supabase login` then `npx supabase functions download <name>` (read-only). |
 | 5.6 | Other public photo buckets (`ai-tryon-*`, `wardrobe*`, `tnb-video-inputs`) | ❓ | Needs AI Studio changes (where Live Cam lives) and the owner's phone test; not started. |
@@ -87,12 +87,12 @@ Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-even
 | 8.3 | Approve partners manually | ✅ decided: yes |
 | 8.4 | Hide cart/checkout and UGC collaborations | ✅ decided: keep cart; hide UGC. 🟡 Built on nav-v2 (`ugc_collab = false`): UGC tab gone from both bars, Collab button and portal Collabs tabs hidden; `/ugc` and data stay. |
 | 8.5 | Kiosk engine | ❓ explained to owner 2026-10-27 (see KIOSK_MVP.md); decision pending |
-| 8.6 | Globe People counts are wrong today (privacy rule hides other users' rows) | ✅ decided: fix. 🟡 Built on nav-v2: lookups `get_globe_people_counts` / `get_globe_people` (visible shoppers only, public fields only); probes 9/9; migration `20261027100000…` needs apply OK. The tapped-country list had the same bug and is fixed too. |
+| 8.6 | Globe People counts are wrong today (privacy rule hides other users' rows) | ✅ decided: fix. 🟡 Built on nav-v2: lookups `get_globe_people_counts` / `get_globe_people` (visible shoppers only, public fields only); post-apply probes 9/9 on live (`20261027080253`); the Globe uses it once nav-v2 is merged (until then the live Globe keeps the old reads). The tapped-country list had the same bug and is fixed too. |
 | 8.7 | Give your account the admin role | ✅ done (live): shopper@test.com |
 
 ## 9. What's left, in order
 1. ✅ Branches pushed.
-2. Apply migrations 5.1, 5.3 and the Globe People lookup (owner OK).
+2. ✅ Migrations 5.1, 5.3 and the Globe People lookup applied (2026-10-27). Advisors after: search_path lint gone; SECURITY DEFINER anon 150 → 151 / authenticated 157 → 160 (the new public Globe lookups and the admin function, intended); no ERRORs.
 3. 👤 Open the two draft PRs, phone-test the Vercel previews (partner: pending/publish, settings email, events page; nav-v2: open the preview with `?nav_v2=1`), then merge (owner OK). Merge order: partner first, then nav-v2 (App.tsx conflict expected, I'll resolve it).
 4. ❓ Decision 8.5 (kiosk engine).
 5. 👤 Dashboard: leaked-password protection and Postgres upgrade.

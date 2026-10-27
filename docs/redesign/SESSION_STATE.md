@@ -69,7 +69,7 @@ The session-2 kickoff message left all five blank.
 
 ## Session 2, final round (2026-10-27)
 - Branch `claude/nav-v2` (from main): Phase 2 built behind a per-device flag (`?nav_v2=1`), lazy routes (main bundle 4.39 → 0.70 MB), Your Fit hidden (`your_fit=false`), Globe unchanged except the Fit tab. Design + plan in `docs/superpowers/`. Tests 158/158, Live Cam 31/31, build passes. NOT merged; needs owner phone test.
-- Branch `claude/partner-and-event-lockdown` got (not applied): `20261027090000_credits_owner_only_and_partner_approval.sql` (S15 + `admin_set_partner_verification`, probes 12/12), `20261027091000_pin_function_search_path.sql` (S14, 0 behaviour differences), and `/admin/partners`. Tests 177/177.
+- **Applied to live 2026-10-27 (owner approved):** `20261027080215_credits_owner_only_and_partner_approval` (probes 13/13), `20261027080234_pin_function_search_path` (0 unpinned), `20261027080253_globe_people_lookups` (probes 9/9; on nav-v2 branch). Admin role added to shopper@test.com. `/admin/partners` page on the partner branch (not merged). Tests 177/177.
 - GitHub push needs the owner to sign in again (saved login expired); nav-v2 and the last partner commits are local only until then.
 - Edge Function source download (Phase 1.5) blocked: MCP `get_edge_function` errors for every function.
 
