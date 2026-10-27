@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
-import { planStorageRemoval, type StoredFile } from './storageCleanup.ts';
+import { removeAllUserFiles, type StoredFile } from './storageCleanup.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,29 +55,38 @@ serve(async (req) => {
     // Step 1: Delete every stored file of this user (all folders: AI Studio,
     // closet, outfits, events, Live Cam snapshots, ...). The database lists
     // them; the storage API removes them (SQL can't delete storage files).
-    let filesRemoved = 0;
-    let listedAll = false;
-    try {
-      const { data: files, error: listError } = await supabaseAdmin
-        .rpc('list_user_storage_objects', { target_user_id: userId });
-      if (listError || !Array.isArray(files)) {
-        console.warn('⚠️ Could not list stored files, using the old folder list:', listError?.message);
-      } else {
-        listedAll = true;
-        for (const batch of planStorageRemoval(files as StoredFile[])) {
-          const { error: removeError } = await supabaseAdmin.storage.from(batch.bucket).remove(batch.paths);
-          if (removeError) {
-            console.warn(`⚠️ Storage cleanup warning for ${batch.bucket}:`, removeError.message);
-            (result.errors as string[]).push(`Storage cleanup failed for ${batch.bucket}`);
-          } else {
-            filesRemoved += batch.paths.length;
+    // The list comes back in pages (about 1000 rows), so this repeats until
+    // nothing is left.
+    const cleanup = await removeAllUserFiles(
+      async () => {
+        try {
+          const { data: files, error: listError } = await supabaseAdmin
+            .rpc('list_user_storage_objects', { target_user_id: userId });
+          if (listError || !Array.isArray(files)) {
+            console.warn('⚠️ Could not list stored files:', listError?.message);
+            return null;
           }
+          return files as StoredFile[];
+        } catch (listException) {
+          console.warn('⚠️ Stored file listing failed:', listException);
+          return null;
         }
-      }
-    } catch (listException) {
-      console.warn('⚠️ Stored file listing failed, using the old folder list:', listException);
+      },
+      async (bucket, paths) => {
+        const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(paths);
+        if (removeError) {
+          console.warn(`⚠️ Storage cleanup warning for ${bucket}:`, removeError.message);
+          (result.errors as string[]).push(`Storage cleanup failed for ${bucket}`);
+          return false;
+        }
+        return true;
+      },
+    );
+    const listedAll = cleanup.listed;
+    result.storage_files_removed = cleanup.removed;
+    if (cleanup.listed && !cleanup.complete) {
+      (result.errors as string[]).push('Some stored files could not be removed');
     }
-    result.storage_files_removed = filesRemoved;
 
     // Fallback (older database without list_user_storage_objects): first-level files only.
     const storageBuckets = listedAll ? [] : ['wardrobe', 'tryon', 'avatars', 'fits', 'post-images'];
