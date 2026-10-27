@@ -2,7 +2,8 @@
 export const features = {
   aiTryOn: true,
   arTryOn: false,
-  ugc_collab: true,
+  // UGC collaborations: hidden (owner decision 2026-10-27). /ugc and its data stay.
+  ugc_collab: false,
   axessoImport: true,
   axessoImportBulk: true,
   ai_beauty_consultant: false,

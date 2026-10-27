@@ -23,6 +23,7 @@ import CategoryGrid from '@/components/CategoryGrid';
 import AiStudioModal from '@/components/AiStudioModal';
 import PostLoginUpgradeModal from '@/components/PostLoginUpgradeModal';
 import { useNavV2 } from '@/hooks/useNavV2';
+import { features } from '@/lib/features';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -380,7 +381,7 @@ const Swipe = () => {
                 { path: '/explore', Icon: Globe },
                 { path: '/ugc', Icon: Users },
                 { path: '/profile', Icon: User },
-              ].map(({ path, Icon }) => (
+              ].filter(({ path }) => path !== '/ugc' || features.ugc_collab).map(({ path, Icon }) => (
                 <button key={path} onClick={() => navigate(path)} className="p-1.5">
                   <Icon className={`h-5 w-5 ${location.pathname === path ? 'text-[hsl(var(--azyah-maroon))]' : 'text-foreground/60'}`} strokeWidth={1.5} />
                 </button>

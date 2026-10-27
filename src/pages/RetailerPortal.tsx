@@ -29,6 +29,10 @@ import { BulkImportActions } from '@/components/BulkImportActions';
 import { RetailerPortalHeader } from '@/components/RetailerPortalHeader';
 import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
+import { features } from '@/lib/features';
+
+// Collabs tab hidden while UGC is off; old ?tab=collabs links open Products.
+const portalTab = (tab: string | null) => (!tab ? 'products' : tab === 'collabs' && !features.ugc_collab ? 'products' : tab);
 import { AsosImportManager } from '@/components/AsosImportManager';
 import BulkAsosImportManager from '@/components/BulkAsosImportManager';
 import { RetailerEvents } from '@/components/RetailerEvents';
@@ -45,14 +49,14 @@ const RetailerPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
+  const [activeTab, setActiveTab] = useState(portalTab(searchParams.get('tab')));
   const [retailer, setRetailer] = useState<any>(null);
   
   // Sync activeTab when URL changes (e.g., from ProfileCompletionBanner navigation)
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab);
+    if (tab && portalTab(tab) !== activeTab) {
+      setActiveTab(portalTab(tab));
     }
   }, [searchParams]);
   
@@ -497,9 +501,9 @@ const RetailerPortal = () => {
         
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
-          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-6 md:flex md:w-auto">
+          <TabsList className={`bg-muted/50 dark:bg-slate-800/50 grid w-full ${features.ugc_collab ? 'grid-cols-6' : 'grid-cols-5'} md:flex md:w-auto`}>
             <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
+            {features.ugc_collab && <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>}
             <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Brands</TabsTrigger>
             <TabsTrigger value="events" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Events</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
@@ -629,6 +633,7 @@ const RetailerPortal = () => {
             </Card>
           </TabsContent>
 
+          {features.ugc_collab && (
           <TabsContent value="collabs">
             <div className="space-y-3 md:space-y-4">
               <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-3 md:p-4 border border-border/50">
@@ -642,6 +647,7 @@ const RetailerPortal = () => {
               <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
             </div>
           </TabsContent>
+          )}
 
           <TabsContent value="brands">
             <RetailerBrandsList retailerId={retailer?.id || ''} />
