@@ -1,6 +1,6 @@
 # Pop-up Virtual Fitting Stand — MVP
 
-Status: proposal. No code yet.
+Status: proposal. No code yet. **Engine decided 2026-10-27: Live Cam (JoyAI) only.**
 
 ## Goal
 At a pop-up, a passer-by sees a participating brand's garments on a screen, chooses to try them, and sees themselves wearing them in real time, without changing clothes. Brands upload garments through Azyah; operators run the stand.
@@ -8,7 +8,7 @@ At a pop-up, a passer-by sees a participating brand's garments on a screen, choo
 ## What exists to build on
 - Events: `retail_events` (retailer-owned), `event_brands`, `event_brand_products` (garment image + `garment_type`), public read for active events. 1 event, 5 event products today.
 - Live Cam (JoyAI / FluxRT) already accepts event products as a garment source (`LiveCamGarmentPicker.tsx`, `garment_source = event_brand_product`).
-- AR overlay `/ar/:eventId/:brandId` (3D models, client-only, no GPU cost) — usable as a fallback.
+- AR overlay `/ar/:eventId/:brandId` (3D models, client-only, no GPU cost). **Not used at the kiosk:** owner decided 2026-10-27 that the kiosk runs on Live Cam only. If the GPU isn't ready, the stand shows its attract screen and a "warming up" message, not AR.
 
 ## Engine facts that shape the MVP
 - **One session per GPU worker** (JoyAI). One stand = one worker.

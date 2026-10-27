@@ -23,7 +23,7 @@ _Last updated: 2026-10-27 (session 2 end, after the production release). **Start
 
 ## Decisions
 - Done: no Supabase test branch; Live Cam is a shopper feature; manual partner approval; keep cart, hide UGC; Globe People counts fixed; shopper@test.com has the admin role; event try-ons use shopper credits; guest brands allowed; events browsable without login; Globe unchanged; Your Fit hidden.
-- **Still open:** kiosk engine. [Recommended: Live Cam (JoyAI), AR as fallback; ≈ $12.60 per 8-hour day per stand on an RTX 5090.] See `KIOSK_MVP.md`.
+- Kiosk engine: **Live Cam (JoyAI) only, no AR fallback** (owner 2026-10-27). ≈ $12.60 per 8-hour day per stand on an RTX 5090, warm worker during event hours. See `KIOSK_MVP.md`.
 - Owner, later (not a priority): dashboard leaked-password protection and Postgres upgrade.
 
 ## Skills
@@ -44,5 +44,5 @@ _Last updated: 2026-10-27 (session 2 end, after the production release). **Start
 
 ## Next step
 1. Owner phone test of the live site (AUDIT_CHECKLIST §9). Top up RunPod first if Try On / Live Cam is part of it.
-2. Kiosk engine decision.
+2. ~~Kiosk engine decision~~: Live Cam only (decided 2026-10-27).
 3. Phase 3 (Discover search/modes) per `IMPLEMENTATION_PLAN.md`, then Phase 4 (real Try On screen), Phase 5 (Partner Workspace + events + kiosk), Phase 6 (cleanup). Turning nav v2 on for everyone is a one-line flag change (`nav_v2` in `src/lib/features.ts`) once the owner is happy with it.

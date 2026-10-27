@@ -86,7 +86,7 @@ Legend: ✅ done and verified · 🚀 released to `main` (live on Vercel), owner
 | 8.2 | Who gets Live Cam | ✅ decided: a shopper feature (as today; no change needed) |
 | 8.3 | Approve partners manually | ✅ decided: yes |
 | 8.4 | Hide cart/checkout and UGC collaborations | ✅ decided: keep cart; hide UGC. 🚀 In `main` (`ugc_collab = false`): UGC tab gone from both bars, Collab button and portal Collabs tabs hidden; `/ugc` and data stay. |
-| 8.5 | Kiosk engine | ❓ explained to owner 2026-10-27 (see KIOSK_MVP.md); decision pending |
+| 8.5 | Kiosk engine | ✅ decided 2026-10-27: Live Cam (JoyAI) only, no AR fallback (KIOSK_MVP.md updated). Built in Phase 5. |
 | 8.6 | Globe People counts are wrong today (privacy rule hides other users' rows) | ✅ decided: fix. 🚀 In `main`: lookups `get_globe_people_counts` / `get_globe_people` (visible shoppers only, public fields only); post-apply probes 9/9 on live (`20261027080253`); the live Globe uses them for everyone (not tied to the nav v2 flag). The tapped-country list had the same bug and is fixed too. |
 | 8.7 | Give your account the admin role | ✅ done (live): shopper@test.com |
 
@@ -101,6 +101,6 @@ Legend: ✅ done and verified · 🚀 released to `main` (live on Vercel), owner
    - Admin: signed in as shopper@test.com, `/admin/partners` lists pending partners and can approve one.
    - Events page (signed in): your own event photos and try-on results show (they now use expiring links). Browsing events without login is Phase 5 (4.8), not built yet.
    - If anything is wrong: tell the next session. Quick undo = a revert commit of the release on `main` (owner OK needed; no force push). Database changes stay live either way; the old app was already running against them before the release (only the old events page couldn't show past event results, and old portals showed the contact email empty).
-5. ❓ Decision 8.5 (kiosk engine).
+5. ✅ Decision 8.5: kiosk = Live Cam only.
 6. 👤 Dashboard: leaked-password protection and Postgres upgrade.
 7. Later phases: Discover search/modes (3), real Try On screen (4), Partner Workspace + events + kiosk (5), cleanup (6).

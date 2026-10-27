@@ -11,7 +11,7 @@ Status: **recommendations awaiting approval.** "Hide" means the route and data s
 | Picture / Video try-on | **Keep but relocate** (Try On › Photo/Video) | Working, credit-based | Fewer entry points | — |
 | BitStudio try-on via Favorites | **Merge** into Try On › Photo, then retire provider | Duplicate provider (`ProductTryOnModal`) | One provider bill | Flag |
 | Event photo try-on | **Merge** into Try On (event garments as a garment source) and Kiosk | Same idea as Photo mode | — | `/events` redirect |
-| AR (3D overlay) | **Keep** QR route; **defer** decision on kiosk use | Works per `.planning/`; Live Cam is the stronger demo | None now | — |
+| AR (3D overlay) | **Keep** QR route; **not** used at the kiosk (owner 2026-10-27: kiosk = Live Cam only) | Works per `.planning/`; Live Cam is the stronger demo | None now | — |
 | Outfit canvas (Dress Me) | **Keep**; entry from Community › Create and Profile | Core creative tool | Entry moves | Paths unchanged |
 | Wardrobe | **Keep but relocate** (Profile; also a garment source in Try On) | Feeds canvas and Live Cam | — | Paths unchanged |
 | Moodboard builder | **Recommend removal** (code only) | `MoodBoardBuilder.tsx` never imported; `looks` has 2 rows | −1 dead feature | Git history; keep `looks` table |
@@ -40,7 +40,7 @@ Status: **recommendations awaiting approval.** "Hide" means the route and data s
 2. Partner verification: approve brands/retailers manually before they can publish?
 3. Cart/checkout: confirm it should be hidden.
 4. UGC collaborations: hide now, revisit later?
-5. Kiosk engine: Live Cam (JoyAI) as the kiosk experience, AR as fallback?
+5. ~~Kiosk engine~~: **decided 2026-10-27: Live Cam (JoyAI) only, no AR fallback.**
 
 ## Owner decisions (session 2, 2026-10-26)
 | Capability | Decision | Notes |
