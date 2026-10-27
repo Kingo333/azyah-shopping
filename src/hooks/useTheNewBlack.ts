@@ -45,7 +45,8 @@ export function useTheNewBlack() {
   const [videoPolling, setVideoPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Upload image to Supabase storage and get public URL
+  // Upload image to your own storage folder and get a temporary link (1 hour).
+  // Person photos are private; the link is only passed on to the try-on call.
   const uploadImage = useCallback(async (file: File, type: 'person' | 'outfit'): Promise<string | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -66,10 +67,15 @@ export function useTheNewBlack() {
         throw uploadError;
       }
 
+      const { data: signed, error: signError } = await supabase.storage
+        .from('ai-tryon-uploads')
+        .createSignedUrl(fileName, 3600);
+      if (signed?.signedUrl) return signed.signedUrl;
+
+      console.warn('[useTheNewBlack] Could not create a temporary link, using the permanent address', signError?.message);
       const { data: publicUrl } = supabase.storage
         .from('ai-tryon-uploads')
         .getPublicUrl(fileName);
-
       return publicUrl.publicUrl;
     } catch (err) {
       console.error('[useTheNewBlack] Upload error:', err);

@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { assetUrlForStorage } from '@/hooks/aiAssetUrls';
 
 interface AiTryOnModalProps {
   isOpen: boolean;
@@ -337,7 +338,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         .insert([{
           user_id: user.id,
           job_id: currentResult.id,
-          asset_url: currentResult.path,
+          asset_url: assetUrlForStorage(currentResult.path),
           asset_type: 'tryon_result',
           title: `AI Try-On ${new Date().toLocaleDateString()}`
         }]);

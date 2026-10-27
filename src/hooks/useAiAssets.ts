@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/use-debounce';
+import { signPrivateMedia } from '@/lib/privateMedia';
+import { assetUrlForStorage, withDisplayUrls } from './aiAssetUrls';
 
 export interface AiAsset {
   id: string;
@@ -79,7 +81,8 @@ export const useAiAssets = () => {
         setAssets([]);
       } else {
         console.log('[useAiAssets] Successfully fetched', data?.length || 0, 'assets');
-        setAssets(data || []);
+        // Private results are shown through temporary links.
+        setAssets(await withDisplayUrls(data || [], (urls) => signPrivateMedia(supabase.storage, urls)));
         retryCountRef.current = 0; // Reset on success
       }
     } catch (error: any) {
@@ -114,7 +117,8 @@ export const useAiAssets = () => {
       const assetData = {
         user_id: user.id,
         job_id: jobId,
-        asset_url: assetUrl,
+        // Never save a temporary link; the gallery makes a fresh one when it loads.
+        asset_url: assetUrlForStorage(assetUrl),
         asset_type: 'tryon_result',
         title: title || `AI Try-On ${new Date().toLocaleDateString()}`
       };
@@ -131,7 +135,7 @@ export const useAiAssets = () => {
       }
       
       console.log('[useAiAssets] Asset saved successfully:', data);
-      setAssets(prev => [data, ...prev]);
+      setAssets(prev => [{ ...data, asset_url: assetUrl }, ...prev]);
       retryCountRef.current = 0;
       return data;
     } catch (error: any) {
