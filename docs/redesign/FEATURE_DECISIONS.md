@@ -51,3 +51,8 @@ Status: **recommendations awaiting approval.** "Hide" means the route and data s
 | Guest brands at events | **Allowed.** A retailer can add a brand without an Azyah account, marked "guest", claimable later. | PARTNER_AND_EVENTS_REVIEW.md §3.3. |
 | Event browsing | **Public** (no login to browse). Login only to try on or save. | Removes `/events` from AUTH_REQUIRED_ROUTES when the event page is rebuilt. |
 | Event try-on payment | **Shopper's own credits**, same rules as Photo try-on. Organisers pay Azyah directly outside the app, so no in-app organiser billing or sponsored allowance. | Fixes E3 (today it's free and unlimited). |
+| Live Cam access | **Shopper feature** (as today). | Owner, 2026-10-27. |
+| Cart / checkout | **Keep visible.** | Owner, 2026-10-27 (overrides the earlier "hide" recommendation). |
+| UGC collaborations | **Hidden** (`ugc_collab = false`): bottom-bar tab, Swipe list-view bar, Collab button, brand/retailer Collabs tabs. `/ugc` and data stay. | Owner, 2026-10-27. Built on `claude/nav-v2`. |
+| Globe People counts | **Fix** (real counts and lists of visible shoppers). | Owner, 2026-10-27. Built on `claude/nav-v2`; DB lookup not applied yet. |
+| Admin account | **shopper@test.com** has the admin role (plus shopper) for `/admin/partners`. | Owner, 2026-10-27. Applied live. |

@@ -1,6 +1,6 @@
 # Audit checklist (sessions 1–2)
 
-_2026-10-27. Every line was re-checked with fresh evidence (Superpowers verification-before-completion: no "done" without proof)._
+_2026-10-27 (updated after owner decisions). Every line was re-checked with fresh evidence (Superpowers verification-before-completion: no "done" without proof)._
 Legend: ✅ done and verified · 🟡 built and tested, waiting on an owner step · ⛔ blocked (reason given) · 👤 owner-only · ❓ owner decision needed
 
 Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-event-lockdown` (partner/event fixes + follow-ups) · `claude/nav-v2` (Phase 2).
@@ -47,12 +47,12 @@ Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-even
 | # | Item | Status | Evidence |
 |---|---|---|---|
 | 5.1 | S15: credits readable/creatable for any user, even logged out | 🟡 | Migration `20261027090000…`; probes 3/7 without, 12/12 with; rollback verified. Needs apply OK. |
-| 5.2 | Admin partner approval (function + `/admin/partners` page) | 🟡 | Same migration + page. There are **0 admin accounts**, so the page needs an admin account (owner decision). |
+| 5.2 | Admin partner approval (function + `/admin/partners` page) | 🟡 | Same migration + page. **shopper@test.com now has the admin role (live, owner approved)** alongside shopper; the app still shows it the shopper site (role lookup picks shopper; checked the way the app sorts). The page checks the admin role itself because the app's normal admin role locks accounts out of every page. |
 | 5.3 | S14: 14 functions without a fixed search_path | 🟡 | Migration `20261027091000…`; dry run: 0 behaviour differences, 0 left unpinned. Needs apply OK. |
 | 5.4 | Phase 1.3: wardrobe enhance → server key, then revoke from users | ✅ not needed | `deduct_wardrobe_credit` is already safe (own account, positive amounts only, live since 3.7). Changing the deployed function could undo Lovable-only changes, so left as is. |
 | 5.5 | Phase 1.5: download the 41 live-only Edge Function sources | ⛔ | The MCP `get_edge_function` tool errors for every function. Owner can run `npx supabase login` then `npx supabase functions download <name>` (read-only). |
 | 5.6 | Other public photo buckets (`ai-tryon-*`, `wardrobe*`, `tnb-video-inputs`) | ❓ | Needs AI Studio changes (where Live Cam lives) and the owner's phone test; not started. |
-| 5.7 | S12 leaked-password protection, S13 Postgres security update | 👤 | Supabase dashboard only: Authentication → Policies → turn on leaked-password protection; Settings → Infrastructure → upgrade Postgres (short downtime). |
+| 5.7 | S12 leaked-password protection, S13 Postgres security update | 👤 later (owner: not a priority now) | Supabase dashboard only: Authentication → Policies → turn on leaked-password protection; Settings → Infrastructure → upgrade Postgres (short downtime). |
 | 5.8 | S10 UPDATE policies without WITH CHECK (posts, events) | ✅ lowered | Postgres reuses USING when WITH CHECK is missing, so rows can't be reassigned. Brands/retailers/products now have explicit WITH CHECK. Others: cleanup later. |
 
 ## 6. Phase 2: navigation
@@ -72,7 +72,7 @@ Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-even
 | # | Rule | Status | Evidence |
 |---|---|---|---|
 | 7.1 | Branches only, never push to main | ✅ | `origin/main` still 228dcdf. |
-| 7.2 | One draft PR per change | 🟡 | PR #3 exists. Partner and nav-v2 PRs not opened (`gh` missing): open from the links below. |
+| 7.2 | One draft PR per change | 🟡 | PR #3 exists. Partner and nav-v2 PRs not opened (`gh` missing): open from the links below. All three branches pushed 2026-10-27 (owner signed in via the Terminal panel). |
 | 7.3 | Ask before migrations, Edge Function deploys, merges, money | ✅ | Every live step had an explicit owner yes. No Supabase branch created (no cost). |
 | 7.4 | RunPod, Worker, live-cam functions untouched | ✅ | No changes. |
 | 7.5 | Live Cam tests green | ✅ | 31/31 on every branch. |
@@ -83,17 +83,17 @@ Branches: `claude/busy-hypatia-ipst1p` (PR #3, docs) · `claude/partner-and-even
 | # | Decision | Status |
 |---|---|---|
 | 8.1 | Test security fix on a branch | ✅ decided: no branch |
-| 8.2 | Who gets Live Cam | ❓ (recommended: any signed-in user, free time limit, more for Premium) |
+| 8.2 | Who gets Live Cam | ✅ decided: a shopper feature (as today; no change needed) |
 | 8.3 | Approve partners manually | ✅ decided: yes |
-| 8.4 | Hide cart/checkout and UGC collaborations | ❓ (recommended: yes). The new bar already has no UGC tab. |
-| 8.5 | Kiosk engine | ❓ (recommended: Live Cam/JoyAI, AR fallback) |
-| 8.6 | Globe People counts are wrong today (privacy rule hides other users' rows) | ❓ keep or fix |
-| 8.7 | Give your account the admin role (to use `/admin/partners`) | ❓ |
+| 8.4 | Hide cart/checkout and UGC collaborations | ✅ decided: keep cart; hide UGC. 🟡 Built on nav-v2 (`ugc_collab = false`): UGC tab gone from both bars, Collab button and portal Collabs tabs hidden; `/ugc` and data stay. |
+| 8.5 | Kiosk engine | ❓ explained to owner 2026-10-27 (see KIOSK_MVP.md); decision pending |
+| 8.6 | Globe People counts are wrong today (privacy rule hides other users' rows) | ✅ decided: fix. 🟡 Built on nav-v2: lookups `get_globe_people_counts` / `get_globe_people` (visible shoppers only, public fields only); probes 9/9; migration `20261027100000…` needs apply OK. The tapped-country list had the same bug and is fixed too. |
+| 8.7 | Give your account the admin role | ✅ done (live): shopper@test.com |
 
 ## 9. What's left, in order
-1. 👤 Sign in to GitHub once in the Terminal panel so the branches can be pushed (the saved login expired).
-2. Apply migrations 5.1 and 5.3 (owner OK).
+1. ✅ Branches pushed.
+2. Apply migrations 5.1, 5.3 and the Globe People lookup (owner OK).
 3. 👤 Open the two draft PRs, phone-test the Vercel previews (partner: pending/publish, settings email, events page; nav-v2: open the preview with `?nav_v2=1`), then merge (owner OK). Merge order: partner first, then nav-v2 (App.tsx conflict expected, I'll resolve it).
-4. ❓ Decisions 8.2, 8.4–8.7.
+4. ❓ Decision 8.5 (kiosk engine).
 5. 👤 Dashboard: leaked-password protection and Postgres upgrade.
 6. Later phases: Discover search/modes (3), real Try On screen (4), Partner Workspace + events + kiosk (5), cleanup (6).
