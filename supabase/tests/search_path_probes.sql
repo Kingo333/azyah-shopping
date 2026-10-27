@@ -1,4 +1,4 @@
--- Before/after check for 20261027091000_pin_function_search_path.sql.
+-- Before/after check for 20261027080234_pin_function_search_path.sql.
 -- Run as ONE call in rollback mode on production: take the "before" snapshot,
 -- apply the migration body, take the "after" snapshot, compare, then RAISE so
 -- everything rolls back. (Logged-out visitors call the share lookups, so they

@@ -1,12 +1,12 @@
 -- Pin search_path on the 14 functions the security advisor flags
 -- (function_search_path_mutable, S14).
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Rename to the version
--- live records when applied.
+-- STATUS: APPLIED to live 2026-10-27 with owner approval (version 20261027080234).
+-- Post-apply: 0 functions left unpinned; share links and slugs still work.
 -- Tests: supabase/tests/search_path_probes.sql (rollback mode on production):
 --        public share lookups, slugify and the share-slug trigger give the
 --        same results before and after.
--- Rollback: supabase/rollbacks/20261027091000_pin_function_search_path.rollback.sql
+-- Rollback: supabase/rollbacks/20261027080234_pin_function_search_path.rollback.sql
 --
 -- Each function keeps exactly the search_path it runs with today (the
 -- database default "public, extensions"), so nothing it references changes.

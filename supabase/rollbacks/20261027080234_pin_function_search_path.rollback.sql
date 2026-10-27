@@ -1,4 +1,4 @@
--- ROLLBACK for 20261027091000_pin_function_search_path.sql
+-- ROLLBACK for 20261027080234_pin_function_search_path.sql
 -- Removes the pinned search_path again (back to the caller's setting).
 
 begin;

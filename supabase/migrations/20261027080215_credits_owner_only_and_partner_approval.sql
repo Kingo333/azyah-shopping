@@ -1,11 +1,11 @@
 -- Security follow-ups: own credits only; admin partner approval.
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Rename to the version
--- live records when applied.
+-- STATUS: APPLIED to live 2026-10-27 with owner approval (version 20261027080215).
+-- Post-apply probes 13/13 (incl. the real admin account).
 -- Review: docs/redesign/SUPABASE_AUDIT.md (S15) and PARTNER_AND_EVENTS_REVIEW.md
 --         (owner decision: partners approved manually).
 -- Tests:  supabase/tests/followup_probes.sql (rollback mode on production).
--- Rollback: supabase/rollbacks/20261027090000_credits_owner_only_and_partner_approval.rollback.sql
+-- Rollback: supabase/rollbacks/20261027080215_credits_owner_only_and_partner_approval.rollback.sql
 --
 -- 1. get_user_credits(target_user_id) could be called by anyone (even logged
 --    out) for any user, and it creates or resets that user's credits row.

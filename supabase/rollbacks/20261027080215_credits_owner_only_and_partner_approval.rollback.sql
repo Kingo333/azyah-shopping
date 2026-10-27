@@ -1,4 +1,4 @@
--- ROLLBACK for 20261027090000_credits_owner_only_and_partner_approval.sql
+-- ROLLBACK for 20261027080215_credits_owner_only_and_partner_approval.sql
 -- Restores get_user_credits exactly as it was on 2026-10-26 (anyone could
 -- call it for any user) and removes admin_set_partner_verification.
 
