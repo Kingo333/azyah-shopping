@@ -274,8 +274,10 @@ function AppContent() {
                   {/* Legacy affiliate route - resolve username and redirect to deals */}
                   <Route path="/affiliate/:userId" element={<AffiliateRedirect />} />
                   
+                  {/* Admin check happens in the page and in the database
+                      (the app's role lookup treats admin accounts as shoppers) */}
                   <Route path="/admin/partners" element={
-                    <ProtectedRoute roles={['admin']}>
+                    <ProtectedRoute>
                       <PartnerApprovals />
                     </ProtectedRoute>
                   } />

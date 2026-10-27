@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Partner = {
   id: string;
@@ -26,9 +27,25 @@ const STATUS_LABEL: Record<Partner['verification_status'], string> = {
  */
 export default function PartnerApprovals() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Admin accounts also keep their shopper role, and the app's role lookup
+  // shows them the shopper site, so check the admin role here. The database
+  // function refuses non-admins either way.
+  useEffect(() => {
+    if (!user) return;
+    (supabase as any)
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle()
+      .then(({ data }: { data: { role: string } | null }) => setIsAdmin(!!data));
+  }, [user]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,7 +62,7 @@ export default function PartnerApprovals() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
 
   const setStatus = async (p: Partner, status: Partner['verification_status']) => {
     setBusyId(p.id);
@@ -62,6 +79,18 @@ export default function PartnerApprovals() {
     toast({ title: status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Set to waiting', description: p.name });
     load();
   };
+
+  if (isAdmin === null) {
+    return <main className="container mx-auto max-w-3xl px-4 py-6"><p className="text-sm text-muted-foreground">Checking access…</p></main>;
+  }
+  if (!isAdmin) {
+    return (
+      <main className="container mx-auto max-w-3xl px-4 py-6">
+        <h1 className="text-xl font-semibold">Admins only</h1>
+        <p className="text-sm text-muted-foreground">This page is for approving brands and stores.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-6">
