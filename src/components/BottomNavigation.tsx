@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode, setGuestMode } from '@/hooks/useGuestMode';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { features } from '@/lib/features';
 
 interface NavItem {
   id: string;
@@ -15,13 +16,14 @@ interface NavItem {
   requiresAuth?: boolean; // Routes that require auth (show prompt for guests)
 }
 
-// Navigation restructured: 4 uniform tabs - Feed, Explore, Collabs, Profile
-const navItems: NavItem[] = [
+// Feed, Explore, (UGC when the ugc_collab feature is on), Profile
+const allNavItems: NavItem[] = [
   { id: 'feed', label: 'Feed', icon: ShoppingBag, path: '/swipe' },
   { id: 'explore', label: 'Explore', icon: Globe, path: '/explore' },
   { id: 'ugc', label: 'UGC', icon: Users, path: '/ugc', requiresAuth: true },
   { id: 'profile', label: 'Profile', icon: User, path: '/profile', requiresAuth: true },
 ];
+const navItems = allNavItems.filter((item) => item.id !== 'ugc' || features.ugc_collab);
 
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
 const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/community', '/trending', '/influencers', '/brands', '/wishlist', '/forum', '/affiliate', '/events', '/', '/landing', '/onboarding/intro'];

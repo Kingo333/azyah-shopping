@@ -40,6 +40,7 @@ import { DealsCard } from '@/components/deals/DealsCard';
 import { DealsDrawer } from '@/components/deals/DealsDrawer';
 import { useClipboardLinkDetector } from '@/hooks/useClipboardLinkDetector';
 import { ClipboardLinkPrompt } from '@/components/deals/ClipboardLinkPrompt';
+import { features } from '@/lib/features';
 
 interface UserProfile {
   id: string;
@@ -400,14 +401,16 @@ const RoleDashboard: React.FC = () => {
               >
                 Refine
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-[10px] px-2"
-                onClick={() => navigate('/explore?tab=your-fit')}
-              >
-                Your fit
-              </Button>
+              {features.your_fit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] px-2"
+                  onClick={() => navigate('/explore?tab=your-fit')}
+                >
+                  Your fit
+                </Button>
+              )}
             </div>
           </div>
         </Card>

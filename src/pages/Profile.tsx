@@ -30,6 +30,7 @@ import { PostsSection } from '@/components/profile/PostsSection';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
 import AnalyzeClosetGeminiButton from '@/components/profile/AnalyzeClosetGeminiButton';
+import { features } from '@/lib/features';
 
 interface UserProfile {
   id: string;
@@ -209,8 +210,8 @@ const Profile: React.FC = () => {
             onNewPost={() => setShowCreatePostModal(true)}
           />
 
-          {/* 2. Your Fit (compact pill) */}
-          <YourFitPill height={userProfile?.height} />
+          {/* 2. Your Fit (compact pill) - hidden while the your_fit feature is off */}
+          {features.your_fit && <YourFitPill height={userProfile?.height} />}
 
           {/* 3. Your Posts (carousel) */}
           <PostsSection />

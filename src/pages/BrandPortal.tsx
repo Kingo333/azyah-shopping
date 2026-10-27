@@ -19,6 +19,8 @@ import { LogoUpload } from '@/components/LogoUpload';
 import { ImportWizardModal } from '@/components/ImportWizardModal';
 import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
+import { features } from '@/lib/features';
+
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
 import { BrandOnboardingModal } from '@/components/brand/BrandOnboardingModal';
@@ -37,6 +39,9 @@ import { productStatusLabel } from '@/lib/productPublishing';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 
+// Collabs tab hidden while UGC is off; old ?tab=collabs links open Products.
+const portalTab = (tab: string | null) => (!tab ? 'products' : tab === 'collabs' && !features.ugc_collab ? 'products' : tab);
+
 type BrandCategory = 'fashion_brand' | 'agency' | 'studio';
 
 interface Brand {
@@ -54,13 +59,13 @@ interface Brand {
 }
 const BrandPortal: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
+  const [activeTab, setActiveTab] = useState(portalTab(searchParams.get('tab')));
   
   // Sync activeTab when URL changes (e.g., from ProfileCompletionBanner navigation)
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab);
+    if (tab && portalTab(tab) !== activeTab) {
+      setActiveTab(portalTab(tab));
     }
   }, [searchParams]);
   
@@ -476,7 +481,7 @@ const BrandPortal: React.FC = () => {
       return [
         { value: 'services', label: 'Services' },
         { value: 'portfolio', label: 'Portfolio' },
-        { value: 'collabs', label: 'Collabs' },
+        ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs' }] : []),
         { value: 'analytics', label: 'Analytics' },
         { value: 'settings', label: 'Settings' }
       ];
@@ -484,7 +489,7 @@ const BrandPortal: React.FC = () => {
     // Fashion brand: Products + Collabs + Analytics + Settings
     return [
       { value: 'products', label: 'Products' },
-      { value: 'collabs', label: 'Collabs' },
+      ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs' }] : []),
       { value: 'analytics', label: 'Analytics' },
       { value: 'settings', label: 'Settings' }
     ];

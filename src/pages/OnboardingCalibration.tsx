@@ -19,6 +19,7 @@ import { Brain, ChevronRight, Check, Sparkles, Ruler } from 'lucide-react';
 import { CALIBRATION_OPTIONS } from '@/constants/styleTags';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { features } from '@/lib/features';
 
 interface CalibrationState {
   coverage: string;
@@ -35,8 +36,10 @@ interface MeasurementsState {
   dressSize: string;
 }
 
-const STEPS = ['coverage', 'fit', 'fabric', 'style', 'measurements'] as const;
-type Step = typeof STEPS[number];
+const ALL_STEPS = ['coverage', 'fit', 'fabric', 'style', 'measurements'] as const;
+type Step = typeof ALL_STEPS[number];
+// The measurements step is Your Fit, hidden while the your_fit feature is off.
+const STEPS: readonly Step[] = features.your_fit ? ALL_STEPS : ALL_STEPS.filter((s) => s !== 'measurements');
 
 const TOP_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const BOTTOM_SIZES = ['24', '26', '28', '30', '32', '34', '36', '38', '40', '42'];
