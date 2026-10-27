@@ -51,6 +51,9 @@ _Last updated: 2026-10-27 (session 2 end, after the production release). **Start
 - Final review (fresh reviewer, 2026-10-27): "with fixes". Fixed: temporary links saved by older app builds (new migration `20261027125623_stable_media_addresses`, dry run 2/6 → 7/7); older builds / expired upload links (functions re-sign the caller's own photo); account deletion past 1000 files (loop). Ruled not needed: copies of shared closet items (the app already deletes copies with the original). Tests 244/244, Live Cam 31/31, deno check passes.
 - **Left (needs the owner first):** 1) phone test (AI Studio picture/video/gallery/download, event try-on + Events page, Live Cam with a closet garment; top up RunPod); 2) ship an iOS build from `main` (installed builds bundle their code) and let people update; 3) then apply `20261027180000_private_people_photos` (locks ai-tryon-uploads/results/videos; marked NOT APPLIED) and phone-test again. Until then those three folders stay public by link (no uploads, overwrites or listing by others).
 
+## Design v3 (2026-10-27)
+- Neutral, Apple-style redesign of every screen: `docs/superpowers/specs/2026-10-27-azyah-design-v3.md`, mockups `docs/redesign/mockups/v3/01…06.html`. Grey/black/white; maroon only on buy buttons; five tabs (Feed, Explore, Try on, Community, Profile); Deals hidden (flag `deals`), Your Fit removed. Written for owner approval; nothing built. Rollout behind a `design_v3` per-device flag (section 9).
+
 ## Next step
 1. Owner phone test of the live site (AUDIT_CHECKLIST §9). Top up RunPod first if Try On / Live Cam is part of it.
 1b. Private photos release (above).

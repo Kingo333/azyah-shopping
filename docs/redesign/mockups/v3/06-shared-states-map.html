@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Azyah v3 mockup: 06-shared-states-map</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>:root{--border:#E5E5EA;--border-strong:#D1D1D6;--text-primary:#1D1D1F;--text-secondary:#6E6E73;--surface-1:#F2F2F4}body{margin:0;padding:24px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--text-primary)}main{max-width:720px;margin:0 auto}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}</style>
+</head>
+<body>
+<main>
+<h2 class="sr-only">A shared outfit page, a public profile page, examples of empty, loading and error states, and a map showing which screens live under each tab, all in the neutral style.</h2>
+<style>
+.ph{border:0.5px solid var(--border-strong);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;height:540px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',system-ui,sans-serif;font-size:13px;color:#1D1D1F;background:#F5F5F7}
+.sub{font-size:12px;color:#6E6E73}
+.card{background:#fff;border-radius:20px}
+.pi{background:#E3DED7;display:flex;align-items:center;justify-content:center;color:#A39B90}
+.bk{background:#1D1D1F;color:#fff;border-radius:14px;padding:12px;text-align:center;font-weight:500}
+.sec{background:#fff;border-radius:14px;padding:11px;text-align:center;font-weight:500;border:0.5px solid #D1D1D6}
+.body{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.num{font-variant-numeric:tabular-nums}
+.cap{font-size:12px;color:var(--text-secondary);margin:6px 2px 0;text-align:center;line-height:1.5}
+.mp{background:var(--surface-1);border-radius:12px;padding:12px 14px}
+.mp h3{font-size:14px;font-weight:500;margin:0 0 6px;color:var(--text-primary)}
+.mp p{margin:0;font-size:13px;line-height:1.6;color:var(--text-secondary)}
+</style>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:0.5rem 0">
+
+<div>
+<div class="ph" style="background:#fff">
+<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #E5E5EA"><span style="font-family:'Playfair Display',Georgia,serif;font-size:19px">Azyah</span><span style="font-weight:500">Open the app</span></div>
+<div class="body">
+<div class="pi" style="height:210px;border-radius:20px"><i class="ti ti-layout-collage" style="font-size:44px" aria-hidden="true"></i></div>
+<div><div style="font-size:18px;font-weight:600">Weekend in linen</div><div class="sub">by Layla · 3 items</div></div>
+<div class="card" style="background:#F5F5F7;overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px"><div class="pi" style="width:40px;height:48px;border-radius:8px"></div><div style="flex:1">Linen wrap dress<div class="sub num">AED 340</div></div><i class="ti ti-chevron-right" style="color:#C7C7CC" aria-hidden="true"></i></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:0.5px solid #E5E5EA"><div class="pi" style="width:40px;height:48px;border-radius:8px"></div><div style="flex:1">Woven sandals<div class="sub num">AED 180</div></div><i class="ti ti-chevron-right" style="color:#C7C7CC" aria-hidden="true"></i></div>
+</div>
+<div class="bk">Try this look on you</div>
+</div>
+</div>
+<p class="cap">Shared outfit or item (opens in a browser, no login): the look, its items, and one action that brings people into the app.</p>
+</div>
+
+<div>
+<div class="ph">
+<div class="body" style="padding-top:18px">
+<div style="display:flex;gap:12px;align-items:center"><div style="width:56px;height:56px;border-radius:50%;background:#F2E4EA;color:#5C0F2E;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px">LK</div><div style="flex:1"><div style="font-size:18px;font-weight:600">Layla K</div><div class="sub num">@layla · 34 outfits · 210 followers</div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="bk" style="padding:9px">Follow</div><div class="sec" style="padding:9px">Share</div></div>
+<div style="display:flex;background:#E9E9EB;border-radius:10px;padding:2px"><span style="flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:12px;background:#fff;font-weight:500">Outfits</span><span style="flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:12px">Items</span><span style="flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:12px">Posts</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><div class="pi" style="height:96px;border-radius:12px"></div><div class="pi" style="height:96px;border-radius:12px"></div><div class="pi" style="height:96px;border-radius:12px"></div><div class="pi" style="height:96px;border-radius:12px"></div><div class="pi" style="height:96px;border-radius:12px"></div><div class="pi" style="height:96px;border-radius:12px"></div></div>
+</div>
+</div>
+<p class="cap">Someone's profile (and StyleLink pages): their outfits, shared items and posts. Only what they chose to share shows here.</p>
+</div>
+
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:4px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif">
+<div style="background:#F5F5F7;border-radius:16px;padding:12px;color:#1D1D1F;font-size:12px">
+<div style="font-weight:600;margin-bottom:8px">Empty</div>
+<div style="border:1px dashed #C7C7CC;border-radius:12px;padding:10px;color:#6E6E73">No outfits yet. Make one from your closet.</div>
+<div style="background:#1D1D1F;color:#fff;border-radius:10px;padding:8px;text-align:center;margin-top:8px;font-weight:500">Make an outfit</div>
+</div>
+<div style="background:#F5F5F7;border-radius:16px;padding:12px;color:#1D1D1F;font-size:12px">
+<div style="font-weight:600;margin-bottom:8px">Loading</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="height:56px;border-radius:10px;background:#E5E5EA"></div><div style="height:56px;border-radius:10px;background:#E5E5EA"></div></div>
+<div style="height:10px;width:70%;border-radius:4px;background:#E5E5EA;margin-top:8px"></div>
+<div style="height:10px;width:40%;border-radius:4px;background:#E5E5EA;margin-top:5px"></div>
+</div>
+<div style="background:#F5F5F7;border-radius:16px;padding:12px;color:#1D1D1F;font-size:12px">
+<div style="font-weight:600;margin-bottom:8px">Error</div>
+<div style="background:#fff;border-radius:12px;padding:10px">Couldn't load your results. Last updated 2 min ago.<div style="font-weight:600;margin-top:6px">Try again</div></div>
+</div>
+</div>
+<p class="cap">States: empty sections keep their frame with one sentence and an action; loading shows the real layout in flat grey; errors stay inside the block that failed.</p>
+
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px">
+<div class="mp"><h3>Feed</h3><p>Swipe deck, product details, search, favorites, bag</p></div>
+<div class="mp"><h3>Explore</h3><p>Globe (brands, following, people), country list, brand and store pages</p></div>
+<div class="mp"><h3>Try on</h3><p>Picture, video, Live Cam, your results, event try-ons</p></div>
+<div class="mp"><h3>Community</h3><p>Outfits, clothes, following, outfit and item pages, create</p></div>
+<div class="mp"><h3>Profile</h3><p>Closet, outfit builder, favorites, events, rewards, Premium, settings</p></div>
+<div class="mp"><h3>Outside the tabs</h3><p>Welcome, sign-in, style quiz, shared links, brand and store portals, admin approvals</p></div>
+</div>
+<p class="cap">Where every screen lives. Hidden for later: Deals, UGC collaborations. Removed: Your Fit.</p>
+</main>
+</body>
+</html>
