@@ -1,4 +1,4 @@
--- Probes for 20261027100000_globe_people_lookups.sql (Globe "People" tab).
+-- Probes for 20261027080253_globe_people_lookups.sql (Globe "People" tab).
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file
 -- as ONE call (one transaction) and replace the final SELECT with a DO block
 -- that RAISEs the results, so everything rolls back.

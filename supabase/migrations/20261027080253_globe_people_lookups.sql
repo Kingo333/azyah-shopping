@@ -1,9 +1,9 @@
 -- Globe "People" tab: real counts and lists.
 --
--- STATUS: PROPOSED. Not applied. Needs owner approval. Rename to the version
--- live records when applied. Owner decision 2026-10-27: fix the People counts.
+-- STATUS: APPLIED to live 2026-10-27 with owner approval (version 20261027080253).
+-- Post-apply probes 9/9 on live. Owner decision 2026-10-27: fix the People counts.
 -- Tests: supabase/tests/globe_people_probes.sql (rollback mode on production).
--- Rollback: supabase/rollbacks/20261027100000_globe_people_lookups.rollback.sql
+-- Rollback: supabase/rollbacks/20261027080253_globe_people_lookups.rollback.sql
 --
 -- Before: the Globe read the users table directly, which privacy rules limit
 -- to your own row, so counts and lists only ever showed you.
