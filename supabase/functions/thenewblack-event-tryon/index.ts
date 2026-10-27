@@ -13,6 +13,7 @@ const PHOTO_BUCKET = 'event-user-photos';
 // private is a separate change to AI Studio.
 const RESULT_BUCKET = 'ai-tryon-results';
 const PERSON_LINK_SECONDS = 600;   // long enough for the provider to fetch the photo
+const RESULT_LINK_SECONDS = 86400; // result link shown to the shopper (folder is private)
 
 const TNB_PROMPT = 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.';
 
@@ -174,7 +175,9 @@ serve(async (req) => {
     const { data: stored } = serviceClient.storage.from(RESULT_BUCKET).getPublicUrl(outputPath);
     await markJob({ status: 'succeeded', output_path: stored.publicUrl });
 
-    return json({ ok: true, result_url: stored.publicUrl, job_id: job?.id });
+    // The folder is private: the shopper gets a temporary link (24 h); the job keeps the permanent address.
+    const { data: signed } = await serviceClient.storage.from(RESULT_BUCKET).createSignedUrl(outputPath, RESULT_LINK_SECONDS);
+    return json({ ok: true, result_url: signed?.signedUrl || stored.publicUrl, job_id: job?.id });
   } catch (error) {
     console.error('[TNB Event TryOn] Error:', error instanceof Error ? error.message : error);
     return json({ ok: false, error: 'Something went wrong. Please try again.' }, 500);

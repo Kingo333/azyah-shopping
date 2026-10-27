@@ -61,8 +61,8 @@ serve(async (req) => {
     }
 
     console.log('[TheNewBlack Picture] Starting try-on for user:', user.id);
-    console.log('[TheNewBlack Picture] Model photo:', model_photo_url);
-    console.log('[TheNewBlack Picture] Clothing photo:', clothing_photo_url);
+    // Photo links can be temporary links with a token: don't print them.
+    console.log('[TheNewBlack Picture] Photos received:', { model: !!model_photo_url, clothing: !!clothing_photo_url });
 
     // Create service client for database operations
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -189,7 +189,12 @@ serve(async (req) => {
       .from('ai-tryon-results')
       .getPublicUrl(fileName);
 
-    console.log('[TheNewBlack Picture] Stored at:', publicUrl.publicUrl);
+    console.log('[TheNewBlack Picture] Stored at:', `ai-tryon-results/${fileName}`);
+    // The folder is private: the app gets a temporary link (24 h); ai_assets keeps the permanent address.
+    const { data: signedResult } = await serviceClient.storage
+      .from('ai-tryon-results')
+      .createSignedUrl(fileName, 86400);
+    const resultLink = signedResult?.signedUrl || publicUrl.publicUrl;
 
     // Save to ai_assets table
     const { error: insertError } = await serviceClient.from('ai_assets').insert({
@@ -207,7 +212,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         ok: true, 
-        result_url: publicUrl.publicUrl,
+        result_url: resultLink,
         stored: true,
         credits_remaining: credits[0].ai_studio_credits - 1
       }),

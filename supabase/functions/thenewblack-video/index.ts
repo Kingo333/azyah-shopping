@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { RESULT_LINK_SECONDS, VIDEO_INPUT_LINK_SECONDS, stableStorageUrl } from "./media.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,8 +32,9 @@ async function logJobLifecycle(
     await serviceClient.from('video_job_logs').insert({
       user_id: userId,
       action: data.action,
-      input_image_url: data.inputImageUrl,
-      used_image_url: data.usedImageUrl,
+      // Permanent addresses only: never keep a temporary link (it carries a token).
+      input_image_url: data.inputImageUrl ? stableStorageUrl(data.inputImageUrl) : data.inputImageUrl,
+      used_image_url: data.usedImageUrl ? stableStorageUrl(data.usedImageUrl) : data.usedImageUrl,
       job_id: data.jobId,
       step: data.step,
       provider_status_code: data.providerStatusCode,
@@ -115,14 +117,18 @@ async function createProviderSafeCopy(
       };
     }
     
-    // Get public URL
+    // Temporary link for The New Black (the folder is private). Field name kept
+    // as publicUrl for the callers; it is the link the provider fetches.
+    const { data: signed } = await serviceClient.storage
+      .from('tnb-video-inputs')
+      .createSignedUrl(fileName, VIDEO_INPUT_LINK_SECONDS);
     const { data } = serviceClient.storage
       .from('tnb-video-inputs')
       .getPublicUrl(fileName);
-    
-    console.log('[TheNewBlack Video] Provider-safe URL created:', data.publicUrl);
-    
-    return { ok: true, publicUrl: data.publicUrl };
+
+    console.log('[TheNewBlack Video] Provider-safe copy stored at:', `tnb-video-inputs/${fileName}`);
+
+    return { ok: true, publicUrl: signed?.signedUrl || data.publicUrl };
   } catch (err) {
     console.error('[TheNewBlack Video] createProviderSafeCopy error:', err);
     return { 
@@ -262,7 +268,7 @@ serve(async (req) => {
       }
 
       console.log('[TheNewBlack Video] Starting video generation for user:', user.id);
-      console.log('[TheNewBlack Video] Original image URL:', image_url);
+      console.log('[TheNewBlack Video] Original image:', stableStorageUrl(String(image_url)));
 
       // Create provider-safe copy of the image
       // This downloads the original and re-uploads to a dedicated public bucket
@@ -286,7 +292,7 @@ serve(async (req) => {
             step: 'image_copy', 
             error: copyResult.error || 'Failed to prepare image for video generation',
             debug: {
-              originalUrl: image_url,
+              originalUrl: stableStorageUrl(String(image_url)),
               ...copyResult.debug
             }
           }),
@@ -295,7 +301,7 @@ serve(async (req) => {
       }
 
       const providerSafeUrl = copyResult.publicUrl!;
-      console.log('[TheNewBlack Video] Using provider-safe URL:', providerSafeUrl);
+      console.log('[TheNewBlack Video] Using provider-safe copy:', stableStorageUrl(providerSafeUrl));
       
       // Validate prompt is reasonable
       if (typeof finalPrompt !== 'string' || finalPrompt.trim().length < 3) {
@@ -781,7 +787,12 @@ serve(async (req) => {
         .from('ai-tryon-videos')
         .getPublicUrl(fileName);
 
-      console.log('[TheNewBlack Video] Stored at:', publicUrl.publicUrl);
+      console.log('[TheNewBlack Video] Stored at:', `ai-tryon-videos/${fileName}`);
+      // The folder is private: the app gets a temporary link; ai_assets keeps the permanent address.
+      const { data: signedResult } = await serviceClient.storage
+        .from('ai-tryon-videos')
+        .createSignedUrl(fileName, RESULT_LINK_SECONDS);
+      const resultLink = signedResult?.signedUrl || publicUrl.publicUrl;
 
       // Check if asset already exists for this job (prevents duplicate saves)
       const { data: existingAsset } = await serviceClient
@@ -819,7 +830,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           ok: true, 
-          result_url: publicUrl.publicUrl,
+          result_url: resultLink,
           stored: true,
           status: 'completed',
           message: 'Video ready!'

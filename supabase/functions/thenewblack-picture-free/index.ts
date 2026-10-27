@@ -178,6 +178,11 @@ serve(async (req) => {
     const { data: publicUrlData } = supabaseAdmin.storage
       .from("ai-tryon-results")
       .getPublicUrl(fileName);
+    // The folder is private: the app gets a temporary link (24 h); ai_assets keeps the permanent address.
+    const { data: signedResult } = await supabaseAdmin.storage
+      .from("ai-tryon-results")
+      .createSignedUrl(fileName, 86400);
+    const resultLink = signedResult?.signedUrl || publicUrlData.publicUrl;
 
     // Save to ai_assets table so it appears in Previous Results gallery
     const { error: insertError } = await supabaseAdmin.from('ai_assets').insert({
@@ -195,7 +200,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         ok: true, 
-        result_url: publicUrlData.publicUrl,
+        result_url: resultLink,
         stored: true,
         credits_remaining: credits[0].ai_studio_credits - 1
       }),
