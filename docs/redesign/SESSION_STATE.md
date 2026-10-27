@@ -27,10 +27,11 @@ _Last updated: 2026-10-27 (session 2 end). **Start with `docs/redesign/AUDIT_CHE
 ## Decisions waiting on the owner (recommended default in brackets)
 The session-2 kickoff message left all five blank.
 1. ~~Security fix~~: done (no branch; applied to live 2026-10-26).
-2. Who gets Live Cam? [Any signed-in user, free time limit, more for Premium.]
+2. ~~Live Cam access~~: shopper feature, as today (owner 2026-10-27).
 3. ~~Partner verification~~: decided yes, manual approval (2026-10-26).
-4. Hide cart/checkout and UGC collaborations behind flags? [Yes.]
-5. Kiosk engine? [Live Cam (JoyAI), AR as fallback; ≈ $12.60 per 8-hour day per stand on an RTX 5090.]
+4. ~~Cart/UGC~~: keep cart, hide UGC (owner 2026-10-27; built on nav-v2).
+5. Kiosk engine? [Live Cam (JoyAI), AR as fallback; ≈ $12.60 per 8-hour day per stand on an RTX 5090.] Explained to owner 2026-10-27; still open.
+6. ~~Globe People counts~~: fix (built on nav-v2, lookup not applied). 7. ~~Admin~~: shopper@test.com has the admin role (live).
 
 ## Skills
 - Session 2: Superpowers (plugin `superpowers@claude-plugins-official` v7.0.0) and Supabase (`supabase@supabase-agent-skills` and `postgres-best-practices`, commit c9be0e9) appear in the skill list and were loaded (supabase, test-driven-development). They come from plugins, not from the setup script: `~/.claude/skills` only holds blender-toolkit and reverse-engineer-anything. Whether Superpowers v7.0.0 = commit 2ce8aa1 was not verified.
