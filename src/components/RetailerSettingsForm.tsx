@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Save, Plus, X, Trash2, CheckCircle, Loader2, Ruler } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
+import { saveContactEmail } from '@/lib/partnerContacts';
 
 // Helper function to check if a display name is already taken by another retailer
 const checkDisplayNameAvailable = async (name: string, currentRetailerId: string): Promise<boolean> => {
@@ -177,6 +178,10 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
         }
         throw error;
       }
+
+      // The email is kept privately (owner-only table); save it there too so
+      // clearing it works.
+      await saveContactEmail(supabase as any, 'retailer', retailer.id, formData.contact_email || '');
 
       const updatedRetailer = {
         ...retailer,

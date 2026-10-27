@@ -39,6 +39,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
+import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
+import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
+import { productStatusLabel } from '@/lib/productPublishing';
 
 const RetailerPortal = () => {
   const { user } = useAuth();
@@ -150,13 +153,14 @@ const RetailerPortal = () => {
           return;
         }
 
-        setRetailer(newRetailer);
+        // The email is stored privately; show it from the private table.
+        setRetailer(withContactEmail(newRetailer, await loadContactEmail(supabase as any, 'retailer', newRetailer.id)));
         toast({
           title: "Welcome!",
           description: "Your retailer portal has been set up successfully.",
         });
       } else {
-        setRetailer(data);
+        setRetailer(data ? withContactEmail(data, await loadContactEmail(supabase as any, 'retailer', data.id)) : data);
       }
     } catch (error: any) {
       console.error('Error fetching retailer:', error);
@@ -492,6 +496,9 @@ const RetailerPortal = () => {
           </Card>
         </div>
 
+        {/* Approval status (shoppers only see approved partners' products) */}
+        <PendingApprovalBanner status={retailer?.verification_status} />
+
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner />
         
@@ -556,7 +563,7 @@ const RetailerPortal = () => {
                                variant={product.status === 'active' ? 'default' : 'secondary'}
                                className="absolute top-1 right-1 md:top-2 md:right-2 text-xs"
                              >
-                               {product.status}
+                               {productStatusLabel(product.status)}
                              </Badge>
                            )}
                          </div>

@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { shouldShowNotification, markNotified } from '@/utils/tryonNotifications';
 import QRCode from 'qrcode';
+import { signEventMedia } from '@/lib/eventMedia';
 
 interface RetailEvent {
   id: string;
@@ -64,6 +65,8 @@ const Events = () => {
   const [brandScrollPositions, setBrandScrollPositions] = useState<{ [key: string]: number }>({});
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [tryOnResults, setTryOnResults] = useState<Record<string, any>>({});
+  // Expiring links for result images, keyed by output_path (results are private)
+  const [resultUrls, setResultUrls] = useState<Record<string, string>>({});
 
   // AR QR modal state
   const [showQRModal, setShowQRModal] = useState(false);
@@ -98,6 +101,8 @@ const Events = () => {
         return acc;
       }, {});
       setTryOnResults(resultsMap);
+      const paths = Object.values(resultsMap).map((job: any) => job.output_path).filter(Boolean);
+      setResultUrls(await signEventMedia(supabase.storage, 'event-tryon-results', paths));
     }
   };
 
@@ -233,8 +238,8 @@ const Events = () => {
     try {
       const { data: photoData } = await supabase.from('event_user_photos').select('photo_url').eq('event_id', selectedEvent.id).eq('user_id', user.id).single();
       if (photoData?.photo_url) {
-        const { data } = supabase.storage.from('event-user-photos').getPublicUrl(photoData.photo_url);
-        setPreviewPhotoUrl(data.publicUrl);
+        const urls = await signEventMedia(supabase.storage, 'event-user-photos', [photoData.photo_url]);
+        if (urls[photoData.photo_url]) setPreviewPhotoUrl(urls[photoData.photo_url]);
       }
     } catch (error) {
       console.error('Error fetching photo:', error);
@@ -378,7 +383,11 @@ const Events = () => {
                             >
                               <Trash2 className="h-2.5 w-2.5" />
                             </Button>
-                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full aspect-[3/4] object-cover" />
+                            {resultUrls[result.output_path] ? (
+                              <img src={resultUrls[result.output_path]} alt="Try-on result" className="w-full aspect-[3/4] object-cover" />
+                            ) : (
+                              <div className="w-full aspect-[3/4] bg-muted animate-pulse" aria-label="Loading try-on result" />
+                            )}
                         </div>;
           })}
                 </div>}

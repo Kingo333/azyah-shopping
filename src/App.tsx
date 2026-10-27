@@ -55,6 +55,7 @@ import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 import PhotoCloseup from './components/PhotoCloseup';
 import UserDeletionTool from './components/UserDeletionTool';
+import PartnerApprovals from './pages/admin/PartnerApprovals';
 import PublicOutfitView from './pages/PublicOutfitView';
 import PublicItemView from './pages/PublicItemView';
 import StyleLinkPage from './pages/StyleLinkPage';
@@ -273,6 +274,13 @@ function AppContent() {
                   {/* Legacy affiliate route - resolve username and redirect to deals */}
                   <Route path="/affiliate/:userId" element={<AffiliateRedirect />} />
                   
+                  {/* Admin check happens in the page and in the database
+                      (the app's role lookup treats admin accounts as shoppers) */}
+                  <Route path="/admin/partners" element={
+                    <ProtectedRoute>
+                      <PartnerApprovals />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>
                       <UserDeletionTool />

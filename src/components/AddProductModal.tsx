@@ -16,6 +16,7 @@ import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 import { useDropzone } from 'react-dropzone';
 import { useObjectUrls } from '@/hooks/useObjectUrl';
+import { BULK_UPLOAD_STATUS } from '@/lib/productPublishing';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -221,7 +222,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           brand_id: isEventContext && userType === 'retailer' ? selectedBrandForProducts : (userType === 'brand' ? brandId : null),
           retailer_id: userType === 'retailer' ? retailerId : null,
           media_urls: [imageUrl],
-          status: 'active' as const,
+          // Pending until the partner adds a name, price and category and
+          // publishes it from the edit screen. Shoppers only see live products.
+          status: BULK_UPLOAD_STATUS,
           external_url: null,
           sku: `BULK-${Date.now()}-${index + 1}`,
           stock_qty: 0
@@ -248,7 +251,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
       toast({
         title: "Success",
-        description: `${bulkImages.length} products created successfully`
+        description: `${bulkImages.length} products saved as Pending. Open each one to add its name, price and category, then publish it for shoppers.`
       });
 
       setBulkImages([]);

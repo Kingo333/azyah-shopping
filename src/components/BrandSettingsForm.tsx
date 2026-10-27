@@ -14,6 +14,7 @@ import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, Dol
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
+import { saveContactEmail, withContactEmail } from '@/lib/partnerContacts';
 
 // Helper function to check if a display name is already taken by another brand
 const checkDisplayNameAvailable = async (name: string, currentBrandId: string): Promise<boolean> => {
@@ -199,7 +200,10 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
         throw error;
       }
 
-      onBrandUpdate(data);
+      // The email is kept privately (owner-only table); save it there too so
+      // clearing it works, and keep showing it on this screen.
+      await saveContactEmail(supabase as any, 'brand', brand.id, formData.contact_email || '');
+      onBrandUpdate(withContactEmail(data, formData.contact_email?.trim() || null));
       setIsEditing(false);
       toast({
         title: "Profile Updated",

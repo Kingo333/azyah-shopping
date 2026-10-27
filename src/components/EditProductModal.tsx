@@ -15,6 +15,7 @@ import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import type { Product } from '@/types';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
+import { BULK_UPLOAD_STATUS, publishProblems } from '@/lib/productPublishing';
 interface EditProductModalProps {
   product: Product | null;
   isOpen: boolean;
@@ -52,6 +53,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     external_url: ''
   });
   const [availableSubcategories, setAvailableSubcategories] = useState<readonly SubCategory[]>([]);
+  const [publishIssues, setPublishIssues] = useState<string[]>([]);
   useEffect(() => {
     if (product && isOpen) {
       setFormData({
@@ -162,15 +164,34 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
+  const isPending = product?.status === BULK_UPLOAD_STATUS;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await saveProduct(false);
+  };
+
+  // publish = true makes a pending product live for shoppers (after checks).
+  const saveProduct = async (publish: boolean) => {
     if (!user || !product) return;
+    if (publish) {
+      const problems = publishProblems({
+        title: formData.title,
+        price: formData.price_cents,
+        images,
+        category: formData.category_slug,
+      });
+      setPublishIssues(problems);
+      if (problems.length > 0) return;
+    }
     setLoading(true);
     try {
       const updateData = {
+        ...(publish ? { status: 'active' as const } : {}),
         title: formData.title,
         description: formData.description,
-        price_cents: parseInt(formData.price_cents) * 100,
+        // Keeps decimals (34.50 → 3450); an empty price on a pending item saves as 0
+        price_cents: Math.round((parseFloat(formData.price_cents) || 0) * 100),
         currency: formData.currency,
         category_slug: formData.category_slug as any,
         subcategory_slug: (formData.subcategory_slug || null) as any,
@@ -186,9 +207,14 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       } = await supabase.from('products').update(updateData).eq('id', product.id);
       if (error) throw error;
       toast({
-        title: "Success",
-        description: "Product updated successfully!"
+        title: publish ? "Published" : "Saved",
+        description: publish
+          ? "This product is now live for shoppers."
+          : isPending
+            ? "Saved as Pending. Shoppers can't see it until you publish it."
+            : "Product updated."
       });
+      setPublishIssues([]);
       onProductUpdated();
       onClose();
     } catch (error: any) {
@@ -253,6 +279,13 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
           <DialogTitle>Edit Product</DialogTitle>
         </DialogHeader>
 
+        {isPending && (
+          <div role="status" className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
+            <p className="font-medium text-foreground">Pending: shoppers can't see this yet</p>
+            <p className="text-muted-foreground">Add a name, price, photo and category, then tap Publish.</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -263,7 +296,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label htmlFor="price">Price *</Label>
-                <Input id="price" type="number" step="0.01" value={formData.price_cents} onChange={e => handleInputChange('price_cents', e.target.value)} required />
+                <Input id="price" type="number" step="0.01" value={formData.price_cents} onChange={e => handleInputChange('price_cents', e.target.value)} required={!isPending} />
               </div>
               <div>
                 <Label htmlFor="currency">Currency *</Label>
@@ -395,6 +428,15 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
           </div>
 
+          {publishIssues.length > 0 && (
+            <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <p className="font-medium text-destructive">Before you publish:</p>
+              <ul className="list-disc pl-5 text-destructive">
+                {publishIssues.map((issue) => <li key={issue}>{issue}</li>)}
+              </ul>
+            </div>
+          )}
+
            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t">
             <Button 
               type="button" 
@@ -417,20 +459,29 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
+                variant={isPending ? 'outline' : 'default'}
                 disabled={loading || uploadingImages}
                 className="w-full sm:w-auto"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
+                    Saving...
                   </>
-                ) : (
-                  'Update Product'
-                )}
+                ) : isPending ? 'Save as pending' : 'Update Product'}
               </Button>
+              {isPending && (
+                <Button
+                  type="button"
+                  onClick={() => saveProduct(true)}
+                  disabled={loading || uploadingImages}
+                  className="w-full sm:w-auto"
+                >
+                  Publish
+                </Button>
+              )}
             </div>
           </div>
         </form>
