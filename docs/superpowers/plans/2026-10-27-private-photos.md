@@ -167,6 +167,7 @@
 
 ## Release (owner gates, in order)
 _Updated after the final review: a database safety net and an iPhone build gate were added._
+_Status 2026-10-27 evening: steps 1, 2, 5 and 6 live; step 4 split: the server-only folders (video inputs, photo search, old closet folder) were locked early (`20261027171126`, no app version reads them); the AI Studio folders (`20261027180000`) wait for steps 3 and 3b. Account deletion now runs the data deletion first, then removes only files nothing else uses._
 1. ✅ (2026-10-27) Apply `20261027125623_stable_media_addresses` (never keep temporary links, whatever app version saves them) and the Task 1 migration (yes #1).
 2. ✅ (2026-10-27: event-tryon v52, picture v98, picture-free v100, video v102; merged) Deploy the four try-on functions (yes #2) and merge the branch to `main` (yes #3).
 3. Owner phone test (top up RunPod first for the Live Cam check): AI Studio picture try-on, video try-on, gallery, download; event try-on and Events page results; Live Cam with a "My Closet" garment and a product.

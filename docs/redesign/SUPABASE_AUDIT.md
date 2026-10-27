@@ -86,7 +86,7 @@ It does not touch any Live Cam table, function or Edge Function (checked by sear
 | Email verification / reset | `/auth/callback`, `/reset-password*`, `send-password-reset` (source not in repo) | Keep URLs; review function |
 | Session restore / logout | `AuthContext`, `useSessionMonitor`, role cache in sessionStorage | Clear role cache on role change |
 | Role redirect | `src/lib/rbac.ts` `getRedirectRoute` | UI only (fine) |
-| Account deletion | `delete-account` → `delete_user_completely` (service role) | **2026-10-27:** storage cleanup only covered 5 folders (3 don't exist): AI Studio, closet, outfit, event and Live Cam files stayed. Fixed on `claude/private-photos` (`20261027130300` + delete-account); not applied/deployed yet. |
+| Account deletion | `delete-account` → `delete_user_completely` (service role) | **2026-10-27, live:** delete-account v68 deletes the account data first, then removes the person's files in every folder (helper `list_user_storage_objects`), keeping files still used by remaining rows (starter items in other closets, products that outlive a store, other people's outfits). Before, it only cleaned 5 folders (3 didn't exist). |
 | Native deep links | `com.azyah.style://` via `useDeepLinkHandler.ts` | Keep `/auth/callback`, `/share/*` |
 
 `user_metadata.role` is read in 17 frontend files for UI decisions (nav visibility, Live Cam tab, portal redirects). That is acceptable for display only, but these should read the same source as the route guard (`user_roles`) to avoid mismatches.

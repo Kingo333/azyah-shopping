@@ -1,4 +1,4 @@
--- Probes for 20261027130200_closet_no_listing.sql (closet and outfit folders
+-- Probes for 20261027171337_closet_no_listing.sql (closet and outfit folders
 -- stay public by link, but nobody can list everyone's files).
 -- Needs 20261027125651 applied first (owner read rule for saved-outfits).
 --

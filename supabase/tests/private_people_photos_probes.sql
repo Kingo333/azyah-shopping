@@ -1,5 +1,5 @@
--- Probes for 20261027130100_private_people_photos.sql (people-photo folders
--- private, owner-only). Needs 20261027125651 applied first.
+-- Probes for 20261027180000_private_people_photos.sql (people-photo folders
+-- the app shows, private, owner-only). Needs 20261027125651 applied first.
 --
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file
 -- as ONE call (one transaction) and replace the final SELECT with a DO block
@@ -53,27 +53,27 @@ insert into auth.users (instance_id, id, aud, role, email, encrypted_password, r
 
 insert into storage.objects (bucket_id, name, owner)
 select b, '00000000-0000-4000-a000-000000000701/probe.jpg', '00000000-0000-4000-a000-000000000701'
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 
 select pg_temp.check_fact('Folders', b || ' is private', not coalesce((select public from storage.buckets where id = b), true))
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 select pg_temp.check_fact('Folders', 'logged-out visitor can not see a photo in ' || b,
   pg_temp.visible('anon', null, b, '00000000-0000-4000-a000-000000000701/probe.jpg') = 0)
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 select pg_temp.check_fact('Folders', 'another user can not see someone''s photo in ' || b,
   pg_temp.visible('authenticated', '00000000-0000-4000-a000-000000000702', b, '00000000-0000-4000-a000-000000000701/probe.jpg') = 0)
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 select pg_temp.check_fact('Folders', 'owner can see their own photo in ' || b,
   pg_temp.visible('authenticated', '00000000-0000-4000-a000-000000000701', b, '00000000-0000-4000-a000-000000000701/probe.jpg') = 1)
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 select pg_temp.check_fact('Folders', 'server key can see every photo in ' || b,
   pg_temp.visible('service_role', null, b, '00000000-0000-4000-a000-000000000701/probe.jpg') = 1)
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 select pg_temp.check_fact('Uploads', 'owner can still replace an AI Studio photo (insert + read + update)',
   pg_temp.owner_upsert('00000000-0000-4000-a000-000000000701', 'ai-tryon-uploads', '00000000-0000-4000-a000-000000000701/person_9.jpg'));
 select pg_temp.check_fact('Rules', 'no "anyone can view" rule left on ' || b,
   not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd in ('SELECT', 'ALL')
               and qual like '%''' || b || '''%' and qual not like '%auth.uid()%'))
-from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos', 'tnb-video-inputs', 'search-images', 'wardrobe']) b;
+from unnest(array['ai-tryon-uploads', 'ai-tryon-results', 'ai-tryon-videos']) b;
 
 select area, probe, expect, outcome, pass from probe_results order by seq;
