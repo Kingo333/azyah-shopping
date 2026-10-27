@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { RESULT_LINK_SECONDS, VIDEO_INPUT_LINK_SECONDS, stableStorageUrl } from "./media.ts";
+import { PICTURE_INPUT_LINK_SECONDS, RESULT_LINK_SECONDS, VIDEO_INPUT_LINK_SECONDS, freshOwnLink, stableStorageUrl } from "./media.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -273,7 +273,10 @@ serve(async (req) => {
       // Create provider-safe copy of the image
       // This downloads the original and re-uploads to a dedicated public bucket
       // Ensures stable, non-expiring URL for async video generation
-      const copyResult = await createProviderSafeCopy(image_url, user.id, serviceClient);
+      // Your own private photo gets a fresh temporary link before the server
+      // downloads it (older app versions send the permanent address).
+      const sourceLink = await freshOwnLink(String(image_url), user.id, serviceClient, PICTURE_INPUT_LINK_SECONDS);
+      const copyResult = await createProviderSafeCopy(sourceLink, user.id, serviceClient);
       
       if (!copyResult.ok) {
         console.error('[TheNewBlack Video] Provider-safe copy failed:', copyResult.error);

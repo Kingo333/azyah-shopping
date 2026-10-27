@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PICTURE_INPUT_LINK_SECONDS, freshOwnLink } from "./media.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,8 +106,10 @@ serve(async (req) => {
 
     // Call The New Black API
     const formData = new FormData();
-    formData.append('model_photo', model_photo_url);
-    formData.append('clothing_photo', clothing_photo_url);
+    // Your own private photos get a fresh temporary link (works for older app
+    // versions and for photos uploaded more than an hour ago).
+    formData.append('model_photo', await freshOwnLink(model_photo_url, user.id, serviceClient, PICTURE_INPUT_LINK_SECONDS));
+    formData.append('clothing_photo', await freshOwnLink(clothing_photo_url, user.id, serviceClient, PICTURE_INPUT_LINK_SECONDS));
     formData.append('ratio', 'auto');
     formData.append('prompt', 'Preserve the exact same person (face, body, skin tone, pose) and the exact same background from the model image. Replace ONLY the item being tried on with the provided clothing/accessory, keeping its true colors, print, embroidery, texture, edges, and proportions. Match the original lighting, shadows, and perspective so it looks naturally worn. Keep everything else in the image unchanged. Output should look photo-realistic.');
 
