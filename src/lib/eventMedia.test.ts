@@ -43,6 +43,18 @@ describe('signEventMedia', () => {
     expect(out).toEqual({ 'https://cdn.example/a.png': 'https://cdn.example/a.png' });
   });
 
+  it('gives older full-address results in private folders a temporary link', async () => {
+    const full = 'https://klwolsopucgswhtdlsps.supabase.co/storage/v1/object/public/ai-tryon-results/u/event_1.png';
+    const { storage, from, createSignedUrls } = fakeStorage({
+      data: [{ path: 'u/event_1.png', signedUrl: 'https://s/u/event_1.png?token=t' }],
+      error: null,
+    });
+    const out = await signEventMedia(storage, 'event-tryon-results', [full], 900);
+    expect(from).toHaveBeenCalledWith('ai-tryon-results');
+    expect(createSignedUrls).toHaveBeenCalledWith(['u/event_1.png'], 900);
+    expect(out).toEqual({ [full]: 'https://s/u/event_1.png?token=t' });
+  });
+
   it('ignores empty paths', async () => {
     const { storage, createSignedUrls } = fakeStorage({ data: [], error: null });
     expect(await signEventMedia(storage, 'event-tryon-results', ['', null as unknown as string])).toEqual({});
