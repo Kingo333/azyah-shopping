@@ -226,7 +226,18 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     queryKey: ['country-shoppers', countryCode, activeTab],
     queryFn: async (): Promise<CountryShopper[]> => {
       if (!countryCode) return [];
-      
+
+      // Visible shoppers in this country (or with no country for GLOBAL),
+      // public fields only. Reading users directly only returns your own row.
+      const countryName = countryCode === 'GLOBAL' ? null : getCountryNameFromCode(countryCode);
+      if (countryCode === 'GLOBAL' || countryName) {
+        const listed = await (supabase as any).rpc('get_globe_people', { country_name: countryName, max_rows: 20 });
+        if (!listed.error && Array.isArray(listed.data)) {
+          return listed.data as CountryShopper[];
+        }
+      }
+
+      // Fallback (before the database lookup exists): the old way.
       if (countryCode === 'GLOBAL') {
         const usersResult = await supabase
           .from('users')

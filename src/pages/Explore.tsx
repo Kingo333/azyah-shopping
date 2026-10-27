@@ -19,6 +19,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import { getCountryCodeFromName } from '@/lib/countryCurrency';
 import { features } from '@/lib/features';
 import { resolveExploreTab, visibleExploreTabs, type ExploreTab } from '@/lib/exploreTabs';
+import { toCountryCodeCounts } from '@/lib/globePeople';
 
 // Your Fit is hidden (owner decision); everything else on the Globe is unchanged.
 const YOUR_FIT_ENABLED = features.your_fit;
@@ -102,7 +103,15 @@ const Explore: React.FC = () => {
   const { data: countriesWithShoppers = [] } = useQuery<{ code: string; count: number }[]>({
     queryKey: ['countries-with-shoppers'],
     queryFn: async () => {
-      // Get all users with their country from the users table
+      // Counts across all shoppers who are visible on the Globe. Reading the
+      // users table directly only ever returns your own row (privacy rules),
+      // so the database does the counting.
+      const counted = await (supabase as any).rpc('get_globe_people_counts');
+      if (!counted.error && Array.isArray(counted.data)) {
+        return toCountryCodeCounts(counted.data, getCountryCodeFromName);
+      }
+
+      // Fallback (before the database lookup exists): the old way.
       const result = await supabase
         .from('users')
         .select('country');
