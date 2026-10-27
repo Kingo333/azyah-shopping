@@ -1,4 +1,4 @@
--- Rollback for 20261027120100_private_people_photos.sql: folders public again,
+-- Rollback for 20261027130100_private_people_photos.sql: folders public again,
 -- "anyone can view" rules restored exactly as they were on 2026-10-27.
 
 update storage.buckets set public = true

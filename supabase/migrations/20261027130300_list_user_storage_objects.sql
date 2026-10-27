@@ -1,3 +1,6 @@
+-- STATUS: NOT APPLIED YET. Apply only with the owner's yes, in the release order in
+-- docs/superpowers/plans/2026-10-27-private-photos.md (after the phone test / iPhone build).
+
 -- Account deletion: list every stored file of a user, in any folder, so the
 -- delete-account function can remove them through the storage API (the
 -- database can't delete storage files directly).

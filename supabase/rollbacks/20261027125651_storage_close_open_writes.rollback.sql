@@ -1,4 +1,4 @@
--- Rollback for 20261027120000_storage_close_open_writes.sql: restores the
+-- Rollback for 20261027125651_storage_close_open_writes.sql: restores the
 -- storage rules exactly as they were on 2026-10-27 (checked by fingerprint).
 
 drop policy if exists ai_tryon_uploads_owner_insert on storage.objects;

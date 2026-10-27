@@ -1,4 +1,4 @@
--- Probes for 20261027120000_storage_close_open_writes.sql (who can write to
+-- Probes for 20261027125651_storage_close_open_writes.sql (who can write to
 -- photo folders; owner read rules).
 --
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file

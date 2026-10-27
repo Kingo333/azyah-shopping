@@ -167,8 +167,8 @@
 
 ## Release (owner gates, in order)
 _Updated after the final review: a database safety net and an iPhone build gate were added._
-1. Apply `20261027115900_stable_media_addresses` (never keep temporary links, whatever app version saves them) and the Task 1 migration (yes #1).
-2. Deploy the four try-on functions (yes #2) and merge the branch to `main` (yes #3).
+1. ✅ (2026-10-27) Apply `20261027125623_stable_media_addresses` (never keep temporary links, whatever app version saves them) and the Task 1 migration (yes #1).
+2. ✅ (2026-10-27: event-tryon v52, picture v98, picture-free v100, video v102; merged) Deploy the four try-on functions (yes #2) and merge the branch to `main` (yes #3).
 3. Owner phone test (top up RunPod first for the Live Cam check): AI Studio picture try-on, video try-on, gallery, download; event try-on and Events page results; Live Cam with a "My Closet" garment and a product.
 3b. **iPhone gate:** the iOS app bundles its code (`capacitor.config.ts` `webDir: 'dist'`), so installed builds keep the old code. Ship an iOS build from `main` and let people update before step 4. Until then, older builds still try on (the functions re-sign the person's own photo) but their gallery and older event results would show broken pictures after the lock.
 4. Apply Task 6 migration (yes #4); repeat the phone test. Re-check the "old public address returns 400" smoke test after about an hour (cached copies).

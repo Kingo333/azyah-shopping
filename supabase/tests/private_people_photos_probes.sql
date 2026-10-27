@@ -1,5 +1,5 @@
--- Probes for 20261027120100_private_people_photos.sql (people-photo folders
--- private, owner-only). Needs 20261027120000 applied first.
+-- Probes for 20261027130100_private_people_photos.sql (people-photo folders
+-- private, owner-only). Needs 20261027125651 applied first.
 --
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file
 -- as ONE call (one transaction) and replace the final SELECT with a DO block

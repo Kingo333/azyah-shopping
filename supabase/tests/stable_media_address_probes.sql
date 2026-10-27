@@ -1,4 +1,4 @@
--- Probes for 20261027115900_stable_media_addresses.sql: the database never
+-- Probes for 20261027125623_stable_media_addresses.sql: the database never
 -- keeps a temporary storage link (with a token), whatever app version saves it.
 --
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file

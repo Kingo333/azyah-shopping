@@ -1,6 +1,6 @@
--- Probes for 20261027120200_closet_no_listing.sql (closet and outfit folders
+-- Probes for 20261027130200_closet_no_listing.sql (closet and outfit folders
 -- stay public by link, but nobody can list everyone's files).
--- Needs 20261027120000 applied first (owner read rule for saved-outfits).
+-- Needs 20261027125651 applied first (owner read rule for saved-outfits).
 --
 -- On a branch, run as-is. On PRODUCTION, never run as-is: send the whole file
 -- as ONE call (one transaction) and replace the final SELECT with a DO block

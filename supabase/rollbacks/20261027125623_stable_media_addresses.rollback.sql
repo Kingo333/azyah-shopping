@@ -1,4 +1,4 @@
--- Rollback for 20261027115900_stable_media_addresses.sql (cleaned rows stay cleaned).
+-- Rollback for 20261027125623_stable_media_addresses.sql (cleaned rows stay cleaned).
 
 drop trigger if exists ai_assets_stable_address on public.ai_assets;
 drop trigger if exists video_job_logs_stable_address on public.video_job_logs;
