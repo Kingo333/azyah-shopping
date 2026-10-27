@@ -42,7 +42,16 @@ _Last updated: 2026-10-27 (session 2 end, after the production release). **Start
 - Security lockdown (S1–S4c), partner verification and product visibility, private partner contact emails, private event photos, event try-on on shopper credits with server checks, credits owner-only, admin partner approval (function + `/admin/partners` page, admin checked on the page itself), function search_path pinned, Globe People lookups.
 - App: bulk upload saves as Pending, Publish from the edit screen, private contact email in portals, "waiting for approval" banner, nav v2 behind a per-device flag, lazy routes with a one-time reload on stale chunks, old URLs redirect when nav v2 is on, Your Fit and UGC hidden by flags.
 
+## Private people photos (session 2, after the release)
+- Branch `claude/private-photos` (from `claude/redesign-combined`), worktree `.claude/worktrees/private-photos`. Design `docs/superpowers/specs/2026-10-27-private-photos-design.md`, plan `docs/superpowers/plans/2026-10-27-private-photos.md`, executor ledger in `.superpowers/sdd/2026-10-27-private-photos/progress.md` (git-ignored).
+- Owner said "do all fixes" (2026-10-27). Built and tested; **nothing applied, deployed or merged yet**.
+- Migrations (live dry runs, all rolled back): `20261027120000_storage_close_open_writes` (9/33 → 33/33), `20261027120100_private_people_photos` + `20261027120200_closet_no_listing` (20/45 → 45/45), `20261027120300_list_user_storage_objects` (0/13 → 13/13). Rollbacks restore rules and folder flags exactly.
+- Functions to deploy: `thenewblack-picture`, `thenewblack-picture-free`, `thenewblack-video`, `thenewblack-event-tryon` (temporary result links), `delete-account` (removes every file). deno check passes.
+- App: `src/lib/privateMedia.ts`, AI Studio upload/gallery, Events page. Tests 231/231, Live Cam 31/31, build passes, Live Cam files untouched.
+- Release order (each step needs the owner's yes): 1) apply `…120000`; 2) deploy the 4 try-on functions + merge to `main`; 3) owner phone test (AI Studio picture/video/gallery, event try-on, Events page, Live Cam with a closet garment); 4) apply `…120100`, test again; 5) apply `…120200`; 6) apply `…120300` + deploy `delete-account`.
+
 ## Next step
 1. Owner phone test of the live site (AUDIT_CHECKLIST §9). Top up RunPod first if Try On / Live Cam is part of it.
+1b. Private photos release (above).
 2. ~~Kiosk engine decision~~: Live Cam only (decided 2026-10-27).
 3. Phase 3 (Discover search/modes) per `IMPLEMENTATION_PLAN.md`, then Phase 4 (real Try On screen), Phase 5 (Partner Workspace + events + kiosk), Phase 6 (cleanup). Turning nav v2 on for everyone is a one-line flag change (`nav_v2` in `src/lib/features.ts`) once the owner is happy with it.

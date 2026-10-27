@@ -51,7 +51,7 @@ Legend: ✅ done and verified · 🚀 released to `main` (live on Vercel), owner
 | 5.3 | S14: 14 functions without a fixed search_path | ✅ live | `20261027080234`; post-apply: 0 left unpinned, share links and new share slugs still work; the advisor lint is gone. |
 | 5.4 | Phase 1.3: wardrobe enhance → server key, then revoke from users | ✅ not needed | `deduct_wardrobe_credit` is already safe (own account, positive amounts only, live since 3.7). Changing the deployed function could undo Lovable-only changes, so left as is. |
 | 5.5 | Phase 1.5: download the 41 live-only Edge Function sources | ⛔ | The MCP `get_edge_function` tool errors for every function. Owner can run `npx supabase login` then `npx supabase functions download <name>` (read-only). |
-| 5.6 | Other public photo buckets (`ai-tryon-*`, `wardrobe*`, `tnb-video-inputs`) | ❓ | Needs AI Studio changes (where Live Cam lives) and the owner's phone test; not started. |
+| 5.6 | Other public photo buckets (`ai-tryon-*`, `wardrobe*`, `tnb-video-inputs`, `search-images`) + open write holes + account-deletion cleanup | 🟡 built | Branch `claude/private-photos` (owner approved "do all fixes" 2026-10-27). Design + plan in `docs/superpowers/`. 4 migrations, live dry runs: writes 9/33 → 33/33; private folders + closet listing 20/45 → 45/45; cleanup helper 0/13 → 13/13; rollbacks exact. App + 4 try-on functions use temporary links; delete-account removes every file. Tests 231/231, Live Cam 31/31, deno check, build pass; Live Cam files untouched. Closet/outfit photos stay viewable by link (community content, Live Cam "My Closet"). **Not applied/deployed/merged:** release order in the plan. |
 | 5.7 | S12 leaked-password protection, S13 Postgres security update | 👤 later (owner: not a priority now) | Supabase dashboard only: Authentication → Policies → turn on leaked-password protection; Settings → Infrastructure → upgrade Postgres (short downtime). |
 | 5.8 | S10 UPDATE policies without WITH CHECK (posts, events) | ✅ lowered | Postgres reuses USING when WITH CHECK is missing, so rows can't be reassigned. Brands/retailers/products now have explicit WITH CHECK. Others: cleanup later. |
 
@@ -102,5 +102,6 @@ Legend: ✅ done and verified · 🚀 released to `main` (live on Vercel), owner
    - Events page (signed in): your own event photos and try-on results show (they now use expiring links). Browsing events without login is Phase 5 (4.8), not built yet.
    - If anything is wrong: tell the next session. Quick undo = a revert commit of the release on `main` (owner OK needed; no force push). Database changes stay live either way; the old app was already running against them before the release (only the old events page couldn't show past event results, and old portals showed the contact email empty).
 5. ✅ Decision 8.5: kiosk = Live Cam only.
+5b. 🟡 Private people photos (5.6): built on `claude/private-photos`; release in the order in SESSION_STATE (each step owner OK).
 6. 👤 Dashboard: leaked-password protection and Postgres upgrade.
 7. Later phases: Discover search/modes (3), real Try On screen (4), Partner Workspace + events + kiosk (5), cleanup (6).
