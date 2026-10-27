@@ -43,7 +43,7 @@ _Last updated: 2026-10-27 (session 2 end, after the production release). **Start
 - App: bulk upload saves as Pending, Publish from the edit screen, private contact email in portals, "waiting for approval" banner, nav v2 behind a per-device flag, lazy routes with a one-time reload on stale chunks, old URLs redirect when nav v2 is on, Your Fit and UGC hidden by flags.
 
 ## Private people photos (session 2, after the release)
-- Branch `claude/private-photos` (from `claude/redesign-combined`), worktree `.claude/worktrees/private-photos`. Design `docs/superpowers/specs/2026-10-27-private-photos-design.md`, plan `docs/superpowers/plans/2026-10-27-private-photos.md`, executor ledger in `.superpowers/sdd/2026-10-27-private-photos/progress.md` (git-ignored).
+- Branch `claude/private-photos` (from `claude/redesign-combined`), worktree `.claude/worktrees/private-photos`. Design `docs/superpowers/specs/2026-10-27-private-photos-design.md`, plan `docs/superpowers/plans/2026-10-27-private-photos.md`, decision log `docs/superpowers/plans/2026-10-27-private-photos-ledger.md`.
 - Owner said "do all fixes" (2026-10-27). Built and tested; **nothing applied, deployed or merged yet**.
 - Migrations (live dry runs, all rolled back): `20261027120000_storage_close_open_writes` (9/33 → 33/33), `20261027120100_private_people_photos` + `20261027120200_closet_no_listing` (20/45 → 45/45), `20261027120300_list_user_storage_objects` (0/13 → 13/13). Rollbacks restore rules and folder flags exactly.
 - Functions to deploy: `thenewblack-picture`, `thenewblack-picture-free`, `thenewblack-video`, `thenewblack-event-tryon` (temporary result links), `delete-account` (removes every file). deno check passes.
