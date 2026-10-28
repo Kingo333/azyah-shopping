@@ -10,6 +10,8 @@ interface Props {
   disabled?: boolean;
   /** 'grid' (default): today's grid. 'strip' (design v3): one horizontal row with a source switch, on the dark camera stage. */
   layout?: 'grid' | 'strip';
+  /** Strip only: pick the first item when nothing is picked, so Live can be turned on straight away. */
+  autoSelectFirst?: boolean;
 }
 
 interface GarmentOption {
@@ -31,12 +33,14 @@ interface SettingsRow {
   prompt_hint: string | null;
 }
 
-export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disabled, layout = 'grid' }) => {
+export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disabled, layout = 'grid', autoSelectFirst = false }) => {
   const [stripSource, setStripSource] = useState<'closet' | 'discover' | null>(null);
   const { data: wardrobe, isLoading: wardrobeLoading } = useWardrobeItems();
   const [extra, setExtra] = useState<GarmentOption[]>([]);
   const [extraLoading, setExtraLoading] = useState(true);
   const [settings, setSettings] = useState<Record<string, SettingsRow>>({});
+  // True once the per-garment overrides for the current options have loaded.
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,10 +117,13 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
         .from('live_cam_garment_settings')
         .select('garment_id, reference_image_url, prompt_hint')
         .in('garment_id', ids);
-      if (cancelled || !data) return;
-      const map: Record<string, SettingsRow> = {};
-      for (const row of data as SettingsRow[]) map[row.garment_id] = row;
-      setSettings(map);
+      if (cancelled) return;
+      if (data) {
+        const map: Record<string, SettingsRow> = {};
+        for (const row of data as SettingsRow[]) map[row.garment_id] = row;
+        setSettings(map);
+      }
+      setSettingsLoaded(true);
     })();
     return () => { cancelled = true; };
   }, [allOptions]);
@@ -145,6 +152,14 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
 
   const wardrobeOpts = useMemo(() => allOptions.filter((o) => o.source === 'wardrobe_item'), [allOptions]);
   const productOpts = useMemo(() => allOptions.filter((o) => o.source !== 'wardrobe_item'), [allOptions]);
+
+  // Pre-pick the first item (closet first) once options and their overrides have loaded.
+  useEffect(() => {
+    if (!autoSelectFirst || value || loading || !settingsLoaded) return;
+    const first = wardrobeOpts[0] ?? productOpts[0];
+    if (first) handlePick(first);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSelectFirst, value, loading, settingsLoaded, wardrobeOpts, productOpts]);
 
   const renderGrid = (opts: GarmentOption[], title: string) => {
     if (opts.length === 0) return null;

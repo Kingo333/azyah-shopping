@@ -8,6 +8,8 @@ import { useLiveCamSession } from './useLiveCamSession';
 import { LIVE_CAM_TIER_CONFIG, isPremiumUiEnabled, isPremiumUnavailable } from './liveCamTier';
 import type { LiveCamGarmentSelection, LiveCamStatus, LiveCamTier } from './liveCamTypes';
 import { useDesignV3 } from '@/hooks/useDesignV3';
+import { formatElapsed, warmupProgress } from '@/lib/liveWarmup';
+import { toast } from 'sonner';
 
 const TIER_LABEL: Record<LiveCamTier, string> = { standard: 'Standard', premium: 'Premium HD' };
 
@@ -35,6 +37,27 @@ export const LiveCamTab: React.FC = () => {
     localVideoRef,
     remoteCanvasRef,
   });
+
+  // Design v3: time the start-up for the loading card, and say when it's ready.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const loadingNow = status === 'starting' || status === 'warming';
+  useEffect(() => {
+    if (!loadingNow) {
+      setStartedAt(null);
+      return;
+    }
+    setStartedAt((t) => t ?? Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [loadingNow]);
+  const prevStatus = useRef(status);
+  useEffect(() => {
+    if (v3 && status === 'running' && prevStatus.current !== 'running') {
+      toast.success('Live try-on is on. Tap any item to try it on.');
+    }
+    prevStatus.current = status;
+  }, [status, v3]);
 
   const handleToggleExpand = () => {
     setExpanded((v) => !v);
@@ -109,22 +132,40 @@ export const LiveCamTab: React.FC = () => {
               )}
             </>
           }
+          loadingContent={
+            <div className="w-full max-w-[260px] rounded-[20px] bg-neutral-900 p-5 text-center text-white">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+              <p className="mt-3 text-[15px] font-semibold">Turning on live try-on</p>
+              <p className="mt-1 text-[13px] text-white/75">Usually about 30 seconds. The first start can take up to 3 minutes.</p>
+              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-white transition-[width] duration-500"
+                  style={{ width: `${Math.round(warmupProgress(startedAt ? now - startedAt : 0) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[12px] text-white/70 tabular-nums">{formatElapsed(startedAt ? now - startedAt : 0)}</p>
+              <p className="mt-3 text-[12px] text-white/70">Pick what to try first below. Stay on this screen.</p>
+            </div>
+          }
           idleContent={
             garment ? (
               <div className="flex flex-col items-center gap-3 text-center">
                 <img src={garment.referenceImageUrl} alt="" className="h-32 w-24 rounded-xl bg-white object-cover" />
-                <p className="text-[13px] text-white/80">Ready to try on {garment.label}</p>
+                <p className="max-w-[240px] text-[13px] text-white/80">
+                  Turn on live try-on once (about 30 seconds). After that, switching outfits is instant.
+                </p>
               </div>
             ) : (
-              <p className="max-w-[220px] text-center text-[15px] text-white/80">
-                See clothes on you live. Pick something below, then start.
+              <p className="max-w-[240px] text-center text-[15px] text-white/80">
+                Turn on live try-on once (about 30 seconds). After that, switching outfits is instant.
               </p>
             )
           }
           bottom={
             <div className="space-y-3 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-3 pb-4 pt-10">
               {/* Changing the garment while running swaps it live (no reconnect). */}
-              <LiveCamGarmentPicker value={garment} onChange={setGarment} disabled={isStarting} layout="strip" />
+              {/* A pick made while it starts is swapped in as soon as it's live. */}
+              <LiveCamGarmentPicker value={garment} onChange={setGarment} layout="strip" autoSelectFirst />
               {isRunning ? (
                 <div className="grid grid-cols-3 items-center">
                   <button
@@ -147,7 +188,7 @@ export const LiveCamTab: React.FC = () => {
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white text-[15px] font-semibold text-black disabled:bg-white/20 disabled:text-white/70"
                 >
                   {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  {isWarming ? warmingLabel : isStarting ? 'Starting…' : garment ? 'Start live try-on' : 'Pick something to try on'}
+                  {isStarting ? 'Turning on…' : garment ? 'Turn on live try-on' : 'Pick something to try on'}
                 </button>
               )}
             </div>
@@ -175,9 +216,11 @@ export const LiveCamTab: React.FC = () => {
           </div>
         )}
 
-        {!isRunning && !isStarting && (
-          <p className="text-center text-[12px] text-ink-2">The first start can take a few minutes while it warms up.</p>
-        )}
+        <p className="text-center text-[12px] text-ink-2">
+          {isRunning
+            ? 'Live try-on is on. It turns off when you end it or leave this screen.'
+            : 'Live try-on uses a GPU that takes about 30 seconds to start. Once it’s on, outfits switch instantly.'}
+        </p>
 
         {notice && <div className="rounded-[14px] bg-fill p-3 text-[13px] text-ink">{notice}</div>}
 
