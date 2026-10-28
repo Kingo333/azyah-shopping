@@ -24,3 +24,11 @@ export function resolveDesignV3(search: string, storage: FlagStorage | null, def
   }
   return defaultOn;
 }
+
+// The home pages people arrive on keep their original look (owner decision
+// 2026-10-28): the landing page and the intro slides, not the v3 welcome.
+const ORIGINAL_LOOK_PATHS = new Set(['/', '/landing', '/onboarding/intro']);
+
+export function keepsOriginalLook(pathname: string): boolean {
+  return ORIGINAL_LOOK_PATHS.has(pathname);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DESIGN_V3_CLASS, DESIGN_V3_STORAGE_KEY, resolveDesignV3 } from './designV3';
+import { DESIGN_V3_CLASS, DESIGN_V3_STORAGE_KEY, keepsOriginalLook, resolveDesignV3 } from './designV3';
 import { features } from './features';
 
 function memoryStorage(initial: Record<string, string> = {}) {
@@ -57,5 +57,16 @@ describe('resolveDesignV3', () => {
     expect(resolveDesignV3('?design=v2', broken, true)).toBe(false);
     expect(resolveDesignV3('', broken, false)).toBe(false);
     expect(resolveDesignV3('', null, false)).toBe(false);
+  });
+});
+
+describe('keepsOriginalLook', () => {
+  it('keeps the original home pages', () => {
+    for (const p of ['/', '/landing', '/onboarding/intro']) expect(keepsOriginalLook(p)).toBe(true);
+  });
+  it('uses design v3 everywhere else', () => {
+    for (const p of ['/swipe', '/explore', '/profile', '/onboarding/signup', '/landing-x', '/landing/more']) {
+      expect(keepsOriginalLook(p)).toBe(false);
+    }
   });
 });

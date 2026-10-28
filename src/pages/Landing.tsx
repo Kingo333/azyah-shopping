@@ -24,8 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { setGuestMode } from "@/hooks/useGuestMode";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useDesignV3 } from '@/hooks/useDesignV3';
-import WelcomeV3 from '@/components/WelcomeV3';
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
@@ -46,15 +44,7 @@ function FeatureCarousel() {
       </div>
     </div>;
 }
-// Design v3 shows one welcome screen instead (spec 7.18, decision D6).
 export default function Landing() {
-  const v3 = useDesignV3();
-  const { user } = useAuth();
-  // Signed-in visitors keep today's page, which sends them to their dashboard.
-  return v3 && !user ? <WelcomeV3 /> : <LandingV2 />;
-}
-
-function LandingV2() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
