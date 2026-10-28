@@ -32,6 +32,8 @@ export interface AiStudioModalProps {
   open: boolean;
   onClose: () => void;
   trigger?: React.ReactNode;
+  /** 'page' renders the same studio as a full screen (Try on tab, design v3): no dialog, no backdrop, no close button. */
+  presentation?: 'dialog' | 'page';
 }
 
 // Helper: Check if an asset has expired (48 hours from creation)
@@ -44,8 +46,10 @@ const isAssetExpired = (createdAt: string, expiryHours = 48): boolean => {
 const AiStudioModal: React.FC<AiStudioModalProps> = ({
   open,
   onClose,
-  trigger
+  trigger,
+  presentation = 'dialog'
 }) => {
+  const isPage = presentation === 'page';
   const navigate = useNavigate();
   const { toast } = useToast();
   const { registerJob } = useTryOnJobMonitor();
@@ -519,28 +523,20 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
   if (!open) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 sm:max-w-md md:max-w-lg lg:max-w-xl sm:max-h-[92vh] sm:h-auto">
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop - lighter for see-through effect */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-md" onClick={onClose} />
-          
-          {/* Sheet - Frosty See-Through Glass UI */}
-          <motion.div
-            initial={{ y: 24, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            exit={{ y: 24, opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
-                       rounded-3xl 
-                       bg-white/70 backdrop-blur-xl
-                       shadow-[0_8px_32px_rgba(0,0,0,0.15)]
-                       border border-white/40
-                       flex flex-col"
-          >
-            {/* Header - Frosty Glass */}
+  // What's left, never totals (get_user_credits returns remaining credits only).
+  const creditsLeftLine = creditsLoading
+    ? ' '
+    : `${pictureCredits} picture${pictureCredits === 1 ? '' : 's'} · ${videoCredits} video${videoCredits === 1 ? '' : 's'} left${isPremium ? ' today' : ''}`;
+
+  const studio = (
+    <>
+            {/* Header: large title + what's left in page mode; frosty glass in the dialog */}
+            {isPage ? (
+              <div className="flex-shrink-0 px-4 pt-1 pb-1">
+                <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
+                <p className="text-[13px] text-ink-2 tabular-nums">{creditsLeftLine}</p>
+              </div>
+            ) : (
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/30 
                           bg-white/60 backdrop-blur-lg sticky top-0 z-10 rounded-t-3xl">
               <div className="min-w-0 flex-1">
@@ -561,21 +557,22 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 </button>
               </div>
             </div>
+            )}
 
             {/* Tabs - Soft Glass Pill Style */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video' | 'live-cam')} className="flex-1 flex flex-col min-h-0">
               <div className="flex-shrink-0 px-4 pt-3">
-                <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${isShopper ? 'grid-cols-3' : 'grid-cols-2'} gap-1`}>
+                <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${isShopper ? 'grid-cols-3' : 'grid-cols-2'} gap-1 v3:bg-fill v3:border-0 v3:p-0.5 v3:rounded-[10px] v3:gap-0.5`}>
                   <TabsTrigger 
                     value="picture" 
-                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
+                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
                   >
                     <Image className="h-4 w-4" />
                     Picture
                   </TabsTrigger>
                   <TabsTrigger 
                     value="video" 
-                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
+                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
                   >
                     <Video className="h-4 w-4" />
                     Video
@@ -583,7 +580,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {isShopper && (
                     <TabsTrigger
                       value="live-cam"
-                      className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all"
+                      className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
                     >
                       <Radio className="h-4 w-4" />
                       Live Cam
@@ -591,15 +588,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   )}
                 </TabsList>
                 
-                {/* Credits display */}
-                <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                {/* Credits display (the page header shows what's left instead) */}
+                <div className={`flex justify-center gap-4 mt-3 text-xs text-muted-foreground ${isPage ? 'hidden' : ''}`}>
                   <span>Picture: <strong className="text-foreground">{pictureCredits}/{maxPictureCredits}</strong></span>
                   <span>Video: <strong className="text-foreground">{videoCredits}/{maxVideoCredits}</strong></span>
                 </div>
               </div>
 
               {/* Body - scrollable */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className={isPage ? 'flex-1 p-4 pb-24 space-y-4' : 'flex-1 overflow-y-auto p-4 space-y-4'}>
                 
                 {/* Picture Tab */}
                 <TabsContent value="picture" className="mt-0 space-y-4">
@@ -1030,7 +1027,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </div>
 
               {/* Sticky Action Bar - White Glass Footer */}
-              <div className="flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+              <div
+                className={`flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)] v3:bg-ground v3:border-line v3:shadow-none ${isPage && activeTab === 'live-cam' ? 'hidden' : ''}`}
+                // Page mode: the action bar sits fixed above the shopper tab bar.
+                style={isPage ? { position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + var(--safe-bottom, 0px))', zIndex: 40 } : undefined}
+              >
                 {activeTab === 'live-cam' ? null : activeTab === 'picture' ? (
                   <motion.button
                     onClick={handleGeneratePicture}
@@ -1038,7 +1039,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
                       disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
-                      bg-primary text-primary-foreground hover:opacity-95"
+                      bg-primary text-primary-foreground hover:opacity-95 v3:rounded-[14px] v3:disabled:bg-fill v3:disabled:text-ink-2"
                   >
                     {loading ? (
                       <div className="w-full px-4">
@@ -1071,7 +1072,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
                       disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
-                      bg-primary text-primary-foreground hover:opacity-95"
+                      bg-primary text-primary-foreground hover:opacity-95 v3:rounded-[14px] v3:disabled:bg-fill v3:disabled:text-ink-2"
                   >
                     {videoPolling ? (
                       <div className="w-full px-4">
@@ -1120,6 +1121,40 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </div>
             </Tabs>
+    </>
+  );
+
+  if (isPage) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col bg-ground" style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}>
+        {studio}
+        <GuestActionPrompt open={showPrompt} onOpenChange={setShowPrompt} action={promptAction} />
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 sm:max-w-md md:max-w-lg lg:max-w-xl sm:max-h-[92vh] sm:h-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop - lighter for see-through effect */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-md" onClick={onClose} />
+          
+          {/* Sheet - Frosty See-Through Glass UI */}
+          <motion.div
+            initial={{ y: 24, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh]
+                       rounded-3xl 
+                       bg-white/70 backdrop-blur-xl
+                       shadow-[0_8px_32px_rgba(0,0,0,0.15)]
+                       border border-white/40
+                       flex flex-col"
+          >
+            {studio}
           </motion.div>
         </div>
       </DialogContent>
