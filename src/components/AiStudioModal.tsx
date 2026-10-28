@@ -7,7 +7,6 @@ import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X, Radio 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
-import { useDesignV3 } from '@/hooks/useDesignV3';
 import { defaultStudioTab, studioTabs, type StudioTab } from '@/lib/studioTabs';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -60,9 +59,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [activeTab, setActiveTab] = useState<StudioTab>('picture');
   const { user } = useAuth();
   const isShopper = !!user && (user.user_metadata?.role ?? 'shopper') === 'shopper';
-  // Design v3: Live Cam leads (first and default for shoppers); Picture and Video follow.
-  const liveFirst = useDesignV3();
-  const tabOrder = studioTabs(isShopper, liveFirst);
+  // Picture first and default; Live Cam is turned on from its own tab.
+  const tabOrder = studioTabs(isShopper);
   const tabTouched = useRef(false);
   const chooseTab = (tab: StudioTab) => {
     tabTouched.current = true;
@@ -70,8 +68,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   };
   useEffect(() => {
     // The user loads after the first render, so pick the default once it's known.
-    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper, liveFirst));
-  }, [isShopper, liveFirst]);
+    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper));
+  }, [isShopper]);
   
   // Picture tab state
   const [personFile, setPersonFile] = useState<File | null>(null);
@@ -549,7 +547,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               <div className="flex-shrink-0 px-4 pt-1 pb-1">
                 <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
                 <p className="text-[13px] text-ink-2 tabular-nums">
-                  {activeTab === 'live-cam' ? 'See clothes on you live with your camera' : creditsLeftLine}
+                  {activeTab === 'live-cam' ? 'Turn it on once, then try outfits on live' : creditsLeftLine}
                 </p>
               </div>
             ) : (
