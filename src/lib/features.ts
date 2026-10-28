@@ -14,9 +14,9 @@ export const features = {
   // New 4-tab shopper bar (Discover, Try on, Community, Profile). Off for
   // everyone; a device opts in with ?nav_v2=1 (see src/lib/navV2.ts).
   nav_v2: false,
-  // Design v3 (neutral redesign, five-tab bar). Off for everyone; a device
-  // opts in with ?design=v3 and leaves with ?design=v2 (see src/lib/designV3.ts).
-  design_v3: false,
+  // Design v3 (neutral redesign, five-tab bar). On by default for everyone;
+  // ?design=v2 remains a temporary preview override (see src/lib/designV3.ts).
+  design_v3: true,
   // Deals tab on the Explore globe: hidden for later (design v3, 2026-10-27).
   deals: false,
 } as const;

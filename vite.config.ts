@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -30,7 +30,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
-    mcpPlugin(),
+    // The MCP package bundles newer Vite types; its runtime plugin works on Vite 5.
+    mcpPlugin() as unknown as PluginOption,
   ].filter(Boolean),
   resolve: {
     alias: {

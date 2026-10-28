@@ -1,5 +1,5 @@
-// Design v3 (neutral redesign). Off for everyone by default; a device opts in
-// with ?design=v3 (remembered) and leaves with ?design=v2.
+// Design v3 (neutral redesign). The feature flag controls the default;
+// ?design=v3 opts in (remembered), while ?design=v2 overrides this page view.
 
 export const DESIGN_V3_STORAGE_KEY = 'azyah:design_v3';
 export const DESIGN_V3_CLASS = 'design-v3';
