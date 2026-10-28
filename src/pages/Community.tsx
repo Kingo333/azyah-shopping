@@ -10,6 +10,8 @@ import { Ruler } from 'lucide-react';
 import { features } from '@/lib/features';
 import FeedComponent from '@/components/FeedComponent';
 import { useDesignV3 } from '@/hooks/useDesignV3';
+import { YourOutfitsRow } from '@/components/community/YourOutfitsRow';
+import { CommunityCreateButton } from '@/components/community/CommunityCreateButton';
 
 // Your Fit is hidden (owner decision); old ?tab=your-fit links open Outfits.
 const YOUR_FIT_ENABLED = features.your_fit;
@@ -23,6 +25,8 @@ export default function Community() {
   const tabs = v3 ? V3_TABS : TABS;
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabOrDefault(searchParams.get('tab'), tabs));
+  // Bumped after a post is made from the Create button so the Posts list reloads.
+  const [postsVersion, setPostsVersion] = useState(0);
 
   // Sync with URL params
   useEffect(() => {
@@ -74,7 +78,8 @@ export default function Community() {
               )}
             </TabsList>
 
-            <TabsContent value="outfits" className="mt-6">
+            <TabsContent value="outfits" className={v3 ? 'mt-4' : 'mt-6'}>
+              {v3 && <YourOutfitsRow />}
               <CommunityOutfits />
             </TabsContent>
 
@@ -84,7 +89,7 @@ export default function Community() {
 
             {v3 && (
               <TabsContent value="posts" className="mt-4">
-                <FeedComponent limit={30} />
+                <FeedComponent key={postsVersion} limit={30} />
               </TabsContent>
             )}
 
@@ -95,6 +100,14 @@ export default function Community() {
             )}
           </Tabs>
         </div>
+        {v3 && (
+          <CommunityCreateButton
+            onPostCreated={() => {
+              setPostsVersion((n) => n + 1);
+              handleTabChange('posts');
+            }}
+          />
+        )}
       </div>
     </>
   );
