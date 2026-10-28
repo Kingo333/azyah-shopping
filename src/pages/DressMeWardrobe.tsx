@@ -21,6 +21,10 @@ import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
 import { FriendsTab } from '@/components/FriendsTab';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
+import AnalyzeClosetGeminiButton from '@/components/profile/AnalyzeClosetGeminiButton';
 import { StyleableUsersGrid } from '@/components/StyleableUsersGrid';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -32,6 +36,7 @@ import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const v3 = useDesignV3();
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: userFits = [] } = useFits();
   const { data: giftedFits = [] } = useGiftedFits();
@@ -455,6 +460,25 @@ export default function DressMeWardrobe() {
                 <p className="text-xs font-light text-muted-foreground">upload all clothes you own here</p>
               </div>
             </div>
+            {/* Design v3: the Analyze closet tools moved here from Profile */}
+            {v3 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="More"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-fill text-ink active:opacity-70"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0 pb-3">
+                  <p className="px-4 pt-3 text-[13px] font-semibold text-ink">Analyze closet</p>
+                  <AnalyzeClosetButton />
+                  <AnalyzeClosetGeminiButton />
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
 
           {/* Segmented Control */}

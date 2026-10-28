@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, User, HelpCircle, Search } from 'lucide-react';
+import { Sun, Moon, User, HelpCircle, Search, Settings } from 'lucide-react';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+
+const V3_ICON_BUTTON = 'flex h-8 w-8 items-center justify-center rounded-full bg-fill text-ink active:opacity-70';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
@@ -20,6 +23,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenSearch }) => {
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const isGuest = isGuestMode();
   const { isPremium, loading: premiumLoading } = usePremium();
+  const v3 = useDesignV3();
 
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -34,6 +38,43 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenSearch }) => {
   };
 
   const showUpgradeButton = !isPremium && !premiumLoading;
+
+  // Design v3: the "Azyah" wordmark (the one serif), search, help and settings.
+  // Dark mode isn't checked in v3 yet, so its toggle is left out.
+  if (v3) {
+    return (
+      <section className="sticky z-50 bg-ground px-4 pb-2 pt-3" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="flex items-center justify-between">
+          <span className="font-wordmark text-[24px] font-medium leading-none text-ink">Azyah</span>
+          <div className="flex items-center gap-2">
+            {showUpgradeButton && (
+              <button
+                type="button"
+                onClick={handleUpgradeClick}
+                className="h-8 rounded-full bg-fill px-3 text-[13px] font-medium text-ink active:opacity-70"
+              >
+                Premium
+              </button>
+            )}
+            {onOpenSearch && (
+              <button type="button" aria-label="Search" onClick={onOpenSearch} className={V3_ICON_BUTTON}>
+                <Search className="h-4 w-4" />
+              </button>
+            )}
+            <FeedbackModal userType="shopper">
+              <button type="button" aria-label="Help and feedback" className={V3_ICON_BUTTON}>
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            </FeedbackModal>
+            <button type="button" aria-label="Settings" onClick={() => navigate('/settings')} className={V3_ICON_BUTTON}>
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <GuestActionPrompt open={showGuestPrompt} onOpenChange={setShowGuestPrompt} action="upgrade to Premium" />
+      </section>
+    );
+  }
 
   return (
     <section 

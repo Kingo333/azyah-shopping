@@ -31,6 +31,9 @@ import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSectio
 import AnalyzeClosetButton from '@/components/profile/AnalyzeClosetButton';
 import AnalyzeClosetGeminiButton from '@/components/profile/AnalyzeClosetGeminiButton';
 import { features } from '@/lib/features';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { GroupedRows } from '@/components/v3/GroupedRows';
+import { Shirt, Users as UsersIcon, Heart, Calendar, Award } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -60,6 +63,7 @@ const Profile: React.FC = () => {
   const [showAiStudio, setShowAiStudio] = useState(false);
 
   const { followedBrands } = useFollowBrands();
+  const v3 = useDesignV3();
 
   // User posts count
   const { data: postsCount } = useQuery({
@@ -210,6 +214,26 @@ const Profile: React.FC = () => {
             onNewPost={() => setShowCreatePostModal(true)}
           />
 
+          {/* Design v3: your things as grouped rows (replaces the Events and Benefits cards) */}
+          {v3 && (
+            <section className="px-4 pt-3">
+              <GroupedRows
+                rows={[
+                  { label: 'My closet', icon: Shirt, onClick: () => navigate('/dress-me/wardrobe') },
+                  { label: 'Friends', icon: UsersIcon, onClick: () => navigate('/dress-me/wardrobe?tab=friends') },
+                  { label: 'Favorites', icon: Heart, onClick: () => navigate('/favorites') },
+                  {
+                    label: 'Events',
+                    icon: Calendar,
+                    value: eventLoading ? undefined : featuredEvent?.name ?? 'None upcoming',
+                    onClick: () => navigate('/events'),
+                  },
+                  { label: 'Rewards', icon: Award, onClick: () => navigate('/rewards') },
+                ]}
+              />
+            </section>
+          )}
+
           {/* 2. Your Fit (compact pill) - hidden while the your_fit feature is off */}
           {features.your_fit && <YourFitPill height={userProfile?.height} />}
 
@@ -270,13 +294,15 @@ const Profile: React.FC = () => {
 
           {/* 6. Wardrobe (Create & Earn + Add Items) */}
           <ClosetOutfitsSection />
-          <AnalyzeClosetButton />
-          <AnalyzeClosetGeminiButton />
+          {/* Design v3 moves these tools into My closet's menu */}
+          {!v3 && <AnalyzeClosetButton />}
+          {!v3 && <AnalyzeClosetGeminiButton />}
 
           {/* 7. Your Brands */}
           <BrandsSection />
 
-          {/* 7. Events Section */}
+          {/* 7. Events Section (design v3: an Events row above) */}
+          {!v3 && (
           <section className="px-4 pt-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-serif font-medium text-foreground">Events</h2>
@@ -338,8 +364,10 @@ const Profile: React.FC = () => {
               </Card>
             )}
           </section>
+          )}
 
-          {/* 8. Benefits & Offers */}
+          {/* 8. Benefits & Offers (design v3: the Rewards row above) */}
+          {!v3 && (
           <section className="px-4 pt-4">
             <Card
               className="bg-card border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
@@ -357,6 +385,7 @@ const Profile: React.FC = () => {
               </CardContent>
             </Card>
           </section>
+          )}
 
         </div>
 
