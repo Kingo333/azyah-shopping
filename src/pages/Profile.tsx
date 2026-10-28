@@ -211,7 +211,7 @@ const Profile: React.FC = () => {
             userProfile={userProfile}
             postsCount={postsCount || 0}
             brandsCount={followedBrands.length}
-            onNewPost={() => setShowCreatePostModal(true)}
+            onNewPost={features.posts ? () => setShowCreatePostModal(true) : undefined}
           />
 
           {/* Design v3: your things as grouped rows (replaces the Events and Benefits cards) */}
@@ -237,8 +237,8 @@ const Profile: React.FC = () => {
           {/* 2. Your Fit (compact pill) - hidden while the your_fit feature is off */}
           {features.your_fit && <YourFitPill height={userProfile?.height} />}
 
-          {/* 3. Your Posts (carousel) */}
-          <PostsSection />
+          {/* 3. Your Posts (carousel) - paused with features.posts */}
+          {features.posts && <PostsSection />}
 
           {/* Design v3 drops what the tabs already cover: favorites (Favorites row),
               trending looks (Feed, Explore), the closet/outfits card (My closet row,

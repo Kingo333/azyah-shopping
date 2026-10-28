@@ -3,13 +3,15 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useNavV2 } from '@/hooks/useNavV2';
 import { navV2RedirectFor } from '@/lib/navV2';
+import { features } from '@/lib/features';
 import { ShopperTabBar } from './ShopperTabBar';
 
-/** Old shopper URLs (e.g. /feed) redirect only when navigation v2 is on. */
+/** Old shopper URLs (e.g. /feed) redirect when navigation v2 is on or posts are paused. */
 export const NavV2Gate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navV2 = useNavV2();
   const { pathname, search } = useLocation();
-  const target = navV2 ? navV2RedirectFor(pathname, search) : null;
+  // Old feed pages also go to Community while posts are paused.
+  const target = navV2 || !features.posts ? navV2RedirectFor(pathname, search) : null;
   return target ? <Navigate to={target} replace /> : <>{children}</>;
 };
 

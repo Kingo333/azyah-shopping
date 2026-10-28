@@ -19,6 +19,10 @@ export const features = {
   design_v3: true,
   // Deals tab on the Explore globe: hidden for later (design v3, 2026-10-27).
   deals: false,
+  // People's posts: paused (owner decision 2026-10-28) so the app focuses on
+  // try-on and outfits. Hides the Posts tabs, New post buttons, Your posts,
+  // posts on the Globe and in the feed, and "Post & Earn". Data stays.
+  posts: false,
 } as const;
 
 export type FeatureFlag = keyof typeof features;

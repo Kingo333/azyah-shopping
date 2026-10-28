@@ -48,11 +48,16 @@ export const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
       )}
 
       <div className="flex items-center gap-6 mt-2">
-        <div className="text-center">
-          <p className="text-sm font-semibold text-foreground">{postsCount}</p>
-          <p className="text-xs text-muted-foreground">Posts</p>
-        </div>
-        <div className="h-4 w-px bg-border" />
+        {/* Posts are paused (no onNewPost): no post count */}
+        {onNewPost && (
+          <>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">{postsCount}</p>
+              <p className="text-xs text-muted-foreground">Posts</p>
+            </div>
+            <div className="h-4 w-px bg-border" />
+          </>
+        )}
         <div className="text-center">
           <p className="text-sm font-semibold text-foreground">{brandsCount}</p>
           <p className="text-xs text-muted-foreground">Brands</p>
@@ -73,10 +78,10 @@ export const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
           variant="outline"
           size="sm"
           className="rounded-full text-xs h-8 px-4"
-          onClick={onNewPost}
+          onClick={onNewPost ?? (() => navigate('/dress-me/canvas'))}
         >
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          New Post
+          {onNewPost ? 'New Post' : 'New outfit'}
         </Button>
       </div>
     </div>
