@@ -14,6 +14,8 @@ import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import WelcomeV3 from '@/components/WelcomeV3';
 
 
 type SlideType =
@@ -389,7 +391,13 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     </div>
   );
 };
+// Design v3 shows one welcome screen instead (spec 7.18, decision D6).
 export default function IntroCarousel() {
+  const v3 = useDesignV3();
+  return v3 ? <WelcomeV3 /> : <IntroCarouselV2 />;
+}
+
+function IntroCarouselV2() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
