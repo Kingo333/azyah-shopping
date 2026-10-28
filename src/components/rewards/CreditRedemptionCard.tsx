@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { features } from '@/lib/features';
 
 interface CreditPackage {
   id: string;
@@ -120,7 +121,8 @@ export const CreditRedemptionCard: React.FC<CreditRedemptionCardProps> = ({
       </h3>
 
       <div className="grid grid-cols-2 gap-3">
-        {CREDIT_PACKAGES.map((pkg) => {
+        {/* Video credits aren't offered while video try-on is paused. */}
+        {CREDIT_PACKAGES.filter((pkg) => pkg.type !== 'video' || features.video_tryon).map((pkg) => {
           const canAfford = userBalance >= pkg.pointsCost;
           const isRedeeming = redeeming === pkg.id;
 

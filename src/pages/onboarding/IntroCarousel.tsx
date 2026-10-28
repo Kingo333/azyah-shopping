@@ -14,6 +14,7 @@ import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { features } from "@/lib/features";
 
 
 type SlideType =
@@ -713,7 +714,7 @@ export default function IntroCarousel() {
                   <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
                   <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
 
-                  {/* Live first; picture and video come second */}
+                  {/* Live first; photo (and video, when it's on) come second */}
                   <div className="flex items-center justify-center gap-2 mt-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -722,9 +723,11 @@ export default function IntroCarousel() {
                     <span className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground/70">
                       Photo
                     </span>
+                    {features.video_tryon && (
                     <span className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground/70">
                       Video
                     </span>
+                    )}
                   </div>
                 </div>
 

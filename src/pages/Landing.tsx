@@ -23,10 +23,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { setGuestMode } from "@/hooks/useGuestMode";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { features as featureFlags } from '@/lib/features';
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   // Only features people can use today; Live Cam leads (hidden: UGC, Beauty AI).
-  const features = ["Live Camera Try-On", "Photo & Video Try-On", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
+  const features = ["Live Camera Try-On", featureFlags.video_tryon ? "Photo & Video Try-On" : "Photo Try-On", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature(prev => (prev + 1) % features.length);
@@ -368,7 +369,7 @@ export default function Landing() {
                       🎥 Try clothes on live with your camera
                     </p>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
-                      ✨ Photo and video try-on
+                      {featureFlags.video_tryon ? '✨ Photo and video try-on' : '✨ Photo try-on from any picture'}
                     </p>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
                       🌍 Top countries to explore
@@ -490,7 +491,7 @@ export default function Landing() {
                       <span className="text-xs font-semibold text-primary">Live Try-On</span>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground">Real-time camera try-on, plus photo and video</p>
+                    <p className="text-xs text-muted-foreground">{featureFlags.video_tryon ? 'Real-time camera try-on, plus photo and video' : 'Real-time camera try-on, plus photo try-on'}</p>
                   </div>
                 </div>
                 
@@ -498,7 +499,7 @@ export default function Landing() {
                   <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
                     <span className="text-primary">Live</span> Virtual Try-On
                   </h4>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Point your camera and see clothes on you in real time, and switch outfits without stopping. Prefer a photo? Try on from any picture and turn it into a video.</p>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Point your camera and see clothes on you in real time, and switch outfits without stopping. Prefer a photo? Try on from any picture{featureFlags.video_tryon ? ' and turn it into a video' : ''}.</p>
                   <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-primary font-medium">
                     <CheckCircle className="w-4 h-4" />
                     <span>See it on you before you buy</span>
