@@ -240,10 +240,14 @@ const Profile: React.FC = () => {
           {/* 3. Your Posts (carousel) */}
           <PostsSection />
 
+          {/* Design v3 drops what the tabs already cover: favorites (Favorites row),
+              trending looks (Feed, Explore), the closet/outfits card (My closet row,
+              Community) and your brands (Explore > Following). */}
           {/* 4. Your Favorites (carousel) */}
-          <FavoritesSection />
+          {!v3 && <FavoritesSection />}
 
           {/* 5. Trending Looks (smaller cards) */}
+          {!v3 && (
           <section className="px-4 pt-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-serif font-medium text-foreground">Trending Looks</h2>
@@ -291,15 +295,16 @@ const Profile: React.FC = () => {
             </div>
             <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} onTryOnClick={() => setShowAiStudio(true)} />
           </section>
+          )}
 
           {/* 6. Wardrobe (Create & Earn + Add Items) */}
-          <ClosetOutfitsSection />
+          {!v3 && <ClosetOutfitsSection />}
           {/* Design v3 moves these tools into My closet's menu */}
           {!v3 && <AnalyzeClosetButton />}
           {!v3 && <AnalyzeClosetGeminiButton />}
 
           {/* 7. Your Brands */}
-          <BrandsSection />
+          {!v3 && <BrandsSection />}
 
           {/* 7. Events Section (design v3: an Events row above) */}
           {!v3 && (
