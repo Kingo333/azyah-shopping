@@ -42,17 +42,33 @@ describe('resolveNavV2', () => {
 });
 
 describe('SHOPPER_TABS', () => {
-  it('has the four tabs in order', () => {
-    expect(SHOPPER_TABS.map((t) => t.label)).toEqual(['Discover', 'Try on', 'Community', 'Profile']);
-    expect(SHOPPER_TABS.map((t) => t.path)).toEqual(['/swipe', '/try-on', '/community', '/profile']);
+  it('has the five tabs in order', () => {
+    expect(SHOPPER_TABS.map((t) => t.id)).toEqual(['feed', 'explore', 'try-on', 'community', 'profile']);
+    expect(SHOPPER_TABS.map((t) => t.label)).toEqual(['Feed', 'Explore', 'Try on', 'Community', 'Profile']);
+    expect(SHOPPER_TABS.map((t) => t.path)).toEqual(['/swipe', '/explore', '/try-on', '/community', '/profile']);
   });
 });
 
 describe('activeShopperTab', () => {
-  it('marks Discover for the feed and the Globe', () => {
-    expect(activeShopperTab('/swipe')).toBe('discover');
-    expect(activeShopperTab('/explore')).toBe('discover');
-    expect(activeShopperTab('/discover')).toBe('discover');
+  it('marks Feed for the swipe feed', () => {
+    expect(activeShopperTab('/swipe')).toBe('feed');
+    expect(activeShopperTab('/discover')).toBe('feed');
+  });
+  it('marks Explore for the Globe and brand pages', () => {
+    expect(activeShopperTab('/explore')).toBe('explore');
+    expect(activeShopperTab('/brand/acme')).toBe('explore');
+    expect(activeShopperTab('/featured-brands')).toBe('explore');
+    expect(activeShopperTab('/trending-styles')).toBe('explore');
+  });
+  it('marks Profile for things you own', () => {
+    expect(activeShopperTab('/cart')).toBe('profile');
+    expect(activeShopperTab('/events')).toBe('profile');
+    expect(activeShopperTab('/dress-me/wardrobe')).toBe('profile');
+    expect(activeShopperTab('/rewards')).toBe('profile');
+  });
+  it('does not match look-alike paths', () => {
+    expect(activeShopperTab('/brands')).toBeNull();
+    expect(activeShopperTab('/explorer')).toBeNull();
   });
   it('marks the other tabs', () => {
     expect(activeShopperTab('/try-on')).toBe('try-on');

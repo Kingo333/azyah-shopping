@@ -1,4 +1,4 @@
-// Navigation v2 (4-tab shopper bar). Off for everyone by default; a device
+// Navigation v2 (5-tab shopper bar: Feed, Explore, Try on, Community, Profile). Off for everyone by default; a device
 // opts in with ?nav_v2=1 (remembered) and opts out with ?nav_v2=0.
 
 export const NAV_V2_STORAGE_KEY = 'azyah:nav_v2';
@@ -25,10 +25,11 @@ export function resolveNavV2(search: string, storage: FlagStorage | null, defaul
   return defaultOn;
 }
 
-export type ShopperTabId = 'discover' | 'try-on' | 'community' | 'profile';
+export type ShopperTabId = 'feed' | 'explore' | 'try-on' | 'community' | 'profile';
 
 export const SHOPPER_TABS: { id: ShopperTabId; label: string; path: string }[] = [
-  { id: 'discover', label: 'Discover', path: '/swipe' },
+  { id: 'feed', label: 'Feed', path: '/swipe' },
+  { id: 'explore', label: 'Explore', path: '/explore' },
   { id: 'try-on', label: 'Try on', path: '/try-on' },
   { id: 'community', label: 'Community', path: '/community' },
   { id: 'profile', label: 'Profile', path: '/profile' },
@@ -36,11 +37,14 @@ export const SHOPPER_TABS: { id: ShopperTabId; label: string; path: string }[] =
 
 const startsWith = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + '/');
 
+const PROFILE_PREFIXES = ['/settings', '/favorites', '/rewards', '/dashboard', '/events', '/cart', '/dress-me'];
+
 export function activeShopperTab(pathname: string): ShopperTabId | null {
-  if (['/swipe', '/explore', '/discover'].some((p) => startsWith(pathname, p))) return 'discover';
+  if (['/swipe', '/discover'].some((p) => startsWith(pathname, p))) return 'feed';
+  if (['/explore', '/brand', '/featured-brands', '/trending-styles'].some((p) => startsWith(pathname, p))) return 'explore';
   if (startsWith(pathname, '/try-on')) return 'try-on';
   if (startsWith(pathname, '/community')) return 'community';
-  if (pathname === '/profile' || ['/settings', '/favorites', '/rewards', '/dashboard'].some((p) => startsWith(pathname, p))) return 'profile';
+  if (pathname === '/profile' || PROFILE_PREFIXES.some((p) => startsWith(pathname, p))) return 'profile';
   return null;
 }
 
