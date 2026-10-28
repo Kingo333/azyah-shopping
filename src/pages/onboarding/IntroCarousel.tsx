@@ -81,8 +81,8 @@ const slides: SlideType[] = [
   },
   {
     type: "gallery",
-    title: "Create. Style. Share.",
-    subtitle: "Build outfits from your closet and share them with the community",
+    title: "Build Your Outfits",
+    subtitle: "Mix pieces from your closet and share your looks with the community.",
   },
 ];
 // The gallery slide's animations key off its position.
@@ -336,7 +336,6 @@ export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
-  const [cardOffset, setCardOffset] = useState(0);
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [isNavMinimized, setIsNavMinimized] = useState(false);
@@ -447,19 +446,6 @@ export default function IntroCarousel() {
     };
   }, [isMobile]);
 
-  // Auto-scroll carousel for gallery slide - only on mobile/tablet
-  useEffect(() => {
-    if (currentSlide !== GALLERY_SLIDE_INDEX || isCarouselDragging || !isMobile) {
-      if (currentSlide !== GALLERY_SLIDE_INDEX) setCardOffset(0); // Reset offset when leaving gallery slide
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setCardOffset((prev) => (prev + 1) % 4); // 4 cards total
-    }, 3500);
-
-    return () => clearInterval(interval);
-  }, [currentSlide, isCarouselDragging, isMobile]);
   const handleSwipe = (offset: number) => {
     if (offset > 100 && currentSlide > 0) {
       setDirection(-1);
@@ -712,98 +698,22 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === "gallery" && (
-              <div className="h-full flex flex-col px-6 bg-gradient-to-b from-white via-white to-primary/5">
-                {/* Title & Subtitle */}
-                <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                    {slide.title}
-                  </h2>
+              <div className="h-full flex flex-col px-6">
+                {/* One feature, one short caption */}
+                <div className="text-center mb-4 pt-4">
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
                   <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
-                {/* Content Container */}
-                <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* 2x2 Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-6 w-full max-w-md mx-auto">
-                    {/* Create Outfit Inspo */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                      transition={{ delay: 0, duration: 0.3 }}
-                    >
-                      <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
-                        <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100">
-                          {/* Auto-playing outfit images */}
-                          <OutfitInspoInlineSlider />
-                        </div>
-                        <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Build Outfits</p>
-                          <p className="text-[10px] text-muted-foreground">Mix pieces from your closet</p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Digital closet */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                      transition={{ delay: 0.05, duration: 0.3 }}
-                    >
-                      <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
-                        <div className="aspect-square bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">👗</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Digital Closet</h4>
-                          <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Add what you own; backgrounds are removed for you
-                          </p>
-                        </div>
-                        <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Your Closet, Online</p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Style Friends */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                      transition={{ delay: 0.1, duration: 0.3 }}
-                    >
-                      <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
-                        <div className="aspect-square bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">👯</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Style Friends</h4>
-                          <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Create outfits for your friends with their clothes
-                          </p>
-                        </div>
-                        <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Be Creative</p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Share with the community */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                      transition={{ delay: 0.15, duration: 0.3 }}
-                    >
-                      <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
-                        <div className="aspect-square bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">🌍</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Share Your Looks</h4>
-                          <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Share outfits with the community and find inspiration worldwide
-                          </p>
-                        </div>
-                        <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Get Inspired</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-
+                <div className="flex-1 flex items-start justify-center pt-2">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative h-[min(440px,55vh)] aspect-[9/16] overflow-hidden rounded-3xl bg-muted shadow-lg"
+                  >
+                    <OutfitInspoInlineSlider />
+                  </motion.div>
                 </div>
               </div>
             )}
