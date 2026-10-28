@@ -17,6 +17,7 @@ import { lazyPage } from '@/lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppNavigation, NavV2Gate } from './components/nav/NavV2Gate';
 import { DesignV3Root } from './components/DesignV3Root';
+import { LiveCamHostProvider } from './components/live/LiveCamHost';
 import { StatusBarScrim } from './components/StatusBarScrim';
 
 // Pages load on demand (smaller first download); see src/lib/lazyPage.ts.
@@ -114,7 +115,7 @@ function AppContent() {
   useDeepLinkHandler(); // Handle deep links for Capacitor iOS/Android
   useTryOnJobMonitor(); // Monitor background try-on jobs and notify on completion
   return (
-    <>
+    <LiveCamHostProvider>
       <DesignV3Root />
       <StatusBarScrim />
       <Suspense fallback={<PageLoading />}>
@@ -352,7 +353,7 @@ function AppContent() {
       <Toaster />
       <SonnerToaster position="top-center" />
       <AppNavigation />
-    </>
+    </LiveCamHostProvider>
   );
 }
 

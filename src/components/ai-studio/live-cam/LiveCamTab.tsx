@@ -18,7 +18,17 @@ const supportsLiveCam = (): boolean => {
   return !!window.WebSocket && !!navigator.mediaDevices?.getUserMedia;
 };
 
-export const LiveCamTab: React.FC = () => {
+interface LiveCamTabProps {
+  /**
+   * Set by the app-level Live Cam host (design v3), which keeps this mounted
+   * while it starts or runs so people can leave the screen. Always uses the
+   * v3 layout so the camera and canvas never remount, and reports status up.
+   */
+  hosted?: boolean;
+  onStatusChange?: (status: LiveCamStatus) => void;
+}
+
+export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatusChange }) => {
   const [garment, setGarment] = useState<LiveCamGarmentSelection | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [tier, setTier] = useState<LiveCamTier>('standard');
@@ -27,7 +37,8 @@ export const LiveCamTab: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
   const supported = supportsLiveCam();
-  const v3 = useDesignV3();
+  const routeV3 = useDesignV3();
+  const v3 = hosted || routeV3;
 
   const {
     status, errorMessage, errorCode, notice, latencyMs, session, activeTier, start, stop, redrawLastFrame,
@@ -53,11 +64,13 @@ export const LiveCamTab: React.FC = () => {
   }, [loadingNow]);
   const prevStatus = useRef(status);
   useEffect(() => {
-    if (v3 && status === 'running' && prevStatus.current !== 'running') {
+    onStatusChange?.(status);
+    // The host says when it's ready (also when you're elsewhere); otherwise say it here.
+    if (!hosted && v3 && status === 'running' && prevStatus.current !== 'running') {
       toast.success('Live try-on is on. Tap any item to try it on.');
     }
     prevStatus.current = status;
-  }, [status, v3]);
+  }, [status, v3, hosted, onStatusChange]);
 
   const handleToggleExpand = () => {
     setExpanded((v) => !v);
@@ -136,7 +149,7 @@ export const LiveCamTab: React.FC = () => {
             <div className="w-full max-w-[260px] rounded-[20px] bg-neutral-900 p-5 text-center text-white">
               <Loader2 className="mx-auto h-6 w-6 animate-spin" />
               <p className="mt-3 text-[15px] font-semibold">Turning on live try-on</p>
-              <p className="mt-1 text-[13px] text-white/75">Usually about 30 seconds. The first start can take up to 3 minutes.</p>
+              <p className="mt-1 text-[13px] text-white/75">Usually about 50 seconds. The first start can take up to 3 minutes.</p>
               <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
                 <div
                   className="h-full rounded-full bg-white transition-[width] duration-500"
@@ -144,7 +157,11 @@ export const LiveCamTab: React.FC = () => {
                 />
               </div>
               <p className="mt-2 text-[12px] text-white/70 tabular-nums">{formatElapsed(startedAt ? now - startedAt : 0)}</p>
-              <p className="mt-3 text-[12px] text-white/70">Pick what to try first below. Stay on this screen.</p>
+              <p className="mt-3 text-[12px] text-white/70">
+                {hosted
+                  ? 'Pick what to try first below, or keep browsing. We’ll tell you when it’s ready.'
+                  : 'Pick what to try first below. Stay on this screen.'}
+              </p>
             </div>
           }
           idleContent={
@@ -152,12 +169,12 @@ export const LiveCamTab: React.FC = () => {
               <div className="flex flex-col items-center gap-3 text-center">
                 <img src={garment.referenceImageUrl} alt="" className="h-32 w-24 rounded-xl bg-white object-cover" />
                 <p className="max-w-[240px] text-[13px] text-white/80">
-                  Turn on live try-on once (about 30 seconds). After that, switching outfits is instant.
+                  Turn on live try-on once (about 50 seconds). After that, switching outfits is instant.
                 </p>
               </div>
             ) : (
               <p className="max-w-[240px] text-center text-[15px] text-white/80">
-                Turn on live try-on once (about 30 seconds). After that, switching outfits is instant.
+                Turn on live try-on once (about 50 seconds). After that, switching outfits is instant.
               </p>
             )
           }
@@ -218,8 +235,10 @@ export const LiveCamTab: React.FC = () => {
 
         <p className="text-center text-[12px] text-ink-2">
           {isRunning
-            ? 'Live try-on is on. It turns off when you end it or leave this screen.'
-            : 'Live try-on uses a GPU that takes about 30 seconds to start. Once it’s on, outfits switch instantly.'}
+            ? hosted
+              ? 'Live try-on is on. It stays on while you browse, until you end it or close the app.'
+              : 'Live try-on is on. It turns off when you end it or leave this screen.'
+            : 'Live try-on uses a GPU that takes about 50 seconds to start. Once it’s on, outfits switch instantly.'}
         </p>
 
         {notice && <div className="rounded-[14px] bg-fill p-3 text-[13px] text-ink">{notice}</div>}

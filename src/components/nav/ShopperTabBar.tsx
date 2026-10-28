@@ -2,6 +2,8 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Globe, Shirt, ShoppingBag, User, Users, type LucideIcon } from 'lucide-react';
 import { useDesignV3 } from '@/hooks/useDesignV3';
+import { useLiveCamHostStatus } from '@/components/live/LiveCamHost';
+import { liveBadge } from '@/lib/liveCamHost';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { SHOPPER_TABS, activeShopperTab, showShopperBar, type ShopperTabId } from '@/lib/navV2';
@@ -26,6 +28,8 @@ export const ShopperTabBar: React.FC = () => {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const v3 = useDesignV3();
+  // Live try-on keeps starting / running while people browse; the Try on tab shows it.
+  const badge = liveBadge(useLiveCamHostStatus().status);
 
   // Partners use their own portal navigation, as today.
   const role = user?.user_metadata?.role;
@@ -69,11 +73,19 @@ export const ShopperTabBar: React.FC = () => {
               >
                 {round ? (
                   <span
-                    className={`-mt-1 flex h-[34px] w-[34px] items-center justify-center rounded-full ${
+                    className={`relative -mt-1 flex h-[34px] w-[34px] items-center justify-center rounded-full ${
                       dark ? 'bg-white text-black' : 'bg-ink text-white'
                     }`}
                   >
                     <Icon className="h-[18px] w-[18px]" aria-hidden />
+                    {badge && (
+                      <span
+                        aria-label={badge === 'ready' ? 'Live try-on is ready' : 'Live try-on is turning on'}
+                        className={`absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ${dark ? 'ring-black' : 'ring-card'} ${
+                          badge === 'ready' ? 'bg-emerald-400' : 'animate-pulse bg-amber-400'
+                        }`}
+                      />
+                    )}
                   </span>
                 ) : (
                   <Icon className={v3 ? 'h-[22px] w-[22px]' : 'h-5 w-5'} aria-hidden />
