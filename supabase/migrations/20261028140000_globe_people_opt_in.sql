@@ -1,6 +1,6 @@
 -- Globe "People": only people who chose to be visible.
 --
--- STATUS: NOT APPLIED. Owner decision 2026-10-28: people are anonymous (not
+-- STATUS: APPLIED to production 2026-10-28. Owner decision 2026-10-28: people are anonymous (not
 -- listed or counted) until they turn on "Show me on the Globe". People who
 -- already turned it on stay visible.
 -- Tests: supabase/tests/globe_people_opt_in_probes.sql (rollback mode on production).
