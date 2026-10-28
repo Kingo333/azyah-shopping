@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { setGuestMode } from "@/hooks/useGuestMode";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { LiveTryOnPreview } from "@/components/LiveTryOnPreview";
 import { SwipeableImages } from "@/components/SwipeableImages";
 import { Heart, X, ChevronLeft, ChevronRight, Menu, Search, Play } from "lucide-react";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
@@ -35,12 +35,7 @@ type SlideType =
       }>;
     }
   | {
-      type: "interactive-slider";
-      title: string;
-      subtitle: string;
-    }
-  | {
-      type: "ugc";
+      type: "live";
       title: string;
       subtitle: string;
     }
@@ -55,13 +50,18 @@ const slides: SlideType[] = [
     image: "/marketing/hero-visual-desktop.png",
     mobileImage: "/marketing/hero-visual-mobile.png",
     title: "Discover Your Style",
-  subtitle:
-    "The platform for discovering fashion, beauty products, and pop-ups. \nWe empower brands, shoppers and content creators.",
+    subtitle: "Discover fashion and pop-ups from brands worldwide, and see clothes on you live before you buy.",
+  },
+  // Live Cam is the selling point, so it comes right after the globe.
+  {
+    type: "live",
+    title: "See It On You, Live",
+    subtitle: "Point your camera and watch clothes appear on you in real time.",
   },
   {
     type: "interactive-swipe",
     title: "Your Style, Your Swipes",
-    subtitle: "Swipe right to save, left to pass. Your feed learns your style and fit over time.",
+    subtitle: "Swipe right to save, left to pass. Your feed learns your style over time.",
     images: ["/onboarding/product-bag.png", "/onboarding/product-shoes.png", "/onboarding/product-shirt.png"],
     productInfo: [
       {
@@ -79,21 +79,13 @@ const slides: SlideType[] = [
     ],
   },
   {
-    type: "interactive-slider",
-    title: "See It On You",
-    subtitle: "See how items look on you with virtual try-on",
-  },
-  {
     type: "gallery",
-    title: "Create. Collaborate. Inspire.",
-    subtitle: "Showcase your vision and be rewarded",
-  },
-  {
-    type: "ugc",
-    title: "Rate & Review Brands",
-    subtitle: "Share honest feedback and help creators stay safe",
+    title: "Create. Share. Inspire.",
+    subtitle: "Make outfits, style your friends and try on from any photo",
   },
 ];
+// The gallery slide's animations key off its position.
+const GALLERY_SLIDE_INDEX = slides.findIndex((s) => s.type === "gallery");
 const faqData = [
   {
     question: "How does AI-powered fashion discovery work?",
@@ -113,7 +105,7 @@ const faqData = [
   {
     question: "What are the benefits of Premium?",
     answer:
-      "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support.",
+      "Premium members get 10 AI try-ons a day, unlimited outfits and closet items, can turn points into credits, and get priority support.",
   },
   {
     question: "Can I save items to my closet and wishlist?",
@@ -214,10 +206,10 @@ const OutfitInspoInlineSlider = () => {
 
 // Feature pills for animated slideshow
 const FEATURE_PILLS = [
-  "Virtual try-on",
-  "AI curation", 
+  "Live try-on",
+  "AI curation",
   "Discover premium brands",
-  "Brand collabs"
+  "Pop-up events"
 ];
 
 // HeroSlide component for the first carousel slide
@@ -373,11 +365,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 max-w-sm mx-auto">
                   <h2 className="text-xl font-serif text-white mb-2 drop-shadow-lg">Discover Your Style</h2>
                   <p className="text-sm text-white/80 leading-relaxed">
-                    The platform for discovering fashion,
+                    Discover fashion and pop-ups from brands worldwide,
                     <br />
-                    beauty products, and pop-ups.
-                    <br />
-                    We empower brands, shoppers and content creators.
+                    and see clothes on you live before you buy.
                   </p>
                 </div>
               </motion.div>
@@ -507,8 +497,7 @@ export default function IntroCarousel() {
 
   // Animated counter for creator count - only when gallery slide is active
   useEffect(() => {
-    if (currentSlide === 3) {
-      // Gallery slide is at index 3
+    if (currentSlide === GALLERY_SLIDE_INDEX) {
       const duration = 1500; // 1.5 seconds
       const targetCount = 100;
       const steps = 50;
@@ -534,8 +523,8 @@ export default function IntroCarousel() {
 
   // Auto-scroll carousel for gallery slide - only on mobile/tablet
   useEffect(() => {
-    if (currentSlide !== 3 || isCarouselDragging || !isMobile) {
-      if (currentSlide !== 3) setCardOffset(0); // Reset offset when leaving gallery slide
+    if (currentSlide !== GALLERY_SLIDE_INDEX || isCarouselDragging || !isMobile) {
+      if (currentSlide !== GALLERY_SLIDE_INDEX) setCardOffset(0); // Reset offset when leaving gallery slide
       return;
     }
 
@@ -765,67 +754,31 @@ export default function IntroCarousel() {
               </div>
             )}
 
-            {slide.type === "interactive-slider" && (
+            {slide.type === "live" && (
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-6 pt-4">
+                <div className="text-center mb-4 pt-4">
                   <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
                   <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
-                  
-                  {/* AI Try-On Type Pills */}
+
+                  {/* Live first; picture and video come second */}
                   <div className="flex items-center justify-center gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1.5 bg-white/50 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                      Image Try-On
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      Live camera
                     </span>
-                    <span className="inline-flex items-center gap-1.5 bg-white/50 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-                      Video Try-On
+                    <span className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground/70">
+                      Photo
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground/70">
+                      Video
                     </span>
                   </div>
                 </div>
 
-                {/* Interactive Slider Area */}
-                <div className="flex-1 flex items-start justify-center pt-4">
-                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl h-[450px]">
-                    <BeforeAfterSlider />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {slide.type === "ugc" && (
-              <div className="h-full flex flex-col px-6">
-                {/* Title & Subtitle */}
-                <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
-                </div>
-
-                {/* UGC Features Grid */}
-                <div className="flex-1 flex flex-col justify-start pt-2">
-                  <div className="grid grid-cols-1 gap-4 mb-4">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-5 border border-primary/20 min-h-[120px]">
-                      <span className="text-3xl mb-3 block">⭐</span>
-                      <h4 className="font-bold text-base text-foreground mb-2">Honest Reviews</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Rate brands on payment, communication, and overall experience
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-5 border border-accent/20 min-h-[120px]">
-                      <span className="text-3xl mb-3 block">🚨</span>
-                      <h4 className="font-bold text-base text-foreground mb-2">Report Scams</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Warn other creators about brands with unfair practices
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Community Badge */}
-                  <p className="text-center text-sm text-muted-foreground font-medium">
-                    100% anonymous · Community-powered
-                  </p>
+                {/* Live try-on stage */}
+                <div className="flex-1 flex items-start justify-center pt-2">
+                  <LiveTryOnPreview className="max-w-sm aspect-[3/4] max-h-[440px]" />
                 </div>
               </div>
             )}
@@ -847,7 +800,7 @@ export default function IntroCarousel() {
                     {/* Create Outfit Inspo */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0, duration: 0.3 }}
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
@@ -867,22 +820,22 @@ export default function IntroCarousel() {
                       </div>
                     </motion.div>
 
-                    {/* Brand Deals */}
+                    {/* Photo & Video try-on (Live comes first, on its own slide) */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.05, duration: 0.3 }}
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
                         <div className="aspect-square bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">🤝</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Brand Deals</h4>
+                          <span className="text-4xl mb-2">📸</span>
+                          <h4 className="font-bold text-sm text-white mb-1 text-center">Photo & Video</h4>
                           <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Get discovered by brands & create UGC content
+                            Try clothes on from any photo, then turn it into a video
                           </p>
                         </div>
                         <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Earn Money</p>
+                          <p className="text-xs font-semibold text-foreground">AI Try-On</p>
                         </div>
                       </div>
                     </motion.div>
@@ -890,7 +843,7 @@ export default function IntroCarousel() {
                     {/* Style Friends */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.1, duration: 0.3 }}
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
@@ -910,7 +863,7 @@ export default function IntroCarousel() {
                     {/* Pop-Up Events */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
-                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.15, duration: 0.3 }}
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">

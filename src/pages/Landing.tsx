@@ -10,13 +10,12 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { usePublicProducts } from "@/hooks/usePublicProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
-import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { LiveTryOnPreview } from "@/components/LiveTryOnPreview";
 import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
 import { FloatingFashionIcons } from "@/components/FloatingFashionIcons";
 import { TrustBadges } from "@/components/TrustBadges";
 import { LiveActivityIndicator } from "@/components/LiveActivityIndicator";
-import { BeautyAssistantFab } from "@/components/BeautyAssistantFab";
 import { openExternalUrl } from "@/lib/openExternalUrl";
 import { GlobeWrapper } from "@/components/globe/GlobeWrapper";
 import { CountryDrawer } from "@/components/globe/CountryDrawer";
@@ -26,7 +25,8 @@ import { setGuestMode } from "@/hooks/useGuestMode";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
-  const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
+  // Only features people can use today; Live Cam leads (hidden: UGC, Beauty AI).
+  const features = ["Live Camera Try-On", "Photo & Video Try-On", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature(prev => (prev + 1) % features.length);
@@ -336,8 +336,6 @@ export default function Landing() {
         {/* Live Activity Indicator */}
         <LiveActivityIndicator />
         
-        {/* Beauty Assistant Fab */}
-        <BeautyAssistantFab onClick={() => navigate("/onboarding/signup")} />
 
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative z-10">
           <div className="flex justify-center items-center transition-all duration-1000" style={{
@@ -367,13 +365,13 @@ export default function Landing() {
                   {/* Feature lines */}
                   <div className="space-y-1 animate-blur-focus" style={{ animationDelay: '1.0s', animationFillMode: 'both' }}>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
-                      ✨ AI-powered virtual try-on
+                      🎥 Try clothes on live with your camera
+                    </p>
+                    <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
+                      ✨ Photo and video try-on
                     </p>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
                       🌍 Top countries to explore
-                    </p>
-                    <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
-                      🎬 UGC collab and earn rewards
                     </p>
                   </div>
                 </div>
@@ -484,26 +482,26 @@ export default function Landing() {
               <div className="space-y-6">
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-primary/10 p-4 sm:p-6 max-w-sm mx-auto lg:mx-0">
                   <div className="aspect-[3/4] rounded-lg sm:rounded-xl mb-4 relative overflow-hidden">
-                    <BeforeAfterSlider className="rounded-lg sm:rounded-xl" />
+                    <LiveTryOnPreview className="h-full rounded-lg sm:rounded-xl shadow-none" />
                   </div>
                   <div className="text-center">
                     <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-3 py-1 mb-2">
                       <Sparkles className="w-3 h-3 text-primary" />
-                      <span className="text-xs font-semibold text-primary">AI Try-On</span>
+                      <span className="text-xs font-semibold text-primary">Live Try-On</span>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground">Virtual try-on technology</p>
+                    <p className="text-xs text-muted-foreground">Real-time camera try-on, plus photo and video</p>
                   </div>
                 </div>
                 
                 <div className="text-center lg:text-left space-y-4">
                   <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
-                    <span className="text-primary">AI-Powered</span> Virtual Try-On
+                    <span className="text-primary">Live</span> Virtual Try-On
                   </h4>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Our advanced AI technology creates realistic try-on experiences, helping you make confident decisions.</p>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Point your camera and see clothes on you in real time, and switch outfits without stopping. Prefer a photo? Try on from any picture and turn it into a video.</p>
                   <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-primary font-medium">
                     <CheckCircle className="w-4 h-4" />
-                    <span>Realistic fit visualization</span>
+                    <span>See it on you before you buy</span>
                   </div>
                 </div>
               </div>
@@ -816,7 +814,7 @@ export default function Landing() {
           </div>
 
           <div className="space-y-6">
-            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} ref={faqCards[index].ref} className={`bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ${faqCards[index].animationClasses}`}>
+            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 10 AI try-ons a day, unlimited outfits and closet items, can turn points into credits, and get priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} ref={faqCards[index].ref} className={`bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ${faqCards[index].animationClasses}`}>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-cormorant text-xl font-bold pr-8">{question}</h3>
