@@ -20,8 +20,9 @@ import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFollows } from '@/hooks/useFollows';
 import { useMutualFollows } from '@/hooks/useMutualFollows';
-import { cn } from '@/lib/utils';
 import { isGuestMode } from '@/hooks/useGuestMode';
+import { features } from '@/lib/features';
+import { useHalfFullDrawer } from '@/hooks/useHalfFullDrawer';
 
 interface FollowingDrawerProps {
   open: boolean;
@@ -63,7 +64,8 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
   const { user } = useAuth();
   const { following, followingLoading } = useFollows();
   const { mutualFollowIds } = useMutualFollows();
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Opens half way; drag up (or View All) for the full drawer.
+  const { drawerProps, isExpanded, toggleExpanded } = useHalfFullDrawer(open);
   const [activeTab, setActiveTab] = useState<'people' | 'brands'>('people');
 
   const isGuest = !user || isGuestMode();
@@ -124,7 +126,8 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
   const { data: userPosts = [] } = useQuery({
     queryKey: ['followed-user-posts', userIds.join(','), mutualFollowIds.join(',')],
     queryFn: async () => {
-      if (userIds.length === 0) return [];
+      // Posts are paused (features.posts): people show their outfits instead.
+      if (userIds.length === 0 || !features.posts) return [];
 
       // Fetch public posts from all followed users
       const { data: publicPosts } = await supabase
@@ -222,7 +225,7 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
   if (isGuest) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl max-h-[55vh]">
+        <DrawerContent className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl v3:bg-card v3:border-line max-h-[55vh]">
           <DrawerHeader className="pb-3 border-b border-border/30">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-primary/10">
@@ -254,17 +257,14 @@ export function FollowingDrawer({ open, onOpenChange }: FollowingDrawerProps) {
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} {...drawerProps}>
       <DrawerContent 
-        className={cn(
-          "bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl transition-all duration-300 ease-out",
-          isExpanded ? "h-[95vh]" : "max-h-[55vh]"
-        )}
+        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl v3:bg-card v3:border-line h-[95vh] max-h-[95vh]"
       >
         <DrawerHeader className="pb-3 relative border-b border-border/30">
           {/* Expand/Collapse Button */}
           <button 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={toggleExpanded}
             className="absolute top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all"
             aria-label={isExpanded ? "Minimize drawer" : "View all"}
           >
