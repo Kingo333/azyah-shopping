@@ -23,10 +23,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { setGuestMode } from "@/hooks/useGuestMode";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { features as featureFlags } from '@/lib/features';
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   // Only features people can use today; Live Cam leads (hidden: UGC, Beauty AI).
-  const features = ["Live Camera Try-On", "Photo & Video Try-On", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
+  const features = ["Live Camera Try-On", featureFlags.video_tryon ? "Photo & Video Try-On" : "Photo Try-On", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature(prev => (prev + 1) % features.length);
@@ -368,7 +369,7 @@ export default function Landing() {
                       🎥 Try clothes on live with your camera
                     </p>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
-                      ✨ Photo and video try-on
+                      {featureFlags.video_tryon ? '✨ Photo and video try-on' : '✨ Photo try-on from any picture'}
                     </p>
                     <p className="text-sm sm:text-base text-white/80 font-light drop-shadow-md">
                       🌍 Top countries to explore
@@ -490,7 +491,7 @@ export default function Landing() {
                       <span className="text-xs font-semibold text-primary">Live Try-On</span>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground">Real-time camera try-on, plus photo and video</p>
+                    <p className="text-xs text-muted-foreground">{featureFlags.video_tryon ? 'Real-time camera try-on, plus photo and video' : 'Real-time camera try-on, plus photo try-on'}</p>
                   </div>
                 </div>
                 
@@ -498,7 +499,7 @@ export default function Landing() {
                   <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
                     <span className="text-primary">Live</span> Virtual Try-On
                   </h4>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Point your camera and see clothes on you in real time, and switch outfits without stopping. Prefer a photo? Try on from any picture and turn it into a video.</p>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Point your camera and see clothes on you in real time, and switch outfits without stopping. Prefer a photo? Try on from any picture{featureFlags.video_tryon ? ' and turn it into a video' : ''}.</p>
                   <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-primary font-medium">
                     <CheckCircle className="w-4 h-4" />
                     <span>See it on you before you buy</span>
@@ -619,10 +620,10 @@ export default function Landing() {
                         <Heart className="w-4 h-4 text-primary" />
                       </div>
                       
-                      {/* AR Ready Badge */}
+                      {/* Try-on badge (was "AR Ready"; AR try-on is off) */}
                       {i % 3 === 0 && <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
                           <div className="flex items-center space-x-1">
-                            <span className="text-xs font-medium text-white">AR Ready</span>
+                            <span className="text-xs font-medium text-white">Try it on</span>
                           </div>
                         </div>}
                       
@@ -772,7 +773,7 @@ export default function Landing() {
                 </h2>
                 
                 <p className="text-xl text-background/80 leading-relaxed">
-                  Luxury fashion that embraces your unique style from within, designed for radiant beauty and lasting results. Our AI-powered platform curates collections that match your personal aesthetic and lifestyle.
+                  Build outfits from your closet, try them on live, and share your looks with a style community worldwide. Our AI curates pieces that match your taste.
                 </p>
               </div>
               
@@ -814,7 +815,7 @@ export default function Landing() {
           </div>
 
           <div className="space-y-6">
-            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 10 AI try-ons a day, unlimited outfits and closet items, can turn points into credits, and get priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} ref={faqCards[index].ref} className={`bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ${faqCards[index].animationClasses}`}>
+            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 10 AI try-ons a day, unlimited outfits and closet items, can turn points into credits, and get priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Build outfits from your closet and share them with the community, style your friends, and get inspired by looks from people worldwide."]].map(([question, answer], index) => <div key={index} ref={faqCards[index].ref} className={`bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ${faqCards[index].animationClasses}`}>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-cormorant text-xl font-bold pr-8">{question}</h3>

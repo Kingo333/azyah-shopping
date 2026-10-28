@@ -690,13 +690,14 @@ const RetailerPortal = () => {
                 <RetailerSettingsForm 
                   retailer={retailer}
                   onRetailerUpdate={setRetailer}
+                  extraSections={
+                    <BulkImportActions 
+                      retailerId={retailer.id}
+                      onProductsDeleted={fetchProducts}
+                    />
+                  }
                 />
               )}
-              
-              <BulkImportActions 
-                retailerId={retailer?.id}
-                onProductsDeleted={fetchProducts}
-              />
             </div>
           </TabsContent>
         </Tabs>

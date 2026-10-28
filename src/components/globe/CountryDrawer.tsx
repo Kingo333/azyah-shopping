@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, ChevronRight, Users, ChevronUp, ChevronDown, Play, Shirt, Sparkles, EyeOff, Eye, User } from 'lucide-react';
 import {
@@ -20,12 +20,13 @@ import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { PostProductCircles } from '@/components/PostProductCircles';
 import { ImageIcon } from 'lucide-react';
 import { useFollows } from '@/hooks/useFollows';
 import { useFollowBrands } from '@/hooks/useFollowBrands';
+import { features } from '@/lib/features';
+import { useHalfFullDrawer } from '@/hooks/useHalfFullDrawer';
 
 type ExploreTab = 'brands' | 'following' | 'shoppers' | 'your-fit';
 
@@ -83,24 +84,10 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const countryName = countryCode === 'GLOBAL' ? 'Global Community' : (countryCode ? getCountryNameFromCode(countryCode) : '');
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Opens half way; drag up (or View All) for the full drawer.
+  const { drawerProps, isExpanded, toggleExpanded } = useHalfFullDrawer(open);
   const [drawerTab, setDrawerTab] = useState<'brands' | 'products'>('brands');
   const [shoppersSubTab, setShoppersSubTab] = useState<'people' | 'posts'>('people');
-
-  // Swipe-to-expand state
-  const touchStartY = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].screenY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const deltaY = touchStartY.current - e.changedTouches[0].screenY;
-    if (deltaY > 30) setIsExpanded(true);
-    else if (deltaY < -30) setIsExpanded(false);
-    touchStartY.current = null;
-  };
 
   // Follow hooks
   const { isFollowing, toggleFollow } = useFollows();
@@ -121,9 +108,9 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
     enabled: !!user?.id && open && activeTab === 'shoppers',
   });
 
-  const isVisibleOnGlobe = currentUserProfile?.preferences 
-    ? (currentUserProfile.preferences as Record<string, unknown>).visible_on_globe !== false
-    : true;
+  // Opt-in: you're on the Globe only after turning it on (owner decision 2026-10-28).
+  const isVisibleOnGlobe =
+    (currentUserProfile?.preferences as Record<string, unknown> | null | undefined)?.visible_on_globe === true;
 
   const toggleVisibilityMutation = useMutation({
     mutationFn: async (visible: boolean) => {
@@ -315,7 +302,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const { data: shopperPosts = [], isLoading: shopperPostsLoading } = useQuery({
     queryKey: ['country-shopper-posts', shopperIds.join(',')],
     queryFn: async () => {
-      if (shopperIds.length === 0) return [];
+      if (shopperIds.length === 0 || !features.posts) return [];
       const { data } = await supabase
         .from('posts')
         .select(`
@@ -400,21 +387,16 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
   const totalShopperPosts = shopperPosts?.length || 0;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} {...drawerProps}>
       <DrawerContent 
-        className={cn(
-          "bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl transition-all duration-300 ease-out",
-          isExpanded ? "h-[95vh]" : "max-h-[55vh]"
-        )}
+        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-t border-white/20 shadow-2xl v3:bg-card v3:border-line h-[95vh] max-h-[95vh]"
       >
         <DrawerHeader 
-          className="pb-3 relative border-b border-border/30 touch-none"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          className="pb-3 relative border-b border-border/30"
         >
           {/* Expand/Collapse Button */}
           <button 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={toggleExpanded}
             className="absolute top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all"
             aria-label={isExpanded ? "Minimize drawer" : "View all"}
           >
@@ -468,7 +450,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             </Tabs>
           )}
 
-          {showShoppersContent && (
+          {showShoppersContent && features.posts && (
             <Tabs value={shoppersSubTab} onValueChange={(v) => setShoppersSubTab(v as 'people' | 'posts')} className="mt-4">
               <TabsList className="w-full grid grid-cols-2 bg-black/5 dark:bg-white/10 p-1 rounded-full">
                 <TabsTrigger value="people" className="rounded-full data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all gap-1.5">
@@ -568,7 +550,7 @@ export function CountryDrawer({ countryCode, open, onOpenChange, activeTab = 'br
             </div>
           ) : showShoppersContent ? (
             <div className="space-y-4 py-4">
-              {shoppersSubTab === 'people' ? (
+              {shoppersSubTab === 'people' || !features.posts ? (
                 /* People Tab - Names only + follow buttons */
                 <div className="space-y-2">
                   {/* Current User Row */}

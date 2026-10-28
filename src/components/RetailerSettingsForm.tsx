@@ -45,11 +45,14 @@ interface RetailerSettingsFormProps {
     size_chart_url?: string | null;
   };
   onRetailerUpdate: (updatedRetailer: any) => void;
+  /** Shown after the store details, before Danger Zone (which stays last). */
+  extraSections?: React.ReactNode;
 }
 
 export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
   retailer,
-  onRetailerUpdate
+  onRetailerUpdate,
+  extraSections
 }) => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -265,9 +268,9 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
     return (
       <div className="space-y-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-4">
-              <CardTitle>Store Settings</CardTitle>
+          <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+            <div className="min-w-0 space-y-1.5">
+              <CardTitle className="text-xl">Store Settings</CardTitle>
               <div className="flex items-center gap-2">
                 <Badge variant={completionPercentage === 100 ? "default" : "secondary"}>
                   {completionPercentage}% Complete
@@ -275,7 +278,7 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
                 {completionPercentage === 100 && <CheckCircle className="h-5 w-5 text-green-500" />}
               </div>
             </div>
-            <Button onClick={() => setIsEditing(true)} variant="outline">
+            <Button onClick={() => setIsEditing(true)} variant="outline" className="shrink-0">
               Edit Settings
             </Button>
           </CardHeader>
@@ -383,10 +386,12 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
           </CardContent>
         </Card>
 
+        {extraSections}
+
         {/* Danger Zone */}
         <Card className="border-destructive/20">
           <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

@@ -16,6 +16,7 @@ import { COUNTRIES } from '@/lib/countries';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { getUserRole } from '@/lib/roleCache';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -173,10 +174,19 @@ export default function SignUp() {
           toast.error('Incorrect password. Please try again.');
         } else {
           toast.success('Welcome back!');
+          // Go by the account's own role, not the page they signed in from
+          // (a brand using the shopper sign-in still lands in the Brand Portal).
+          let accountRole: string = userRole;
+          try {
+            const { data: { user: signedIn } } = await supabase.auth.getUser();
+            if (signedIn) accountRole = await getUserRole(signedIn);
+          } catch {
+            // keep the page's role; the route guards still correct it
+          }
           // Redirect based on role, honoring any `next` parameter from OAuth consent
-          if (userRole === 'brand') {
+          if (accountRole === 'brand') {
             navigate(resolveRedirect('/brand-portal'));
-          } else if (userRole === 'retailer') {
+          } else if (accountRole === 'retailer') {
             navigate(resolveRedirect('/retailer-portal'));
           } else {
             navigate(resolveRedirect('/dashboard'));

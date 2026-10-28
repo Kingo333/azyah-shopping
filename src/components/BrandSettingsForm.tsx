@@ -309,14 +309,19 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
         {/* Profile Completion Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Brand Profile</CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant={completionPercentage === 100 ? "default" : "secondary"}>
-                  {completionPercentage}% Complete
-                </Badge>
-                {completionPercentage === 100 && <CheckCircle className="h-5 w-5 text-green-500" />}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1.5">
+                <CardTitle className="text-xl">Brand Profile</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant={completionPercentage === 100 ? "default" : "secondary"}>
+                    {completionPercentage}% Complete
+                  </Badge>
+                  {completionPercentage === 100 && <CheckCircle className="h-5 w-5 text-green-500" />}
+                </div>
               </div>
+              <Button onClick={() => setIsEditing(true)} variant="outline" className="shrink-0">
+                Edit Profile
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -341,7 +346,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                   Display Name
                   <InfoTooltip content="This is the name shown to shoppers when they browse your products" />
                 </label>
-                <div className="p-3 bg-muted/50 rounded-md">
+                <div className="text-muted-foreground">
                   {brand.name || 'Not set'}
                 </div>
               </div>
@@ -350,7 +355,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                   Contact Email
                   <InfoTooltip content="This email will be used for business communications" />
                 </label>
-                <div className="p-3 bg-muted/50 rounded-md">
+                <div className="text-muted-foreground">
                   {brand.contact_email || 'Not set'}
                 </div>
               </div>
@@ -363,7 +368,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                 Website
                 <InfoTooltip content="Your brand's website or online store" />
               </label>
-              <div className="p-3 bg-muted/50 rounded-md break-all">
+              <div className="text-muted-foreground break-all">
                 {brand.website || 'Not set'}
               </div>
             </div>
@@ -375,7 +380,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                 Currency
                 <InfoTooltip content={isFashionBrand ? "Default currency for product pricing" : "Currency used for your service pricing"} />
               </label>
-              <div className="p-3 bg-muted/50 rounded-md">
+              <div className="text-muted-foreground">
                 {SUPPORTED_CURRENCIES.find(c => c.code === (brand.currency || 'AED'))?.name || 'AED'}
               </div>
             </div>
@@ -383,7 +388,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
             {/* Bio */}
             <div>
               <label className="text-sm font-medium mb-2 block">Brand Description</label>
-              <div className="p-3 bg-muted/50 rounded-md min-h-[80px]">
+              <div className="text-muted-foreground">
                 {brand.bio || 'No description added yet'}
               </div>
             </div>
@@ -422,7 +427,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                   <InfoTooltip content="Upload a universal size chart that applies to all your products" />
                 </label>
                 {brand.size_chart_url ? (
-                  <div className="p-3 bg-muted/50 rounded-md">
+                  <div className="text-muted-foreground">
                     <p className="text-sm text-muted-foreground">Size chart uploaded</p>
                   </div>
                 ) : (
@@ -451,18 +456,13 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={() => setIsEditing(true)} className="w-full sm:w-auto">
-                Edit Profile
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
         {/* Danger Zone */}
         <Card className="border-destructive/20">
           <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

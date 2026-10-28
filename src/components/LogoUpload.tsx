@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X } from 'lucide-react';
@@ -95,8 +94,6 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label>Logo</Label>
-      
       {previewUrl ? (
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">

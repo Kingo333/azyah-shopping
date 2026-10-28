@@ -7,8 +7,10 @@ import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X, Radio 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
-import { useDesignV3 } from '@/hooks/useDesignV3';
 import { defaultStudioTab, studioTabs, type StudioTab } from '@/lib/studioTabs';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { LiveCamSlot, useLiveCamHostStatus } from '@/components/live/LiveCamHost';
+import { isLiveActive } from '@/lib/liveCamHost';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -29,6 +31,7 @@ import {
   getElapsedSeconds,
   formatElapsedTime
 } from '@/hooks/useJobPersistence';
+import { features } from '@/lib/features';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -60,9 +63,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [activeTab, setActiveTab] = useState<StudioTab>('picture');
   const { user } = useAuth();
   const isShopper = !!user && (user.user_metadata?.role ?? 'shopper') === 'shopper';
-  // Design v3: Live Cam leads (first and default for shoppers); Picture and Video follow.
-  const liveFirst = useDesignV3();
-  const tabOrder = studioTabs(isShopper, liveFirst);
+  // Picture first and default; Live Cam is turned on from its own tab.
+  const tabOrder = studioTabs(isShopper, features.video_tryon);
   const tabTouched = useRef(false);
   const chooseTab = (tab: StudioTab) => {
     tabTouched.current = true;
@@ -70,8 +72,21 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   };
   useEffect(() => {
     // The user loads after the first render, so pick the default once it's known.
-    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper, liveFirst));
-  }, [isShopper, liveFirst]);
+    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper, features.video_tryon));
+  }, [isShopper]);
+
+  // Design v3: Live Cam can keep running while people browse. Come back to it
+  // when it's on, or when they tap "Open" on the pill or the ready message.
+  const v3 = useDesignV3();
+  const { status: liveStatus, openRequest, takeOpenRequest } = useLiveCamHostStatus();
+  const liveOn = v3 && isShopper && isLiveActive(liveStatus);
+  useEffect(() => {
+    if (liveOn && !tabTouched.current) setActiveTab('live-cam');
+  }, [liveOn]);
+  useEffect(() => {
+    if (v3 && isShopper && takeOpenRequest()) chooseTab('live-cam');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest]);
   
   // Picture tab state
   const [personFile, setPersonFile] = useState<File | null>(null);
@@ -505,7 +520,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       // Set as current result based on type
       if (asset.asset_type === 'tryon_video') {
         setVideoResult(asset.asset_url);
-        chooseTab('video');
+        if (features.video_tryon) chooseTab('video');
       } else {
         setPictureResult(asset.asset_url);
         setVideoInputUrl(asset.asset_url);
@@ -540,7 +555,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   // What's left, never totals (get_user_credits returns remaining credits only).
   const creditsLeftLine = creditsLoading
     ? ' '
-    : `${pictureCredits} picture${pictureCredits === 1 ? '' : 's'} · ${videoCredits} video${videoCredits === 1 ? '' : 's'} left${isPremium ? ' today' : ''}`;
+    : features.video_tryon
+      ? `${pictureCredits} picture${pictureCredits === 1 ? '' : 's'} · ${videoCredits} video${videoCredits === 1 ? '' : 's'} left${isPremium ? ' today' : ''}`
+      : `${pictureCredits} picture${pictureCredits === 1 ? '' : 's'} left${isPremium ? ' today' : ''}`;
 
   const studio = (
     <>
@@ -549,7 +566,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               <div className="flex-shrink-0 px-4 pt-1 pb-1">
                 <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
                 <p className="text-[13px] text-ink-2 tabular-nums">
-                  {activeTab === 'live-cam' ? 'See clothes on you live with your camera' : creditsLeftLine}
+                  {activeTab === 'live-cam' ? 'Turn it on once, then try outfits on live' : creditsLeftLine}
                 </p>
               </div>
             ) : (
@@ -560,7 +577,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   <Shirt className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold text-foreground">AI Studio</h2>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Virtual try-on & video (AI generated)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{features.video_tryon ? 'Virtual try-on & video (AI generated)' : 'Virtual try-on (AI generated)'}</p>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -590,7 +607,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {/* Credits display (the page header shows what's left instead) */}
                 <div className={`flex justify-center gap-4 mt-3 text-xs text-muted-foreground ${isPage ? 'hidden' : ''}`}>
                   <span>Picture: <strong className="text-foreground">{pictureCredits}/{maxPictureCredits}</strong></span>
-                  <span>Video: <strong className="text-foreground">{videoCredits}/{maxVideoCredits}</strong></span>
+                  {features.video_tryon && <span>Video: <strong className="text-foreground">{videoCredits}/{maxVideoCredits}</strong></span>}
                 </div>
               </div>
 
@@ -655,6 +672,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           <Download className="h-4 w-4" />
                           Download
                         </button>
+                        {/* Video try-on is paused (features.video_tryon) */}
+                        {features.video_tryon && (
                         <button
                           onClick={handleUseForVideo}
                           className="flex-1 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2"
@@ -662,6 +681,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           <Video className="h-4 w-4" />
                           Make Video
                         </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1020,7 +1040,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                 {isShopper && (
                   <TabsContent value="live-cam" className="mt-0 space-y-4">
-                    <LiveCamTab />
+                    {v3 ? <LiveCamSlot /> : <LiveCamTab />}
                   </TabsContent>
                 )}
               </div>

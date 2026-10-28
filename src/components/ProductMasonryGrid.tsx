@@ -11,6 +11,7 @@ import { useMutualFollows } from '@/hooks/useMutualFollows';
 import type { Product } from '@/types';
 import { CommunityOutfitBlock } from './CommunityOutfitBlock';
 import { UserPostBlock } from './UserPostBlock';
+import { features } from '@/lib/features';
 
 interface ProductMasonryGridProps {
   products: Product[];
@@ -77,6 +78,8 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
   const mutualKey = mutualFollowIds.join(',');
   useEffect(() => {
     const fetchUserPosts = async () => {
+      // Posts are paused (features.posts): the feed shows community outfits only.
+      if (!features.posts) return;
       // Fetch public posts
       const { data: publicData } = await supabase
         .from('posts')
@@ -231,11 +234,11 @@ export const ProductMasonryGrid: React.FC<ProductMasonryGridProps> = ({
       if (i + chunkSize < products.length) {
         const isEvenChunk = chunkIndex % 2 === 0;
         
-        if (isEvenChunk && userPosts.length > 0) {
+        if (isEvenChunk && features.posts && userPosts.length > 0) {
           chunks.push(
             <UserPostBlock key={`userpost-${i}`} posts={userPosts} />
           );
-        } else if (!isEvenChunk && communityOutfits.length > 0) {
+        } else if ((!isEvenChunk || !features.posts) && communityOutfits.length > 0) {
           chunks.push(
             <CommunityOutfitBlock key={`community-${i}`} outfits={communityOutfits} />
           );

@@ -1,14 +1,14 @@
-// Try on modes. Live Cam is the selling point, so in design v3 it comes first
-// and opens by default for shoppers; Picture and Video follow (owner, 2026-10-28).
-// Live Cam stays shoppers-only, as before.
+// Try on modes. The still photo try-on is the main way in; Live Cam needs a
+// GPU to start (about 50 s), so it's turned on from its own tab and stays
+// shoppers-only. Video try-on can be paused (features.video_tryon).
 
 export type StudioTab = 'live-cam' | 'picture' | 'video';
 
-export function studioTabs(isShopper: boolean, liveFirst: boolean): StudioTab[] {
-  if (!isShopper) return ['picture', 'video'];
-  return liveFirst ? ['live-cam', 'picture', 'video'] : ['picture', 'video', 'live-cam'];
+export function studioTabs(isShopper: boolean, videoEnabled: boolean): StudioTab[] {
+  const tabs: StudioTab[] = videoEnabled ? ['picture', 'video'] : ['picture'];
+  return isShopper ? [...tabs, 'live-cam'] : tabs;
 }
 
-export function defaultStudioTab(isShopper: boolean, liveFirst: boolean): StudioTab {
-  return studioTabs(isShopper, liveFirst)[0];
+export function defaultStudioTab(isShopper: boolean, videoEnabled: boolean): StudioTab {
+  return studioTabs(isShopper, videoEnabled)[0];
 }

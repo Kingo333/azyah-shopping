@@ -21,6 +21,8 @@ interface Props {
   idleContent?: React.ReactNode;
   /** Stage only: controls along the bottom (garment strip, start / shutter). */
   bottom?: React.ReactNode;
+  /** Stage only: shown in the middle while it starts up (replaces the warming pill). */
+  loadingContent?: React.ReactNode;
 }
 
 export const LiveCamCameraView: React.FC<Props> = ({
@@ -35,6 +37,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
   topLeft,
   idleContent,
   bottom,
+  loadingContent,
 }) => {
   const stage = variant === 'stage';
   const isWarming = status === 'warming';
@@ -61,7 +64,8 @@ export const LiveCamCameraView: React.FC<Props> = ({
       : 'relative grid grid-cols-2 gap-3';
 
   const localWrapClass = stage
-    ? 'absolute top-[60px] right-3 w-[24%] max-w-[130px] aspect-[3/4] rounded-xl overflow-hidden bg-neutral-900 ring-2 ring-white/40 z-10'
+    ? // Stage: the inset shows once it's live; the video element stays mounted either way.
+      `absolute top-[60px] right-3 w-[24%] max-w-[130px] aspect-[3/4] rounded-xl overflow-hidden bg-neutral-900 ring-2 ring-white/40 z-10 ${isRunning ? '' : 'invisible'}`
     : expanded
       ? 'absolute bottom-3 right-3 w-24 sm:w-32 md:w-40 aspect-[3/4] rounded-lg overflow-hidden bg-black ring-2 ring-white/30 shadow-lg z-10'
       : 'order-1 rounded-xl overflow-hidden bg-black aspect-[3/4] relative';
@@ -81,11 +85,15 @@ export const LiveCamCameraView: React.FC<Props> = ({
       <div className={remoteWrapClass}>
         <canvas ref={remoteCanvasRef} width={288} height={512} className={canvasClass} />
         {!isRunning && !isWarming && (stage ? (
-          idleContent && <div className="absolute inset-x-0 top-0 bottom-44 z-20 flex items-center justify-center p-6">{idleContent}</div>
+          idleContent && status !== 'starting' && <div className="absolute inset-x-0 top-0 bottom-44 z-20 flex items-center justify-center p-6">{idleContent}</div>
         ) : (
           <span className="absolute text-white/70 text-xs z-20">Try-on preview</span>
         ))}
-        {isWarming && (
+        {stage ? (
+          loadingContent && (status === 'starting' || isWarming) && (
+            <div className="absolute inset-x-0 top-0 bottom-44 z-20 flex items-center justify-center p-6">{loadingContent}</div>
+          )
+        ) : isWarming && (
           <span className="absolute text-white/80 text-[11px] px-2 py-1 rounded-full bg-black/50 text-center max-w-[90%] z-20">
             {warmingCopy}
           </span>

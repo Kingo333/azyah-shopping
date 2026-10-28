@@ -17,7 +17,8 @@ import { CommunityCreateButton } from '@/components/community/CommunityCreateBut
 const YOUR_FIT_ENABLED = features.your_fit;
 const TABS = YOUR_FIT_ENABLED ? ['outfits', 'clothes', 'your-fit'] : ['outfits', 'clothes'];
 // Design v3: people's posts live here too (old /feed and /forum redirect to Community).
-const V3_TABS = ['outfits', 'clothes', 'posts'];
+// Posts are paused (features.posts), so the tab only shows while they're on.
+const V3_TABS = features.posts ? ['outfits', 'clothes', 'posts'] : ['outfits', 'clothes'];
 const tabOrDefault = (tab: string | null, tabs: string[]) => (tab && tabs.includes(tab) ? tab : 'outfits');
 
 export default function Community() {
@@ -69,7 +70,7 @@ export default function Community() {
             <TabsList className={`grid w-full ${tabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <TabsTrigger value="outfits">Outfits</TabsTrigger>
               <TabsTrigger value="clothes">Clothes</TabsTrigger>
-              {v3 && <TabsTrigger value="posts">Posts</TabsTrigger>}
+              {v3 && features.posts && <TabsTrigger value="posts">Posts</TabsTrigger>}
               {!v3 && YOUR_FIT_ENABLED && (
                 <TabsTrigger value="your-fit" className="flex items-center gap-1">
                   <Ruler className="h-3.5 w-3.5" />
@@ -87,7 +88,7 @@ export default function Community() {
               <CommunityClothes />
             </TabsContent>
 
-            {v3 && (
+            {v3 && features.posts && (
               <TabsContent value="posts" className="mt-4">
                 <FeedComponent key={postsVersion} limit={30} />
               </TabsContent>

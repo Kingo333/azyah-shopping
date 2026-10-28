@@ -25,7 +25,7 @@ import {
 } from '@/lib/iap';
 
 const allFeatures = [
-  { icon: <TrendingUp className="h-3.5 w-3.5" />, name: 'AI Try-On: Picture & Video', premiumOnly: true },
+  { icon: <TrendingUp className="h-3.5 w-3.5" />, name: featureFlags.video_tryon ? 'AI Try-On: Picture & Video' : 'AI Try-On', premiumOnly: true },
   { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs', premiumOnly: true },
   { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points', premiumOnly: true },
   { icon: <Ruler className="h-3.5 w-3.5" />, name: 'Height/Fit Check', premiumOnly: false },

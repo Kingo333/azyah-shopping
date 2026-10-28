@@ -31,6 +31,7 @@ import {
   ImageIcon,
   Shirt,
 } from 'lucide-react';
+import { features } from '@/lib/features';
 
 interface UserProfileData {
   id: string;
@@ -46,7 +47,8 @@ const UserProfile: React.FC = () => {
   const { userId: id } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('posts');
+  // Posts are paused (features.posts): open on Outfits.
+  const [activeTab, setActiveTab] = useState(features.posts ? 'posts' : 'outfits');
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const { isFollowing, toggleFollow, isToggling } = useFollows();
   const { isMutualFollow } = useMutualFollows();
@@ -305,7 +307,7 @@ const UserProfile: React.FC = () => {
         {!isBlocked && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full mb-6">
-              <TabsTrigger value="posts" className="flex-1">Posts</TabsTrigger>
+              {features.posts && <TabsTrigger value="posts" className="flex-1">Posts</TabsTrigger>}
               <TabsTrigger value="outfits" className="flex-1">Outfits</TabsTrigger>
               <TabsTrigger value="items" className="flex-1">Items</TabsTrigger>
             </TabsList>
