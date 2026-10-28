@@ -7,6 +7,8 @@ import { User, Shirt, Video, Image, Download, Loader2, Play, Sparkles, X, Radio 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { defaultStudioTab, studioTabs, type StudioTab } from '@/lib/studioTabs';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -55,9 +57,21 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { registerJob } = useTryOnJobMonitor();
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'picture' | 'video' | 'live-cam'>('picture');
+  const [activeTab, setActiveTab] = useState<StudioTab>('picture');
   const { user } = useAuth();
   const isShopper = !!user && (user.user_metadata?.role ?? 'shopper') === 'shopper';
+  // Design v3: Live Cam leads (first and default for shoppers); Picture and Video follow.
+  const liveFirst = useDesignV3();
+  const tabOrder = studioTabs(isShopper, liveFirst);
+  const tabTouched = useRef(false);
+  const chooseTab = (tab: StudioTab) => {
+    tabTouched.current = true;
+    setActiveTab(tab);
+  };
+  useEffect(() => {
+    // The user loads after the first render, so pick the default once it's known.
+    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper, liveFirst));
+  }, [isShopper, liveFirst]);
   
   // Picture tab state
   const [personFile, setPersonFile] = useState<File | null>(null);
@@ -452,7 +466,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       setVideoUploadMode(null);
       // Now set the picture result
       setVideoInputUrl(pictureResult);
-      setActiveTab('video');
+      chooseTab('video');
       toast({ title: 'Image ready for video generation' });
     }
   };
@@ -491,11 +505,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       // Set as current result based on type
       if (asset.asset_type === 'tryon_video') {
         setVideoResult(asset.asset_url);
-        setActiveTab('video');
+        chooseTab('video');
       } else {
         setPictureResult(asset.asset_url);
         setVideoInputUrl(asset.asset_url);
-        setActiveTab('picture');
+        chooseTab('picture');
       }
     }
   };
@@ -534,7 +548,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             {isPage ? (
               <div className="flex-shrink-0 px-4 pt-1 pb-1">
                 <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
-                <p className="text-[13px] text-ink-2 tabular-nums">{creditsLeftLine}</p>
+                <p className="text-[13px] text-ink-2 tabular-nums">
+                  {activeTab === 'live-cam' ? 'See clothes on you live with your camera' : creditsLeftLine}
+                </p>
               </div>
             ) : (
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/30 
@@ -560,32 +576,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             )}
 
             {/* Tabs - Soft Glass Pill Style */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'picture' | 'video' | 'live-cam')} className="flex-1 flex flex-col min-h-0">
+            <Tabs value={activeTab} onValueChange={(v) => { tabTouched.current = true; setActiveTab(v as StudioTab); }} className="flex-1 flex flex-col min-h-0">
               <div className="flex-shrink-0 px-4 pt-3">
                 <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${isShopper ? 'grid-cols-3' : 'grid-cols-2'} gap-1 v3:bg-fill v3:border-0 v3:p-0.5 v3:rounded-[10px] v3:gap-0.5`}>
-                  <TabsTrigger 
-                    value="picture" 
-                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
-                  >
-                    <Image className="h-4 w-4" />
-                    Picture
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="video" 
-                    className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
-                  >
-                    <Video className="h-4 w-4" />
-                    Video
-                  </TabsTrigger>
-                  {isShopper && (
-                    <TabsTrigger
-                      value="live-cam"
-                      className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden"
-                    >
-                      <Radio className="h-4 w-4" />
-                      Live Cam
+                  {tabOrder.map((tab) => (
+                    <TabsTrigger key={tab} value={tab} className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden">
+                      {tab === 'picture' ? <Image className="h-4 w-4" /> : tab === 'video' ? <Video className="h-4 w-4" /> : <Radio className="h-4 w-4" />}
+                      {tab === 'picture' ? 'Picture' : tab === 'video' ? 'Video' : 'Live Cam'}
                     </TabsTrigger>
-                  )}
+                  ))}
                 </TabsList>
                 
                 {/* Credits display (the page header shows what's left instead) */}
