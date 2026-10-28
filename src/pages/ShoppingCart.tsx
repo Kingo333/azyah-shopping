@@ -17,6 +17,11 @@ import {
   ArrowRight,
   Package
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Money } from '@/components/ui/Money';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { groupCartBySeller } from '@/lib/cartGroups';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface CartItem {
   id: string;
@@ -31,7 +36,10 @@ interface CartItem {
     price_cents: number;
     currency: string;
     media_urls: any; // JSON type from Supabase
+    external_url?: string | null;
+    merchant_name?: string | null;
     brand?: {
+      id?: string;
       name: string;
     };
   };
@@ -43,6 +51,8 @@ const ShoppingCart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const v3 = useDesignV3();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -64,7 +74,10 @@ const ShoppingCart: React.FC = () => {
             price_cents,
             currency,
             media_urls,
+            external_url,
+            merchant_name,
             brand:brands (
+              id,
               name
             )
           )
@@ -219,6 +232,118 @@ const ShoppingCart: React.FC = () => {
               <p>Loading your cart...</p>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Design v3: items grouped by where they're sold, one "Buy on [seller]" per
+  // group. No in-app checkout (decision D1), so no checkout button.
+  if (v3) {
+    const lines = cartItems.filter((i): i is CartItem & { product: NonNullable<CartItem['product']> } => !!i.product);
+    const groups = groupCartBySeller(lines);
+    const count = calculateItemCount();
+    return (
+      <div className="min-h-screen bg-ground pb-24" style={{ paddingTop: 'calc(var(--safe-top, 0px) + 8px)' }}>
+        <div className="mx-auto max-w-2xl px-4">
+          <BackButton />
+          <h1 className="mt-1 text-[26px] font-semibold leading-tight text-ink">Bag</h1>
+          <p className="text-[13px] text-ink-2 tabular-nums">{count} item{count !== 1 ? 's' : ''}</p>
+
+          {groups.length === 0 ? (
+            <div className="mt-4 rounded-[20px] border border-dashed border-line-strong p-6 text-center">
+              <p className="text-[15px] text-ink">Your bag is empty.</p>
+              <Button className="mt-4" onClick={() => navigate('/swipe')}>Go to Feed</Button>
+            </div>
+          ) : (
+            <>
+              {groups.map((group) => (
+                <section key={group.key} className="mt-4 rounded-[20px] bg-card p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="truncate text-[15px] font-semibold text-ink">{group.seller}</h2>
+                    <Money
+                      cents={group.subtotalCents}
+                      currency={group.items[0].product.currency || 'USD'}
+                      className="shrink-0 text-[15px] font-semibold text-ink tabular-nums"
+                    />
+                  </div>
+                  <ul className="mt-2">
+                    {group.items.map((item, i) => (
+                      <li key={item.id} className={`flex gap-3 py-3 ${i > 0 ? 'border-t border-line' : ''}`}>
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-fill">
+                          {item.product.media_urls?.[0] ? (
+                            <img src={item.product.media_urls[0]} alt={item.product.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Package className="h-6 w-6 text-ink-3" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <p className="truncate text-[15px] text-ink">{item.product.title}</p>
+                            <Money
+                              cents={item.product.price_cents * item.quantity}
+                              currency={item.product.currency || 'USD'}
+                              className="shrink-0 text-[15px] text-ink tabular-nums"
+                            />
+                          </div>
+                          <p className="truncate text-[13px] text-ink-2">
+                            {[item.product.brand?.name, item.size_variant && `Size ${item.size_variant}`, item.color_variant].filter(Boolean).join(' · ')}
+                          </p>
+                          <div className="mt-2 flex items-center gap-3">
+                            <button
+                              type="button"
+                              aria-label="One less"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={updating === item.id}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-fill text-ink disabled:opacity-50"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-4 text-center text-[13px] text-ink tabular-nums">{item.quantity}</span>
+                            <button
+                              type="button"
+                              aria-label="One more"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              disabled={updating === item.id}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-fill text-ink disabled:opacity-50"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              disabled={updating === item.id}
+                              className="ml-auto text-[13px] text-ink-2 disabled:opacity-50"
+                            >
+                              Remove
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveToWishlist(item)}
+                              disabled={updating === item.id}
+                              className="text-[13px] text-ink-2 disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {group.buyUrl ? (
+                    <Button variant="buy" className="mt-1 h-12 w-full text-[15px] font-semibold" onClick={() => openExternalUrl(group.buyUrl!)}>
+                      Buy on {group.seller}
+                    </Button>
+                  ) : (
+                    <p className="mt-1 text-[13px] text-ink-2">These aren't sold online yet. We'll keep them here.</p>
+                  )}
+                </section>
+              ))}
+              <p className="mt-4 px-1 text-[13px] text-ink-2">Each brand sells on its own site. Your bag remembers what you picked.</p>
+            </>
+          )}
         </div>
       </div>
     );

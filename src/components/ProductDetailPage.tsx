@@ -136,7 +136,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </Button>
                 </div>
 
-                {product.external_url ? <Button onClick={handleShopNow} size="lg" className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200">
+                {product.external_url ? <Button onClick={handleShopNow} size="lg" className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200 v3:bg-buy v3:hover:bg-buy/90 v3:text-buy-foreground v3:shadow-none v3:hover:shadow-none">
                     <ExternalLink className="h-5 w-5" />
                     Shop Now
                   </Button> : <Button disabled size="lg" className="w-full gap-2 opacity-50 cursor-not-allowed">
