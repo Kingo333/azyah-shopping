@@ -17,6 +17,8 @@ import { COUNTRY_COORDINATES } from '@/lib/countryCoordinates';
 import { useFollows } from '@/hooks/useFollows';
 import GlobalSearch from '@/components/GlobalSearch';
 import { getCountryCodeFromName } from '@/lib/countryCurrency';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { useNavV2 } from '@/hooks/useNavV2';
 import { features } from '@/lib/features';
 import { resolveExploreTab, visibleExploreTabs, type ExploreTab } from '@/lib/exploreTabs';
 import { toCountryCodeCounts } from '@/lib/globePeople';
@@ -37,6 +39,9 @@ const Explore: React.FC = () => {
   const [dealsDrawerOpen, setDealsDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ExploreTab>('brands');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const v3 = useDesignV3();
+  // The shopper tab bar replaces the Home button and "Skip to Feed".
+  const tabBar = useNavV2();
 
   // Sync tab from URL
   useEffect(() => {
@@ -251,50 +256,67 @@ const Explore: React.FC = () => {
   // Total counts based on active tab
   const totalCount = filteredCountriesForGlobe.reduce((sum, c) => sum + c.count, 0);
   const totalCountries = filteredCountriesForGlobe.length;
+  const countsLine = totalCount > 0 && totalCountries > 0
+    ? activeTab === 'brands'
+      ? `${totalCount} brand${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+      : activeTab === 'shoppers' || activeTab === 'your-fit'
+        ? `${totalCount} shopper${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+        : `${totalCount} following across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
+    : 'Loading...';
 
   return (
-    <div className="h-[100dvh] bg-gray-900 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-gray-900 v3:bg-black flex flex-col overflow-hidden">
       {/* Header Overlay */}
       <header 
-        className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 to-transparent"
+        className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 to-transparent v3:bg-none"
         style={{ paddingTop: 'calc(var(--safe-top, 0px) + 8px)' }}
       >
         <div className="container max-w-screen-2xl mx-auto px-4 py-3">
+          {v3 ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-[26px] font-semibold leading-tight text-white">Explore</h1>
+                <p className="text-[13px] text-white/60 tabular-nums">{countsLine}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Search"
+                onClick={() => setGlobalSearchOpen(true)}
+                className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2C2C2E] text-white active:opacity-70"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center justify-between gap-3">
             {/* Left - Back button */}
-            <Button
+            {tabBar ? <div className="h-9 w-9" aria-hidden /> : <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate('/dashboard')}
               className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white"
             >
               <Home className="h-4 w-4" />
-            </Button>
+            </Button>}
 
             {/* Center - Title & Stats */}
             <div className="flex-1 text-center">
               <h1 className="text-lg font-serif font-medium text-white">Explore</h1>
               <p className="text-xs text-white/60">
-                {totalCount > 0 && totalCountries > 0
-                  ? activeTab === 'brands'
-                    ? `${totalCount} brand${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
-                    : activeTab === 'shoppers' || activeTab === 'your-fit'
-                      ? `${totalCount} shopper${totalCount !== 1 ? 's' : ''} across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
-                      : `${totalCount} following across ${totalCountries} ${totalCountries === 1 ? 'country' : 'countries'}`
-                  : 'Loading...'
-                }
+                {countsLine}
               </p>
             </div>
 
             {/* Right - Skip to Feed */}
-            <Button
+            {tabBar ? <div className="h-9 w-9" aria-hidden /> : <Button
               variant="ghost"
               size="sm"
               onClick={handleSkipToFeed}
               className="h-9 px-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs"
             >
               Skip to Feed
-            </Button>
+            </Button>}
           </div>
 
           {/* Search Bar - Opens GlobalSearch modal (same as dashboard) */}
@@ -311,50 +333,52 @@ const Explore: React.FC = () => {
               style={{ fontSize: '16px' }}
             />
           </div>
+          </>
+          )}
 
           {/* Filter Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList
-                className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid gap-1"
+                className="w-full bg-white/10 border border-white/10 p-1 rounded-full grid gap-1 v3:bg-[#1C1C1E] v3:border-0 v3:p-0.5 v3:rounded-[10px] v3:gap-0.5"
                 style={{ gridTemplateColumns: `repeat(${VISIBLE_TAB_COUNT}, minmax(0, 1fr))` }}
               >
                 <TabsTrigger 
                   value="brands" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-1.5"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#7c1d3e] rounded-full text-xs px-1.5 v3:rounded-[8px] v3:text-white/70 v3:data-[state=active]:bg-[#3A3A3C] v3:data-[state=active]:text-white v3:font-medium"
                 >
-                  <Store className="h-3 w-3 mr-0.5" />
+                  <Store className="h-3 w-3 mr-0.5 v3:hidden" />
                   Brands
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#3b82f6] rounded-full text-xs px-1.5"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#3b82f6] rounded-full text-xs px-1.5 v3:rounded-[8px] v3:text-white/70 v3:data-[state=active]:bg-[#3A3A3C] v3:data-[state=active]:text-white v3:font-medium"
                 >
-                  <Heart className="h-3 w-3 mr-0.5" />
-                  Follow
+                  <Heart className="h-3 w-3 mr-0.5 v3:hidden" />
+                  {v3 ? 'Following' : 'Follow'}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="shoppers" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#22c55e] rounded-full text-xs px-1.5"
+                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#22c55e] rounded-full text-xs px-1.5 v3:rounded-[8px] v3:text-white/70 v3:data-[state=active]:bg-[#3A3A3C] v3:data-[state=active]:text-white v3:font-medium"
                 >
-                  <Users className="h-3 w-3 mr-0.5" />
+                  <Users className="h-3 w-3 mr-0.5 v3:hidden" />
                   People
                 </TabsTrigger>
                 {YOUR_FIT_ENABLED && (
                   <TabsTrigger
                     value="your-fit"
-                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-1.5"
+                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-[#a855f7] rounded-full text-xs px-1.5 v3:rounded-[8px] v3:text-white/70 v3:data-[state=active]:bg-[#3A3A3C] v3:data-[state=active]:text-white v3:font-medium"
                   >
-                    <Ruler className="h-3 w-3 mr-0.5" />
+                    <Ruler className="h-3 w-3 mr-0.5 v3:hidden" />
                     Fit
                   </TabsTrigger>
                 )}
                 {DEALS_ENABLED && (
                   <TabsTrigger
                     value="deals"
-                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5"
+                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5 v3:rounded-[8px] v3:text-white/70 v3:data-[state=active]:bg-[#3A3A3C] v3:data-[state=active]:text-white v3:font-medium"
                   >
-                    <Tag className="h-3 w-3 mr-0.5" />
+                    <Tag className="h-3 w-3 mr-0.5 v3:hidden" />
                     Deals
                   </TabsTrigger>
                 )}
@@ -379,9 +403,9 @@ const Explore: React.FC = () => {
 
         {/* Hint Text */}
         <div className="absolute bottom-24 left-0 right-0 text-center pointer-events-none">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-            <GlobeIcon className="h-4 w-4 text-white/70" />
-            <span className="text-sm text-white/70">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 v3:bg-transparent">
+            <GlobeIcon className="h-4 w-4 text-white/70 v3:hidden" />
+            <span className="text-sm text-white/70 v3:text-[13px] v3:text-white/60">
               {activeTab === 'brands'
                 ? 'Tap to see brands in each country'
                 : activeTab === 'shoppers'
