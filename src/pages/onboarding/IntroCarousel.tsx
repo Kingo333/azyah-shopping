@@ -80,8 +80,8 @@ const slides: SlideType[] = [
   },
   {
     type: "gallery",
-    title: "Create. Share. Inspire.",
-    subtitle: "Make outfits, style your friends and try on from any photo",
+    title: "Create. Style. Share.",
+    subtitle: "Build outfits from your closet and share them with the community",
   },
 ];
 // The gallery slide's animations key off its position.
@@ -115,57 +115,9 @@ const faqData = [
   {
     question: "How do I connect with the community?",
     answer:
-      "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks.",
+      "Build outfits from your closet and share them with the community, style your friends, and get inspired by looks from people worldwide.",
   },
 ];
-// Auto-playing outfit inspo slider component (standalone card version)
-const OutfitInspoSlider = () => {
-  const [currentImage, setCurrentImage] = useState(0);
-  const images = ["/onboarding/outfit-collage-1.jpg", "/onboarding/outfit-collage-2.jpg"];
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [images.length]);
-  return (
-    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
-      <div className="relative h-64 overflow-hidden">
-        {images.map((image, index) => (
-          <motion.img
-            key={index}
-            src={image}
-            alt={`Outfit Inspiration ${index + 1}`}
-            className="absolute inset-0 w-full h-full object-cover"
-            initial={false}
-            animate={{
-              opacity: currentImage === index ? 1 : 0,
-              scale: currentImage === index ? 1 : 1.05,
-            }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-          />
-        ))}
-        <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 z-10">
-          <span>⭐</span>
-          <span>Earn</span>
-        </div>
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          {images.map((_, index) => (
-            <div
-              key={index}
-              className={`h-1.5 rounded-full transition-all duration-300 ${currentImage === index ? "w-6 bg-white" : "w-1.5 bg-white/50"}`}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="bg-white p-3 text-center">
-        <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
-        <p className="text-xs text-muted-foreground">Earn points</p>
-      </div>
-    </div>
-  );
-};
-
 // Inline version for grid cards
 const OutfitInspoInlineSlider = () => {
   const [currentImage, setCurrentImage] = useState(0);
@@ -807,20 +759,15 @@ export default function IntroCarousel() {
                         <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100">
                           {/* Auto-playing outfit images */}
                           <OutfitInspoInlineSlider />
-                          {/* Earn Badge */}
-                          <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1 z-10">
-                            <span>⭐</span>
-                            <span>Earn</span>
-                          </div>
                         </div>
                         <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Create Outfit Inspo</p>
-                          <p className="text-[10px] text-muted-foreground">Earn points</p>
+                          <p className="text-xs font-semibold text-foreground">Build Outfits</p>
+                          <p className="text-[10px] text-muted-foreground">Mix pieces from your closet</p>
                         </div>
                       </div>
                     </motion.div>
 
-                    {/* Photo & Video try-on (Live comes first, on its own slide) */}
+                    {/* Digital closet */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -828,14 +775,14 @@ export default function IntroCarousel() {
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
                         <div className="aspect-square bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">📸</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Photo & Video</h4>
+                          <span className="text-4xl mb-2">👗</span>
+                          <h4 className="font-bold text-sm text-white mb-1 text-center">Digital Closet</h4>
                           <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Try clothes on from any photo, then turn it into a video
+                            Add what you own; backgrounds are removed for you
                           </p>
                         </div>
                         <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">AI Try-On</p>
+                          <p className="text-xs font-semibold text-foreground">Your Closet, Online</p>
                         </div>
                       </div>
                     </motion.div>
@@ -860,7 +807,7 @@ export default function IntroCarousel() {
                       </div>
                     </motion.div>
 
-                    {/* Pop-Up Events */}
+                    {/* Share with the community */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -868,14 +815,14 @@ export default function IntroCarousel() {
                     >
                       <div className="rounded-2xl overflow-hidden bg-white shadow-lg hover:scale-[1.02] transition-transform">
                         <div className="aspect-square bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-4xl mb-2">🎉</span>
-                          <h4 className="font-bold text-sm text-white mb-1 text-center">Pop-Up Events</h4>
+                          <span className="text-4xl mb-2">🌍</span>
+                          <h4 className="font-bold text-sm text-white mb-1 text-center">Share Your Looks</h4>
                           <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Discover exclusive fashion events and join them
+                            Post outfits to the community and find inspiration worldwide
                           </p>
                         </div>
                         <div className="bg-white p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">Get Exclusive Access</p>
+                          <p className="text-xs font-semibold text-foreground">Get Inspired</p>
                         </div>
                       </div>
                     </motion.div>
