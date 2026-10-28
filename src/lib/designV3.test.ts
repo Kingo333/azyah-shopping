@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DESIGN_V3_CLASS, DESIGN_V3_STORAGE_KEY, resolveDesignV3 } from './designV3';
+import { features } from './features';
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const data = { ...initial };
@@ -18,6 +19,11 @@ const broken = {
 };
 
 describe('resolveDesignV3', () => {
+  it('enables design v3 for everyone without a query or saved opt-in', () => {
+    expect(features.design_v3).toBe(true);
+    expect(resolveDesignV3('', memoryStorage(), features.design_v3)).toBe(true);
+    expect(resolveDesignV3('', null, features.design_v3)).toBe(true);
+  });
   it('uses the names the app relies on', () => {
     expect(DESIGN_V3_STORAGE_KEY).toBe('azyah:design_v3');
     expect(DESIGN_V3_CLASS).toBe('design-v3');
