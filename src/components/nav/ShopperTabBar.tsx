@@ -34,7 +34,8 @@ export const ShopperTabBar: React.FC = () => {
   if (!showShopperBar(pathname)) return null;
 
   const active = activeShopperTab(pathname);
-  const dark = v3 && active === 'explore';
+  // Only the Globe itself is a dark screen; brand pages under Explore are light.
+  const dark = v3 && (pathname === '/explore' || pathname.startsWith('/explore/'));
 
   const barClass = !v3
     ? 'border-border bg-background'

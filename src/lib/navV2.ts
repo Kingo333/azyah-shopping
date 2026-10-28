@@ -58,7 +58,7 @@ export function navV2RedirectFor(pathname: string, search: string): string | nul
 }
 
 const NO_BAR_PREFIXES = [
-  '/onboarding', '/auth', '/reset-password', '/reset-password-request', '/brand-portal', '/retailer-portal',
+  '/onboarding', '/onboarding-calibration', '/auth', '/reset-password', '/reset-password-request', '/brand-portal', '/retailer-portal',
   '/ar', '/dress-me', '/share', '/terms', '/privacy', '/cookies', '/landing', '/kiosk', '/oauth',
   '/extension-auth', '/admin', '/debug',
 ];

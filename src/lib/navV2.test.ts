@@ -107,7 +107,7 @@ describe('showShopperBar', () => {
     }
   });
   it('hides on full-screen tools, partner screens and public pages', () => {
-    for (const p of ['/', '/landing', '/onboarding/signup', '/auth/callback', '/reset-password', '/brand-portal', '/retailer-portal/brands/1', '/ar/e/b', '/dress-me/canvas', '/share/item/x', '/terms', '/kiosk/1']) {
+    for (const p of ['/', '/landing', '/onboarding/signup', '/auth/callback', '/reset-password', '/brand-portal', '/retailer-portal/brands/1', '/ar/e/b', '/dress-me/canvas', '/share/item/x', '/terms', '/kiosk/1', '/onboarding-calibration']) {
       expect(showShopperBar(p)).toBe(false);
     }
   });
