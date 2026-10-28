@@ -8,6 +8,8 @@ interface Props {
   value: LiveCamGarmentSelection | null;
   onChange: (g: LiveCamGarmentSelection) => void;
   disabled?: boolean;
+  /** 'grid' (default): today's grid. 'strip' (design v3): one horizontal row with a source switch, on the dark camera stage. */
+  layout?: 'grid' | 'strip';
 }
 
 interface GarmentOption {
@@ -29,7 +31,8 @@ interface SettingsRow {
   prompt_hint: string | null;
 }
 
-export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disabled }) => {
+export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disabled, layout = 'grid' }) => {
+  const [stripSource, setStripSource] = useState<'closet' | 'discover' | null>(null);
   const { data: wardrobe, isLoading: wardrobeLoading } = useWardrobeItems();
   const [extra, setExtra] = useState<GarmentOption[]>([]);
   const [extraLoading, setExtraLoading] = useState(true);
@@ -174,6 +177,64 @@ export const LiveCamGarmentPicker: React.FC<Props> = ({ value, onChange, disable
       </div>
     );
   };
+
+  if (layout === 'strip') {
+    // Closet first when it has items; the switch only shows when both have items.
+    const source = stripSource ?? (wardrobeOpts.length > 0 ? 'closet' : 'discover');
+    const opts = source === 'closet' ? wardrobeOpts : productOpts;
+    const both = wardrobeOpts.length > 0 && productOpts.length > 0;
+    return (
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[13px] font-medium text-white/80">Choose what to try on</p>
+          {both && (
+            <div className="flex rounded-[10px] bg-white/15 p-0.5 text-[12px]">
+              {(['closet', 'discover'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setStripSource(k)}
+                  className={`rounded-[8px] px-2.5 py-1 font-medium ${source === k ? 'bg-white text-black' : 'text-white/70'}`}
+                >
+                  {k === 'closet' ? 'My closet' : 'Shop'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {loading ? (
+          <div className="flex gap-2">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="h-[72px] w-14 shrink-0 rounded-xl bg-white/15" />)}
+          </div>
+        ) : opts.length === 0 ? (
+          <p className="rounded-[14px] border border-dashed border-white/30 p-3 text-center text-[13px] text-white/70">
+            Nothing to try on yet. Add clothes to your closet first.
+          </p>
+        ) : (
+          <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 pt-1 scrollbar-hide">
+            {opts.map((o) => {
+              const selected = value?.id === o.id && value?.source === o.source;
+              return (
+                <button
+                  key={`${o.source}:${o.id}`}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => handlePick(o)}
+                  aria-pressed={selected}
+                  aria-label={o.label}
+                  className={`relative h-[72px] w-14 shrink-0 overflow-hidden rounded-xl bg-white transition disabled:opacity-50 ${
+                    selected ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-80'
+                  }`}
+                >
+                  <img src={o.imageUrl} alt="" className="h-full w-full object-cover" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-white/30 bg-white/50 backdrop-blur-sm shadow-sm p-2 sm:p-3">

@@ -6,7 +6,8 @@ import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
 import { LiveCamSnapshotButton } from './LiveCamSnapshotButton';
 import { useLiveCamSession } from './useLiveCamSession';
 import { LIVE_CAM_TIER_CONFIG, isPremiumUiEnabled, isPremiumUnavailable } from './liveCamTier';
-import type { LiveCamGarmentSelection, LiveCamTier } from './liveCamTypes';
+import type { LiveCamGarmentSelection, LiveCamStatus, LiveCamTier } from './liveCamTypes';
+import { useDesignV3 } from '@/hooks/useDesignV3';
 
 const TIER_LABEL: Record<LiveCamTier, string> = { standard: 'Standard', premium: 'Premium HD' };
 
@@ -24,6 +25,7 @@ export const LiveCamTab: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
   const supported = supportsLiveCam();
+  const v3 = useDesignV3();
 
   const {
     status, errorMessage, errorCode, notice, latencyMs, session, activeTier, start, stop, redrawLastFrame,
@@ -51,6 +53,14 @@ export const LiveCamTab: React.FC = () => {
   }, []);
 
   if (!supported) {
+    if (v3) {
+      return (
+        <div className="rounded-[20px] bg-card p-5 text-center">
+          <p className="text-[15px] font-semibold text-ink">Live try-on needs a camera</p>
+          <p className="mt-1 text-[13px] text-ink-2">This device can't stream from its camera. Try Picture or Video instead.</p>
+        </div>
+      );
+    }
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3">
         Your device does not support live camera streaming. Try the Picture or Video tab instead.
@@ -69,6 +79,131 @@ export const LiveCamTab: React.FC = () => {
     setTier('standard');
     void start('standard');
   };
+
+  // Design v3: Live Cam is the selling point. One big stage, a strip of
+  // clothes, one black Start button; a shutter and End while it runs.
+  // Same session hook, refs and handlers as below; only the layout differs.
+  if (v3) {
+    return (
+      <div className="space-y-4">
+        <LiveCamCameraView
+          variant="stage"
+          localVideoRef={localVideoRef}
+          remoteCanvasRef={remoteCanvasRef}
+          isRunning={isRunning}
+          status={status}
+          expanded={expanded}
+          onToggleExpand={handleToggleExpand}
+          onCanvasResize={redrawLastFrame}
+          topLeft={
+            <>
+              <StagePill status={status} />
+              {(isRunning || isStarting) && showTierPicker && (
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">{TIER_LABEL[servedTier]}</span>
+              )}
+              {fellBack && (isRunning || isStarting) && (
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">Running on Standard</span>
+              )}
+              {isRunning && latencyMs !== null && (
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white tabular-nums">{latencyMs} ms</span>
+              )}
+            </>
+          }
+          idleContent={
+            garment ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <img src={garment.referenceImageUrl} alt="" className="h-32 w-24 rounded-xl bg-white object-cover" />
+                <p className="text-[13px] text-white/80">Ready to try on {garment.label}</p>
+              </div>
+            ) : (
+              <p className="max-w-[220px] text-center text-[15px] text-white/80">
+                See clothes on you live. Pick something below, then start.
+              </p>
+            )
+          }
+          bottom={
+            <div className="space-y-3 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-3 pb-4 pt-10">
+              {/* Changing the garment while running swaps it live (no reconnect). */}
+              <LiveCamGarmentPicker value={garment} onChange={setGarment} disabled={isStarting} layout="strip" />
+              {isRunning ? (
+                <div className="grid grid-cols-3 items-center">
+                  <button
+                    type="button"
+                    onClick={() => void stop()}
+                    className="justify-self-start rounded-full bg-white/15 px-4 py-2 text-[15px] font-semibold text-white"
+                  >
+                    End
+                  </button>
+                  <div className="justify-self-center">
+                    <LiveCamSnapshotButton variant="round" sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} />
+                  </div>
+                  <span className="justify-self-end text-right text-[11px] leading-tight text-white/70">Snapshots<br />stay private</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void start()}
+                  disabled={!garment || isStarting}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white text-[15px] font-semibold text-black disabled:bg-white/20 disabled:text-white/70"
+                >
+                  {isStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  {isWarming ? warmingLabel : isStarting ? 'Starting…' : garment ? 'Start live try-on' : 'Pick something to try on'}
+                </button>
+              )}
+            </div>
+          }
+        />
+
+        {showTierPicker && !isRunning && (
+          <div role="radiogroup" aria-label="Live try-on quality" className="grid grid-cols-2 rounded-[10px] bg-fill p-0.5">
+            {(['standard', 'premium'] as LiveCamTier[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={tier === t}
+                onClick={() => setTier(t)}
+                disabled={isStarting}
+                className={`flex h-9 items-center justify-center gap-1.5 rounded-[8px] text-[13px] font-medium disabled:opacity-50 ${
+                  tier === t ? 'bg-card text-ink' : 'text-ink-2'
+                }`}
+              >
+                {TIER_LABEL[t]}
+                {t === 'premium' && <span className="rounded-full bg-wait px-1.5 text-[10px] text-wait-foreground">Beta</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!isRunning && !isStarting && (
+          <p className="text-center text-[12px] text-ink-2">The first start can take a few minutes while it warms up.</p>
+        )}
+
+        {notice && <div className="rounded-[14px] bg-fill p-3 text-[13px] text-ink">{notice}</div>}
+
+        {status === 'failed' && isPremiumUnavailable(errorCode) && (
+          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-wait p-3 text-[13px] text-wait-foreground">
+            <span>Premium HD is coming soon.</span>
+            <button type="button" onClick={startStandardInstead} className="font-semibold">Start Standard instead</button>
+          </div>
+        )}
+
+        {status === 'failed' && errorCode === 'premium_required' && (
+          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-wait p-3 text-[13px] text-wait-foreground">
+            <span>Premium HD is included with Azyah Premium.</span>
+            <button type="button" onClick={() => navigate('/dashboard/upgrade')} className="font-semibold">Upgrade</button>
+          </div>
+        )}
+
+        {status === 'failed' && errorMessage && !isPremiumUnavailable(errorCode) && errorCode !== 'premium_required' && (
+          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-bad p-3 text-[13px] text-bad-foreground">
+            <span>{errorMessage}</span>
+            <button type="button" onClick={() => void start()} className="shrink-0 font-semibold">Try again</button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -228,6 +363,25 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   return (
     <span className={`px-2 py-0.5 rounded-full uppercase tracking-wide text-[10px] ${map[status] ?? map.idle}`}>
       {status}
+    </span>
+  );
+};
+
+/** Design v3 status pill on the stage. */
+const StagePill: React.FC<{ status: LiveCamStatus }> = ({ status }) => {
+  const label: Record<LiveCamStatus, string> = {
+    idle: 'Ready',
+    starting: 'Starting…',
+    warming: 'Warming up…',
+    running: 'Live',
+    ended: 'Ended',
+    failed: 'Stopped',
+  };
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-[12px] font-semibold text-white">
+      {status === 'running' && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
+      {(status === 'starting' || status === 'warming') && <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300" />}
+      {label[status]}
     </span>
   );
 };

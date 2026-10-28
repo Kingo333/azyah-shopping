@@ -7,9 +7,11 @@ interface Props {
   sessionId: string | null;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
   disabled?: boolean;
+  /** 'round' (design v3): a camera-style shutter button. */
+  variant?: 'default' | 'round';
 }
 
-export const LiveCamSnapshotButton: React.FC<Props> = ({ sessionId, remoteCanvasRef, disabled }) => {
+export const LiveCamSnapshotButton: React.FC<Props> = ({ sessionId, remoteCanvasRef, disabled, variant = 'default' }) => {
   const [saving, setSaving] = useState(false);
 
   const handleCapture = async () => {
@@ -52,6 +54,20 @@ export const LiveCamSnapshotButton: React.FC<Props> = ({ sessionId, remoteCanvas
       setSaving(false);
     }
   };
+
+  if (variant === 'round') {
+    return (
+      <button
+        type="button"
+        onClick={handleCapture}
+        disabled={disabled || saving || !sessionId}
+        aria-label="Save a snapshot"
+        className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/40 bg-white bg-clip-padding text-black transition-transform active:scale-95 disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
+      </button>
+    );
+  }
 
   return (
     <button
