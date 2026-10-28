@@ -36,6 +36,8 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
 import { productStatusLabel } from '@/lib/productPublishing';
+import { StatusLabel } from '@/components/StatusLabel';
+import { useDesignV3 } from '@/hooks/useDesignV3';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 
@@ -58,6 +60,7 @@ interface Brand {
   created_at?: string;
 }
 const BrandPortal: React.FC = () => {
+  const v3 = useDesignV3();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(portalTab(searchParams.get('tab')));
   
@@ -747,9 +750,13 @@ const BrandPortal: React.FC = () => {
                                <span className="text-xs md:text-sm font-semibold text-primary">
                                  {formatPrice(product.price_cents)}
                                </span>
+                               {v3 ? (
+                                 <StatusLabel status={product.status}>{productStatusLabel(product.status)}</StatusLabel>
+                               ) : (
                                <Badge variant={getStatusColor(product.status) as any} className="text-xs px-1 md:px-2 py-0.5">
                                  {productStatusLabel(product.status)}
                                </Badge>
+                               )}
                              </div>
                              <div className="flex justify-between gap-1">
                                

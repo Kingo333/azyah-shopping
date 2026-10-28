@@ -7,11 +7,11 @@ export const PendingApprovalBanner: React.FC<{ status?: string | null }> = ({ st
   const notice = approvalNotice(status);
   if (!notice) return null;
   return (
-    <div role="status" className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-3 md:p-4">
-      <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+    <div role="status" className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-3 md:p-4 v3:rounded-[20px] v3:border-0 v3:bg-wait">
+      <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary v3:text-wait-foreground" aria-hidden="true" />
       <div>
-        <p className="text-sm font-medium text-foreground">{notice.title}</p>
-        <p className="text-sm text-muted-foreground">{notice.body}</p>
+        <p className="text-sm font-medium text-foreground v3:text-wait-foreground">{notice.title}</p>
+        <p className="text-sm text-muted-foreground v3:text-wait-foreground/80">{notice.body}</p>
       </div>
     </div>
   );

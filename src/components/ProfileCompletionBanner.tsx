@@ -74,7 +74,7 @@ export function ProfileCompletionBanner() {
             {/* Progress Bar */}
             <Progress 
               value={percentage} 
-              className="h-1.5 bg-[#E5E3DF] [&>div]:bg-[#7A143E]"
+              className="h-1.5 bg-[#E5E3DF] [&>div]:bg-[#7A143E] v3:bg-fill v3:[&>div]:bg-ink"
             />
           </div>
           
@@ -82,7 +82,7 @@ export function ProfileCompletionBanner() {
           <Button
             size="icon"
             onClick={handleCompleteProfile}
-            className="h-9 w-9 rounded-full bg-[#7A143E] hover:bg-[#5A0F2E] flex-shrink-0"
+            className="h-9 w-9 rounded-full bg-[#7A143E] hover:bg-[#5A0F2E] flex-shrink-0 v3:bg-ink v3:hover:bg-black"
           >
             <ArrowRight className="w-4 h-4 text-white" />
           </Button>

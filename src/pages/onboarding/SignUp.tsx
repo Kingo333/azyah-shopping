@@ -610,9 +610,11 @@ export default function SignUp() {
       }}
     >
       {/* Floating Fashion Icons Background */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#1a1a2e] via-[#16213e] to-[#0f1419]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#7A143E]/10 via-transparent to-[#7A143E]/5" />
-        <FloatingFashionIcons />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#1a1a2e] via-[#16213e] to-[#0f1419] v3:bg-none v3:bg-card">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7A143E]/10 via-transparent to-[#7A143E]/5 v3:hidden" />
+        <div className="v3:hidden">
+          <FloatingFashionIcons />
+        </div>
       </div>
       
       {/* Back Button */}
@@ -621,7 +623,7 @@ export default function SignUp() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/')}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 v3:text-ink v3:hover:bg-fill"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -632,9 +634,9 @@ export default function SignUp() {
         <img 
           src="/marketing/azyah-logo.png" 
           alt="Azyah" 
-          className="h-10 w-10 object-contain drop-shadow-lg"
+          className="h-10 w-10 object-contain drop-shadow-lg v3:hidden"
         />
-        <h1 className="text-4xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300, letterSpacing: '0.15em' }}>
+        <h1 className="text-4xl font-serif text-white tracking-wider drop-shadow-lg v3:font-wordmark v3:text-ink v3:drop-shadow-none v3:![letter-spacing:0] v3:![font-weight:500]" style={{ fontWeight: 300, letterSpacing: '0.15em' }}>
           Azyah
         </h1>
       </div>
@@ -642,14 +644,14 @@ export default function SignUp() {
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-6 relative z-10 min-h-0">
         <div className="w-full max-w-md text-center space-y-6 md:space-y-8">
-          <p className="text-white text-base md:text-lg font-medium px-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+          <p className="text-white text-base md:text-lg font-medium px-2 v3:text-ink-2 v3:text-[15px] v3:font-normal v3:![text-shadow:none]" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
             Create your free account to backup outfits and sync across devices.
           </p>
 
           <div className="space-y-3 md:space-y-4">
             <Button
               onClick={() => setStep('email-entry')}
-              className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-50 text-gray-800 border border-[#7A143E]/20 shadow-lg transition-all duration-200 hover:shadow-xl hover:shadow-[#7A143E]/10"
+              className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-50 text-gray-800 border border-[#7A143E]/20 v3:border-line-strong shadow-lg transition-all duration-200 hover:shadow-xl hover:shadow-[#7A143E]/10 v3:rounded-[14px] v3:border-0 v3:bg-ink v3:text-white v3:hover:bg-black v3:shadow-none v3:hover:shadow-none"
             >
               <Mail className="w-4 h-4 md:w-5 md:h-5 mr-2" />
               Continue with email
@@ -657,14 +659,14 @@ export default function SignUp() {
           </div>
 
           <div 
-            className="relative z-10 text-center text-xs md:text-sm text-white/90 space-y-1 pb-2 flex-shrink-0"
+            className="relative z-10 text-center text-xs md:text-sm text-white/90 space-y-1 pb-2 flex-shrink-0 v3:text-ink-2 v3:text-[13px]"
             style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
           >
             <p>
               Are you a brand?{' '}
               <button
                 onClick={() => navigate('/onboarding/signup?role=brand')}
-                className="text-white hover:underline font-semibold"
+                className="text-white hover:underline font-semibold v3:text-ink v3:font-medium"
               >
                 Create a brand account
               </button>
@@ -676,7 +678,7 @@ export default function SignUp() {
               Are you a retailer or pop-up?{' '}
               <button
                 onClick={() => navigate('/onboarding/signup?role=retailer')}
-                className="text-white hover:underline font-semibold"
+                className="text-white hover:underline font-semibold v3:text-ink v3:font-medium"
               >
                 Create a retailer account
               </button>

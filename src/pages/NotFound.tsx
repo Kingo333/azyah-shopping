@@ -1,8 +1,12 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useDesignV3 } from "@/hooks/useDesignV3";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const v3 = useDesignV3();
 
   useEffect(() => {
     console.error(
@@ -10,6 +14,15 @@ const NotFound = () => {
       location.pathname
     );
   }, [location.pathname]);
+
+  if (v3) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-ground px-4 text-center">
+        <h1 className="text-[26px] font-semibold text-ink">This page doesn't exist.</h1>
+        <Button className="mt-6 h-12 px-6" onClick={() => navigate('/swipe')}>Go to Feed</Button>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

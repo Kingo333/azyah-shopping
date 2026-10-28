@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { StatusLabel } from '@/components/StatusLabel';
+import { useDesignV3 } from '@/hooks/useDesignV3';
 
 type Partner = {
   id: string;
@@ -26,6 +28,7 @@ const STATUS_LABEL: Record<Partner['verification_status'], string> = {
  * admin_set_partner_verification database function (admins only).
  */
 export default function PartnerApprovals() {
+  const v3 = useDesignV3();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -114,14 +117,18 @@ export default function PartnerApprovals() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {v3 ? (
+                  <StatusLabel status={p.verification_status}>{STATUS_LABEL[p.verification_status] ?? p.verification_status}</StatusLabel>
+                ) : (
                 <Badge variant={p.verification_status === 'approved' ? 'default' : 'secondary'}>
                   {STATUS_LABEL[p.verification_status] ?? p.verification_status}
                 </Badge>
+                )}
                 {p.verification_status !== 'approved' && (
                   <Button size="sm" disabled={busyId === p.id} onClick={() => setStatus(p, 'approved')}>Approve</Button>
                 )}
                 {p.verification_status !== 'rejected' && (
-                  <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => setStatus(p, 'rejected')}>Reject</Button>
+                  <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => setStatus(p, 'rejected')} className="v3:border-transparent v3:bg-transparent v3:text-danger-ink">Reject</Button>
                 )}
               </div>
             </li>

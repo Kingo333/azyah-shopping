@@ -180,3 +180,58 @@ html.design-v3 [class*="backdrop-saturate"] {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* Today's custom classes (index.css), flattened for v3. */
+html.design-v3 .segmented-control {
+  background: hsl(var(--fill));
+  box-shadow: none;
+  padding: 2px;
+  gap: 2px;
+}
+html.design-v3 .segment {
+  color: hsl(var(--ink));
+  font-weight: 500;
+}
+html.design-v3 .segment.active {
+  background: hsl(var(--card));
+  color: hsl(var(--ink));
+}
+html.design-v3 .wardrobe-card,
+html.design-v3 .outfit-card {
+  background: hsl(var(--card));
+  box-shadow: none;
+}
+html.design-v3 .glass-panel,
+html.design-v3 .glass-premium {
+  background: hsl(var(--card));
+  border-color: hsl(var(--line));
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.design-v3 .outfit-user-badge {
+  background: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html.design-v3 .dashboard-bg {
+  background: hsl(var(--ground));
+}
+html.design-v3 .dashboard-bg::before {
+  display: none;
+}
+html.design-v3 .dressme-title,
+html.design-v3 .dressme-section-title {
+  color: hsl(var(--ink));
+}
+
+/* Icons are grey in v3 (spec 4.4): decorative colors on Lucide icons go to
+   ink-2. Red and green stay, since they usually carry error/success. */
+html.design-v3 svg.lucide:is(
+  [class*="text-purple-"], [class*="text-violet-"], [class*="text-indigo-"],
+  [class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-rose-"],
+  [class*="text-blue-"], [class*="text-sky-"], [class*="text-cyan-"], [class*="text-teal-"],
+  [class*="text-amber-"], [class*="text-yellow-"], [class*="text-orange-"]
+) {
+  color: hsl(var(--ink-2));
+}

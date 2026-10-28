@@ -44,11 +44,14 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
 import { productStatusLabel } from '@/lib/productPublishing';
+import { StatusLabel } from '@/components/StatusLabel';
+import { useDesignV3 } from '@/hooks/useDesignV3';
 
 // Collabs tab hidden while UGC is off; old ?tab=collabs links open Products.
 const portalTab = (tab: string | null) => (!tab ? 'products' : tab === 'collabs' && !features.ugc_collab ? 'products' : tab);
 
 const RetailerPortal = () => {
+  const v3 = useDesignV3();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -563,14 +566,18 @@ const RetailerPortal = () => {
                                </Badge>
                              </div>
                            )}
-                           {product.status !== 'archived' && (
+                           {product.status !== 'archived' && (v3 ? (
+                             <StatusLabel status={product.status} className="absolute top-1 right-1 md:top-2 md:right-2">
+                               {productStatusLabel(product.status)}
+                             </StatusLabel>
+                           ) : (
                              <Badge 
                                variant={product.status === 'active' ? 'default' : 'secondary'}
                                className="absolute top-1 right-1 md:top-2 md:right-2 text-xs"
                              >
                                {productStatusLabel(product.status)}
                              </Badge>
-                           )}
+                           ))}
                          </div>
                         <CardContent className="p-2 md:p-4">
                           <div className="space-y-1 md:space-y-2">
