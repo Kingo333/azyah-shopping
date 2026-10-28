@@ -10,18 +10,22 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { visiblePlanRows } from '@/lib/planRows';
+import { features as featureFlags } from '@/lib/features';
 import { Crown, TrendingUp, Users, Gift, PenLine } from 'lucide-react';
 
 const UPGRADE_STORAGE_KEY = 'upgrade_last_shown_at';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-const premiumPerks = [
+const allPremiumPerks = [
   { icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'AI Try-On' },
   { icon: <Users className="h-3.5 w-3.5" />, label: 'UGC Collab' },
   { icon: <Gift className="h-3.5 w-3.5" />, label: 'Redeem Points' },
   
   { icon: <PenLine className="h-3.5 w-3.5" />, label: 'Post & Earn' },
 ];
+// Hidden features (UGC) are not sold (spec D7).
+const premiumPerks = visiblePlanRows(allPremiumPerks.map((p) => ({ ...p, name: p.label })), featureFlags);
 
 export default function PostLoginUpgradeModal() {
   const { user } = useAuth();

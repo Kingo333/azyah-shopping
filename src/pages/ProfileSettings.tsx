@@ -981,10 +981,12 @@ const ProfileSettings: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mb-4">
+                      {features.ugc_collab && (
                       <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
                         <Users className="h-4 w-4" />
                         <span>UGC Collaboration</span>
                       </div>
+                      )}
                       <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
                         <Sparkles className="h-4 w-4" />
                         <span>10 AI Try-Ons Daily</span>
@@ -1102,10 +1104,12 @@ const ProfileSettings: React.FC = () => {
                         <span className="text-muted-foreground">Visual search</span>
                         <span className="text-muted-foreground">4 searches</span>
                       </div>
+                      {features.ugc_collab && (
                       <div className="flex items-center justify-between py-1">
                         <span className="text-muted-foreground">UGC collaboration</span>
                         <span className="text-muted-foreground">5 listings</span>
                       </div>
+                      )}
                       <div className="flex items-center justify-between py-1">
                         <span className="text-muted-foreground">Salon rewards</span>
                         <span className="text-muted-foreground">—</span>

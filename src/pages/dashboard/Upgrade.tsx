@@ -5,6 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, Users, Gift, TrendingUp, Loader2, RotateCcw, Ruler, Heart, ChevronDown, Star, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { features as featureFlags } from '@/lib/features';
+import { visiblePlanRows } from '@/lib/planRows';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+import { openExternalUrl } from '@/lib/openExternalUrl';
+
+const APP_STORE_URL = 'https://apps.apple.com/app/azyah-style/id6738380298';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePremium, waitForServerPremium } from '@/hooks/usePremium';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -18,7 +24,7 @@ import {
   type IAPProduct 
 } from '@/lib/iap';
 
-const features = [
+const allFeatures = [
   { icon: <TrendingUp className="h-3.5 w-3.5" />, name: 'AI Try-On: Picture & Video', premiumOnly: true },
   { icon: <Users className="h-3.5 w-3.5" />, name: 'UGC Collabs', premiumOnly: true },
   { icon: <Gift className="h-3.5 w-3.5" />, name: 'Redeem Points', premiumOnly: true },
@@ -27,7 +33,7 @@ const features = [
   { icon: <PenLine className="h-3.5 w-3.5" />, name: 'Post & Earn', premiumOnly: true },
 ];
 
-const comparisonFeatures = [
+const allComparisonFeatures = [
   { name: 'Create outfits', free: '5 total', premium: 'Unlimited' },
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
@@ -36,6 +42,10 @@ const comparisonFeatures = [
   { name: 'Points → Credits', free: false, premium: true },
   { name: 'Priority support', free: false, premium: true },
 ];
+
+// Hidden features (UGC, Height/Fit) are not sold (spec D7).
+const features = visiblePlanRows(allFeatures, featureFlags);
+const comparisonFeatures = visiblePlanRows(allComparisonFeatures, featureFlags);
 
 // Default prices (shown on web or if StoreKit fails)
 const DEFAULT_PRICES = {
@@ -51,6 +61,7 @@ export default function Upgrade() {
   const [products, setProducts] = useState<IAPProduct[]>([]);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const navigate = useNavigate();
+  const v3 = useDesignV3();
   const { isPremium: isSubPremium, subscription } = useSubscription();
   const { isPremium, refetch: refetchPremium } = usePremium();
 
@@ -236,13 +247,13 @@ export default function Upgrade() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/12 via-background to-primary/8">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/12 via-background to-primary/8 v3:bg-none v3:bg-ground">
       {/* Decorative radial gradient */}
-      <div className="absolute inset-0 pointer-events-none" style={{
+      <div className="absolute inset-0 pointer-events-none v3:hidden" style={{
         background: 'radial-gradient(ellipse at 30% 20%, hsl(var(--azyah-maroon) / 0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, hsl(var(--primary) / 0.06) 0%, transparent 50%)'
       }} />
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] v3:hidden" style={{
         backgroundImage: 'radial-gradient(circle, hsl(var(--azyah-maroon)) 1px, transparent 1px)',
         backgroundSize: '24px 24px'
       }} />
@@ -352,14 +363,22 @@ export default function Upgrade() {
 
         {/* CTA */}
         <div className="space-y-2">
+          {/* Design v3 on web and Android: subscriptions are in the iPhone app, so say that
+              instead of a button that only shows a toast (spec B9). */}
+          {v3 && !isNativeIOS() && selectedPlan !== 'free' ? (
+            <Button variant="outline" onClick={() => openExternalUrl(APP_STORE_URL)} className="w-full h-12 text-[15px] font-medium">
+              Subscribe in the Azyah iPhone app
+            </Button>
+          ) : (
           <Button
             onClick={handleContinue}
             disabled={loading || restoring}
-            className="w-full h-12 font-semibold text-base bg-gradient-to-r from-[hsl(var(--azyah-maroon))] to-primary text-white shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.3)] hover:shadow-[0_6px_28px_hsl(var(--azyah-maroon)/0.4)] transition-shadow border-0"
+            className="w-full h-12 font-semibold text-base bg-gradient-to-r from-[hsl(var(--azyah-maroon))] to-primary text-white shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.3)] hover:shadow-[0_6px_28px_hsl(var(--azyah-maroon)/0.4)] transition-shadow border-0 v3:bg-none v3:bg-ink v3:shadow-none v3:hover:shadow-none"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {selectedPlan === 'free' ? 'Continue Free' : `Upgrade to ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`}
           </Button>
+          )}
           
           {selectedPlan !== 'free' && (
             <p className="text-center text-xs text-muted-foreground">Cancel anytime from Settings</p>
