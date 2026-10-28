@@ -61,7 +61,8 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
       let userQuery = supabase
         .from('users')
         .select('id, name, username, avatar_url, country, preferences')
-        .or('preferences->visible_on_globe.is.null,preferences->visible_on_globe.eq.true');
+        // Opt-in, like the Globe: only people who turned "Show me" on.
+        .or('preferences->visible_on_globe.eq.true');
       if (type === 'country' && selectedCountry) {
         userQuery = userQuery.eq('country', selectedCountry);
       }

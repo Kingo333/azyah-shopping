@@ -72,7 +72,7 @@ const ProfileSettings: React.FC = () => {
   const [savingVisibility, setSavingVisibility] = useState(false);
 
   // Privacy & Visibility
-  const [isVisibleOnGlobe, setIsVisibleOnGlobe] = useState(true);
+  const [isVisibleOnGlobe, setIsVisibleOnGlobe] = useState(false); // opt-in: off until turned on
   
   // Referral system hooks
   const { data: referralCode } = useUserReferralCode();
@@ -124,7 +124,8 @@ const ProfileSettings: React.FC = () => {
         });
         // Load visibility preference (default true if not set)
         const prefs = (data as any).preferences;
-        setIsVisibleOnGlobe(prefs?.visible_on_globe !== false);
+        // Opt-in: off until the person turns it on.
+        setIsVisibleOnGlobe(prefs?.visible_on_globe === true);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
