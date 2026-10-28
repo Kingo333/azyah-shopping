@@ -1030,7 +1030,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               <div
                 className={`flex-shrink-0 p-3 border-t border-white/30 bg-white/60 backdrop-blur-lg shadow-[0_-4px_16px_rgba(0,0,0,0.06)] v3:bg-ground v3:border-line v3:shadow-none ${isPage && activeTab === 'live-cam' ? 'hidden' : ''}`}
                 // Page mode: the action bar sits fixed above the shopper tab bar.
-                style={isPage ? { position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + var(--safe-bottom, 0px))', zIndex: 40 } : undefined}
+                style={isPage ? { position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: 'min(100%, 42rem)', bottom: 'calc(64px + var(--safe-bottom, 0px))', zIndex: 40 } : undefined}
               >
                 {activeTab === 'live-cam' ? null : activeTab === 'picture' ? (
                   <motion.button
@@ -1126,7 +1126,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
   if (isPage) {
     return (
-      <div className="flex min-h-[100dvh] flex-col bg-ground" style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}>
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col bg-ground" style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}>
         {studio}
         <GuestActionPrompt open={showPrompt} onOpenChange={setShowPrompt} action={promptAction} />
       </div>

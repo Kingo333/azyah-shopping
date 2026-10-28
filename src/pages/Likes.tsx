@@ -140,7 +140,7 @@ const LikeCard: React.FC<{ like: LikedProduct; onRemove: (productId: string) => 
                     e.stopPropagation();
                     handleShopNow(like.products!);
                   }}
-                  className="flex-1 text-xs h-8"
+                  className="flex-1 text-xs h-8 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Shop

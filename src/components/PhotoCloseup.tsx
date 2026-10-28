@@ -629,7 +629,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <Button
                   onClick={handleVisitBrand}
                   variant="default"
-                  className="flex-1"
+                  className="flex-1 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none"
                   title="Opens retailer website in Safari"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />

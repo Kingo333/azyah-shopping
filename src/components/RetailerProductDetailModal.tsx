@@ -140,7 +140,7 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
             {/* Shop Now Button */}
             {product.external_url && (
               <Button 
-                className="w-full mt-4"
+                className="w-full mt-4 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none"
                 onClick={() => openExternalUrl(product.external_url)}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />

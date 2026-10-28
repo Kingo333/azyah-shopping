@@ -537,7 +537,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         handleShopNow(product);
                       }}
                       disabled={!product.external_url?.trim()}
-                      className={`flex-1 text-xs h-8 ${
+                      className={`flex-1 text-xs h-8 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none ${
                         !product.external_url?.trim() 
                           ? 'opacity-50 cursor-not-allowed' 
                           : ''

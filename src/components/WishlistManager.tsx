@@ -418,7 +418,7 @@ export const WishlistManager: React.FC = () => {
                         {/* Shop Button */}
                         <Button
                           onClick={() => handleShopNow(item.product)}
-                          className="w-full mt-2"
+                          className="w-full mt-2 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none"
                           size="sm"
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />

@@ -140,7 +140,7 @@ const ProductCard: React.FC<{
                 variant="destructive"
                 size="sm"
                 onClick={() => openExternalUrl(product.external_url)}
-                className="flex-1 text-xs h-8"
+                className="flex-1 text-xs h-8 v3:bg-buy v3:text-buy-foreground v3:hover:bg-buy/90 v3:border-transparent v3:shadow-none"
               >
                 Shop Now
               </Button>
