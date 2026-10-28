@@ -23,12 +23,16 @@ import CategoryGrid from '@/components/CategoryGrid';
 import AiStudioModal from '@/components/AiStudioModal';
 import PostLoginUpgradeModal from '@/components/PostLoginUpgradeModal';
 import { useNavV2 } from '@/hooks/useNavV2';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+
+const V3_ICON_BUTTON = 'flex h-8 w-8 items-center justify-center rounded-full bg-fill text-ink active:opacity-70';
 import { features } from '@/lib/features';
 
 const Swipe = () => {
   const navigate = useNavigate();
   // With navigation v2 the shared 4-tab bar replaces this page's own list-view bar.
   const navV2 = useNavV2();
+  const v3 = useDesignV3();
   const {
     user,
     loading
@@ -215,10 +219,58 @@ const Swipe = () => {
   return <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header 
-        className={`sticky top-0 z-50 w-full bg-background/95 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`sticky top-0 z-50 w-full shrink-0 transition-all duration-300 ${v3 ? 'bg-ground' : 'bg-background/95 backdrop-blur-xl border-b border-border/40'} ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}
       >
         <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+          {v3 ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-[26px] font-semibold leading-tight text-ink">Feed</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[13px] text-ink-2 tabular-nums">
+                    {modelProgress >= 100 ? 'Style model calibrated' : `Style model ${modelProgress}%`}
+                  </p>
+                  {(filters as any).countryCode && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-fill px-2 py-0.5 text-[12px] text-ink">
+                      <MapPin className="h-3 w-3" />
+                      {getCountryNameFromCode((filters as any).countryCode) || (filters as any).countryCode}
+                      <button
+                        type="button"
+                        aria-label="Clear country"
+                        onClick={() => setFilters(prev => ({ ...prev, countryCode: undefined } as any))}
+                        className="ml-0.5 rounded-full p-0.5"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 pt-1">
+                {showListToggle && (
+                  <button
+                    type="button"
+                    aria-label={viewMode === 'swipe' ? 'Show as list' : 'Show as cards'}
+                    onClick={() => setViewMode(prev => prev === 'swipe' ? 'list' : 'swipe')}
+                    className={V3_ICON_BUTTON}
+                  >
+                    {viewMode === 'swipe' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                  </button>
+                )}
+                <button type="button" aria-label="Favorites" onClick={() => navigate("/favorites")} className={V3_ICON_BUTTON}>
+                  <Heart className="h-4 w-4" />
+                </button>
+                <UnifiedCategoryFilter
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  compact={true}
+                  showPriceRange={true}
+                  showCurrency={true}
+                />
+              </div>
+            </div>
+          ) : (
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             {/* Left Section - Back & Title */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -305,11 +357,16 @@ const Swipe = () => {
               />
             </div>
           </div>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col ${viewMode === 'swipe' ? 'overflow-hidden' : 'overflow-auto'}`}>
+      <main
+        className={`flex-1 flex flex-col ${viewMode === 'swipe' ? 'overflow-hidden' : 'overflow-auto'}`}
+        // The shopper tab bar is fixed; keep the swipe deck above it.
+        style={navV2 && viewMode === 'swipe' ? { paddingBottom: 'calc(64px + var(--safe-bottom, 0px))' } : undefined}
+      >
 
         {/* Content Container */}
         {viewMode === 'swipe' ? <div className="flex-1 w-full h-full overflow-hidden">
@@ -352,7 +409,7 @@ const Swipe = () => {
             
             {/* Suggested for you heading */}
             <div className="px-4 pt-2 pb-2">
-              <h2 className="text-lg font-serif font-medium text-foreground">Suggested for you</h2>
+              <h2 className="text-lg font-serif font-medium text-foreground v3:text-[15px] v3:font-semibold">Suggested for you</h2>
             </div>
             
             {/* Masonry Grid with Community Blocks */}

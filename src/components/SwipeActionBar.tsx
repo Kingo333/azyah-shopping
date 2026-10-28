@@ -2,6 +2,9 @@ import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart, X, Star, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDesignV3 } from '@/hooks/useDesignV3';
+
+const V3_ROUND = 'flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-fill text-ink transition-transform active:scale-95 disabled:opacity-50';
 
 interface SwipeActionBarProps {
   onLike: () => void;
@@ -24,6 +27,35 @@ export const SwipeActionBar = memo(({
   className,
   variant = 'default'
 }: SwipeActionBarProps) => {
+  const v3 = useDesignV3();
+
+  // Design v3: Pass, Save, Like as round neutral buttons + one maroon Shop.
+  if (v3) {
+    return (
+      <div className={cn('flex items-center gap-3', className)}>
+        <button type="button" aria-label="Pass" className={V3_ROUND} onClick={(e) => { e.stopPropagation(); onDislike(); }}>
+          <X className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <button type="button" aria-label="Save" className={V3_ROUND} disabled={wishlistLoading} onClick={(e) => { e.stopPropagation(); onWishlist(); }}>
+          <Star className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <button type="button" aria-label="Like" className={V3_ROUND} onClick={(e) => { e.stopPropagation(); onLike(); }}>
+          <Heart className="h-5 w-5" strokeWidth={2} />
+        </button>
+        {hasExternalUrl && onShopNow && (
+          <Button
+            variant="buy"
+            onClick={(e) => { e.stopPropagation(); onShopNow(e); }}
+            className="h-[46px] flex-1 rounded-full text-[15px] font-semibold"
+          >
+            <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+            Shop
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   // StyleLinkCard-style design (clean, bordered buttons with labels)
   if (variant === 'card') {
     return (
