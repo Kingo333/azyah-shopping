@@ -104,4 +104,5 @@ Legend: ✅ done and verified · 🚀 released to `main` (live on Vercel), owner
 5. ✅ Decision 8.5: kiosk = Live Cam only.
 5b. 🟡 Private people photos (5.6): everything live except locking the three AI Studio folders; waits for the owner's phone test and an iOS build.
 6. 👤 Dashboard: leaked-password protection and Postgres upgrade.
+6b. 🟡 Design v3 built behind `?design=v3` (branch `main-64g3xr`, off for everyone). 👤 Phone test with `?design=v3`: Feed swipe + Shop, Explore globe, Try on page (Picture, Video, Live Cam start/end; top up RunPod), Community Posts, Profile rows, bag "Buy on …", Premium on iPhone, welcome screen when logged out. Then `design_v3: true` + an iOS build.
 7. Later phases: Discover search/modes (3), real Try On screen (4), Partner Workspace + events + kiosk (5), cleanup (6).
