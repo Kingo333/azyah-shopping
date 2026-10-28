@@ -21,9 +21,10 @@ import { features } from '@/lib/features';
 import { resolveExploreTab, visibleExploreTabs, type ExploreTab } from '@/lib/exploreTabs';
 import { toCountryCodeCounts } from '@/lib/globePeople';
 
-// Your Fit is hidden (owner decision); everything else on the Globe is unchanged.
+// Your Fit and Deals are hidden (owner decisions); everything else on the Globe is unchanged.
 const YOUR_FIT_ENABLED = features.your_fit;
-const VISIBLE_TAB_COUNT = visibleExploreTabs(YOUR_FIT_ENABLED).length;
+const DEALS_ENABLED = features.deals;
+const VISIBLE_TAB_COUNT = visibleExploreTabs(YOUR_FIT_ENABLED, DEALS_ENABLED).length;
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
@@ -41,8 +42,8 @@ const Explore: React.FC = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab) {
-      // Known tabs open as before; an old Your Fit link (or any unknown tab) opens Brands.
-      setActiveTab(resolveExploreTab(tab, YOUR_FIT_ENABLED));
+      // Known tabs open as before; an old Your Fit or Deals link (or any unknown tab) opens Brands.
+      setActiveTab(resolveExploreTab(tab, YOUR_FIT_ENABLED, DEALS_ENABLED));
     }
   }, [searchParams]);
 
@@ -348,13 +349,15 @@ const Explore: React.FC = () => {
                     Fit
                   </TabsTrigger>
                 )}
-                <TabsTrigger 
-                  value="deals" 
-                  className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5"
-                >
-                  <Tag className="h-3 w-3 mr-0.5" />
-                  Deals
-                </TabsTrigger>
+                {DEALS_ENABLED && (
+                  <TabsTrigger
+                    value="deals"
+                    className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-slate-600 rounded-full text-xs px-1.5"
+                  >
+                    <Tag className="h-3 w-3 mr-0.5" />
+                    Deals
+                  </TabsTrigger>
+                )}
               </TabsList>
             </Tabs>
           </div>
@@ -421,11 +424,13 @@ const Explore: React.FC = () => {
         onOpenChange={setYourFitDrawerOpen}
       />
 
-      {/* Deals Drawer */}
-      <DealsDrawer
-        open={dealsDrawerOpen}
-        onOpenChange={setDealsDrawerOpen}
-      />
+      {/* Deals Drawer (hidden while features.deals is off) */}
+      {DEALS_ENABLED && (
+        <DealsDrawer
+          open={dealsDrawerOpen}
+          onOpenChange={setDealsDrawerOpen}
+        />
+      )}
 
       {/* GlobalSearch Modal */}
       <GlobalSearch

@@ -41,6 +41,7 @@ import { DealsDrawer } from '@/components/deals/DealsDrawer';
 import { useClipboardLinkDetector } from '@/hooks/useClipboardLinkDetector';
 import { ClipboardLinkPrompt } from '@/components/deals/ClipboardLinkPrompt';
 import { features } from '@/lib/features';
+import { useDesignV3 } from '@/hooks/useDesignV3';
 
 interface UserProfile {
   id: string;
@@ -110,6 +111,9 @@ const RoleDashboard: React.FC = () => {
   
   // Clipboard link detection for "copy URL in Safari → open Azyah" flow
   const { detectedUrl, clearDetectedUrl } = useClipboardLinkDetector();
+  // Design v3 hides Deals (features.deals); today's look keeps them.
+  const designV3 = useDesignV3();
+  const showDeals = features.deals || !designV3;
 
   // Handle navigation state for deep links (openDeals, productUrl)
   useEffect(() => {
@@ -375,9 +379,11 @@ const RoleDashboard: React.FC = () => {
 
   const renderShopperDashboard = () => <div className="space-y-0 pb-[calc(80px+env(safe-area-inset-bottom))]">
       {/* Deals Card - Premium Feature */}
-      <div className="px-4 pt-4 pb-2">
-        <DealsCard onOpenDeals={() => setDealsDrawerOpen(true)} />
-      </div>
+      {showDeals && (
+        <div className="px-4 pt-4 pb-2">
+          <DealsCard onOpenDeals={() => setDealsDrawerOpen(true)} />
+        </div>
+      )}
 
       {/* StyleLink removed - disabled via feature flag */}
 
@@ -729,7 +735,7 @@ const RoleDashboard: React.FC = () => {
         />
         
         {/* Clipboard Link Prompt - appears when URL detected in clipboard */}
-        {detectedUrl && (
+        {showDeals && detectedUrl && (
           <ClipboardLinkPrompt
             url={detectedUrl}
             onAccept={() => {
