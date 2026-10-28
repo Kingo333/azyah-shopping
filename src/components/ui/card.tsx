@@ -1,6 +1,13 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { v3Defaults } from "@/lib/v3Classes"
+
+// Design v3: flat cards (no border or shadow) unless the caller sets one.
+const CARD_V3 = [
+  { when: ["border"], add: "v3:border-transparent" },
+  { when: ["shadow"], add: "v3:shadow-none" },
+]
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -9,7 +16,8 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-[var(--card-radius)] border bg-card text-card-foreground shadow-sm",
+      v3Defaults(className, CARD_V3),
       className
     )}
     {...props}

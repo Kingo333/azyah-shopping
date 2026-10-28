@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
 	darkMode: ["class"],
@@ -46,16 +47,16 @@ export default {
 					DEFAULT: 'hsl(var(--accent-cartier))',
 					foreground: 'hsl(var(--accent-foreground))',
 				cartier: {
-					50: 'hsl(343 85% 97%)',
-					100: 'hsl(343 90% 94%)',
-					200: 'hsl(343 85% 88%)',
-					300: 'hsl(343 75% 78%)',
-					400: 'hsl(343 85% 65%)',
-					500: 'hsl(343 75% 50%)',
-					600: 'hsl(343 75% 32%)',
-					700: 'hsl(343 80% 27%)',
-					800: 'hsl(343 85% 22%)',
-					900: 'hsl(343 90% 17%)',
+					50: 'hsl(var(--cartier-50))',
+					100: 'hsl(var(--cartier-100))',
+					200: 'hsl(var(--cartier-200))',
+					300: 'hsl(var(--cartier-300))',
+					400: 'hsl(var(--cartier-400))',
+					500: 'hsl(var(--cartier-500))',
+					600: 'hsl(var(--cartier-600))',
+					700: 'hsl(var(--cartier-700))',
+					800: 'hsl(var(--cartier-800))',
+					900: 'hsl(var(--cartier-900))',
 					DEFAULT: 'hsl(var(--accent-cartier))'
 				}
 				},
@@ -77,6 +78,38 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Design v3 tokens (src/styles/design-v3.css)
+				buy: {
+					DEFAULT: 'hsl(var(--buy))',
+					foreground: 'hsl(var(--buy-foreground))'
+				},
+				ink: {
+					DEFAULT: 'hsl(var(--ink))',
+					'2': 'hsl(var(--ink-2))',
+					'3': 'hsl(var(--ink-3))'
+				},
+				ground: 'hsl(var(--ground))',
+				'card-2': 'hsl(var(--card-2))',
+				fill: 'hsl(var(--fill))',
+				line: {
+					DEFAULT: 'hsl(var(--line))',
+					strong: 'hsl(var(--line-strong))'
+				},
+				ok: {
+					DEFAULT: 'hsl(var(--ok))',
+					foreground: 'hsl(var(--ok-foreground))'
+				},
+				wait: {
+					DEFAULT: 'hsl(var(--wait))',
+					foreground: 'hsl(var(--wait-foreground))'
+				},
+				bad: {
+					DEFAULT: 'hsl(var(--bad))',
+					foreground: 'hsl(var(--bad-foreground))'
+				},
+				'danger-ink': 'hsl(var(--danger-ink))',
+				pin: 'hsl(var(--pin))',
+				toggle: 'hsl(var(--toggle))',
 				// Luxury palette additions
 				'lux-bg': 'hsl(var(--lux-bg))',
 				'lux-card': 'hsl(var(--lux-card))',
@@ -84,16 +117,16 @@ export default {
 				'lux-secondary': 'hsl(var(--lux-secondary))',
 				'lux-accent': 'hsl(var(--lux-accent))',
 				'cartier': {
-					50: 'hsl(343 85% 97%)',
-					100: 'hsl(343 90% 94%)',
-					200: 'hsl(343 85% 88%)',
-					300: 'hsl(343 75% 78%)',
-					400: 'hsl(343 85% 65%)',
-					500: 'hsl(343 75% 50%)',
-					600: 'hsl(343 75% 32%)',
-					700: 'hsl(343 80% 27%)',
-					800: 'hsl(343 85% 22%)',
-					900: 'hsl(343 90% 17%)',
+					50: 'hsl(var(--cartier-50))',
+					100: 'hsl(var(--cartier-100))',
+					200: 'hsl(var(--cartier-200))',
+					300: 'hsl(var(--cartier-300))',
+					400: 'hsl(var(--cartier-400))',
+					500: 'hsl(var(--cartier-500))',
+					600: 'hsl(var(--cartier-600))',
+					700: 'hsl(var(--cartier-700))',
+					800: 'hsl(var(--cartier-800))',
+					900: 'hsl(var(--cartier-900))',
 				},
 			},
 			borderRadius: {
@@ -450,7 +483,7 @@ export default {
 				'glow': 'var(--shadow-glow)',
 				'crimson': 'var(--shadow-crimson)',
 				'elegant': 'var(--shadow-elegant)',
-				'cartier': '0 4px 24px hsl(var(--accent-cartier) / 0.15)'
+				'cartier': 'var(--shadow-cartier)'
 			},
 				fontFamily: {
 					'luxury': ['Inter', 'system-ui', 'sans-serif'],
@@ -462,7 +495,11 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		// `v3:` classes apply only while design v3 is on (html.design-v3).
+		plugin(({ addVariant }) => addVariant('v3', '.design-v3 &')),
+	],
 	safelist: [
 		'bg-accent-cartier-600',
 		'bg-accent-cartier-700',

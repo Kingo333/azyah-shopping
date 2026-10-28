@@ -1,0 +1,182 @@
+/*
+ * Design v3 (spec: docs/superpowers/specs/2026-10-27-azyah-design-v3.md, 4.1).
+ *
+ * The new tokens live on :root so `bg-buy`, `text-ink-2` etc. always resolve,
+ * but nothing in today's look uses them. The remap of today's variables only
+ * applies under html.design-v3 (set by <DesignV3Root />), so with the switch
+ * off the app looks exactly as before.
+ *
+ * Selectors use html.design-v3 (0,1,1) so they win over index.css's :root and
+ * .dark (0,1,0) whatever the order the files load in.
+ */
+
+:root {
+  /* Design v3 tokens, light */
+  --ground: 240 11% 96%;          /* #F5F5F7 page */
+  --card-2: 240 8% 95%;           /* #F2F2F4 inset block */
+  --ink: 240 3% 12%;              /* #1D1D1F text, primary buttons */
+  --ink-2: 240 2% 44%;            /* #6E6E73 secondary notes */
+  --ink-3: 240 2% 57%;            /* #8E8E93 inactive tabs, meta */
+  --fill: 240 5% 92%;             /* #E9E9EB chips, segmented track */
+  --line: 240 11% 91%;            /* #E5E5EA dividers */
+  --line-strong: 240 6% 83%;      /* #D1D1D6 secondary button border */
+  --buy: 335 72% 28%;             /* #7A143E buy buttons only */
+  --buy-foreground: 0 0% 100%;
+  --ok: 138 75% 92%;              /* #DCFAE5 */
+  --ok-foreground: 138 80% 8%;    /* #04250E */
+  --wait: 40 100% 92%;            /* #FFF1D6 */
+  --wait-foreground: 38 100% 18%; /* #5C3A00 */
+  --bad: 9 100% 96%;              /* #FFEDEA */
+  --bad-foreground: 359 65% 31%;  /* #831C1E */
+  --danger-ink: 3 71% 41%;        /* #B3261E */
+  --pin: 339 44% 50%;             /* #B8486F globe pins */
+  --toggle: 135 59% 49%;          /* #34C759 iOS green */
+
+  /* The "cartier" palette as variables; today's values (v2 unchanged). */
+  --cartier-50: 343 85% 97%;
+  --cartier-100: 343 90% 94%;
+  --cartier-200: 343 85% 88%;
+  --cartier-300: 343 75% 78%;
+  --cartier-400: 343 85% 65%;
+  --cartier-500: 343 75% 50%;
+  --cartier-600: 343 75% 32%;
+  --cartier-700: 343 80% 27%;
+  --cartier-800: 343 85% 22%;
+  --cartier-900: 343 90% 17%;
+
+  /* Radii used by shared components; today's values. */
+  --button-radius: calc(var(--radius) - 2px);
+  --card-radius: var(--radius);
+}
+
+.dark {
+  /* Design v3 tokens, dark (written for D9; dark stays off this build) */
+  --ground: 0 0% 0%;
+  --card-2: 240 2% 18%;           /* #2C2C2E */
+  --ink: 0 0% 100%;
+  --ink-2: 0 0% 71%;              /* #B4B4B4 */
+  --ink-3: 0 0% 58%;              /* #949494 */
+  --fill: 240 2% 18%;             /* #2C2C2E */
+  --line: 240 2% 22%;             /* #38383A */
+  --line-strong: 240 1% 29%;      /* #48484A */
+  --buy: 336 67% 37%;             /* #9E1F52 */
+  --ok: 145 61% 15%;              /* #0F3D22 */
+  --ok-foreground: 141 59% 90%;   /* #D8F5E2 */
+  --wait: 38 77% 14%;             /* #3D2A08 */
+  --wait-foreground: 40 100% 83%; /* #FFE2A8 */
+  --bad: 0 57% 18%;               /* #4A1414 */
+  --bad-foreground: 7 100% 91%;   /* #FFD6D1 */
+  --danger-ink: 3 100% 69%;       /* #FF6961 */
+  --pin: 338 52% 62%;             /* #D06A90 */
+  --toggle: 135 64% 50%;          /* #30D158 */
+}
+
+/* Today's variables pointed at the v3 tokens. */
+html.design-v3 {
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: 0 0% 100%;
+  --card-foreground: var(--ink);
+  --popover: var(--card);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: 0 0% 100%;
+  --primary-glow: var(--fill);
+  --secondary: var(--fill);
+  --secondary-foreground: var(--ink);
+  --muted: var(--fill);
+  --muted-foreground: var(--ink-2);
+  --accent: var(--fill);
+  --accent-foreground: var(--ink);
+  --accent-cartier: var(--ink);
+  --destructive: var(--danger-ink);
+  --destructive-foreground: 0 0% 100%;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--ink);
+  --radius: 0.875rem;
+  --button-radius: 14px;
+  --card-radius: 20px;
+
+  --azyah-maroon: var(--ink);
+  --azyah-ivory: var(--ground);
+  --azyah-border: var(--line);
+
+  --sidebar-background: var(--ground);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: var(--fill);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ink);
+
+  /* Flat: no shadows, glass or gradients on resting surfaces. */
+  --shadow-card: none;
+  --shadow-glow: none;
+  --shadow-crimson: none;
+  --shadow-elegant: none;
+  --shadow-cartier: none;
+  --glass-bg: hsl(var(--card));
+  --glass-border: hsl(var(--line));
+  --glass-shadow: none;
+  --glass-shadow-premium: none;
+  --glass-backdrop: none;
+  --gradient-glass: none;
+  --gradient-premium: none;
+  --gradient-hero: none;
+  --gradient-dashboard: none;
+
+  /* "cartier" maroon becomes neutral greys; 600/700 are ink/black. */
+  --cartier-50: 240 11% 96%;
+  --cartier-100: 240 5% 92%;
+  --cartier-200: 240 6% 83%;
+  --cartier-300: 240 5% 79%;
+  --cartier-400: 240 2% 57%;
+  --cartier-500: 240 2% 44%;
+  --cartier-600: var(--ink);
+  --cartier-700: 0 0% 0%;
+  --cartier-800: 0 0% 0%;
+  --cartier-900: 0 0% 0%;
+}
+
+html.design-v3.dark {
+  --card: 240 3% 11%;             /* #1C1C1E */
+  --primary-foreground: 0 0% 0%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --cartier-50: 240 2% 18%;
+  --cartier-100: 240 2% 18%;
+  --cartier-200: 240 1% 29%;
+  --cartier-300: 240 1% 29%;
+  --cartier-400: 0 0% 58%;
+  --cartier-500: 0 0% 71%;
+  --cartier-700: 0 0% 90%;
+  --cartier-800: 0 0% 85%;
+  --cartier-900: 0 0% 80%;
+}
+
+/* Type: the system font everywhere; Playfair only for the wordmark. */
+html.design-v3 body,
+html.design-v3 .font-sans,
+html.design-v3 .font-serif,
+html.design-v3 .font-luxury,
+html.design-v3 .font-cormorant,
+html.design-v3 .font-playfair {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+.font-wordmark {
+  font-family: 'Playfair Display', serif;
+}
+
+html.design-v3 .tabular-nums,
+html.design-v3 .v3-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* No glass. */
+html.design-v3 [class*="backdrop-blur"],
+html.design-v3 [class*="backdrop-saturate"] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
