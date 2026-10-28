@@ -2,6 +2,7 @@
 
 _2026-10-27. Status: written for owner approval. Nothing built yet._
 _Mockups: `docs/redesign/mockups/v3/01…06.html` (open in a browser). Where a mockup and this document differ, this document wins._
+_Builder check (fresh reviewer, 2026-10-28) raised 12 questions; each answer is written into the section it affects and listed in section 8b._
 _Method: Superpowers brainstorming (owner direction → recon of `main` → mockups → this design), plus the rules of the "taste" skill (`github.com/Leonxlnx/taste-skill`, `design-taste-frontend`, app-screens reference). The skill was read, not installed._
 
 ## 1. Why
@@ -128,6 +129,8 @@ Plain, short, sentence case, verb-first buttons ("Add to bag", "Generate try-on"
 | Profile | Summary · My closet `/dress-me/wardrobe` · outfit builder `/dress-me/canvas` · favorites · events `/events` · rewards `/rewards` · Premium `/dashboard/upgrade` · settings `/settings` · someone else's profile `/profile/:userId` |
 | Outside the tabs | Welcome `/landing`, `/` · sign-up/sign-in `/onboarding/signup` · reset password · style quiz `/onboarding-calibration` · shared pages `/share/item/:slug`, `/share/outfit/:slug` · StyleLink `/u/:username` · AR `/ar/:eventId/:brandId` · legal pages · 404 · brand portal `/brand-portal` · store portal `/retailer-portal` · admin `/admin/partners` |
 
+**Other routes:** `/p/:id` (guest-openable, used by shared links) opens the product details sheet over the Feed. The public outfit page is `/community/outfit/:id`; `/dress-me/outfit/:id` is your own outfit with Edit. `/affiliate`, `/affiliate/:userId`, `/oauth/consent`, `/admin/delete-user`, `/retailer-portal/brands/:brandId` take the new tokens only. No new store or event routes in this design: a store's page uses the brand-page layout where one exists; event details open from `/events`.
+
 **Guests** can use Feed and Explore. Any action that needs an account (save, like, try on, follow, bag) opens a sign-in sheet and returns the person to where they were.
 
 ## 7. Screens
@@ -149,44 +152,44 @@ For: browsing the world of brands and people. Black screen. Large title "Explore
 Back, share. Card: logo (initials on `ink` square if no logo), name, city · product count, Follow (secondary). Short description. Category chips (All, then the brand's categories, New). Product tiles, 3 columns. Store pages use the same layout ("Store" instead of "Brand", brands they carry as a row). Past work / portfolio as a horizontal row when present.
 
 ### 7.6 Try on `/try-on` [01, 03]
-A full screen (replaces the AI Studio pop-up; the pop-up stays for older entry points until removed). Large title "Try on", subline with credits ("3 of 5 pictures · 1 of 2 videos left", values from `get_user_credits`). Results button (photo icon) top-right. Segmented: **Picture** (default), Video, Live Cam (shoppers only, as today).
+A full screen (replaces the AI Studio pop-up; the pop-up stays for older entry points until removed). Large title "Try on", subline with what's left ("3 pictures · 1 video left today"; `get_user_credits` returns remaining credits only, so no totals are shown). Results button (photo icon) top-right. Segmented: **Picture** (default), Video, Live Cam (shoppers only, as today).
 - **Picture:** two cards side by side: "Add your photo" (dashed, note "Only you can see it") and the item. Source chips: From feed, Saved, My closet, Upload. Primary black "Generate try-on". "Your results" row (latest 4; tap opens the result viewer: share, save, download, delete).
 - **Video:** the same layout, with the result of a picture try-on or a photo as input, duration chips (5 s / 10 s as today), primary "Make video". Progress shows as "Making your video… usually 1–2 minutes" in the results row.
 - **Live Cam:** before starting: the garment picker (closet, products, event items) and "Start Live Cam"; a note on time per session and that a GPU starts up (under a minute when warm). While running (section 7.7).
-- **No credits:** the primary button becomes "Get more try-ons" (black) → Premium; never disabled without saying why.
+- **No credits:** for Basic users the primary button becomes "Get more try-ons" (black) → Premium; for Premium users who used today's try-ons it says "More try-ons tomorrow" with no button. Never disabled without saying why.
 
 ### 7.7 Live Cam while running [03]
 Black, full screen like the iPhone camera. Top: close (ends session), status "Live" with a green dot (or "Starting…"), time left (tabular). The camera view fills the middle. Bottom: garment strip (selected one ringed in white; last tile "My closet" opens the picker), big round snapshot button (saves to the private snapshots folder; "Only you can see it" toast). Errors (connection lost, GPU busy) show inside the camera area with "Try again" and "End". Behavior, messages and limits are exactly today's (`useLiveCamSession.ts` unchanged).
 
 ### 7.8 Community `/community` [01]
-Large title "Community" (today the page is titled "Explore", which clashes with the Globe). Search button. Segmented: Outfits, Clothes, Following. Two-column cards: photo, name, likes (tabular). Floating black "Create" button (post or outfit sheet) — the only shadow on the screen. Outfit page and item page: photo, author row with Follow, items list (rows with price → product details), "Try this look on you" (black), Save. Empty Following: "Follow people to see their outfits here." + Find people.
+Large title "Community" (today the page is titled "Explore", which clashes with the Globe). Search button. Segmented: Outfits, Clothes, Posts (people's posts, today's `FeedComponent`; with the new bar `/feed` and `/forum` already redirect here, so posts need this home), and Following once a following feed exists. Two-column cards: photo, name, likes (tabular). Floating black "Create" button (post or outfit sheet) — the only shadow on the screen. Outfit page and item page: photo, author row with Follow, items list (rows with price → product details), "Try this look on you" (black), Save. Empty Following: "Follow people to see their outfits here." + Find people.
 
 ### 7.9 Profile `/profile` [01]
-"Azyah" wordmark top-left (the one serif), search and settings buttons. Summary card: avatar/initials, name, "12 posts · 5 brands · 120 points", New post (chip). Grouped rows: My closet, Favorites, Events ("1 near you"), Rewards ("120 pts"). Sections: Your posts (3-up), Trending looks (3-up, with the category filter as a chip). No Your Fit anywhere. The two "Analyze closet" buttons move into My closet's menu (they're tools, not profile content).
+"Azyah" wordmark top-left (the one serif), search and settings buttons. Summary card: avatar/initials, name, "12 posts · 5 brands · 120 points", New post (chip). Grouped rows: My closet, Friends (friend requests and your friends, today's friendships), Favorites, Events ("1 near you"), Rewards ("120 pts"). Sections: Your posts (3-up), Trending looks (3-up, with the category filter as a chip). No Your Fit anywhere. The two "Analyze closet" buttons move into My closet's menu (they're tools, not profile content).
 
 ### 7.10 My closet `/dress-me/wardrobe` [03]
 Large title "My closet", subline "32 items · 6 outfits", black round + (add item: camera, photos, from a product). Segmented: Clothes, Outfits. Category chips: All, Tops, Bottoms, Dresses, Outerwear, Shoes, Bags, Accessories (today's categories). White tiles, 3 columns, cut-outs centered. **Starter items stay** (the 10 default items every new user gets) with a dashed note "Starter items to play with. Swap them for your own anytime." + Hide. Primary black "Make an outfit". Item page: photo, details, "Try on" (secondary), "Share" (if public reuse is on), privacy toggle "Others can reuse this item".
 
 ### 7.11 Outfit builder `/dress-me/canvas` [03]
-Cancel / "New outfit" / Save. White canvas with the current drag, resize and layer behavior (unchanged). Tools on the canvas: undo, background. Category chips + a tray of closet items. Fields: Name, Occasion. Save → outfit page with Share and "Make it public".
+Cancel / "New outfit" / Save. White canvas with the current drag, resize and layer behavior (unchanged). The friend modes stay: styling a friend's closet (`?mode=friend&friendId=`) shows "Styling [name]'s closet" under the title, and suggest mode sends the outfit as a suggestion. Tools on the canvas: undo, background. Category chips + a tray of closet items. Fields: Name, Occasion. Save → outfit page with Share and "Make it public".
 
 ### 7.12 Favorites `/favorites` [03]
 Large title "Favorites". Segmented: Liked, Wishlist (today's tabs). Product tiles, 2 columns, heart button on each to remove. Empty: "Things you like in Feed show up here." + Go to Feed.
 
 ### 7.13 Bag `/cart` [02]
-Large title "Bag", "2 items". Items grouped by brand: rows with photo, name, brand · size, quantity, Remove, price (tabular). Each brand group ends with Buy "Buy on [brand]" (opens that product's brand site; for several items it opens the first and keeps the rest listed). Note: "Each brand sells on its own site. Your bag remembers what you picked." No in-app checkout (decision D1). Empty: "Your bag is empty." + Go to Feed.
+Large title "Bag", "2 items". Items grouped by **where they're sold**: the site of the product's link (`external_url`), named by `merchant_name`, else the brand name, else the site's name. Rows with photo, name, brand · size, quantity, Remove, price (tabular). Each group ends with Buy "Buy on [seller]" (opens that item's link; for several items it opens the first and keeps the rest listed). So a brand's item sold through a store or marketplace says "Buy on [that store]", never the brand's name for someone else's site. Items with no link group under "Not sold online yet" without a button. Note: "Each brand sells on its own site. Your bag remembers what you picked." No in-app checkout (decision D1). Empty: "Your bag is empty." + Go to Feed.
 
 ### 7.14 Events `/events` [04]
 Large title "Events". Current event card: photo, name, dates · brands, "Try on items" (black) and "Details" (secondary). "Your event try-ons": your private results (3-up) with the note "Only you can see these". Past events below as rows. Event page: brands carried, items to try on, map/location row.
 
 ### 7.15 Rewards `/rewards` [04]
-Large title "Rewards". Card: "Your points" with the number at 32/600 tabular, progress to the next reward, Redeem points (secondary). "Recent activity" rows with signed amounts (+ in `ok` text green #247B50, − in `ink-2`). Values from today's points data. Redeeming points is Premium-only as today; non-Premium sees "Redeem with Premium" → Premium.
+Large title "Rewards". Card: "Your points" with the number at 32/600 tabular, progress to the next reward. Then everything today's page has, restyled: **Daily check-in** (a row with today's state and a Check in button), **Redeem** (today's credit packages as rows; Premium-only as today, non-Premium sees "Redeem with Premium" → Premium), **Leaderboard** (global / country segmented, today's `MinimizedLeaderboard`), **Activity** (today's points activity and redemptions as rows with signed amounts: + in green #247B50, − in `ink-2`).
 
 ### 7.16 Premium `/dashboard/upgrade` [04]
-Close button. "Azyah Premium", one sentence. Segmented Monthly / Yearly (save label computed from prices). Comparison rows (today's values): AI try-on — 5 total / 10 a day; Create outfits — 5 / unlimited; Closet items — 10 / unlimited; Points to credits — no / yes; Live Cam — Standard / Premium quality; Priority support — no / yes. **Removed rows:** UGC collaboration, Height/Fit check. Primary black "Continue · AED 200 a year" (or AED 30 a month); App Store purchase on iPhone as today. "Cancel anytime in Settings."
+Close button. "Azyah Premium", one sentence. Segmented Monthly / Yearly (save label computed from prices). Comparison rows (today's values): AI try-on — 5 total / 10 a day; Create outfits — 5 / unlimited; Closet items — 10 / unlimited; Points to credits — no / yes; Priority support — no / yes; Live Cam — Standard / Premium quality **only when Premium Live Cam is switched on** (`VITE_LIVE_CAM_PREMIUM_UI`). **Removed rows:** UGC collaboration, Height/Fit check (hidden features). On iPhone: primary black "Continue · AED 200 a year" (or AED 30 a month), App Store purchase as today, "Cancel anytime in Settings." On web and Android: the plans show, and the button area says "Subscribe in the Azyah iPhone app" (secondary, with the App Store link) instead of a button that only shows a toast. Taking payment on the web (the unused `create-stripe-checkout` function) is a later owner decision.
 
 ### 7.17 Settings `/settings` [04]
-Back, "Settings". Groups: **Account** (Personal information, Shopping preferences "AED · UAE", Subscription "Basic/Premium"); **Privacy** (Show me on the Globe — toggle, Public profile — toggle, Social links); **Help** (Invite friends, Contact support, FAQ — moved from the intro carousel, Terms, Privacy, Cookies); **Sign out**; last, alone, red text "Delete account" (confirm sheet stating that photos, closet and outfits are deleted). No measurements section.
+Back, "Settings". Groups: **Account** (Personal information, Shopping preferences "AED · UAE", Subscription "Basic/Premium"); **Privacy** (Show me on the Globe and leaderboard — toggle, today's `preferences.visible_on_globe`; Social links). No "Public profile" toggle: it doesn't exist, and a switch that doesn't really hide anything would break a privacy promise; **Help** (Invite friends, Contact support, FAQ — moved from the intro carousel, Terms, Privacy, Cookies); **Sign out**; last, alone, red text "Delete account" (confirm sheet stating that photos, closet and outfits are deleted). No measurements section.
 
 ### 7.18 Welcome, sign-up, sign-in, reset [04]
 Welcome `/landing`, `/` (logged out): white, one large product photo, "Azyah" wordmark, one sentence ("Find clothes you love and see them on you before you buy."), black "Continue with email", secondary "Browse first" (guest mode), "Already have an account? Sign in". Sign-up flow as today (email → code → password → username → country), one step per screen, large title per step, inputs per section 5. Reset password: same layout. The 4-slide intro carousel is replaced by this one screen (decision D6).
@@ -194,8 +197,8 @@ Welcome `/landing`, `/` (logged out): white, one large product photo, "Azyah" wo
 ### 7.19 Style quiz `/onboarding-calibration` [04]
 Back, "1 of 4", Skip. Progress bar (ink on fill). One question per screen: coverage, fit, fabric, style (today's steps; measurements stays hidden). Answers as grouped rows with a check circle. Black "Continue".
 
-### 7.20 Someone's profile and StyleLink `/profile/:userId`, `/u/:username` [06]
-Avatar/initials, name, "@handle · 34 outfits · 210 followers", Follow (black), Share (secondary). Segmented: Outfits, Items, Posts (only what they made public). Grid 3-up.
+### 7.20 Someone's profile `/profile/:userId` [06]
+Avatar/initials, name, "@handle · 34 outfits · 210 followers", Follow (black), Share (secondary), Add friend (text) where friendships allow. Segmented: Outfits, Items, Posts (today's tabs; only what they made public). Grid 3-up. StyleLink (`/u/:username`) stays off as today (`style_link = false`, the route redirects to `/profile`); if it returns it uses this same layout.
 
 ### 7.21 Shared pages `/share/outfit/:slug`, `/share/item/:slug` [06]
 Opened in a browser, no login. White. Top: "Azyah" wordmark, "Open the app". The look or item, author, item rows with prices → product page, one black action "Try this look on you" (opens the app/sign-up, then Try on with these items). Share previews (`share-meta`) unchanged.
@@ -205,7 +208,7 @@ Keeps its current camera experience; its buttons and labels take the new tokens 
 
 ### 7.23 Partner portals [05]
 Same tokens. Desktop: sidebar matching the page, brand/store name and "Brand portal"/"Store portal" at top.
-- **Brand portal** `/brand-portal`: Products, Portfolio, Services, Events (when brands can join events, Phase 5), Analytics, Settings. (Collabs stays hidden.) "Waiting for approval" banner in `wait` tint. Products: title + "48 products · 3 pending · 2 drafts", Bulk upload (secondary), Add product (black). Table rows: thumbnail, name (+ "missing photo" note when incomplete), price (right, tabular), status label (Published `ok`, Pending `wait`, Draft neutral), and the next action in the same column on every row (Publish / Edit).
+- **Brand portal** `/brand-portal`: menus per partner type, as today: fashion brands — Products, Analytics, Settings (+ Events in Phase 5); agencies and studios — Services, Portfolio, Analytics, Settings; salons — their own `SalonDashboard`, restyled with the tokens. (Collabs stays hidden.) "Waiting for approval" banner in `wait` tint. Products: title + "48 products · 3 pending", Bulk upload (secondary), Add product (black). Table rows: thumbnail, name (+ "missing photo" note from `publishProblems`), price (right, tabular), status label using today's labels (`productStatusLabel`): Live (`ok`), Pending = draft (`wait`), Hidden, Archived, Out of stock, Sold out (neutral). Next action in the same column on every row: Publish on Pending, Edit otherwise.
 - **Store portal** `/retailer-portal`: Products, Brands, Events, Analytics, Settings. On phones the sidebar becomes a bottom bar. Events list with status (Live `ok`, Draft neutral); event page with brands, try-on items, try-on count.
 - **Admin approvals** `/admin/partners`: "Partner approvals · 2 waiting", cards with name, type · city · signed-up time, Pending label, black Approve, red-text Reject; "Recently decided" rows.
 
@@ -231,8 +234,24 @@ Large title, readable 15px text, max width 680px. 404: "This page doesn't exist.
 
 **To check during the build (not a design choice):** new users get 4 picture credits in the database, but today's Premium page says "5 total". The screen should show what `get_user_credits` returns; the owner confirms which number is right.
 
+## 8b. Builder-check answers (2026-10-28, owner-approved direction; decided by Claude)
+| # | Question | Answer (section) |
+|---|---|---|
+| B1 | How does v3 reach iPhone users when flags are fixed at build time? | Test with `?design=v3` on the web; on approval flip `design_v3: true` in code: web gets it at once, iPhone with the next App Store build. No remote switch (9). |
+| B2 | Is v3 tied to the new tab bar? | Yes: v3 always shows the five-tab bar; the old bars are not restyled (9). |
+| B3 | Friends? | Kept: Friends row in Profile, friend and suggest modes in the outfit builder (7.9, 7.11, 7.20). |
+| B4 | Posts and StyleLink? | Community gets a Posts tab (today's `FeedComponent`); StyleLink stays off (7.8, 7.20). |
+| B5 | "Public profile" toggle? | Removed; only the real Globe/leaderboard toggle (7.17). |
+| B6 | Brand portal menus? | Per partner type as today, salons keep their dashboard (7.23). |
+| B7 | Product statuses? | Today's labels: Pending (draft), Live, Hidden, Archived, Out of stock, Sold out; Publish on Pending (7.23). |
+| B8 | Rewards features? | All kept: check-in, credit packages, leaderboard, activity (7.15). |
+| B9 | Premium on web/Android? | Plans show with "Subscribe in the Azyah iPhone app"; web payments later; Live Cam row only when on (7.16). |
+| B10 | Credit totals? | Show remaining only; Premium daily-limit message (7.6). |
+| B11 | Bag grouping? | By the site the item is sold on (7.13). |
+| B12 | Uncovered routes? | `/p/:id` sheet over Feed; canonical outfit pages; other routes tokens only; no new store/event routes (6). |
+
 ## 9. Rollout
-1. Flags in `src/lib/features.ts`: `deals: false` (hides the Explore Deals tab and its drawer; `exploreTabs.ts` drops 'deals'), `design_v3` (new tokens and components). `design_v3` gets a per-device opt-in like nav v2 (`?design=v3`, remembered; `?design=v2` to leave) so the owner can phone-test before anyone sees it.
+1. Flags in `src/lib/features.ts`: `deals: false` (hides the Explore Deals tab and its drawer; `exploreTabs.ts` drops 'deals'), `design_v3` (new tokens and components). `design_v3` gets a per-device opt-in like nav v2 (`?design=v3`, remembered; `?design=v2` to leave) so the owner can phone-test before anyone sees it. Turning v3 on also turns on the five-tab bar (B2). Flags are fixed at build time: switching v3 on for everyone is a one-line code change that reaches the web on merge and iPhones with the next App Store build (B1).
 2. Order: tokens + components → bottom bar (5 tabs, nav v2 updated) → Feed, Explore, Try on → Community, Profile, closet, outfit builder → shopping sheets, bag, favorites → account screens → shared pages → partner portals → kiosk (Phase 5).
 3. Each step: owner phone test on a Vercel preview (Live Cam test needs RunPod topped up), then merge. After the last shopper step, an iPhone build so App Store users get it, then `design_v3` on for everyone and the old styles removed.
 
