@@ -16,6 +16,7 @@ import { useTryOnJobMonitor } from '@/hooks/useTryOnJobMonitor';
 import { lazyPage } from '@/lib/lazyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppNavigation, NavV2Gate } from './components/nav/NavV2Gate';
+import { DesignV3Root } from './components/DesignV3Root';
 import { StatusBarScrim } from './components/StatusBarScrim';
 
 // Pages load on demand (smaller first download); see src/lib/lazyPage.ts.
@@ -114,6 +115,7 @@ function AppContent() {
   useTryOnJobMonitor(); // Monitor background try-on jobs and notify on completion
   return (
     <>
+      <DesignV3Root />
       <StatusBarScrim />
       <Suspense fallback={<PageLoading />}>
       <Routes>
