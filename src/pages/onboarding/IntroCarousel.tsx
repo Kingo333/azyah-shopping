@@ -336,7 +336,6 @@ export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
-  const [creatorCount, setCreatorCount] = useState(0);
   const [cardOffset, setCardOffset] = useState(0);
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
@@ -447,32 +446,6 @@ export default function IntroCarousel() {
       document.head.removeChild(link);
     };
   }, [isMobile]);
-
-  // Animated counter for creator count - only when gallery slide is active
-  useEffect(() => {
-    if (currentSlide === GALLERY_SLIDE_INDEX) {
-      const duration = 1500; // 1.5 seconds
-      const targetCount = 100;
-      const steps = 50;
-      const increment = targetCount / steps;
-      const intervalTime = duration / steps;
-
-      let currentCount = 0;
-      const timer = setInterval(() => {
-        currentCount += increment;
-        if (currentCount >= targetCount) {
-          setCreatorCount(targetCount);
-          clearInterval(timer);
-        } else {
-          setCreatorCount(Math.floor(currentCount));
-        }
-      }, intervalTime);
-
-      return () => clearInterval(timer);
-    } else {
-      setCreatorCount(0); // Reset when leaving slide
-    }
-  }, [currentSlide]);
 
   // Auto-scroll carousel for gallery slide - only on mobile/tablet
   useEffect(() => {
@@ -821,7 +794,7 @@ export default function IntroCarousel() {
                           <span className="text-4xl mb-2">🌍</span>
                           <h4 className="font-bold text-sm text-white mb-1 text-center">Share Your Looks</h4>
                           <p className="text-[10px] text-center text-white/90 leading-tight">
-                            Post outfits to the community and find inspiration worldwide
+                            Share outfits with the community and find inspiration worldwide
                           </p>
                         </div>
                         <div className="bg-white p-2.5 text-center">

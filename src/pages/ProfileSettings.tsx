@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign, Ruler, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign, Ruler, Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { AddYourFitModal } from '@/components/profile/AddYourFitModal';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -356,22 +356,13 @@ const ProfileSettings: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <BackButton />
-              <h1 className="text-2xl font-serif font-medium">Profile Settings</h1>
+              <h1 className="text-2xl font-serif font-medium">Settings</h1>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={signOut}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto max-w-2xl p-4">
+      <div className="container mx-auto max-w-2xl p-4 pb-[calc(96px+env(safe-area-inset-bottom))]">
         <div className="space-y-3">
           {/* Profile Picture - Always visible */}
           <div className="p-4 rounded-lg border bg-card">
@@ -382,14 +373,10 @@ const ProfileSettings: React.FC = () => {
                   {profileData.name ? profileData.name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="space-y-1">
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Photo
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Square image, at least 200x200px
-                </p>
+              {/* Photo upload isn't built yet (no storage for profile photos), so no dead button here. */}
+              <div className="min-w-0">
+                <p className="font-medium truncate">{profileData.name || 'Your profile'}</p>
+                <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
           </div>
@@ -1147,6 +1134,18 @@ const ProfileSettings: React.FC = () => {
                 <h3 className="font-medium">Contact Support</h3>
                 <p className="text-sm text-muted-foreground">team@azyahstyle.com</p>
               </div>
+            </button>
+          </div>
+
+          {/* Sign out sits with the account actions at the bottom */}
+          <div className="rounded-lg border bg-card">
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex min-h-[52px] w-full items-center gap-3 px-4 text-left hover:bg-muted/50 rounded-lg transition-colors"
+            >
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+              <span className="font-medium">Sign out</span>
             </button>
           </div>
 
