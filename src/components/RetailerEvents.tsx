@@ -1,716 +1,212 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, MapPin, Plus, Edit, Trash2, Upload, Image } from 'lucide-react';
-import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { StatusLabel } from '@/components/StatusLabel';
+import { PartnerSectionHeader } from '@/components/partner/PartnerShell';
+import { EventFormDialog, type RetailEvent } from '@/components/partner/EventFormDialog';
 import { EventCatalogManager } from './EventCatalogManager';
+import {
+  eventCounts,
+  eventCountsLine,
+  eventPhase,
+  eventPhaseLabel,
+  formatDateRange,
+  todayIso,
+} from '@/lib/partnerPortal';
 
-interface RetailEvent {
-  id: string;
-  name: string;
-  description?: string;
-  event_date: string;
-  end_date?: string;
-  location?: string;
-  status: string;
-  retailer_id: string;
-  banner_image_url?: string;
-  created_at: string;
-}
+type EventRow = RetailEvent & {
+  event_brands?: { id: string; event_brand_products?: { try_on_ready: boolean | null }[] | null }[] | null;
+};
 
 interface RetailerEventsProps {
   retailerId: string;
 }
 
+/**
+ * Store portal → Events. The list, then an event's page (?event=…), then a
+ * brand's items (?event=…&brand=…), so Back and refresh keep your place.
+ */
 export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) => {
   const { toast } = useToast();
-  const [events, setEvents] = useState<RetailEvent[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<RetailEvent | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<RetailEvent | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<RetailEvent | null>(null);
+  const today = todayIso();
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    event_date: '',
-    end_date: '',
-    location: '',
-    status: 'draft' as 'draft' | 'active' | 'ended',
-    banner_image_url: ''
-  });
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const eventId = searchParams.get('event');
+  const brandId = searchParams.get('brand');
 
-  useEffect(() => {
-    fetchEvents();
-  }, [retailerId]);
+  const go = useCallback(
+    (next: { event?: string | null; brand?: string | null }) => {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'events');
+      for (const [key, value] of Object.entries(next)) {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      }
+      setSearchParams(params);
+    },
+    [searchParams, setSearchParams],
+  );
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
+    if (!retailerId) return;
     try {
       const { data, error } = await supabase
         .from('retail_events')
         .select('*')
         .eq('retailer_id', retailerId)
         .order('event_date', { ascending: false });
-
       if (error) throw error;
-      setEvents(data || []);
+      const list = (data || []) as RetailEvent[];
+      // Brands aren't linked to events in the database, so they're read separately.
+      const byEvent = new Map<string, NonNullable<EventRow['event_brands']>>();
+      if (list.length > 0) {
+        const { data: brands, error: brandsError } = await supabase
+          .from('event_brands')
+          .select('id, event_id, event_brand_products(try_on_ready)')
+          .in('event_id', list.map((e) => e.id));
+        if (brandsError) console.error('Error fetching event brands:', brandsError);
+        for (const b of (brands || []) as { id: string; event_id: string; event_brand_products: { try_on_ready: boolean | null }[] | null }[]) {
+          byEvent.set(b.event_id, [...(byEvent.get(b.event_id) ?? []), b]);
+        }
+      }
+      setEvents(list.map((e) => ({ ...e, event_brands: byEvent.get(e.id) ?? [] })));
     } catch (error) {
       console.error('Error fetching events:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch events",
-        variant: "destructive"
-      });
+      toast({ title: "Couldn't load events", description: 'Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [retailerId, toast]);
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      event_date: '',
-      end_date: '',
-      location: '',
-      status: 'draft',
-      banner_image_url: ''
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Live and upcoming first, then drafts, then ended; soonest first within each.
+  const sorted = useMemo(() => {
+    const order = { live: 0, upcoming: 1, draft: 2, ended: 3 } as const;
+    return [...events].sort((a, b) => {
+      const pa = order[eventPhase(a, today)];
+      const pb = order[eventPhase(b, today)];
+      if (pa !== pb) return pa - pb;
+      return pa === 3 ? b.event_date.localeCompare(a.event_date) : a.event_date.localeCompare(b.event_date);
     });
-    setBannerFile(null);
+  }, [events, today]);
+
+  const openForm = (event: RetailEvent | null) => {
+    setEditing(event);
+    setFormOpen(true);
   };
 
-  const uploadBannerImage = async (file: File): Promise<string | null> => {
-    try {
-      setUploadingBanner(true);
-      
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-      const isAllowedType = allowedTypes.includes(file.type) || 
-        /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name);
-      
-      if (!file.type.startsWith('image/') && !isAllowedType) {
-        toast({
-          title: "Unsupported File Type",
-          description: "Please use JPG, PNG, or WebP images",
-          variant: "destructive"
-        });
-        return null;
-      }
+  const selected = eventId ? events.find((e) => e.id === eventId) : undefined;
 
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Please choose an image under 10MB",
-          variant: "destructive"
-        });
-        return null;
-      }
+  const form = (
+    <EventFormDialog
+      open={formOpen}
+      onOpenChange={setFormOpen}
+      retailerId={retailerId}
+      event={editing}
+      onSaved={fetchEvents}
+      onDeleted={() => {
+        go({ event: null, brand: null });
+        fetchEvents();
+      }}
+    />
+  );
 
-      // Process and compress image using canvas
-      let processedBlob: Blob;
-      let mimeType = 'image/jpeg';
-      
-      try {
-        // Check if HEIC/HEIF - show conversion message
-        const isHeic = file.type.includes('heic') || file.type.includes('heif') || 
-          /\.(heic|heif)$/i.test(file.name);
-        
-        if (isHeic) {
-          toast({
-            title: "Converting Image",
-            description: "Converting HEIC to JPEG...",
-          });
-        }
-
-        // Use canvas to resize and compress
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const img = document.createElement('img');
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) {
-            reject(new Error('Canvas context not available'));
-            return;
-          }
-
-          img.onload = () => {
-            // Resize to max 2400px width, keeping aspect ratio
-            const maxWidth = 2400;
-            const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(img.src);
-
-            // Compress to JPEG with 0.8 quality
-            const result = canvas.toDataURL('image/jpeg', 0.8);
-            resolve(result);
-          };
-
-          img.onerror = () => {
-            URL.revokeObjectURL(img.src);
-            reject(new Error('Failed to load image'));
-          };
-
-          img.src = URL.createObjectURL(file);
-        });
-
-        // Convert dataUrl to blob
-        const response = await fetch(dataUrl);
-        processedBlob = await response.blob();
-      } catch (conversionError) {
-        console.error('Image conversion error:', conversionError);
-        toast({
-          title: "Conversion Failed",
-          description: "Could not process image. Please try a different file.",
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 8);
-      const fileName = `event-banners/${retailerId}/${timestamp}-${randomId}.jpg`;
-
-      // Upload to event-assets bucket with correct contentType
-      const { data, error } = await supabase.storage
-        .from('event-assets')
-        .upload(fileName, processedBlob, {
-          contentType: mimeType,
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Storage upload error:', error);
-        toast({
-          title: "Upload Failed",
-          description: error.message.includes('exceeded') 
-            ? "File too large. Please use a smaller image."
-            : "Failed to upload banner. Please try again.",
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-assets')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Banner upload error:', error);
-      toast({
-        title: "Upload Error",
-        description: "Something went wrong. Please try a different image.",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setUploadingBanner(false);
+  if (eventId) {
+    if (selected) {
+      return (
+        <>
+          <EventCatalogManager
+            event={selected}
+            today={today}
+            brandId={brandId}
+            onBack={() => go({ event: null, brand: null })}
+            onSelectBrand={(id) => go({ brand: id })}
+            onEdit={() => openForm(selected)}
+            onChanged={fetchEvents}
+          />
+          {form}
+        </>
+      );
     }
-  };
-
-  const handleCreate = async () => {
-    try {
-      let bannerUrl = formData.banner_image_url;
-      
-      if (bannerFile) {
-        bannerUrl = await uploadBannerImage(bannerFile);
-        if (!bannerUrl) return; // Upload failed
-      }
-
-      const { error } = await supabase
-        .from('retail_events')
-        .insert({
-          ...formData,
-          banner_image_url: bannerUrl,
-          retailer_id: retailerId
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Event created successfully"
-      });
-
-      setIsCreateModalOpen(false);
-      resetForm();
-      fetchEvents();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create event",
-        variant: "destructive"
-      });
+    if (!loading) {
+      return (
+        <div className="rounded-[20px] bg-card px-6 py-10 text-center">
+          <p className="text-[15px] text-ink-2">This event isn't here any more.</p>
+          <Button variant="outline" className="mt-4" onClick={() => go({ event: null, brand: null })}>
+            Back to events
+          </Button>
+        </div>
+      );
     }
-  };
-
-  const handleEdit = async () => {
-    if (!editingEvent) return;
-
-    try {
-      let bannerUrl = formData.banner_image_url;
-      
-      if (bannerFile) {
-        bannerUrl = await uploadBannerImage(bannerFile);
-        if (!bannerUrl) return; // Upload failed
-      }
-
-      const { error } = await supabase
-        .from('retail_events')
-        .update({
-          ...formData,
-          banner_image_url: bannerUrl
-        })
-        .eq('id', editingEvent.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Event updated successfully"
-      });
-
-      setIsEditModalOpen(false);
-      setEditingEvent(null);
-      resetForm();
-      fetchEvents();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update event",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDelete = async (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('retail_events')
-        .delete()
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Event deleted successfully"
-      });
-
-      fetchEvents();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete event",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const openEditModal = (event: RetailEvent) => {
-    setEditingEvent(event);
-    setFormData({
-      name: event.name,
-      description: event.description || '',
-      event_date: event.event_date,
-      end_date: event.end_date || '',
-      location: event.location || '',
-      status: event.status as 'draft' | 'active' | 'ended',
-      banner_image_url: event.banner_image_url || ''
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'ended': return 'bg-gray-500';
-      default: return 'bg-yellow-500';
-    }
-  };
-
-  if (selectedEvent) {
-    return (
-      <div>
-        <Button 
-          variant="outline" 
-          onClick={() => setSelectedEvent(null)}
-          className="mb-6"
-        >
-          ← Back to Events
-        </Button>
-        <EventCatalogManager 
-          eventId={selectedEvent.id} 
-          eventName={selectedEvent.name} 
-          onBack={() => setSelectedEvent(null)}
-        />
-      </div>
-    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Events</h2>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Event
-        </Button>
-      </div>
+    <section>
+      <PartnerSectionHeader
+        title="Events"
+        subtitle="Pop-ups where shoppers try your items on"
+        actions={
+          <Button onClick={() => openForm(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New event
+          </Button>
+        }
+      />
 
       {loading ? (
-        <div className="grid gap-4">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-px overflow-hidden rounded-[20px] bg-card">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[72px] animate-pulse bg-fill/60" />)}
         </div>
-      ) : events.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              No events created yet. Create your first event to get started.
-            </p>
-          </CardContent>
-        </Card>
+      ) : sorted.length === 0 ? (
+        <div className="rounded-[20px] bg-card px-6 py-12 text-center">
+          <CalendarDays className="mx-auto mb-3 h-10 w-10 text-ink-3" />
+          <h2 className="text-[17px] font-semibold">No events yet</h2>
+          <p className="mx-auto mt-1 max-w-sm text-[14px] text-ink-2">
+            Create an event, add the brands taking part and a photo of each item. Shoppers at the event can then try them on.
+          </p>
+          <Button className="mt-5" onClick={() => openForm(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New event
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-4">
-          {events.map((event) => (
-            <Card key={event.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {event.name}
-                      <Badge className={getStatusColor(event.status)}>
-                        {event.status}
-                      </Badge>
-                    </CardTitle>
-                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                       <div className="flex items-center gap-1">
-                         <Calendar className="w-4 h-4" />
-                         {format(new Date(event.event_date), 'MMMM d, yyyy')}
-                         {event.end_date && event.end_date !== event.event_date && (
-                           <span> - {format(new Date(event.end_date), 'MMMM d, yyyy')}</span>
-                         )}
-                       </div>
-                       {event.location && (
-                         <div className="flex items-center gap-1">
-                           <MapPin className="w-4 h-4" />
-                           {event.location}
-                         </div>
-                       )}
-                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => openEditModal(event)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDelete(event.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-               <CardContent>
-                 {event.banner_image_url && (
-                   <div className="mb-4">
-                     <img
-                       src={event.banner_image_url}
-                       alt={event.name}
-                       className="w-full h-32 object-cover rounded-lg"
-                     />
-                   </div>
-                 )}
-                 {event.description && (
-                   <p className="text-muted-foreground mb-4">{event.description}</p>
-                 )}
-                 <Button onClick={() => setSelectedEvent(event)}>
-                   Manage Brands
-                 </Button>
-               </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ul className="overflow-hidden rounded-[20px] bg-card">
+          {sorted.map((event, i) => {
+            const phase = eventPhase(event, today);
+            const { label, status } = eventPhaseLabel(phase);
+            const counts = eventCounts(event.event_brands);
+            const when = [formatDateRange(event.event_date, event.end_date ?? null, today), event.location].filter(Boolean).join(' · ');
+            return (
+              <li key={event.id} className={i > 0 ? 'border-t border-line' : undefined}>
+                <button
+                  type="button"
+                  onClick={() => go({ event: event.id, brand: null })}
+                  className="flex min-h-[72px] w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-fill"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-medium text-ink">{event.name}</span>
+                    <span className="block truncate text-[13px] text-ink-2">{when}</span>
+                    <span className="block text-[13px] text-ink-2">{eventCountsLine(counts)}</span>
+                  </span>
+                  <StatusLabel status={status}>{label}</StatusLabel>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-
-      {/* Create Event Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Event</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Event Name</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Fashion Week Dubai"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Event description..."
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Banner Image</label>
-              <div className="space-y-2">
-                {(bannerFile || formData.banner_image_url) && (
-                  <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={bannerFile ? URL.createObjectURL(bannerFile) : formData.banner_image_url}
-                      alt="Banner preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setBannerFile(file);
-                    }}
-                    className="flex-1"
-                  />
-                  {(bannerFile || formData.banner_image_url) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setBannerFile(null);
-                        setFormData(prev => ({ ...prev, banner_image_url: '' }));
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Start Date *</label>
-                <Input
-                  type="date"
-                  value={formData.event_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">End Date *</label>
-                <Input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Location</label>
-              <Input
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Dubai, UAE"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Status</label>
-              <select 
-                value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="ended">Ended</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsCreateModalOpen(false);
-                  resetForm();
-                }}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleCreate} 
-                disabled={uploadingBanner || !formData.name || !formData.event_date || !formData.end_date} 
-                className="flex-1"
-              >
-                {uploadingBanner ? 'Uploading...' : 'Create Event'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Event Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Event Name</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Fashion Week Dubai"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Event description..."
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Banner Image</label>
-              <div className="space-y-2">
-                {(bannerFile || formData.banner_image_url) && (
-                  <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={bannerFile ? URL.createObjectURL(bannerFile) : formData.banner_image_url}
-                      alt="Banner preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setBannerFile(file);
-                    }}
-                    className="flex-1"
-                  />
-                  {(bannerFile || formData.banner_image_url) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setBannerFile(null);
-                        setFormData(prev => ({ ...prev, banner_image_url: '' }));
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Start Date *</label>
-                <Input
-                  type="date"
-                  value={formData.event_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">End Date *</label>
-                <Input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Location</label>
-              <Input
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Dubai, UAE"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Status</label>
-              <select 
-                value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="ended">Ended</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditingEvent(null);
-                  resetForm();
-                }}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleEdit} 
-                disabled={uploadingBanner || !formData.name || !formData.event_date || !formData.end_date} 
-                className="flex-1"
-              >
-                {uploadingBanner ? 'Uploading...' : 'Update Event'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+      {form}
+    </section>
   );
 };
