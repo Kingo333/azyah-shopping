@@ -3,30 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 
-import { 
-  Package,
-  Store,
-  BarChart3,
-  Plus,
-  Settings,
-  Users,
-  ShoppingBag,
-  LogOut,
-  Trash2,
-  Edit,
-  Upload
-} from 'lucide-react';
-import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { Package, Store, BarChart3, Plus, Settings, Users, Upload, CalendarDays } from 'lucide-react';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { BulkImportActions } from '@/components/BulkImportActions';
-import { RetailerPortalHeader } from '@/components/RetailerPortalHeader';
+import { PartnerShell, PartnerSectionHeader, type PartnerNavItem } from '@/components/partner/PartnerShell';
+import { PartnerProductList } from '@/components/partner/PartnerProductList';
+import { usePartnerPublish } from '@/hooks/usePartnerPublish';
+import { productSummary } from '@/lib/partnerPortal';
 import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { features } from '@/lib/features';
@@ -34,24 +21,18 @@ import { features } from '@/lib/features';
 import { AsosImportManager } from '@/components/AsosImportManager';
 import BulkAsosImportManager from '@/components/BulkAsosImportManager';
 import { RetailerEvents } from '@/components/RetailerEvents';
-import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
-import { productStatusLabel } from '@/lib/productPublishing';
-import { StatusLabel } from '@/components/StatusLabel';
-import { useDesignV3 } from '@/hooks/useDesignV3';
 
 // Collabs tab hidden while UGC is off; old ?tab=collabs links open Products.
 const portalTab = (tab: string | null) => (!tab ? 'products' : tab === 'collabs' && !features.ugc_collab ? 'products' : tab);
 
 const RetailerPortal = () => {
-  const v3 = useDesignV3();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,7 +60,6 @@ const RetailerPortal = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [setupError, setSetupError] = useState<string | null>(null);
 
-  const { data: brands, isLoading: brandsLoading } = useRetailerBrands(retailer?.id || '');
 
   useEffect(() => {
     if (user) {
@@ -290,67 +270,16 @@ const RetailerPortal = () => {
     setEditingProduct(product);
   };
 
-  const handleDeleteProduct = async (product: Product) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${product.title}"? This action cannot be undone.`
-    );
-    
-    if (!confirmed) return;
-
-    try {
-      // Use soft delete by setting status to 'archived' instead of hard delete
-      const { error } = await supabase
-        .from('products')
-        .update({ 
-          status: 'archived',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', product.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Product deleted successfully!"
-      });
-      
-      fetchProducts(); // Refresh the product list
-    } catch (error: any) {
-      console.error('Error deleting product:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete product",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleCloseEditModal = () => {
     setEditingProduct(null);
   };
+
+  const { publish: publishProduct, busyIds: publishingIds } = usePartnerPublish(fetchProducts, handleEditProduct);
 
   const handleProductUpdate = () => {
     fetchProducts();
   };
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast({
-        description: "Successfully signed out"
-      });
-      navigate('/');
-    } catch (error: any) {
-      console.error('Error signing out:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Check user role - only retailer users and admins can access retailer portal
   const userRole = user?.user_metadata?.role;
@@ -446,261 +375,112 @@ const RetailerPortal = () => {
     );
   }
 
+  const navItems: PartnerNavItem[] = [
+    { value: 'products', label: 'Products', icon: Package },
+    ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs', icon: Users }] : []),
+    { value: 'brands', label: 'Brands', icon: Store },
+    { value: 'events', label: 'Events', icon: CalendarDays },
+    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { value: 'settings', label: 'Settings', icon: Settings },
+  ];
+  // An old or unknown ?tab= opens Products.
+  const currentTab = navItems.some((i) => i.value === activeTab) ? activeTab : 'products';
+
   return (
-    <div className="min-h-screen bg-background dark:bg-slate-950">
-      <div className="container max-w-7xl mx-auto p-3 md:p-6">
-        {/* Header */}
-        <RetailerPortalHeader retailer={retailer} />
-
-        {/* Feedback Section */}
-        <div className="mb-4 md:mb-8 flex justify-end">
-          <FeedbackModal userType="retailer" />
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{products.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Brands</CardTitle>
-              <Store className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{brands?.length || 0}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
-              <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">
-                {products.filter(p => p.status === 'active').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Low Stock</CardTitle>
-              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">
-                {products.filter(p => (p.stock_qty || 0) <= 5).length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+    <>
+      <PartnerShell
+        orgName={retailer?.name || 'Your store'}
+        orgLogo={retailer?.logo_url}
+        portalLabel="Store portal"
+        userType="retailer"
+        items={navItems}
+        active={currentTab}
+        onChange={handleTabChange}
+      >
         {/* Approval status (shoppers only see approved partners' products) */}
         <PendingApprovalBanner status={retailer?.verification_status} />
 
-        {/* Profile Completion Banner */}
-        <ProfileCompletionBanner />
-        
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
-          <TabsList className={`bg-muted/50 dark:bg-slate-800/50 grid w-full ${features.ugc_collab ? 'grid-cols-6' : 'grid-cols-5'} md:flex md:w-auto`}>
-            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
-            {features.ugc_collab && <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>}
-            <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Brands</TabsTrigger>
-            <TabsTrigger value="events" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Events</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Settings</TabsTrigger>
-          </TabsList>
+        {currentTab !== 'settings' && <ProfileCompletionBanner />}
 
-          <TabsContent value="products">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Product Catalog</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    onClick={() => setIsAddModalOpen(true)} 
-                    className="gap-2 bg-primary hover:bg-primary/90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setIsBulkAddModalOpen(true)} 
-                    className="gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Add Multiple
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">Loading products...</div>
-                ) : products.length > 0 ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                    {products.map((product) => (
-                       <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
-                         <div className="aspect-square relative">
-                           <img
-                             src={product.media_urls?.[0] || '/placeholder.svg'}
-                             alt={product.title}
-                             className="w-full h-full object-cover"
-                           />
-                           {product.status === 'archived' && (
-                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                               <Badge 
-                                 variant="secondary"
-                                 className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold"
-                               >
-                                 ARCHIVED
-                               </Badge>
-                             </div>
-                           )}
-                           {product.status !== 'archived' && (v3 ? (
-                             <StatusLabel status={product.status} className="absolute top-1 right-1 md:top-2 md:right-2">
-                               {productStatusLabel(product.status)}
-                             </StatusLabel>
-                           ) : (
-                             <Badge 
-                               variant={product.status === 'active' ? 'default' : 'secondary'}
-                               className="absolute top-1 right-1 md:top-2 md:right-2 text-xs"
-                             >
-                               {productStatusLabel(product.status)}
-                             </Badge>
-                           ))}
-                         </div>
-                        <CardContent className="p-2 md:p-4">
-                          <div className="space-y-1 md:space-y-2">
-                            <h3 className="font-semibold line-clamp-2 text-xs md:text-sm">{product.title}</h3>
-                            {product.brand && (
-                              <div className="flex items-center gap-1 md:gap-2">
-                                {product.brand.logo_url && (
-                                  <img 
-                                    src={product.brand.logo_url} 
-                                    alt={product.brand.name}
-                                    className="w-3 h-3 md:w-4 md:h-4 rounded"
-                                  />
-                                )}
-                                <span className="text-xs md:text-sm text-muted-foreground truncate">
-                                  {product.brand.name}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between text-xs md:text-sm">
-                              <span className="font-bold">
-                                {new Intl.NumberFormat('en-US', {
-                                  style: 'currency',
-                                  currency: product.currency || 'USD',
-                                }).format((product.price_cents || 0) / 100)}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                Stock: {product.stock_qty || 0}
-                              </span>
-                            </div>
-                            <div className="flex gap-1 md:gap-2 mt-1 md:mt-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-7 md:h-9 text-xs md:text-sm px-1 md:px-3"
-                                onClick={() => setEditingProduct(product)}
-                              >
-                                <Edit className="h-3 w-3 md:mr-1" />
-                                <span className="hidden md:inline">Edit</span>
-                              </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm" 
-                                className="flex-shrink-0 h-7 md:h-9 w-7 md:w-9 p-0"
-                                onClick={() => handleDeleteProduct(product)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No products yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start building your catalog by adding your first product.
-                    </p>
-                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80">
-                      <Plus className="h-4 w-4" />
-                      Add Product
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {features.ugc_collab && (
-          <TabsContent value="collabs">
-            <div className="space-y-3 md:space-y-4">
-              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-3 md:p-4 border border-border/50">
-                <h3 className="font-medium mb-2 text-sm md:text-base">What are Collaborations?</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  Create collaboration campaigns to work with content creators and influencers. Set your requirements, 
-                  compensation, and deliverables. Creators can apply to your campaigns, and you can manage applications 
-                  and track campaign performance all in one place.
-                </p>
+        {currentTab === 'products' && (
+          <section>
+            <PartnerSectionHeader
+              title="Products"
+              subtitle={loading ? 'Loading…' : productSummary(products)}
+              actions={<>
+                <Button variant="outline" onClick={() => setIsBulkAddModalOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk upload
+                </Button>
+                <Button onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add product
+                </Button>
+              </>}
+            />
+            {loading ? (
+              <div className="space-y-px overflow-hidden rounded-[20px] bg-card">
+                {[0, 1, 2].map((i) => <div key={i} className="h-20 animate-pulse bg-fill/60" />)}
               </div>
-              <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
-            </div>
-          </TabsContent>
-          )}
+            ) : products.length > 0 ? (
+              <PartnerProductList
+                products={products}
+                fallbackCurrency={retailer?.currency || 'AED'}
+                showBrand
+                onEdit={handleEditProduct}
+                onPublish={publishProduct}
+                busyIds={publishingIds}
+              />
+            ) : (
+              <div className="rounded-[20px] bg-card px-6 py-12 text-center">
+                <Package className="mx-auto mb-3 h-10 w-10 text-ink-3" />
+                <h2 className="text-[17px] font-semibold">No products yet</h2>
+                <p className="mx-auto mt-1 max-w-sm text-[14px] text-ink-2">
+                  Add your first product, or import products from Brands. A product goes live once it has a name, price, photo and category.
+                </p>
+                <Button className="mt-5" onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add product
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
 
-          <TabsContent value="brands">
-            <RetailerBrandsList retailerId={retailer?.id || ''} />
-          </TabsContent>
+        {currentTab === 'collabs' && features.ugc_collab && (
+          <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
+        )}
 
-          <TabsContent value="events">
-            <RetailerEvents retailerId={retailer?.id || ''} />
-          </TabsContent>
+        {currentTab === 'brands' && <RetailerBrandsList retailerId={retailer?.id || ''} />}
 
-          <TabsContent value="analytics">
-            <AnalyticsDashboard retailerId={retailer?.id} />
-          </TabsContent>
+        {currentTab === 'events' && <RetailerEvents retailerId={retailer?.id || ''} />}
 
-          <TabsContent value="settings">
-            <div className="space-y-6">
-              {/* ASOS Import - Only for retailer@test.com */}
-              {user?.email === 'retailer@test.com' && (
-                <>
-                  <AsosImportManager />
-                  <BulkAsosImportManager />
-                </>
-              )}
-              
-              {retailer && (
-                <RetailerSettingsForm 
-                  retailer={retailer}
-                  onRetailerUpdate={setRetailer}
-                  extraSections={
-                    <BulkImportActions 
-                      retailerId={retailer.id}
-                      onProductsDeleted={fetchProducts}
-                    />
-                  }
-                />
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        {currentTab === 'analytics' && <AnalyticsDashboard retailerId={retailer?.id} />}
+
+        {currentTab === 'settings' && (
+          <div className="space-y-6">
+            {/* ASOS Import - Only for retailer@test.com */}
+            {user?.email === 'retailer@test.com' && (
+              <>
+                <AsosImportManager />
+                <BulkAsosImportManager />
+              </>
+            )}
+            {retailer && (
+              <RetailerSettingsForm
+                retailer={retailer}
+                onRetailerUpdate={setRetailer}
+                extraSections={
+                  <BulkImportActions
+                    retailerId={retailer.id}
+                    onProductsDeleted={fetchProducts}
+                  />
+                }
+              />
+            )}
+          </div>
+        )}
+      </PartnerShell>
 
         {/* Modals */}
         <AddProductModal 
@@ -736,8 +516,7 @@ const RetailerPortal = () => {
             }}
           />
         )}
-      </div>
-    </div>
+    </>
   );
 };
 

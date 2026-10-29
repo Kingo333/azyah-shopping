@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle, Box } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ChevronLeft, Upload, Trash2, Shirt, Loader2, CheckCircle, Box, ImagePlus } from 'lucide-react';
+import { StatusLabel } from '@/components/StatusLabel';
+import { ConfirmDialog } from '@/components/partner/ConfirmDialog';
+import { EVENT_MAX_ITEMS_PER_BRAND, plural } from '@/lib/partnerPortal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ interface EventBrandProduct {
   sort_order: number;
   created_at: string;
   product_id?: string;
+  try_on_ready?: boolean | null;
   ar_model_url?: string;
   ar_enabled?: boolean;
   ar_scale?: number;
@@ -42,10 +44,19 @@ interface EventBrand {
 
 interface BrandProductManagerProps {
   brand: EventBrand;
+  eventName: string;
   onBack: () => void;
+  onEditBrand: () => void;
+  /** Items changed (counts on the event page refresh). */
+  onChanged?: () => void;
 }
 
-export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps) => {
+/**
+ * A brand's items in an event. One photo per item is enough for try-on (the
+ * try-on function falls back to it), so uploads are ready straight away; a
+ * different try-on photo and a 3D model are options in the item sheet.
+ */
+export const BrandProductManager = ({ brand, eventName, onBack, onEditBrand, onChanged }: BrandProductManagerProps) => {
   const [products, setProducts] = useState<EventBrandProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -57,6 +68,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [removingAsset, setRemovingAsset] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<EventBrandProduct | null>(null);
   const { toast } = useToast();
 
   /** Extract storage path from a Supabase public URL */
@@ -91,8 +103,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
       const update: Record<string, any> = { updated_at: new Date().toISOString() };
 
       if (type === 'tryon') {
+        // The item photo is used for try-on again, so it stays ready.
         update.try_on_data = {};
-        update.try_on_ready = false;
+        update.try_on_ready = true;
         update.try_on_config = null;
       } else if (type === 'model') {
         update.ar_model_url = null;
@@ -105,7 +118,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         .eq('id', product.id);
       if (error) throw error;
 
-      toast({ title: "Removed", description: `${labels[type]} has been removed` });
+      toast({ title: "Removed", description: type === 'tryon' ? 'Shoppers now try on the item photo.' : `The ${labels[type]} was removed.` });
 
       // 3. Refresh
       if (editingProduct?.id === product.id) {
@@ -117,6 +130,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         });
       }
       await fetchProducts();
+      onChanged?.();
     } catch (error: any) {
       console.error(`Error removing ${type}:`, error);
       toast({ title: "Error", description: error.message || `Failed to remove ${labels[type]}`, variant: "destructive" });
@@ -155,13 +169,16 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
-    maxFiles: 5,
+    maxFiles: EVENT_MAX_ITEMS_PER_BRAND,
     maxSize: 10 * 1024 * 1024, // 10MB per file
+    onDropRejected: () => toast({ title: 'Use JPG, PNG or WebP photos under 10 MB', variant: 'destructive' }),
     onDrop: async (acceptedFiles) => {
-      if (products.length + acceptedFiles.length > 5) {
+      if (acceptedFiles.length === 0) return;
+      const room = EVENT_MAX_ITEMS_PER_BRAND - products.length;
+      if (acceptedFiles.length > room) {
         toast({
-          title: "Error", 
-          description: `Cannot upload ${acceptedFiles.length} files. Maximum 5 products per brand (${products.length} already uploaded)`,
+          title: `You can add ${plural(room, 'more item')}`,
+          description: `Each brand can have up to ${EVENT_MAX_ITEMS_PER_BRAND} items.`,
           variant: "destructive"
         });
         return;
@@ -169,19 +186,22 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
       setIsUploading(true);
       try {
-        for (const file of acceptedFiles) {
-          await uploadProductImage(file);
+        for (const [i, file] of acceptedFiles.entries()) {
+          await uploadProductImage(file, products.length + i);
         }
-        fetchProducts();
+        toast({ title: acceptedFiles.length === 1 ? 'Item added' : `${acceptedFiles.length} items added`, description: 'Ready for try-on.' });
+        await fetchProducts();
+        onChanged?.();
       } catch (error) {
         console.error('Error uploading files:', error);
+        toast({ title: "Couldn't upload", description: 'Please try again.', variant: 'destructive' });
       } finally {
         setIsUploading(false);
       }
     }
   });
 
-  const uploadProductImage = async (file: File) => {
+  const uploadProductImage = async (file: File, sortOrder: number) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${brand.id}/products/${fileName}`;
@@ -202,39 +222,39 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         event_brand_id: brand.id,
         image_url: data.publicUrl,
         try_on_data: {},
-        sort_order: products.length
+        try_on_ready: true,
+        sort_order: sortOrder
       });
 
     if (insertError) throw insertError;
   };
 
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) {
-      return;
-    }
-
+  const deleteProduct = async (product: EventBrandProduct) => {
     try {
-      const { error } = await supabase
-        .from('event_brand_products')
-        .delete()
-        .eq('id', productId);
-
+      const { error } = await supabase.from('event_brand_products').delete().eq('id', product.id);
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Product deleted successfully"
-      });
-
-      fetchProducts();
+      toast({ title: 'Item removed' });
+      await fetchProducts();
+      onChanged?.();
     } catch (error: any) {
       console.error('Error deleting product:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete product",
-        variant: "destructive"
-      });
+      toast({ title: "Couldn't remove the item", description: error.message || 'Please try again.', variant: 'destructive' });
     }
+  };
+
+  // Items added before uploads were ready straight away.
+  const makeReady = async (product: EventBrandProduct) => {
+    const { error } = await supabase
+      .from('event_brand_products')
+      .update({ try_on_ready: true, updated_at: new Date().toISOString() })
+      .eq('id', product.id);
+    if (error) {
+      toast({ title: "Couldn't update the item", description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Ready for try-on' });
+    await fetchProducts();
+    onChanged?.();
   };
 
   const openEditModal = (product: EventBrandProduct) => {
@@ -242,177 +262,109 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateTryOnData = async (tryOnData: any) => {
-    if (!editingProduct) return;
-
-    try {
-      const { error } = await supabase
-        .from('event_brand_products')
-        .update({
-          try_on_data: tryOnData,
-          try_on_provider: 'bitstudio',
-          try_on_ready: !!tryOnData.outfit_image_path,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingProduct.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Try-on data configured (Gemini provider)"
-      });
-
-      setIsEditModalOpen(false);
-      setEditingProduct(null);
-      fetchProducts();
-    } catch (error: any) {
-      console.error('Error updating try-on data:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div className="p-6">Loading products...</div>;
-  }
+  const ready = products.filter((p) => p.try_on_ready).length;
+  const room = EVENT_MAX_ITEMS_PER_BRAND - products.length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Brands
-        </Button>
-        <div className="flex items-center space-x-3">
-          {brand.logo_url && (
-            <img
-              src={brand.logo_url}
-              alt={`${brand.brand_name} logo`}
-              className="w-8 h-8 object-contain"
-            />
-          )}
-          <div>
-            <h2 className="text-2xl font-bold">{brand.brand_name} Products</h2>
-            <p className="text-muted-foreground">
-              Manage product images for virtual try-on (max 5 products)
+    <section className="space-y-5">
+      <button type="button" onClick={onBack} className="-ml-1 flex items-center gap-1 text-[15px] text-ink-2 hover:text-ink">
+        <ChevronLeft className="h-5 w-5" aria-hidden />
+        {eventName}
+      </button>
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-card text-[17px] font-semibold text-ink-2">
+            {brand.logo_url ? <img src={brand.logo_url} alt="" className="h-full w-full object-contain" /> : brand.brand_name.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-[26px] font-semibold leading-tight tracking-tight">{brand.brand_name}</h1>
+            <p className="text-[14px] text-ink-2">
+              {isLoading ? 'Loading…' : products.length === 0 ? 'No items yet' : `${plural(products.length, 'item')} · ${ready} ready for try-on`}
             </p>
           </div>
         </div>
+        <Button variant="outline" onClick={onEditBrand}>Edit brand</Button>
       </div>
 
-      {/* Upload Area */}
-      {products.length < 5 && (
-        <Card>
-          <CardContent className="p-6">
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                Upload Product Images
-              </h3>
-              <p className="text-muted-foreground mb-2">
-                Drag & drop up to {5 - products.length} product images or click to select
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {products.length}/5 products uploaded
-              </p>
-              {isUploading && (
-                <p className="text-sm text-primary mt-2">Uploading...</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Products Grid */}
-      {products.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Image className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">No products uploaded yet</p>
-            <p className="text-sm text-muted-foreground">
-              Upload product images to enable virtual try-on for shoppers
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.map((product) => (
-            <Card key={product.id} className="relative">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Product Image</CardTitle>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditModal(product)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteProduct(product.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 relative">
-                  <img
-                    src={product.image_url}
-                    alt="Product"
-                    className="w-full h-48 object-cover rounded"
-                  />
-                    {product.try_on_data?.outfit_bitstudio_id && (
-                      <Badge variant="outline" className="absolute top-2 right-2 bg-green-50 text-green-700 border-green-200">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Try-On Ready
-                      </Badge>
-                    )}
-                    {product.ar_enabled && product.ar_model_url && (
-                      <Badge variant="outline" className="absolute top-2 left-2 bg-purple-50 text-purple-700 border-purple-200">
-                        3D AR
-                      </Badge>
-                    )}
-                    {product.ar_enabled && product.garment_type && product.garment_type !== 'shirt' && (
-                      <Badge variant="outline" className="absolute top-8 left-2 bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
-                        {GARMENT_TYPES.find(t => t.value === product.garment_type)?.label || product.garment_type}
-                      </Badge>
-                    )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Shirt className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {Object.keys(product.try_on_data || {}).length > 0 ? 'Try-on ready' : 'No try-on data'}
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditModal(product)}
-                    >
-                      {Object.keys(product.try_on_data || {}).length > 0 ? 'Edit' : 'Add'} Try-on
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Add photos: each photo becomes an item shoppers can try on */}
+      {!isLoading && room > 0 && (
+        <div
+          {...getRootProps()}
+          className={`flex cursor-pointer items-center gap-4 rounded-[20px] border border-dashed p-5 transition-colors ${
+            isDragActive ? 'border-ink bg-fill' : 'border-line-strong bg-card hover:bg-fill/40'
+          }`}
+        >
+          <input {...getInputProps()} />
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2">
+            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <ImagePlus className="h-5 w-5" aria-hidden />}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-medium text-ink">{isUploading ? 'Uploading…' : 'Add item photos'}</span>
+            <span className="block text-[13px] text-ink-2">
+              One clear photo per item, up to {room} more. Each one is ready for try-on straight away.
+            </span>
+          </span>
         </div>
       )}
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          {[0, 1].map((i) => <div key={i} className="aspect-[3/4] animate-pulse rounded-[20px] bg-fill/60" />)}
+        </div>
+      ) : products.length > 0 && (
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          {products.map((product, i) => (
+            <li key={product.id} className="overflow-hidden rounded-[20px] bg-card">
+              <button type="button" onClick={() => openEditModal(product)} className="block w-full" aria-label={`Item ${i + 1} options`}>
+                <img src={product.image_url} alt="" className="aspect-[3/4] w-full object-cover" loading="lazy" />
+              </button>
+              <div className="space-y-2 p-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[14px] text-ink">Item {i + 1}</span>
+                  {product.try_on_ready ? (
+                    <StatusLabel status="live">Ready</StatusLabel>
+                  ) : (
+                    <StatusLabel status="hidden">Not ready</StatusLabel>
+                  )}
+                  {product.ar_enabled && product.ar_model_url && <StatusLabel status="other">3D</StatusLabel>}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  {product.try_on_ready ? (
+                    <button type="button" className="text-[14px] text-ink-2 hover:text-ink" onClick={() => openEditModal(product)}>
+                      Options
+                    </button>
+                  ) : (
+                    <button type="button" className="text-[14px] font-medium text-ink" onClick={() => makeReady(product)}>
+                      Make ready
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 hover:bg-fill hover:text-destructive"
+                    onClick={() => setDeleting(product)}
+                    aria-label={`Remove item ${i + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Remove this item?"
+        description="Shoppers won't be able to try it on any more. This can't be undone."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          if (deleting) deleteProduct(deleting);
+          setDeleting(null);
+        }}
+      />
 
       {/* Edit Try-on Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={(open) => {
@@ -424,31 +376,19 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
       }}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Configure Virtual Try-On</DialogTitle>
+            <DialogTitle>Item options</DialogTitle>
           </DialogHeader>
           {editingProduct && (
             <div className="space-y-4">
-              {/* Compact product header */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <img
-                  src={editingProduct.image_url}
-                  alt="Product"
-                  className="w-14 h-14 object-cover rounded-md border"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Product Image</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {editingProduct.try_on_data?.outfit_image_url && (
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Try-On Ready
-                      </Badge>
-                    )}
-                    {editingProduct.ar_enabled && editingProduct.ar_model_url && (
-                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                        AR
-                      </Badge>
-                    )}
+              <div className="flex items-center gap-3 rounded-xl bg-fill/60 p-3">
+                <img src={editingProduct.image_url} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] text-ink">
+                    {editingProduct.try_on_data?.outfit_image_url ? 'Shoppers try on your try-on photo' : 'Shoppers try on this photo'}
+                  </p>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    {editingProduct.try_on_ready ? <StatusLabel status="live">Ready</StatusLabel> : <StatusLabel status="hidden">Not ready</StatusLabel>}
+                    {editingProduct.ar_enabled && editingProduct.ar_model_url && <StatusLabel status="other">3D</StatusLabel>}
                   </div>
                 </div>
               </div>
@@ -458,20 +398,20 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                 <TabsList className="w-full">
                   <TabsTrigger value="image" className="flex-1 gap-1.5">
                     <Shirt className="w-4 h-4" />
-                    Image Try-On
+                    Try-on photo
                   </TabsTrigger>
                   <TabsTrigger value="ar" className="flex-1 gap-1.5">
                     <Box className="w-4 h-4" />
-                    3D AR Model
+                    3D model (AR)
                   </TabsTrigger>
                 </TabsList>
 
                 {/* ── Tab 1: Image Try-On ── */}
                 <TabsContent value="image" className="space-y-4 pt-2">
                   <div>
-                    <label className="text-sm font-medium">Upload Outfit Image</label>
+                    <label className="text-sm font-medium">Different try-on photo (optional)</label>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Upload the product outfit image for virtual try-on
+                      Try-on already uses the item photo. Add another only if you have a clearer one, like the garment alone on a plain background.
                     </p>
 
                     <div className="relative">
@@ -532,8 +472,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                               })
                               .eq('id', editingProduct.id);
 
-                            toast({ title: "Configuration saved", description: "Outfit uploaded and ready for virtual try-on" });
+                            toast({ title: "Try-on photo saved", description: "Shoppers now try on this photo." });
                             await fetchProducts();
+                            onChanged?.();
                             setIsEditModalOpen(false);
                             setEditingProduct(null);
                           } catch (error: any) {
@@ -565,7 +506,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                           className="w-16 h-16 object-cover rounded border"
                         />
                         <div className="flex-1">
-                          <p className="text-xs text-green-600">Outfit configured for try-on</p>
+                          <p className="text-xs text-ink-2">Try-on uses this photo</p>
                         </div>
                         <Button
                           variant="destructive"
@@ -772,6 +713,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   );
 };

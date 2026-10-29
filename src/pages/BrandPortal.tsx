@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BrandPortalHeader } from '@/components/BrandPortalHeader';
+import { PartnerShell, PartnerSectionHeader, type PartnerNavItem } from '@/components/partner/PartnerShell';
+import { PartnerProductList } from '@/components/partner/PartnerProductList';
+import { usePartnerPublish } from '@/hooks/usePartnerPublish';
+import { productSummary } from '@/lib/partnerPortal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
-import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
@@ -29,15 +28,10 @@ import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
 import { PortfolioManager } from '@/components/brand/PortfolioManager';
 
 import { SalonDashboard } from '@/components/salon/SalonDashboard';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store, Briefcase } from 'lucide-react';
-import { InfoTooltip } from '@/components/ui/info-tooltip';
-import { FeedbackModal } from '@/components/FeedbackModal';
+import { Plus, Trash2, Upload, BarChart3, Package, Archive, Briefcase, Images, Users, Settings as SettingsIcon } from 'lucide-react';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { PendingApprovalBanner } from '@/components/partner/PendingApprovalBanner';
 import { loadContactEmail, withContactEmail } from '@/lib/partnerContacts';
-import { productStatusLabel } from '@/lib/productPublishing';
-import { StatusLabel } from '@/components/StatusLabel';
-import { useDesignV3 } from '@/hooks/useDesignV3';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 
@@ -60,7 +54,6 @@ interface Brand {
   created_at?: string;
 }
 const BrandPortal: React.FC = () => {
-  const v3 = useDesignV3();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(portalTab(searchParams.get('tab')));
   
@@ -100,10 +93,6 @@ const BrandPortal: React.FC = () => {
   const {
     categories
   } = useCategories();
-  const {
-    data: analyticsData,
-    isLoading: analyticsLoading
-  } = useAnalytics(brand?.id, 'brand');
   const mountedRef = useRef(true);
   const generateUniqueSlug = async (baseName: string): Promise<string> => {
     const baseSlug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -287,24 +276,6 @@ const BrandPortal: React.FC = () => {
       });
     }
   };
-  const formatPrice = (cents: number, currency: string = 'USD'): string => new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency
-  }).format(cents / 100);
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'inactive':
-        return 'secondary';
-      case 'archived':
-        return 'secondary';
-      case 'out_of_stock':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
   const handleSelectProduct = (productId: string) => {
     const newSelected = new Set(selectedProducts);
     newSelected.has(productId) ? newSelected.delete(productId) : newSelected.add(productId);
@@ -348,34 +319,6 @@ const BrandPortal: React.FC = () => {
       });
     }
   };
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      // Delete related records first
-      await supabase.from('likes').delete().eq('product_id', productId);
-      await supabase.from('wishlist_items').delete().eq('product_id', productId);
-      await supabase.from('cart_items').delete().eq('product_id', productId);
-
-      // Then delete the product
-      const {
-        error
-      } = await supabase.from('products').delete().eq('id', productId);
-      if (error) throw error;
-      toast({
-        description: "Product deleted successfully"
-      });
-      fetchProducts();
-    } catch (error) {
-      console.error('Delete product error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete product",
-        variant: "destructive"
-      });
-    }
-  };
   const handleViewProduct = (product: any) => {
     console.log('View product clicked:', product);
     setSelectedProduct(product);
@@ -391,6 +334,7 @@ const BrandPortal: React.FC = () => {
     setSelectedProduct(product);
     setIsEditProductModalOpen(true);
   };
+  const { publish: publishProduct, busyIds: publishingIds } = usePartnerPublish(fetchProducts, handleEditProduct);
   if (!user) return <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
@@ -429,7 +373,6 @@ const BrandPortal: React.FC = () => {
   // Determine if we need to show category selector
   const needsCategorySelection = !brand.category;
   const isAgencyOrStudio = brand.category === 'agency' || brand.category === 'studio';
-  const isFashionBrand = brand.category === 'fashion_brand';
   const isSalon = brand.category === 'salon';
 
   const handleCategorySelected = (category: string) => {
@@ -459,48 +402,37 @@ const BrandPortal: React.FC = () => {
     }
   };
 
-  const analytics = {
-    totalProducts: products.length,
-    totalSwipeAppearances: analyticsData?.totalSwipeAppearances || 0,
-    totalLikes: analyticsData?.totalLikes || 0,
-    totalWishlistAdds: analyticsData?.totalWishlistAdds || 0,
-    engagementRate: analyticsData?.engagementRate || 0
-  };
-  const topProductsData = products.slice(0, 5).map((product, index) => ({
-    rank: index + 1,
-    name: product.title,
-    views: Math.floor(Math.random() * 1000) + 100,
-    likes: Math.floor(Math.random() * 200) + 20,
-    revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
-  }));
 
-  // Determine which tabs to show based on brand category
-  const getTabsConfig = () => {
-    if (isSalon) {
-      // Salon uses SalonDashboard which has its own tabs
-      return [];
+
+  // Brands can add up to 10 products for now; more on request.
+  const withinProductLimit = (open: () => void) => {
+    if (products.length >= 10) {
+      toast({
+        title: "Product limit reached",
+        description: "You can add up to 10 products. Use Help and feedback to ask for more.",
+        variant: "destructive"
+      });
+      return;
     }
-    if (isAgencyOrStudio) {
-      return [
-        { value: 'services', label: 'Services' },
-        { value: 'portfolio', label: 'Portfolio' },
-        ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs' }] : []),
-        { value: 'analytics', label: 'Analytics' },
-        { value: 'settings', label: 'Settings' }
-      ];
-    }
-    // Fashion brand: Products + Collabs + Analytics + Settings
-    return [
-      { value: 'products', label: 'Products' },
-      ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs' }] : []),
-      { value: 'analytics', label: 'Analytics' },
-      { value: 'settings', label: 'Settings' }
-    ];
+    open();
   };
 
-  const tabsConfig = getTabsConfig();
+  const navItems: PartnerNavItem[] = isSalon ? [] : isAgencyOrStudio ? [
+    { value: 'services', label: 'Services', icon: Briefcase },
+    { value: 'portfolio', label: 'Portfolio', icon: Images },
+    ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs', icon: Users }] : []),
+    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { value: 'settings', label: 'Settings', icon: SettingsIcon }
+  ] : [
+    { value: 'products', label: 'Products', icon: Package },
+    ...(features.ugc_collab ? [{ value: 'collabs', label: 'Collabs', icon: Users }] : []),
+    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { value: 'settings', label: 'Settings', icon: SettingsIcon }
+  ];
+  // An old or unknown ?tab= opens the first menu item.
+  const currentTab = navItems.some(i => i.value === activeTab) ? activeTab : navItems[0]?.value;
 
-  return <div className="min-h-screen bg-background dark:bg-slate-950">
+  return <>
       {/* Category Selector Modal - blocks portal until category is chosen */}
       <BrandCategorySelectorModal
         brandId={brand.id}
@@ -516,296 +448,116 @@ const BrandPortal: React.FC = () => {
         onSkip={handleOnboardingSkip}
       />
 
-      <div className="container max-w-7xl mx-auto p-3 md:p-6">
-        {/* Header */}
-        <BrandPortalHeader brand={brand} />
-
-        {/* Feedback Section */}
-        <div className="mb-4 md:mb-8 flex justify-end">
-          <FeedbackModal userType="brand" />
-        </div>
-
-        {/* Category Change Card - only shows within 2 weeks of account creation */}
-        {brand.category && brand.created_at && (
-          <div className="mb-4 md:mb-6">
-            <BrandCategoryChangeCard
-              brandId={brand.id}
-              currentCategory={brand.category}
-              brandCreatedAt={brand.created_at}
-              onCategoryChanged={(category) => setBrand({ ...brand, category })}
-            />
-          </div>
-        )}
-
-        {/* Salon category - render SalonDashboard with its own tabs */}
-        {isSalon ? (
-          <SalonDashboard 
-            brandId={brand.id} 
-            brand={brand} 
-            onBrandUpdate={(b) => setBrand(b)} 
-          />
-        ) : isAgencyOrStudio ? (
-          <>
-          {/* Stats Cards - show different stats for agencies/studios */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Active Services</CardTitle>
-                <Briefcase className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">-</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Leads Received</CardTitle>
-                <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">-</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Active Collabs</CardTitle>
-                <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">-</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Profile Views</CardTitle>
-                <Eye className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">-</div>
-              </CardContent>
-            </Card>
-          </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
-                <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">{analytics.totalProducts}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Swipe Appearances</CardTitle>
-                <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">{analytics.totalSwipeAppearances}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Total Likes</CardTitle>
-                <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">{analytics.totalLikes}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
-                <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg md:text-2xl font-bold">
-                  {products.filter(p => p.status === 'active').length}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
+      <PartnerShell
+        orgName={brand.name || 'Your brand'}
+        orgLogo={brand.logo_url}
+        portalLabel="Brand portal"
+        userType="brand"
+        items={navItems}
+        active={currentTab ?? ''}
+        onChange={handleTabChange}
+      >
         {/* Approval status (shoppers only see approved partners' products) */}
         <PendingApprovalBanner status={(brand as { verification_status?: string } | null)?.verification_status} />
 
-        {/* Profile Completion Banner */}
-        <ProfileCompletionBanner />
-        
-        {/* Tabs - dynamically generated based on brand category */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
-          <TabsList className="bg-muted/50 dark:bg-slate-800/50 flex flex-wrap md:flex md:w-auto gap-1">
-            {tabsConfig.map(tab => (
-              <TabsTrigger 
-                key={tab.value}
-                value={tab.value} 
-                className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {currentTab !== 'settings' && <ProfileCompletionBanner />}
 
-          {/* Services tab for agencies/studios */}
-          {isAgencyOrStudio && (
-            <TabsContent value="services">
+        {isSalon ? (
+          <SalonDashboard
+            brandId={brand.id}
+            brand={brand}
+            onBrandUpdate={(b) => setBrand(b)}
+          />
+        ) : (
+          <>
+            {currentTab === 'services' && isAgencyOrStudio && (
               <BrandServicesManager brandId={brand.id} brandCategory={brand.category as 'agency' | 'studio'} currency={brand.currency || 'AED'} />
-            </TabsContent>
-          )}
+            )}
 
-          {/* Portfolio tab for agencies/studios */}
-          {isAgencyOrStudio && (
-            <TabsContent value="portfolio">
-              <PortfolioManager brandId={brand.id} />
-            </TabsContent>
-          )}
+            {currentTab === 'portfolio' && isAgencyOrStudio && <PortfolioManager brandId={brand.id} />}
 
-          {/* Products tab - only for fashion brands */}
-          {isFashionBrand && (
-            <TabsContent value="products">
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <CardTitle>Product Catalog</CardTitle>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {selectedProducts.size > 0 && (
-                        <>
-                          <span className="text-sm text-muted-foreground">
-                            {selectedProducts.size} selected
-                          </span>
-                          <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="text-orange-600 border-orange-200 hover:bg-orange-50">
-                            <Archive className="h-4 w-4 mr-1" />
-                            Archive
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="text-red-600 border-red-200 hover:bg-red-50">
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                      <Button 
-                        onClick={() => {
-                          if (products.length >= 10) {
-                            toast({
-                              title: "Product Limit Reached",
-                              description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-                          setIsAddProductModalOpen(true);
-                        }} 
-                        className="gap-2 bg-primary hover:bg-primary/90"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Product
+            {currentTab === 'products' && (
+              <section>
+                <PartnerSectionHeader
+                  title="Products"
+                  subtitle={productsLoading ? 'Loading…' : productSummary(products)}
+                  actions={selectedProducts.size > 0 ? <>
+                      <span className="text-[14px] text-ink-2">{selectedProducts.size} selected</span>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedProducts(new Set())}>Cancel</Button>
+                      <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')}>
+                        <Archive className="h-4 w-4 mr-1" />
+                        Archive
                       </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          if (products.length >= 10) {
-                            toast({
-                              title: "Product Limit Reached",
-                              description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-                          setIsBulkAddModalOpen(true);
-                        }} 
-                        className="gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Add Multiple
+                      <Button variant="outline" size="sm" onClick={() => {
+                        if (window.confirm(`Delete ${selectedProducts.size} product(s)? This can't be undone.`)) handleBulkAction('Delete');
+                      }} className="text-destructive">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                       </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {productsLoading ? <div className="text-center py-8">Loading products...</div> : products.length > 0 ? <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                      {products.map(product => <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
-                           <div className="aspect-square relative">
-                             <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="absolute top-2 left-2 z-10 rounded border-gray-300" />
-                             <img src={product.media_urls?.[0] || '/placeholder.svg'} alt={product.title} className="w-full h-full object-cover cursor-pointer" onClick={() => handleViewProduct(product)} />
-                             {product.status === 'archived' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                 <Badge variant="secondary" className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold">
-                                   ARCHIVED
-                                 </Badge>
-                               </div>}
-                           </div>
-                           <CardContent className="p-2 md:p-4">
-                             <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => handleViewProduct(product)}>
-                               {product.title}
-                             </h3>
-                             <div className="flex items-center justify-between mb-1 md:mb-2">
-                               <span className="text-xs md:text-sm font-semibold text-primary">
-                                 {formatPrice(product.price_cents)}
-                               </span>
-                               {v3 ? (
-                                 <StatusLabel status={product.status}>{productStatusLabel(product.status)}</StatusLabel>
-                               ) : (
-                               <Badge variant={getStatusColor(product.status) as any} className="text-xs px-1 md:px-2 py-0.5">
-                                 {productStatusLabel(product.status)}
-                               </Badge>
-                               )}
-                             </div>
-                             <div className="flex justify-between gap-1">
-                               
-                               <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-accent/50">
-                                 <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                               </Button>
-                               <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-destructive/10 text-destructive">
-                                 <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                               </Button>
-                             </div>
-                           </CardContent>
-                         </Card>)}
-                    </div> : <div className="text-center py-12">
-                      <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No products yet</h3>
-                      <p className="text-muted-foreground mb-6">Start building your brand catalog by adding your first product.</p>
-                      <Button onClick={() => {
-                    if (products.length >= 10) {
-                      toast({
-                        title: "Product Limit Reached",
-                        description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    setIsAddProductModalOpen(true);
-                  }}>
+                    </> : <>
+                      <Button variant="outline" onClick={() => withinProductLimit(() => setIsBulkAddModalOpen(true))}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Bulk upload
+                      </Button>
+                      <Button onClick={() => withinProductLimit(() => setIsAddProductModalOpen(true))}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Your First Product
+                        Add product
                       </Button>
-                    </div>}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+                    </>}
+                />
+                {productsLoading ? (
+                  <div className="space-y-px overflow-hidden rounded-[20px] bg-card">
+                    {[0, 1, 2].map(i => <div key={i} className="h-20 animate-pulse bg-fill/60" />)}
+                  </div>
+                ) : products.length > 0 ? (
+                  <PartnerProductList
+                    products={products}
+                    fallbackCurrency={brand.currency || 'AED'}
+                    onOpen={handleViewProduct}
+                    onEdit={handleEditProduct}
+                    onPublish={publishProduct}
+                    busyIds={publishingIds}
+                    selection={{ selected: selectedProducts, toggle: handleSelectProduct }}
+                  />
+                ) : (
+                  <div className="rounded-[20px] bg-card px-6 py-12 text-center">
+                    <Package className="mx-auto mb-3 h-10 w-10 text-ink-3" />
+                    <h2 className="text-[17px] font-semibold">No products yet</h2>
+                    <p className="mx-auto mt-1 max-w-sm text-[14px] text-ink-2">
+                      Add your first product. It goes live for shoppers once it has a name, price, photo and category.
+                    </p>
+                    <Button className="mt-5" onClick={() => withinProductLimit(() => setIsAddProductModalOpen(true))}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add product
+                    </Button>
+                  </div>
+                )}
+              </section>
+            )}
 
-          <TabsContent value="collabs">
-            <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
-          </TabsContent>
+            {currentTab === 'collabs' && features.ugc_collab && (
+              <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
+            )}
 
-          <TabsContent value="analytics">
-            <AnalyticsDashboard brandId={brand?.id} />
-          </TabsContent>
+            {currentTab === 'analytics' && <AnalyticsDashboard brandId={brand?.id} />}
 
-          <TabsContent value="settings">
-            <BrandSettingsForm brand={brand} onBrandUpdate={setBrand} />
-          </TabsContent>
-        </Tabs>
-      </div>
+            {currentTab === 'settings' && (
+              <div className="space-y-6">
+                {/* Category change - only shows within 2 weeks of account creation */}
+                {brand.category && brand.created_at && (
+                  <BrandCategoryChangeCard
+                    brandId={brand.id}
+                    currentCategory={brand.category}
+                    brandCreatedAt={brand.created_at}
+                    onCategoryChanged={(category) => setBrand({ ...brand, category })}
+                  />
+                )}
+                <BrandSettingsForm brand={brand} onBrandUpdate={setBrand} />
+              </div>
+            )}
+          </>
+        )}
+      </PartnerShell>
 
       <AddProductModal isOpen={isAddProductModalOpen} onClose={() => setIsAddProductModalOpen(false)} onProductAdded={fetchProducts} userType="brand" brandId={brand.id} brandCurrency={brand.currency || 'AED'} />
       
@@ -823,6 +575,6 @@ const BrandPortal: React.FC = () => {
         </>}
 
       <ImportWizardModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} brandId={brand?.id} />
-    </div>;
+    </>;
 };
 export default BrandPortal;
