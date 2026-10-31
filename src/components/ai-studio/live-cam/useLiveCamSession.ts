@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
+import { LiveCamFrameStats } from './liveCamStats';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -110,6 +111,8 @@ export function useLiveCamSession({
   const startTimeoutRef = useRef<number | null>(null);
   const latencyEmaRef = useRef<number | null>(null);
   const lastSendTsRef = useRef<number | null>(null);
+  // Per-frame timing (JoyAI echoes frame numbers); read by benchmarks via window.__azyahLiveCam.
+  const statsRef = useRef(new LiveCamFrameStats());
   const lastFrameB64Ref = useRef<string | null>(null);
   const lastFrameCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const retryTimerRef = useRef<number | null>(null);
@@ -178,7 +181,15 @@ export function useLiveCamSession({
     setStatus((s) => (s === 'failed' ? s : 'ended'));
   }, [callEnd, cleanupLocal]);
 
-  const renderRemoteFrame = useCallback(async (b64: string) => {
+  useEffect(() => {
+    const w = window as unknown as { __azyahLiveCam?: { stats: () => unknown } };
+    w.__azyahLiveCam = { stats: () => statsRef.current.snapshot() };
+    return () => {
+      delete w.__azyahLiveCam;
+    };
+  }, []);
+
+  const renderRemoteFrame = useCallback(async (b64: string, seq?: unknown, serverMs?: unknown) => {
     const canvas = remoteCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -214,9 +225,12 @@ export function useLiveCamSession({
       ctx.drawImage(bitmap, dx, dy, dw, dh);
       bitmap.close?.();
       lastFrameB64Ref.current = b64;
+      // Matched round trip when the worker echoes the frame number (JoyAI);
+      // otherwise time since the last frame sent (FluxRT).
+      const matched = statsRef.current.onFrame(seq, serverMs);
       const sentAt = lastSendTsRef.current;
-      if (sentAt != null) {
-        const rtt = performance.now() - sentAt;
+      if (matched !== null || sentAt != null) {
+        const rtt = matched ?? performance.now() - (sentAt as number);
         const ema = latencyEmaRef.current;
         const next = ema === null ? rtt : ema * 0.8 + rtt * 0.2;
         latencyEmaRef.current = next;
@@ -272,6 +286,7 @@ export function useLiveCamSession({
     setLatencyMs(null);
     latencyEmaRef.current = null;
     lastSendTsRef.current = null;
+    statsRef.current.reset();
 
     const warmupTimeoutMs = LIVE_CAM_TIER_CONFIG[requestedTier].warmupTimeoutMs;
     startTimeoutRef.current = window.setTimeout(() => {
@@ -483,7 +498,8 @@ export function useLiveCamSession({
                 if (wsRef.current?.readyState !== WebSocket.OPEN) return;
                 if (wsRef.current.bufferedAmount > 2_000_000) return;
                 lastSendTsRef.current = performance.now();
-                wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64 }));
+                const { seq, tClientMs } = statsRef.current.nextFrame();
+                wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64, seq, t_client_ms: tClientMs }));
               } catch {
                 // skip frame
               }
@@ -582,6 +598,7 @@ export function useLiveCamSession({
           promptHint: next.promptHint?.trim(),
         };
         const ackRef = waitForAck('set_reference_image');
+        statsRef.current.markSwap();
         wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
         await ackRef;
         const nextPrompt = buildTryOnPrompt(meta);
@@ -622,7 +639,7 @@ export function useLiveCamSession({
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
-          void renderRemoteFrame(parsed.frame_b64);
+          void renderRemoteFrame(parsed.frame_b64, parsed.seq, parsed.server_ms);
         } else if (t === 'status' && typeof parsed.status === 'string') {
           if (parsed.status === 'session_limit') {
             // GPU worker ended the session at the time cap; the socket closes next.
