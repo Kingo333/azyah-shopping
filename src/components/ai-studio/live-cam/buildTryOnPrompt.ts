@@ -204,19 +204,44 @@ export function cleanProductText(raw: string | null | undefined, maxChars = MAX_
   return s;
 }
 
+// Generic sentences the Gemini wardrobe analysis wraps around its garment details
+// (supabase/functions/analyze-wardrobe-gemini). JoyAI's instruction already says to
+// keep the person, so only the garment-specific sentences are worth sending.
+const GEMINI_BOILERPLATE = [
+  /^preserve face, identity/i,
+  /^only change the selected garment region/i,
+  /^replace only the /i,
+  /^the reference image is the source of truth/i,
+  /^if any text description conflicts/i,
+];
+
+/** Garment-specific sentences from a Gemini prompt hint (colours, prints, logo placement...). */
+export function garmentDetailsFromHint(hint: string | null | undefined): string {
+  const text = cleanProductText(hint, 2000);
+  if (!text) return '';
+  const sentences = text.match(/[^.!?]+[.!?]?/g) ?? [];
+  const kept = sentences.map((s) => s.trim()).filter((s) => s && !GEMINI_BOILERPLATE.some((re) => re.test(s)));
+  return cleanProductText(kept.join(' '));
+}
+
 /**
  * Edit instruction for JoyAI (Premium HD). JoyAI follows prompts that name the
  * garment's concrete visible features, so the product name and description are
  * added when the item has them.
  */
-export function buildTryOnInstruction(input: BuildTryOnPromptInput): string {
+export function buildTryOnInstruction(
+  input: BuildTryOnPromptInput,
+  opts: { useHintDetails?: boolean } = {},
+): string {
   const cat =
     normalizeCategory(input.category) ??
     normalizeCategory(input.name) ??
     normalizeCategory(input.promptHint);
   const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
   const name = cleanProductText(input.name, 120);
-  const description = cleanProductText(input.description);
+  // Store products have a description; wardrobe items have the Gemini analysis hint.
+  const description =
+    cleanProductText(input.description) || (opts.useHintDetails === false ? '' : garmentDetailsFromHint(input.promptHint));
   if (name || description) {
     const label = name ? `The reference garment is the ${name}` : 'The reference garment';
     parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);

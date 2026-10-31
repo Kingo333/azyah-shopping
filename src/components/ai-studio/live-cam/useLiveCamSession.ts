@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
+import { prepareGarmentImage } from './liveCamGarmentImage';
+import { isLiveCamLegacy } from './liveCamFlags';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -328,8 +330,11 @@ export function useLiveCamSession({
       // 3. Fetch reference image as bytes -> base64.
       const refResp = await fetch(garment.referenceImageUrl, { mode: 'cors' });
       if (!refResp.ok) throw new Error(`Reference image fetch failed (${refResp.status})`);
-      const refBuf = await refResp.arrayBuffer();
-      const refB64 = arrayBufferToBase64(refBuf);
+      // White background, max 1024 px (see liveCamGarmentImage.ts).
+      const legacy = isLiveCamLegacy();
+      if (legacy) console.log('[live-cam] legacy mode: no Gemini details, no photo clean-up');
+      const refBlob = await refResp.blob();
+      const refB64 = await blobToBase64(legacy ? refBlob : await prepareGarmentImage(refBlob));
 
       // 4. Open WS with cold-start retry-with-backoff (FluxRT pods need 60–180s to warm up).
       setStatus('warming');
@@ -400,7 +405,7 @@ export function useLiveCamSession({
         name,
         description,
         promptHint: hint,
-      });
+      }, { useHintDetails: !legacy });
 
       const sleeveInference = inferSleeveLength({
         category: garment.category,
@@ -590,7 +595,8 @@ export function useLiveCamSession({
         if (!wsSwap || wsSwap.readyState !== WebSocket.OPEN) throw new Error('Session is not running');
         const resp = await fetch(next.referenceImageUrl, { mode: 'cors' });
         if (!resp.ok) throw new Error(`Reference image fetch failed (${resp.status})`);
-        const nextRef = arrayBufferToBase64(await resp.arrayBuffer());
+        const nextBlob = await resp.blob();
+        const nextRef = await blobToBase64(isLiveCamLegacy() ? nextBlob : await prepareGarmentImage(nextBlob));
         const meta = {
           category: next.category,
           name: next.label?.trim(),
@@ -603,7 +609,7 @@ export function useLiveCamSession({
         await ackRef;
         const nextPrompt = buildTryOnPrompt(meta);
         const ackPrompt = waitForAck('set_prompt');
-        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta) }));
+        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta, { useHintDetails: !isLiveCamLegacy() }) }));
         await ackPrompt;
         lastPromptHashRef.current = hashPrompt(nextPrompt);
         activeGarmentIdRef.current = next.id;
