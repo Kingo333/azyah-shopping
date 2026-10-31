@@ -229,7 +229,10 @@ export function garmentDetailsFromHint(hint: string | null | undefined): string 
  * garment's concrete visible features, so the product name and description are
  * added when the item has them.
  */
-export function buildTryOnInstruction(input: BuildTryOnPromptInput): string {
+export function buildTryOnInstruction(
+  input: BuildTryOnPromptInput,
+  opts: { useHintDetails?: boolean } = {},
+): string {
   const cat =
     normalizeCategory(input.category) ??
     normalizeCategory(input.name) ??
@@ -237,7 +240,8 @@ export function buildTryOnInstruction(input: BuildTryOnPromptInput): string {
   const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
   const name = cleanProductText(input.name, 120);
   // Store products have a description; wardrobe items have the Gemini analysis hint.
-  const description = cleanProductText(input.description) || garmentDetailsFromHint(input.promptHint);
+  const description =
+    cleanProductText(input.description) || (opts.useHintDetails === false ? '' : garmentDetailsFromHint(input.promptHint));
   if (name || description) {
     const label = name ? `The reference garment is the ${name}` : 'The reference garment';
     parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);
