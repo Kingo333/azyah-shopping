@@ -5,7 +5,7 @@ import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './bu
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { isLiveCamLegacy } from './liveCamFlags';
-import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
+import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -211,10 +211,11 @@ export function useLiveCamSession({
       const cacheCtx = cache.getContext('2d');
       if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
 
-      // Pin visible canvas bitmap to FluxRT output dimensions; do not mutate per frame.
-      const { captureWidth, captureHeight } = cfgRef.current;
-      if (canvas.width !== captureWidth) canvas.width = captureWidth;
-      if (canvas.height !== captureHeight) canvas.height = captureHeight;
+      // Pin the visible canvas to the worker's output size (2x capture with FluxRT's
+      // upscaler) so the extra detail isn't scaled away; do not mutate per frame.
+      const out = outputCanvasSize(cfgRef.current);
+      if (canvas.width !== out.width) canvas.width = out.width;
+      if (canvas.height !== out.height) canvas.height = out.height;
 
       // Contain-fit on a black backdrop — full frame visible, centered, never cropped.
       ctx.fillStyle = '#000';
@@ -251,9 +252,9 @@ export function useLiveCamSession({
     if (!cache || !canvas || cache.width === 0 || cache.height === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const { captureWidth, captureHeight } = cfgRef.current;
-    if (canvas.width !== captureWidth) canvas.width = captureWidth;
-    if (canvas.height !== captureHeight) canvas.height = captureHeight;
+    const out = outputCanvasSize(cfgRef.current);
+    if (canvas.width !== out.width) canvas.width = out.width;
+    if (canvas.height !== out.height) canvas.height = out.height;
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     const scale = Math.min(canvas.width / cache.width, canvas.height / cache.height);
@@ -635,12 +636,13 @@ export function useLiveCamSession({
         }
 
         if (t === 'ready') {
-          // JoyAI says which frame size, fps and JPEG quality it wants; FluxRT doesn't.
+          // The worker (JoyAI, or FluxRT 32206e8+) says which frame size, fps and JPEG quality it wants.
           const before = cfgRef.current;
           cfgRef.current = applyEngineHints(before, parsed);
           if (cfgRef.current !== before) {
             const c = cfgRef.current;
-            console.log(`[live-cam] engine=joyai capture=${c.captureWidth}x${c.captureHeight} fps=${c.fpsCap} q=${c.jpegQuality}`);
+            const o = outputCanvasSize(c);
+            console.log(`[live-cam] engine=${String(parsed.engine)} capture=${c.captureWidth}x${c.captureHeight} output=${o.width}x${o.height} fps=${c.fpsCap} q=${c.jpegQuality}`);
           }
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
