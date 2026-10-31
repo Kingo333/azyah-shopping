@@ -9,6 +9,10 @@ export interface LiveCamTierConfig {
   fpsCap: number;
   /** JPEG quality (0-1) of the camera frames sent to the worker. */
   jpegQuality: number;
+  /** Size of the frames the worker sends back, when it differs from the capture
+   * size (FluxRT's Flow Upscaler returns 2x). The output canvas uses it. */
+  outputWidth?: number;
+  outputHeight?: number;
   /** How long to wait for the GPU worker to become ready. */
   warmupTimeoutMs: number;
   warmupLabel: string;
@@ -35,25 +39,30 @@ export const LIVE_CAM_TIER_CONFIG: Record<LiveCamTier, LiveCamTierConfig> = {
 };
 
 /**
- * The JoyAI worker's "ready" message says which frames it wants
- * ({engine: "joyai", input_width, input_height, input_fps, input_jpeg_quality}).
+ * The worker's "ready" message says which frames it wants
+ * ({engine: "joyai" | "fluxrt", input_width, input_height, input_fps, input_jpeg_quality,
+ * and for FluxRT output_width/output_height}).
  * Use them whatever tier was requested, because the endpoint decides the engine.
- * FluxRT sends no engine field, so its tier config is kept.
+ * Older workers send no engine field, so the tier config is kept.
  */
 export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, unknown>): LiveCamTierConfig {
-  if (ready?.engine !== 'joyai') return cfg;
+  if (ready?.engine !== 'joyai' && ready?.engine !== 'fluxrt') return cfg;
   const num = (v: unknown, min: number, max: number): number | null =>
     typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : null;
   const w = num(ready.input_width, 128, 1920);
   const h = num(ready.input_height, 128, 1920);
   const fps = num(ready.input_fps, 1, 30);
   const q = num(ready.input_jpeg_quality, 0.3, 1);
+  const ow = num(ready.output_width, 128, 2048);
+  const oh = num(ready.output_height, 128, 2048);
   return {
     ...cfg,
     captureWidth: w !== null && h !== null ? Math.round(w) : cfg.captureWidth,
     captureHeight: w !== null && h !== null ? Math.round(h) : cfg.captureHeight,
     fpsCap: fps ?? cfg.fpsCap,
     jpegQuality: q ?? cfg.jpegQuality,
+    outputWidth: ow !== null && oh !== null ? Math.round(ow) : cfg.outputWidth,
+    outputHeight: ow !== null && oh !== null ? Math.round(oh) : cfg.outputHeight,
   };
 }
 
@@ -61,6 +70,11 @@ export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, u
  * Source rectangle that center-crops a camera frame to the capture aspect ratio,
  * so a landscape camera isn't squeezed into a portrait frame (faces looked thin).
  */
+/** Canvas size for the worker's frames: its output size if it sent one, else the capture size. */
+export function outputCanvasSize(cfg: LiveCamTierConfig): { width: number; height: number } {
+  return { width: cfg.outputWidth ?? cfg.captureWidth, height: cfg.outputHeight ?? cfg.captureHeight };
+}
+
 export function coverCropRect(
   videoWidth: number,
   videoHeight: number,

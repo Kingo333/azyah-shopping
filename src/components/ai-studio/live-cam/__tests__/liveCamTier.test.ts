@@ -3,6 +3,7 @@ import {
   LIVE_CAM_TIER_CONFIG,
   applyEngineHints,
   coverCropRect,
+  outputCanvasSize,
   isPremiumUiEnabled,
   isPremiumUnavailable,
   readFunctionError,
@@ -58,8 +59,24 @@ describe('applyEngineHints', () => {
     expect(cfg).toMatchObject({ captureWidth: 480, captureHeight: 840, fpsCap: 24, jpegQuality: 0.85 });
     expect(cfg.warmupTimeoutMs).toBe(std.warmupTimeoutMs);
   });
-  it('keeps the tier config for FluxRT (no engine field)', () => {
+  it('keeps the tier config for older workers (no engine field)', () => {
     expect(applyEngineHints(std, { type: 'ready', session_deadline: 1 })).toBe(std);
+  });
+  it('adopts FluxRT hints including the 2x output size', () => {
+    const cfg = applyEngineHints(std, {
+      type: 'ready', engine: 'fluxrt', input_width: 288, input_height: 512,
+      output_width: 576, output_height: 1024, input_fps: 10, input_jpeg_quality: 0.8,
+    });
+    expect(cfg).toMatchObject({ captureWidth: 288, captureHeight: 512, fpsCap: 10, jpegQuality: 0.8 });
+    expect(outputCanvasSize(cfg)).toEqual({ width: 576, height: 1024 });
+  });
+  it('output canvas falls back to the capture size', () => {
+    expect(outputCanvasSize(std)).toEqual({ width: 288, height: 512 });
+    const cfg = applyEngineHints(std, { engine: 'fluxrt', output_width: 99999, output_height: 1024 });
+    expect(outputCanvasSize(cfg)).toEqual({ width: 288, height: 512 });
+  });
+  it('ignores unknown engines', () => {
+    expect(applyEngineHints(std, { engine: 'other', input_width: 480, input_height: 840 })).toBe(std);
   });
   it('ignores missing or out-of-range values', () => {
     const cfg = applyEngineHints(std, { engine: 'joyai', input_width: 99999, input_height: 840, input_fps: 0, input_jpeg_quality: 'x' });
