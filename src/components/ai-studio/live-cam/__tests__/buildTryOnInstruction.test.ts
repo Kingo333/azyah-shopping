@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTryOnInstruction, cleanProductText } from '../buildTryOnPrompt';
+import { buildTryOnInstruction, cleanProductText, garmentDetailsFromHint } from '../buildTryOnPrompt';
 
 describe('buildTryOnInstruction', () => {
   it('uses Lucy-style substitute phrasing per category', () => {
@@ -47,5 +47,30 @@ describe('cleanProductText', () => {
   it('handles empty input', () => {
     expect(cleanProductText(null)).toBe('');
     expect(cleanProductText('   ')).toBe('');
+  });
+});
+
+describe('garmentDetailsFromHint (Gemini wardrobe analysis)', () => {
+  const hint =
+    'Preserve face, identity, body shape, pose, skin tone, lighting, camera angle, and background. Only change the selected garment region. ' +
+    'Replace only the upper body. Navy crew-neck tee with a white circular logo centred on the chest. Soft cotton jersey, matte finish. ' +
+    'The reference image is the source of truth. If any text description conflicts with the reference image, follow the reference image.';
+
+  it('keeps only the garment-specific sentences', () => {
+    expect(garmentDetailsFromHint(hint)).toBe(
+      'Navy crew-neck tee with a white circular logo centred on the chest. Soft cotton jersey, matte finish.',
+    );
+  });
+
+  it('feeds wardrobe items (no description) into the JoyAI instruction', () => {
+    const s = buildTryOnInstruction({ category: 'tops', name: 'My tee', promptHint: hint });
+    expect(s).toContain('The reference garment is the My tee: Navy crew-neck tee with a white circular logo centred on the chest.');
+    expect(s).not.toContain('source of truth');
+  });
+
+  it('prefers the product description when there is one', () => {
+    const s = buildTryOnInstruction({ category: 'tops', name: 'Tee', description: 'Red tee', promptHint: hint });
+    expect(s).toContain('Tee: Red tee.');
+    expect(s).not.toContain('Navy');
   });
 });
