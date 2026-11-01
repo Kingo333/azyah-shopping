@@ -18,6 +18,11 @@ export interface LiveCamStatsSnapshot {
   serverMsP95: number | null;
   firstFrameMs: number | null;
   lastSwapGapMs: number | null;
+  /** Phone-side JPEG encode + base64 time per camera frame; shows when the phone limits the send rate. */
+  encodeMsP50: number | null;
+  encodeMsP95: number | null;
+  /** Capture ticks skipped because the previous frame was still encoding. */
+  encodeSkipped: number;
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -46,6 +51,8 @@ export class LiveCamFrameStats {
   private firstFrameMs: number | null = null;
   private swapAt: number | null = null;
   private lastSwapGapMs: number | null = null;
+  private encode: number[] = [];
+  private encodeSkipped = 0;
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -63,6 +70,16 @@ export class LiveCamFrameStats {
     this.firstFrameMs = null;
     this.swapAt = null;
     this.lastSwapGapMs = null;
+    this.encode = [];
+    this.encodeSkipped = 0;
+  }
+
+  onEncoded(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.encode, ms, KEEP_SAMPLES);
+  }
+
+  onEncodeSkipped(): void {
+    this.encodeSkipped += 1;
   }
 
   /** Number and timestamp for the next camera frame. */
@@ -123,6 +140,9 @@ export class LiveCamFrameStats {
       serverMsP95: percentile(this.server, 95),
       firstFrameMs: this.firstFrameMs,
       lastSwapGapMs: this.lastSwapGapMs,
+      encodeMsP50: percentile(this.encode, 50),
+      encodeMsP95: percentile(this.encode, 95),
+      encodeSkipped: this.encodeSkipped,
     };
   }
 }
