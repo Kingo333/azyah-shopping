@@ -6,6 +6,7 @@ import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { isLiveCamLegacy } from './liveCamFlags';
 import { garmentRefCache } from './liveCamGarmentCache';
+import { needsFaceGate } from './liveCamFaceGate';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -107,6 +108,8 @@ export function useLiveCamSession({
     }
   });
   const facingRef = useRef<CameraFacing>(facing);
+  // Last set_prompt sent, so a camera flip can resend it with the new face_gate.
+  const lastPromptMsgRef = useRef<{ type: 'set_prompt'; prompt: string; instruction: string; face_gate: boolean; category: string | null } | null>(null);
   const flippingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -169,6 +172,7 @@ export function useLiveCamSession({
     captureCanvasRef.current = null;
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
+    lastPromptMsgRef.current = null;
     lastFrameCanvasRef.current = null;
     lastPromptHashRef.current = null;
     setPromptCountRef.current = 0;
@@ -591,7 +595,15 @@ export function useLiveCamSession({
             if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
               throw new Error('WebSocket closed before prompt could be sent');
             }
-            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt, instruction: finalInstruction }));
+            const promptMsg = {
+              type: 'set_prompt' as const,
+              prompt: finalPrompt,
+              instruction: finalInstruction,
+              face_gate: needsFaceGate(garment.category, facingRef.current),
+              category: garment.category ?? null,
+            };
+            lastPromptMsgRef.current = promptMsg;
+            wsNow2.send(JSON.stringify(promptMsg));
             await ackPrompt;
             lastPromptHashRef.current = promptHash;
             setPromptCountRef.current += 1;
@@ -647,7 +659,15 @@ export function useLiveCamSession({
         const ackPrompt = waitForAck('set_prompt');
         statsRef.current.markSwap();
         wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
-        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }) }));
+        const swapMsg = {
+          type: 'set_prompt' as const,
+          prompt: nextPrompt,
+          instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }),
+          face_gate: needsFaceGate(next.category, facingRef.current),
+          category: next.category ?? null,
+        };
+        lastPromptMsgRef.current = swapMsg;
+        wsSwap.send(JSON.stringify(swapMsg));
         await Promise.all([ackRef, ackPrompt]);
         lastPromptHashRef.current = hashPrompt(nextPrompt);
         activeGarmentIdRef.current = next.id;
@@ -828,6 +848,16 @@ export function useLiveCamSession({
       const cam = await startCamera(video, next);
       streamRef.current = cam.stream;
       remember(next);
+      // The face check depends on the camera (off on the back camera): tell the worker.
+      const last = lastPromptMsgRef.current;
+      const ws = wsRef.current;
+      if (last && ws && ws.readyState === WebSocket.OPEN) {
+        const faceGate = needsFaceGate(last.category, next);
+        if (faceGate !== last.face_gate) {
+          lastPromptMsgRef.current = { ...last, face_gate: faceGate };
+          ws.send(JSON.stringify(lastPromptMsgRef.current));
+        }
+      }
     } catch (e) {
       console.warn('[live-cam] camera flip failed', e);
       setNotice('Could not switch camera.');
