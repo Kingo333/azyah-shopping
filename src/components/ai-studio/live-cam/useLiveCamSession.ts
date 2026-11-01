@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
+import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { isLiveCamLegacy } from './liveCamFlags';
 import { garmentRefCache } from './liveCamGarmentCache';
+import { needsFaceGate } from './liveCamFaceGate';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -21,6 +22,7 @@ const STATUS_NOTICES: Record<string, string> = {
   session_reset: 'Refreshing the try-on…',
   queued: 'Waiting for a free Premium GPU…',
 };
+const FACING_KEY = 'azyah.livecam.facing';
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
@@ -97,6 +99,18 @@ export function useLiveCamSession({
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
+  // Front camera by default; the choice is remembered on this device.
+  const [facing, setFacing] = useState<CameraFacing>(() => {
+    try {
+      return window.localStorage.getItem(FACING_KEY) === 'environment' ? 'environment' : 'user';
+    } catch {
+      return 'user';
+    }
+  });
+  const facingRef = useRef<CameraFacing>(facing);
+  // Last set_prompt sent, so a camera flip can resend it with the new face_gate.
+  const lastPromptMsgRef = useRef<{ type: 'set_prompt'; prompt: string; instruction: string; face_gate: boolean; category: string | null } | null>(null);
+  const flippingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -158,6 +172,7 @@ export function useLiveCamSession({
     captureCanvasRef.current = null;
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
+    lastPromptMsgRef.current = null;
     lastFrameCanvasRef.current = null;
     lastPromptHashRef.current = null;
     setPromptCountRef.current = 0;
@@ -326,7 +341,7 @@ export function useLiveCamSession({
       // 2. Acquire camera.
       const video = localVideoRef.current;
       if (!video) throw new Error('Video element missing');
-      const cam: CameraResult = await startCamera(video);
+      const cam: CameraResult = await startCamera(video, facingRef.current);
       streamRef.current = cam.stream;
 
       // 3. Fetch reference image as bytes -> base64.
@@ -580,7 +595,15 @@ export function useLiveCamSession({
             if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN) {
               throw new Error('WebSocket closed before prompt could be sent');
             }
-            wsNow2.send(JSON.stringify({ type: 'set_prompt', prompt: finalPrompt, instruction: finalInstruction }));
+            const promptMsg = {
+              type: 'set_prompt' as const,
+              prompt: finalPrompt,
+              instruction: finalInstruction,
+              face_gate: needsFaceGate(garment.category, facingRef.current),
+              category: garment.category ?? null,
+            };
+            lastPromptMsgRef.current = promptMsg;
+            wsNow2.send(JSON.stringify(promptMsg));
             await ackPrompt;
             lastPromptHashRef.current = promptHash;
             setPromptCountRef.current += 1;
@@ -636,7 +659,15 @@ export function useLiveCamSession({
         const ackPrompt = waitForAck('set_prompt');
         statsRef.current.markSwap();
         wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
-        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }) }));
+        const swapMsg = {
+          type: 'set_prompt' as const,
+          prompt: nextPrompt,
+          instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }),
+          face_gate: needsFaceGate(next.category, facingRef.current),
+          category: next.category ?? null,
+        };
+        lastPromptMsgRef.current = swapMsg;
+        wsSwap.send(JSON.stringify(swapMsg));
         await Promise.all([ackRef, ackPrompt]);
         lastPromptHashRef.current = hashPrompt(nextPrompt);
         activeGarmentIdRef.current = next.id;
@@ -793,8 +824,58 @@ export function useLiveCamSession({
     };
   }, [cleanupLocal, callEnd, stop]);
 
+  // Switch front <-> back camera. Mid-session the stream is swapped in place: the
+  // frame loop reads the same <video>, so the worker just sees the new camera.
+  const flipCamera = useCallback(async () => {
+    if (flippingRef.current) return;
+    const next: CameraFacing = facingRef.current === 'user' ? 'environment' : 'user';
+    const remember = (f: CameraFacing) => {
+      facingRef.current = f;
+      setFacing(f);
+      try { window.localStorage.setItem(FACING_KEY, f); } catch { /* private mode */ }
+    };
+    const video = localVideoRef.current;
+    if (!streamRef.current || !video) {
+      remember(next); // not streaming yet: used when the camera starts
+      return;
+    }
+    flippingRef.current = true;
+    const previous = facingRef.current;
+    // Many phones can't open both cameras at once, so stop the current one first.
+    stopCamera(streamRef.current);
+    streamRef.current = null;
+    try {
+      const cam = await startCamera(video, next);
+      streamRef.current = cam.stream;
+      remember(next);
+      // The face check depends on the camera (off on the back camera): tell the worker.
+      const last = lastPromptMsgRef.current;
+      const ws = wsRef.current;
+      if (last && ws && ws.readyState === WebSocket.OPEN) {
+        const faceGate = needsFaceGate(last.category, next);
+        if (faceGate !== last.face_gate) {
+          lastPromptMsgRef.current = { ...last, face_gate: faceGate };
+          ws.send(JSON.stringify(lastPromptMsgRef.current));
+        }
+      }
+    } catch (e) {
+      console.warn('[live-cam] camera flip failed', e);
+      setNotice('Could not switch camera.');
+      try {
+        const cam = await startCamera(video, previous);
+        streamRef.current = cam.stream;
+      } catch {
+        setNotice('Camera stopped. End and start again.');
+      }
+    } finally {
+      flippingRef.current = false;
+    }
+  }, [localVideoRef]);
+
   return {
     status,
+    facing,
+    flipCamera,
     errorMessage,
     errorCode,
     notice,
