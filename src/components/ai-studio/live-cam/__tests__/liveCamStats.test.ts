@@ -63,4 +63,16 @@ describe('LiveCamFrameStats', () => {
     for (let i = 0; i < 50; i++) { s.nextFrame(); c.advance(100); }
     expect(s.snapshot().sentFps).toBe(10);
   });
+  it('reports phone encode time and skipped ticks', () => {
+    const s = new LiveCamFrameStats(() => 0);
+    s.reset();
+    s.onEncoded(30);
+    s.onEncoded(50);
+    s.onEncoded(90);
+    s.onEncodeSkipped();
+    const snap = s.snapshot();
+    expect(snap.encodeMsP50).toBe(50);
+    expect(snap.encodeMsP95).toBe(90);
+    expect(snap.encodeSkipped).toBe(1);
+  });
 });

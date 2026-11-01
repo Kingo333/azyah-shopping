@@ -5,6 +5,7 @@ import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './bu
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { isLiveCamLegacy } from './liveCamFlags';
+import { garmentRefCache } from './liveCamGarmentCache';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -487,32 +488,48 @@ export function useLiveCamSession({
         }
 
         const intervalMs = Math.floor(1000 / fpsCap);
+        // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
+        // add latency instead of frames, so a tick is skipped while one is in flight.
+        let encoding = false;
         frameTimerRef.current = window.setInterval(() => {
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
           if (wsNow2.bufferedAmount > 2_000_000) return;
+          if (encoding) {
+            statsRef.current.onEncodeSkipped();
+            return;
+          }
+          encoding = true;
+          const encodeStart = performance.now();
           // Center-crop to the capture aspect instead of stretching the camera frame.
           const { sx, sy, sw, sh } = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
-          capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
-          cap.toBlob(
-            async (blob) => {
-              if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-              if (wsRef.current.bufferedAmount > 2_000_000) return;
-              try {
-                const b64 = await blobToBase64(blob);
-                if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-                if (wsRef.current.bufferedAmount > 2_000_000) return;
-                lastSendTsRef.current = performance.now();
-                const { seq, tClientMs } = statsRef.current.nextFrame();
-                wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64, seq, t_client_ms: tClientMs }));
-              } catch {
-                // skip frame
-              }
-            },
-            'image/jpeg',
-            jpegQuality,
-          );
+          try {
+            capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
+            cap.toBlob(
+              async (blob) => {
+                try {
+                  if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+                  if (wsRef.current.bufferedAmount > 2_000_000) return;
+                  const b64 = await blobToBase64(blob);
+                  statsRef.current.onEncoded(performance.now() - encodeStart);
+                  if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+                  if (wsRef.current.bufferedAmount > 2_000_000) return;
+                  lastSendTsRef.current = performance.now();
+                  const { seq, tClientMs } = statsRef.current.nextFrame();
+                  wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64, seq, t_client_ms: tClientMs }));
+                } catch {
+                  // skip frame
+                } finally {
+                  encoding = false;
+                }
+              },
+              'image/jpeg',
+              jpegQuality,
+            );
+          } catch {
+            encoding = false; // drawImage/toBlob threw: never leave the loop stuck
+          }
         }, intervalMs);
       };
 
@@ -594,24 +611,33 @@ export function useLiveCamSession({
       swapGarmentRef.current = async (next: LiveCamGarmentSelection) => {
         const wsSwap = wsRef.current;
         if (!wsSwap || wsSwap.readyState !== WebSocket.OPEN) throw new Error('Session is not running');
-        const resp = await fetch(next.referenceImageUrl, { mode: 'cors' });
-        if (!resp.ok) throw new Error(`Reference image fetch failed (${resp.status})`);
-        const nextBlob = await resp.blob();
-        const nextRef = await blobToBase64(isLiveCamLegacy() ? nextBlob : await prepareGarmentImage(nextBlob));
+        // Prepared garment photos are cached by URL, so switching back to a garment
+        // skips the download and the clean-up.
+        const legacy = isLiveCamLegacy();
+        const cacheKey = `${legacy ? 'raw' : 'prep'}:${next.referenceImageUrl}`;
+        let nextRef = garmentRefCache.get(cacheKey);
+        if (!nextRef) {
+          const resp = await fetch(next.referenceImageUrl, { mode: 'cors' });
+          if (!resp.ok) throw new Error(`Reference image fetch failed (${resp.status})`);
+          const nextBlob = await resp.blob();
+          nextRef = await blobToBase64(legacy ? nextBlob : await prepareGarmentImage(nextBlob));
+          garmentRefCache.set(cacheKey, nextRef);
+        }
         const meta = {
           category: next.category,
           name: next.label?.trim(),
           description: next.description?.trim(),
           promptHint: next.promptHint?.trim(),
         };
+        // Image and prompt go out back to back (no round trip between them); the worker
+        // turns the pair into one restart.
+        const nextPrompt = buildTryOnPrompt(meta);
         const ackRef = waitForAck('set_reference_image');
+        const ackPrompt = waitForAck('set_prompt');
         statsRef.current.markSwap();
         wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
-        await ackRef;
-        const nextPrompt = buildTryOnPrompt(meta);
-        const ackPrompt = waitForAck('set_prompt');
-        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta, { useHintDetails: !isLiveCamLegacy() }) }));
-        await ackPrompt;
+        wsSwap.send(JSON.stringify({ type: 'set_prompt', prompt: nextPrompt, instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }) }));
+        await Promise.all([ackRef, ackPrompt]);
         lastPromptHashRef.current = hashPrompt(nextPrompt);
         activeGarmentIdRef.current = next.id;
         console.log(`[live-cam] garment swapped id=${next.id} category=${next.category ?? ''}`);
