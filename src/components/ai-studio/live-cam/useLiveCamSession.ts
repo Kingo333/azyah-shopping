@@ -6,6 +6,7 @@ import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { isLiveCamLegacy } from './liveCamFlags';
 import { garmentRefCache } from './liveCamGarmentCache';
+import { parseWarming, type WarmupInfo } from '@/lib/liveWarmup';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
@@ -97,6 +98,11 @@ export function useLiveCamSession({
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
+  const [warmup, setWarmup] = useState<WarmupInfo | null>(null);
+  // Warm-up progress only matters while starting; clear it otherwise.
+  useEffect(() => {
+    if (status !== 'starting' && status !== 'warming') setWarmup(null);
+  }, [status]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -661,6 +667,13 @@ export function useLiveCamSession({
           return;
         }
 
+        if (t === 'warming') {
+          // Worker-reported phase and elapsed time for the wait screen (newer workers only).
+          const w = parseWarming(parsed, Date.now());
+          if (w) setWarmup(w);
+          return;
+        }
+
         if (t === 'ready') {
           // The worker (JoyAI, or FluxRT 32206e8+) says which frame size, fps and JPEG quality it wants.
           const before = cfgRef.current;
@@ -795,6 +808,7 @@ export function useLiveCamSession({
 
   return {
     status,
+    warmup,
     errorMessage,
     errorCode,
     notice,

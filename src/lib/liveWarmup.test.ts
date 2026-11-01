@@ -37,3 +37,26 @@ describe('formatElapsed', () => {
     expect(formatElapsed(95_000)).toBe('1:35');
   });
 });
+
+import { parseWarming, warmupView } from './liveWarmup';
+
+describe('worker warm-up progress', () => {
+  it('parses progress and ignores old workers', () => {
+    expect(parseWarming({ type: 'warming', state: {} }, 0)).toBeNull();
+    const w = parseWarming({ type: 'warming', engine: 'joyai', phase: 'loading', elapsed_s: 42, expected_s: 180 }, 1000);
+    expect(w).toEqual({ engine: 'joyai', phase: 'loading', elapsedS: 42, expectedS: 180, receivedAt: 1000 });
+    expect(parseWarming({ type: 'warming', elapsed_s: 5, expected_s: 99999 }, 0)?.expectedS).toBeNull();
+  });
+  it('waits for a GPU first, then follows the worker clock and typical time', () => {
+    const before = warmupView(null, 0, 20_000);
+    expect(before.label).toBe('Finding a free GPU…');
+    expect(before.elapsedMs).toBe(20_000);
+    const info = parseWarming({ type: 'warming', engine: 'joyai', phase: 'loading', elapsed_s: 60, expected_s: 180 }, 30_000)!;
+    const v = warmupView(info, 0, 33_000);
+    expect(v.label).toBe('Loading the try-on model…');
+    expect(v.elapsedMs).toBe(63_000);
+    expect(v.typicalMs).toBe(180_000);
+    expect(v.typicalLabel).toBe('Usually about 3 minutes.');
+    expect(warmupView({ ...info, phase: 'booting' }, 0, 33_000).label).toBe('Starting the try-on engine…');
+  });
+});
