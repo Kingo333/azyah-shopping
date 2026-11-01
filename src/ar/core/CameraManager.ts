@@ -19,27 +19,19 @@ export interface CameraResult {
   constraintTier: 'ideal' | 'fallback-720' | 'fallback-basic';
 }
 
+/** Front ('user') or back ('environment') camera. */
+export type CameraFacing = 'user' | 'environment';
+
 /** Ordered constraint chain: tries ideal first, then progressively relaxes. */
-const CONSTRAINT_CHAIN: Array<{ tier: CameraResult['constraintTier']; constraints: MediaStreamConstraints }> = [
-  {
-    tier: 'ideal',
-    constraints: {
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-    },
-  },
-  {
-    tier: 'fallback-720',
-    constraints: {
-      video: { facingMode: 'user', width: { max: 1280 }, height: { max: 720 } },
-    },
-  },
-  {
-    tier: 'fallback-basic',
-    constraints: {
-      video: { facingMode: 'user' },
-    },
-  },
-];
+export function buildConstraintChain(
+  facing: CameraFacing = 'user',
+): Array<{ tier: CameraResult['constraintTier']; constraints: MediaStreamConstraints }> {
+  return [
+    { tier: 'ideal', constraints: { video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } } } },
+    { tier: 'fallback-720', constraints: { video: { facingMode: facing, width: { max: 1280 }, height: { max: 720 } } } },
+    { tier: 'fallback-basic', constraints: { video: { facingMode: facing } } },
+  ];
+}
 
 /** Errors that warrant trying a looser constraint set. */
 const RECOVERABLE_ERRORS = new Set(['OverconstrainedError', 'NotReadableError', 'AbortError']);
@@ -67,11 +59,11 @@ export async function checkCameraPermission(): Promise<'granted' | 'denied' | 'p
  * @throws DOMException with name 'NotFoundError' if no camera is present.
  * @throws The last error from the constraint chain if all tiers fail.
  */
-export async function startCamera(video: HTMLVideoElement): Promise<CameraResult> {
+export async function startCamera(video: HTMLVideoElement, facing: CameraFacing = 'user'): Promise<CameraResult> {
   let lastErr: any = null;
   let acquired: { stream: MediaStream; tier: CameraResult['constraintTier'] } | null = null;
 
-  for (const { tier, constraints } of CONSTRAINT_CHAIN) {
+  for (const { tier, constraints } of buildConstraintChain(facing)) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       acquired = { stream, tier };

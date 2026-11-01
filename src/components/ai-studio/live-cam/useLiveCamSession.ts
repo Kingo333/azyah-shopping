@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { startCamera, stopCamera, type CameraResult } from '@/ar/core/CameraManager';
+import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
@@ -21,6 +21,7 @@ const STATUS_NOTICES: Record<string, string> = {
   session_reset: 'Refreshing the try-on…',
   queued: 'Waiting for a free Premium GPU…',
 };
+const FACING_KEY = 'azyah.livecam.facing';
 const WS_FIRST_RETRY_MS = 3_000;
 const WS_RETRY_INTERVAL_MS = 5_000;
 
@@ -97,6 +98,16 @@ export function useLiveCamSession({
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
+  // Front camera by default; the choice is remembered on this device.
+  const [facing, setFacing] = useState<CameraFacing>(() => {
+    try {
+      return window.localStorage.getItem(FACING_KEY) === 'environment' ? 'environment' : 'user';
+    } catch {
+      return 'user';
+    }
+  });
+  const facingRef = useRef<CameraFacing>(facing);
+  const flippingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -326,7 +337,7 @@ export function useLiveCamSession({
       // 2. Acquire camera.
       const video = localVideoRef.current;
       if (!video) throw new Error('Video element missing');
-      const cam: CameraResult = await startCamera(video);
+      const cam: CameraResult = await startCamera(video, facingRef.current);
       streamRef.current = cam.stream;
 
       // 3. Fetch reference image as bytes -> base64.
@@ -793,8 +804,48 @@ export function useLiveCamSession({
     };
   }, [cleanupLocal, callEnd, stop]);
 
+  // Switch front <-> back camera. Mid-session the stream is swapped in place: the
+  // frame loop reads the same <video>, so the worker just sees the new camera.
+  const flipCamera = useCallback(async () => {
+    if (flippingRef.current) return;
+    const next: CameraFacing = facingRef.current === 'user' ? 'environment' : 'user';
+    const remember = (f: CameraFacing) => {
+      facingRef.current = f;
+      setFacing(f);
+      try { window.localStorage.setItem(FACING_KEY, f); } catch { /* private mode */ }
+    };
+    const video = localVideoRef.current;
+    if (!streamRef.current || !video) {
+      remember(next); // not streaming yet: used when the camera starts
+      return;
+    }
+    flippingRef.current = true;
+    const previous = facingRef.current;
+    // Many phones can't open both cameras at once, so stop the current one first.
+    stopCamera(streamRef.current);
+    streamRef.current = null;
+    try {
+      const cam = await startCamera(video, next);
+      streamRef.current = cam.stream;
+      remember(next);
+    } catch (e) {
+      console.warn('[live-cam] camera flip failed', e);
+      setNotice('Could not switch camera.');
+      try {
+        const cam = await startCamera(video, previous);
+        streamRef.current = cam.stream;
+      } catch {
+        setNotice('Camera stopped. End and start again.');
+      }
+    } finally {
+      flippingRef.current = false;
+    }
+  }, [localVideoRef]);
+
   return {
     status,
+    facing,
+    flipCamera,
     errorMessage,
     errorCode,
     notice,

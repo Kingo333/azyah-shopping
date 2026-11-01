@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Play, Sparkles, Square } from 'lucide-react';
+import { Loader2, Play, Sparkles, Square, SwitchCamera } from 'lucide-react';
 import { LiveCamCameraView } from './LiveCamCameraView';
 import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
 import { LiveCamSnapshotButton } from './LiveCamSnapshotButton';
@@ -41,7 +41,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const v3 = hosted || routeV3;
 
   const {
-    status, errorMessage, errorCode, notice, latencyMs, session, activeTier, start, stop, redrawLastFrame,
+    status, facing, flipCamera, errorMessage, errorCode, notice, latencyMs, session, activeTier, start, stop, redrawLastFrame,
   } = useLiveCamSession({
     garment,
     tier: showTierPicker ? tier : 'standard',
@@ -134,6 +134,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           topLeft={
             <>
               <StagePill status={status} />
+              <FlipCameraButton facing={facing} onFlip={flipCamera} variant="stage" />
               {(isRunning || isStarting) && showTierPicker && (
                 <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">{TIER_LABEL[servedTier]}</span>
               )}
@@ -341,6 +342,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           )}
         </div>
         <div className="flex items-center gap-2">
+          <FlipCameraButton facing={facing} onFlip={flipCamera} variant="classic" />
           {isRunning && (
             <LiveCamSnapshotButton sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} />
           )}
@@ -447,3 +449,26 @@ const StagePill: React.FC<{ status: LiveCamStatus }> = ({ status }) => {
     </span>
   );
 };
+
+/** Front <-> back camera. Works before Start (sets the choice) and while live. */
+function FlipCameraButton({
+  facing,
+  onFlip,
+  variant,
+}: {
+  facing: 'user' | 'environment';
+  onFlip: () => Promise<void> | void;
+  variant: 'stage' | 'classic';
+}) {
+  const label = facing === 'user' ? 'Switch to back camera' : 'Switch to front camera';
+  const className =
+    variant === 'stage'
+      ? 'flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white'
+      : 'h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 flex items-center gap-1.5 hover:bg-gray-50';
+  return (
+    <button type="button" onClick={() => void onFlip()} aria-label={label} title={label} className={className}>
+      <SwitchCamera className={variant === 'stage' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+      {facing === 'user' ? 'Front' : 'Back'}
+    </button>
+  );
+}
