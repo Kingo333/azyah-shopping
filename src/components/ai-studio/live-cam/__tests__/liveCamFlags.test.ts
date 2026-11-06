@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveCamLegacy } from '../liveCamFlags';
+import { isLiveCamLegacy, liveCamPlaybackOverride } from '../liveCamFlags';
+
+describe('buffered playback override (F1b)', () => {
+  it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
+    expect(liveCamPlaybackOverride('?livecam_playback=1', { getItem: () => '0' })).toBe('on');
+    expect(liveCamPlaybackOverride('?livecam_playback=0', { getItem: () => '1' })).toBe('off');
+    expect(liveCamPlaybackOverride('?x=1', { getItem: () => '1' })).toBe('on');
+    expect(liveCamPlaybackOverride('', { getItem: () => '0' })).toBe('off');
+    expect(liveCamPlaybackOverride('', { getItem: () => null })).toBeNull();
+    expect(liveCamPlaybackOverride(undefined, undefined)).toBeNull();
+    expect(liveCamPlaybackOverride('', { getItem: () => { throw new Error('private mode'); } })).toBeNull();
+  });
+});
 import { buildTryOnInstruction } from '../buildTryOnPrompt';
 
 describe('legacy benchmark switch', () => {

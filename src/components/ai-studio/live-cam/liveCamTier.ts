@@ -16,6 +16,10 @@ export interface LiveCamTierConfig {
   /** How long to wait for the GPU worker to become ready. */
   warmupTimeoutMs: number;
   warmupLabel: string;
+  /** Worker hint (ready.playback_buffer): draw frames through the jitter buffer. Off unless set. */
+  playbackBuffer?: boolean;
+  /** Worker hint (ready.playback_fps): fixed presentation rate for the buffer. */
+  playbackFps?: number;
 }
 
 export const LIVE_CAM_TIER_CONFIG: Record<LiveCamTier, LiveCamTierConfig> = {
@@ -55,6 +59,8 @@ export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, u
   const q = num(ready.input_jpeg_quality, 0.3, 1);
   const ow = num(ready.output_width, 128, 2048);
   const oh = num(ready.output_height, 128, 2048);
+  // Optional app-side jitter buffer hints: playback_buffer (boolean), playback_fps (number).
+  const playbackFps = num(ready.playback_fps, 1, 60);
   return {
     ...cfg,
     captureWidth: w !== null && h !== null ? Math.round(w) : cfg.captureWidth,
@@ -63,6 +69,8 @@ export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, u
     jpegQuality: q ?? cfg.jpegQuality,
     outputWidth: ow !== null && oh !== null ? Math.round(ow) : cfg.outputWidth,
     outputHeight: ow !== null && oh !== null ? Math.round(oh) : cfg.outputHeight,
+    playbackBuffer: typeof ready.playback_buffer === 'boolean' ? ready.playback_buffer : cfg.playbackBuffer,
+    playbackFps: playbackFps ?? cfg.playbackFps,
   };
 }
 

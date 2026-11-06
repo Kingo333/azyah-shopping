@@ -50,6 +50,28 @@ describe('tier helpers', () => {
   });
 });
 
+describe('applyEngineHints: sharp input and playback hints (F1b/F2d)', () => {
+  const std = LIVE_CAM_TIER_CONFIG.standard;
+  it('accepts a capture size larger than the tier default (FluxRT model size x2)', () => {
+    const cfg = applyEngineHints(std, {
+      engine: 'fluxrt', input_width: 576, input_height: 1024, output_width: 576, output_height: 1024,
+      input_fps: 10, input_jpeg_quality: 0.8,
+    });
+    expect(cfg).toMatchObject({ captureWidth: 576, captureHeight: 1024, fpsCap: 10, jpegQuality: 0.8 });
+    expect(outputCanvasSize(cfg)).toEqual({ width: 576, height: 1024 });
+  });
+  it('reads playback_buffer and playback_fps, and leaves them unset when absent', () => {
+    expect(applyEngineHints(std, { engine: 'fluxrt' }).playbackBuffer).toBeUndefined();
+    const on = applyEngineHints(std, { engine: 'fluxrt', playback_buffer: true, playback_fps: 24 });
+    expect(on.playbackBuffer).toBe(true);
+    expect(on.playbackFps).toBe(24);
+    const off = applyEngineHints(std, { engine: 'joyai', playback_buffer: false, playback_fps: 999 });
+    expect(off.playbackBuffer).toBe(false);
+    expect(off.playbackFps).toBeUndefined();
+    expect(applyEngineHints(std, { engine: 'joyai', playback_buffer: 'yes' }).playbackBuffer).toBeUndefined();
+  });
+});
+
 describe('applyEngineHints', () => {
   const std = LIVE_CAM_TIER_CONFIG.standard;
   it('adopts JoyAI frame size, fps and quality from ready', () => {
