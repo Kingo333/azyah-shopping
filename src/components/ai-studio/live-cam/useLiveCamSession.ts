@@ -9,6 +9,7 @@ import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
 import { LIVE_CAM_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, startFailureOutcome, type LiveCamConfig, type StartStopReason } from './liveCamTier';
+import { WAIT_COPY, endOnHidden, needsFreshSession, type WaitAnchor } from './liveCamWait';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -20,7 +21,7 @@ const STATUS_NOTICES: Record<string, string> = {
   waiting_face: 'Face the camera to start the try-on.',
   no_person: 'No one in frame. Step into view.',
   session_reset: 'Refreshing the try-on…',
-  queued: 'Waiting for a free GPU…',
+  queued: 'Waiting for a free mirror…',
 };
 const FACING_KEY = 'azyah.livecam.facing';
 const WS_FIRST_RETRY_MS = 3_000;
@@ -62,6 +63,11 @@ interface UseLiveCamSessionReturn {
   errorCode: string | null;
   /** Short live hint from the GPU worker (e.g. "No one in frame"). */
   notice: string | null;
+  /** The worker's raw status word behind `notice`, e.g. 'no_person'; null when there is none. */
+  noticeKey: string | null;
+  /** Where the start-up is (real moments only); null when not starting. See liveCamWait.ts. */
+  waitAnchor: WaitAnchor | null;
+  waitTimes: { startedAt: number; connectedAt: number | null; liveAt: number | null } | null;
   latencyMs: number | null;
   session: LiveCamSessionInfo | null;
   start: () => Promise<void>;
@@ -99,6 +105,8 @@ export function useLiveCamSession({
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
+  const statusRef = useRef<LiveCamStatus>('idle');
+  statusRef.current = status;
   // Front camera by default; the choice is remembered on this device.
   const [facing, setFacing] = useState<CameraFacing>(() => {
     try {
@@ -114,6 +122,12 @@ export function useLiveCamSession({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The worker's raw status word behind `notice` (waiting_face, no_person, ...), for the framing guide.
+  const [noticeKey, setNoticeKey] = useState<string | null>(null);
+  // Real moments of the start-up, for the designed wait (liveCamWait.ts). Time stamps are
+  // wall-clock ms; null until Start.
+  const [waitAnchor, setWaitAnchor] = useState<WaitAnchor | null>(null);
+  const [waitTimes, setWaitTimes] = useState<{ startedAt: number; connectedAt: number | null; liveAt: number | null } | null>(null);
   // Settings for this session (defaults, then the worker's ready hints); read inside frame callbacks.
   const cfgRef = useRef<LiveCamConfig>(LIVE_CAM_CONFIG);
   // Why a start was interrupted: the shopper cancelled, or it ran out of time.
@@ -348,7 +362,11 @@ export function useLiveCamSession({
   const start = useCallback(async () => {
     setErrorCode(null);
     setNotice(null);
+    setNoticeKey(null);
     stopReasonRef.current = null;
+    const startedAt = Date.now();
+    setWaitAnchor(null);
+    setWaitTimes({ startedAt, connectedAt: null, liveAt: null });
     // Until the worker's ready hints arrive, use the defaults.
     cfgRef.current = LIVE_CAM_CONFIG;
     if (!garment) {
@@ -373,38 +391,34 @@ export function useLiveCamSession({
     const warmupTimeoutMs = LIVE_CAM_CONFIG.warmupTimeoutMs;
     startTimeoutRef.current = window.setTimeout(() => {
       stopReasonRef.current = 'timeout';
-      setErrorMessage('Live try-on took too long to start. Please try again.');
+      setErrorMessage(WAIT_COPY.tooLong);
       setStatus('failed');
       cleanupLocal();
     }, warmupTimeoutMs);
 
     try {
-      // 1. Provision the pod via edge function.
-      const { data, error } = await supabase.functions.invoke<{
-        session_id: string; ws_url: string; pod_id: string | null;
-      }>('live-cam-session-start', {
-        // One mode for everyone. The server still records a tier; 'standard' is always allowed.
-        body: { garment_id: garment.id, garment_source: garment.source, tier: 'standard' },
-      });
-      if (error || !data?.ws_url || !data?.session_id) {
-        const details = error ? await readFunctionError(error) : { code: null, message: null };
-        if (details.code) setErrorCode(details.code);
-        throw new Error(details.message || 'Failed to start session');
-      }
-      sessionIdRef.current = data.session_id;
-      setSession({
-        sessionId: data.session_id,
-        podId: data.pod_id,
-        wsUrl: data.ws_url,
-      });
+      // 1. Ask the server for a session (it mints the 5-minute worker token).
+      const requestSession = async () => {
+        const { data, error } = await supabase.functions.invoke<{
+          session_id: string; ws_url: string; pod_id: string | null;
+        }>('live-cam-session-start', {
+          // One mode for everyone. The server still records a tier; 'standard' is always allowed.
+          body: { garment_id: garment.id, garment_source: garment.source, tier: 'standard' },
+        });
+        if (error || !data?.ws_url || !data?.session_id) {
+          const details = error ? await readFunctionError(error) : { code: null, message: null };
+          if (details.code) setErrorCode(details.code);
+          throw new Error(details.message || 'Failed to start session');
+        }
+        sessionIdRef.current = data.session_id;
+        setSession({ sessionId: data.session_id, podId: data.pod_id, wsUrl: data.ws_url });
+        return { wsUrl: data.ws_url, mintedAt: Date.now() };
+      };
+      let { wsUrl, mintedAt } = await requestSession();
+      setWaitAnchor('requested');
 
-      // 2. Acquire camera.
-      const video = localVideoRef.current;
-      if (!video) throw new Error('Video element missing');
-      const cam: CameraResult = await startCamera(video, facingRef.current);
-      streamRef.current = cam.stream;
-
-      // 3. Fetch reference image as bytes -> base64.
+      // 2. The garment, prepared while the worker starts. The camera comes on only when the
+      // worker is ready (step 8), so no camera light during the wait and the phone can be locked.
       const refResp = await fetch(garment.referenceImageUrl, { mode: 'cors' });
       if (!refResp.ok) throw new Error(`Reference image fetch failed (${refResp.status})`);
       // White background, max 1024 px (see liveCamGarmentImage.ts).
@@ -413,15 +427,27 @@ export function useLiveCamSession({
       const refBlob = await refResp.blob();
       const refB64 = await blobToBase64(legacy ? refBlob : await prepareGarmentImage(refBlob));
 
-      // 4. Open WS with cold-start retry-with-backoff (FluxRT pods need 60–180s to warm up).
+      // 3. Connect, retrying while the worker's container starts (the worker accepts within
+      // seconds of being up and holds the socket while its model loads). The token is valid
+      // for 5 minutes from Start; if nothing has accepted by 4, a fresh session is requested.
       setStatus('warming');
-      const deadline = Date.now() + warmupTimeoutMs - 5_000;
+      const deadline = startedAt + warmupTimeoutMs - 5_000;
+      let connectedOnce = false;
+      const connect = async (): Promise<WebSocket> => {
       let ws: WebSocket | null = null;
       let attemptNum = 0;
       while (true) {
         if (abortRef.current) throw new Error('aborted');
         attemptNum++;
-        const candidate = new WebSocket(data.ws_url);
+        if (needsFreshSession(Date.now() - mintedAt, connectedOnce)) {
+          const old = sessionIdRef.current;
+          ({ wsUrl, mintedAt } = await requestSession());
+          if (old && old !== sessionIdRef.current) {
+            try { await supabase.functions.invoke('live-cam-session-end', { body: { session_id: old } }); } catch { /* best-effort */ }
+          }
+          console.log('[live-cam] fresh session after a long start-up');
+        }
+        const candidate = new WebSocket(wsUrl);
         const opened = await new Promise<boolean>((resolve) => {
           const onOpen = () => { cleanup(); resolve(true); };
           const onFail = () => { cleanup(); resolve(false); };
@@ -444,7 +470,7 @@ export function useLiveCamSession({
         }
         try { candidate.close(); } catch { /* noop */ }
         if (Date.now() >= deadline) {
-          throw new Error('GPU pod did not accept connections in time. Please retry.');
+          throw new Error('Your mirror took too long to get ready. Please try again.');
         }
         const waitMs = attemptNum === 1 ? WS_FIRST_RETRY_MS : WS_RETRY_INTERVAL_MS;
         await new Promise<void>((resolve) => {
@@ -464,9 +490,15 @@ export function useLiveCamSession({
         });
         if (abortRef.current) throw new Error('aborted');
       }
+      return ws;
+      };
+      const ws = await connect();
       wsRef.current = ws;
+      connectedOnce = true;
+      setWaitAnchor('connected');
+      setWaitTimes((w) => (w ? { ...w, connectedAt: Date.now() } : w));
 
-      // 5. Build category-aware prompt from existing item metadata.
+      // 4. Build category-aware prompt from existing item metadata.
       const name = garment.label?.trim();
       const description = garment.description?.trim();
       const hint = garment.promptHint?.trim();
@@ -548,6 +580,8 @@ export function useLiveCamSession({
           startTimeoutRef.current = null;
         }
         setStatus('running');
+        setWaitAnchor('live');
+        setWaitTimes((w) => (w ? { ...w, liveAt: Date.now() } : w));
 
         const { captureWidth, captureHeight, fpsCap, jpegQuality } = cfgRef.current;
         const cap = document.createElement('canvas');
@@ -613,6 +647,25 @@ export function useLiveCamSession({
         handshakeStarted = true;
         const wsNow = wsRef.current;
         if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
+
+        // The worker is ready: only now turn the camera on (permission prompt the first time).
+        if (!streamRef.current) {
+          try {
+            const video = localVideoRef.current;
+            if (!video) throw new Error('Video element missing');
+            const cam: CameraResult = await startCamera(video, facingRef.current);
+            streamRef.current = cam.stream;
+          } catch (e: unknown) {
+            const why = e instanceof Error ? e.message : String(e);
+            setErrorMessage(/denied|permission|NotAllowed/i.test(why) ? 'Camera access is blocked. Allow the camera in Settings and try again.' : `Couldn’t open your mirror: ${why}`);
+            setStatus('failed');
+            cleanupLocal();
+            void callEnd();
+            sessionIdRef.current = null;
+            return;
+          }
+          if (abortRef.current) return;
+        }
 
         if (!refExists) {
           setErrorMessage('Reference image missing');
@@ -734,8 +787,9 @@ export function useLiveCamSession({
         console.log(`[live-cam] garment swapped id=${next.id} category=${next.category ?? ''}`);
       };
 
-      // 8. Bind message handler — handle warming | ready | ack | error | frame.
-      ws.addEventListener('message', (ev) => {
+      // 8. Bind the socket: warming | ready | ack | error | frame. Re-bound on a reconnect.
+      const bindSocket = (sock: WebSocket) => {
+      sock.addEventListener('message', (ev) => {
         if (typeof ev.data !== 'string') return;
         let parsed: any;
         try { parsed = JSON.parse(ev.data); } catch { return; }
@@ -753,6 +807,7 @@ export function useLiveCamSession({
         }
 
         if (t === 'ready') {
+          setWaitAnchor('ready');
           // The worker (JoyAI, or FluxRT 32206e8+) says which frame size, fps and JPEG quality it wants.
           const before = cfgRef.current;
           cfgRef.current = applyEngineHints(before, parsed);
@@ -772,6 +827,7 @@ export function useLiveCamSession({
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
+          setNoticeKey((k) => (k === null ? k : null));
           void renderRemoteFrame(parsed.frame_b64, parsed.seq, parsed.server_ms);
         } else if (t === 'status' && typeof parsed.status === 'string') {
           if (parsed.status === 'session_limit') {
@@ -784,6 +840,7 @@ export function useLiveCamSession({
             sessionIdRef.current = null;
           } else {
             setNotice(STATUS_NOTICES[parsed.status] ?? null);
+            setNoticeKey(parsed.status);
           }
         } else if (t === 'error') {
           const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
@@ -795,15 +852,39 @@ export function useLiveCamSession({
           sessionIdRef.current = null;
         }
       });
-      ws.addEventListener('error', () => {
+      sock.addEventListener('error', () => {
         rejectAllPending('WebSocket error');
       });
-      ws.addEventListener('close', () => {
+      sock.addEventListener('close', () => {
         rejectAllPending('WebSocket closed');
-        if (sessionIdRef.current) {
-          setStatus((s) => (s === 'running' ? 'ended' : s));
+        if (!sessionIdRef.current || abortRef.current) return;
+        if (frameLoopStarted) {
+          setStatus('ended');
+          return;
         }
+        // Dropped while still starting (a locked phone, a flaky network): the worker keeps the
+        // session, so connect again with the same token and carry on where it was.
+        handshakeStarted = false;
+        void (async () => {
+          try {
+            const again = await connect();
+            if (abortRef.current) { try { again.close(); } catch { /* noop */ } return; }
+            wsRef.current = again;
+            bindSocket(again);
+            console.log('[live-cam] reconnected during start-up');
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg === 'aborted') return;
+            setErrorMessage(msg);
+            setStatus('failed');
+            cleanupLocal();
+            void callEnd();
+            sessionIdRef.current = null;
+          }
+        })();
       });
+      };
+      bindSocket(ws);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       // Cancelling or the start timeout ends the start with an internal 'aborted'. A later
@@ -869,7 +950,9 @@ export function useLiveCamSession({
     };
 
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden' && sessionIdRef.current) {
+      // Live (camera on): end, as before. Still starting (camera off): keep going; the
+      // socket reconnects by itself if the phone dropped it.
+      if (document.visibilityState === 'hidden' && sessionIdRef.current && endOnHidden(statusRef.current)) {
         void stop();
       }
     };
@@ -950,6 +1033,9 @@ export function useLiveCamSession({
     errorMessage,
     errorCode,
     notice,
+    noticeKey,
+    waitAnchor,
+    waitTimes,
     latencyMs,
     session,
     start,

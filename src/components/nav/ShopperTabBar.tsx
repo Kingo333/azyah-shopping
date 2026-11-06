@@ -29,7 +29,9 @@ export const ShopperTabBar: React.FC = () => {
   const { user } = useAuth();
   const v3 = useDesignV3();
   // Live try-on keeps starting / running while people browse; the Try on tab shows it.
-  const badge = liveBadge(useLiveCamHostStatus().status);
+  const live = useLiveCamHostStatus();
+  const badge = liveBadge(live.status);
+  const ring = badge === 'loading' ? Math.max(0.04, live.waitProgress ?? 0) : null;
 
   // Partners use their own portal navigation, as today.
   const role = user?.user_metadata?.role;
@@ -77,6 +79,18 @@ export const ShopperTabBar: React.FC = () => {
                       dark ? 'bg-white text-black' : 'bg-ink text-white'
                     }`}
                   >
+                    {ring !== null && (
+                      // Progress ring: fills as the mirror gets ready (amber, like the dot).
+                      <span
+                        aria-hidden
+                        className="absolute -inset-[3px] rounded-full"
+                        style={{
+                          background: `conic-gradient(#fbbf24 ${Math.round(ring * 360)}deg, transparent 0deg)`,
+                          WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px))',
+                          mask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px))',
+                        }}
+                      />
+                    )}
                     <Icon className="h-[18px] w-[18px]" aria-hidden />
                     {badge && (
                       <span

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
 import type { LiveCamStatus } from '@/components/ai-studio/live-cam/liveCamTypes';
 import { keepMounted } from '@/lib/liveCamHost';
+import { WAIT_COPY } from '@/components/ai-studio/live-cam/liveCamWait';
 
 /**
  * Design v3: one Live Cam for the whole app, so it keeps starting up (and
@@ -23,6 +24,8 @@ interface HostApi {
 
 interface HostStatus {
   status: LiveCamStatus;
+  /** How far the start-up is (0..1) while it starts; null otherwise. The Try on tab draws a ring. */
+  waitProgress: number | null;
   /** Bumped when someone asks to see the Live screen (pill or toast). */
   openRequest: number;
   /** True once per request: the Try on screen uses it to switch to Live. */
@@ -30,7 +33,7 @@ interface HostStatus {
 }
 
 const HostApiContext = createContext<HostApi | null>(null);
-const HostStatusContext = createContext<HostStatus>({ status: 'idle', openRequest: 0, takeOpenRequest: () => false });
+const HostStatusContext = createContext<HostStatus>({ status: 'idle', waitProgress: null, openRequest: 0, takeOpenRequest: () => false });
 
 export const useLiveCamHostStatus = () => useContext(HostStatusContext);
 
@@ -39,6 +42,7 @@ export function LiveCamHostProvider({ children }: { children: React.ReactNode })
   const [onScreen, setOnScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [status, setStatus] = useState<LiveCamStatus>('idle');
+  const [waitProgress, setWaitProgress] = useState<number | null>(null);
   const [openRequest, setOpenRequest] = useState(0);
   const onScreenRef = useRef(false);
 
@@ -98,9 +102,9 @@ export function LiveCamHostProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === 'running' && prev.current !== 'running') {
       if (onScreenRef.current) {
-        toast.success('Live try-on is ready. Tap any item to try it on.');
+        toast.success(WAIT_COPY.readyHere);
       } else {
-        toast.success('Live try-on is ready. Any item now loads instantly.', {
+        toast.success(WAIT_COPY.ready, {
           action: { label: 'Open', onClick: openLive },
           duration: 8000,
         });
@@ -110,13 +114,13 @@ export function LiveCamHostProvider({ children }: { children: React.ReactNode })
   }, [status, openLive]);
 
   const api = useMemo<HostApi>(() => ({ attach, detach }), [attach, detach]);
-  const statusValue = useMemo<HostStatus>(() => ({ status, openRequest, takeOpenRequest }), [status, openRequest, takeOpenRequest]);
+  const statusValue = useMemo<HostStatus>(() => ({ status, waitProgress, openRequest, takeOpenRequest }), [status, waitProgress, openRequest, takeOpenRequest]);
 
   return (
     <HostApiContext.Provider value={api}>
       <HostStatusContext.Provider value={statusValue}>
         {children}
-        {mounted && createPortal(<LiveCamTab hosted onStatusChange={setStatus} />, container)}
+        {mounted && createPortal(<LiveCamTab hosted onStatusChange={setStatus} onWaitProgress={setWaitProgress} />, container)}
       </HostStatusContext.Provider>
     </HostApiContext.Provider>
   );

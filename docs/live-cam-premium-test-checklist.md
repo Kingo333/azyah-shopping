@@ -11,7 +11,9 @@
 >       the elapsed timer counts up; it goes live (JoyAI cold starts take several minutes).
 > - [ ] **Cancel** while it starts: back to idle, no error, no "aborted"; the session row ends.
 > - [ ] A start that never becomes ready fails after 15 minutes with
->       "Live try-on took too long to start. Please try again."
+>       "We couldn’t get your mirror ready this time. Try again, it’s usually much quicker the second time."
+> - [ ] During the start: no camera light, the card shows the five steps, the Try on tab shows an amber ring; locking the phone and coming back continues the same start.
+> - [ ] Once live: the dotted head-and-shoulders guide shows for a few seconds (not for shoes or bags), a tap hides it, and it returns when nobody is in view.
 > - [ ] Switching outfits while live is quick (no restart).
 > - [ ] `live_cam_sessions` row: `tier = standard`.
 

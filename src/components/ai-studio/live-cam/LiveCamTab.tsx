@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Play, Square, SwitchCamera, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LiveCamWaitCard } from './LiveCamWaitCard';
+import { LiveCamFramingGuide } from './LiveCamFramingGuide';
+import { WAIT_COPY, showFramingGuide, waitEstimateMs, waitProgress } from './liveCamWait';
+import { needsFaceGate } from './liveCamFaceGate';
+import { triggerHaptic } from '@/utils/haptics';
 import { LiveCamCameraView } from './LiveCamCameraView';
 import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
 import { LiveCamSnapshotButton } from './LiveCamSnapshotButton';
@@ -7,7 +13,6 @@ import { useLiveCamSession } from './useLiveCamSession';
 import { LIVE_CAM_CONFIG } from './liveCamTier';
 import type { LiveCamGarmentSelection, LiveCamStatus } from './liveCamTypes';
 import { useDesignV3 } from '@/hooks/useDesignV3';
-import { formatElapsed, warmupProgress } from '@/lib/liveWarmup';
 import { toast } from 'sonner';
 
 const supportsLiveCam = (): boolean => {
@@ -23,9 +28,11 @@ interface LiveCamTabProps {
    */
   hosted?: boolean;
   onStatusChange?: (status: LiveCamStatus) => void;
+  /** How far the start-up is (0..1), or null when not starting; the Try on tab draws a ring. */
+  onWaitProgress?: (progress: number | null) => void;
 }
 
-export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatusChange }) => {
+export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatusChange, onWaitProgress }) => {
   const [garment, setGarment] = useState<LiveCamGarmentSelection | null>(null);
   const [expanded, setExpanded] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -33,37 +40,70 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const supported = supportsLiveCam();
   const routeV3 = useDesignV3();
   const v3 = hosted || routeV3;
+  const navigate = useNavigate();
 
   const {
-    status, facing, flipCamera, errorMessage, notice, latencyMs, session, start, stop, redrawLastFrame,
+    status, facing, flipCamera, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame,
   } = useLiveCamSession({
     garment,
     localVideoRef,
     remoteCanvasRef,
   });
 
-  // Design v3: time the start-up for the loading card, and say when it's ready.
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-  const loadingNow = status === 'starting' || status === 'warming';
+  // Framing guide: the opening moments once live, or whenever nobody is in view.
+  const [guideDismissed, setGuideDismissed] = useState(false);
+  const [guideTick, setGuideTick] = useState(0);
   useEffect(() => {
-    if (!loadingNow) {
-      setStartedAt(null);
-      return;
-    }
-    setStartedAt((t) => t ?? Date.now());
-    const id = window.setInterval(() => setNow(Date.now()), 500);
+    if (status !== 'running') { setGuideDismissed(false); return; }
+    const id = window.setInterval(() => setGuideTick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
-  }, [loadingNow]);
+  }, [status]);
+  const guideOn = showFramingGuide({
+    running: status === 'running',
+    faceItem: needsFaceGate(garment?.category, facing),
+    sinceLiveMs: waitTimes?.liveAt ? Date.now() - waitTimes.liveAt : 0,
+    dismissed: guideDismissed,
+    noticeKey,
+  });
+  void guideTick;
+
+  // "Let me know when it's ready": system notification if the app is in the background.
+  const [notifyState, setNotifyState] = useState<'off' | 'asked' | 'on' | 'blocked'>(() =>
+    typeof Notification !== 'undefined' && Notification.permission === 'denied' ? 'blocked' : 'off');
+  const requestNotify = async () => {
+    if (typeof Notification === 'undefined') { setNotifyState('blocked'); return; }
+    setNotifyState('asked');
+    try {
+      const p = await Notification.requestPermission();
+      setNotifyState(p === 'granted' ? 'on' : 'blocked');
+    } catch { setNotifyState('blocked'); }
+  };
+
+
   const prevStatus = useRef(status);
   useEffect(() => {
     onStatusChange?.(status);
-    // The host says when it's ready (also when you're elsewhere); otherwise say it here.
-    if (!hosted && v3 && status === 'running' && prevStatus.current !== 'running') {
-      toast.success('Live try-on is on. Tap any item to try it on.');
+    if (status === 'running' && prevStatus.current !== 'running') {
+      // The ready moment: a tap on the wrist, and a word wherever they are.
+      triggerHaptic('medium');
+      if (!hosted && v3) toast.success(WAIT_COPY.readyHere);
+      if (notifyState === 'on' && document.visibilityState === 'hidden') {
+        try { new Notification('Azyah', { body: WAIT_COPY.ready, tag: 'azyah-live-ready' }); } catch { /* not supported here */ }
+      }
     }
     prevStatus.current = status;
-  }, [status, v3, hosted, onStatusChange]);
+  }, [status, v3, hosted, onStatusChange, notifyState]);
+
+  // The Try on tab's ring: how far the start-up is.
+  useEffect(() => {
+    if (!onWaitProgress) return;
+    if (status !== 'starting' && status !== 'warming') { onWaitProgress(null); return; }
+    const est = waitEstimateMs();
+    const tick = () => onWaitProgress(waitProgress(waitAnchor ?? 'requested', waitTimes ? Date.now() - waitTimes.startedAt : 0, est));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [status, waitAnchor, waitTimes, onWaitProgress]);
 
   const handleToggleExpand = () => {
     setExpanded((v) => !v);
@@ -127,36 +167,26 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
             </>
           }
           loadingContent={
-            <div className="w-full max-w-[260px] rounded-[20px] bg-neutral-900 p-5 text-center text-white">
-              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-              <p className="mt-3 text-[15px] font-semibold">Turning on live try-on</p>
-              <p className="mt-1 text-[13px] text-white/75">The first start takes about 2–5 minutes while the GPU wakes up. After that, switching outfits is fast.</p>
-              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
-                <div
-                  className="h-full rounded-full bg-white transition-[width] duration-500"
-                  style={{ width: `${Math.round(warmupProgress(startedAt ? now - startedAt : 0) * 100)}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[12px] text-white/70 tabular-nums">{formatElapsed(startedAt ? now - startedAt : 0)}</p>
-              <p className="mt-3 text-[12px] text-white/70">
-                {hosted
-                  ? 'Pick what to try first below, or keep browsing. We’ll tell you when it’s ready.'
-                  : 'Pick what to try first below. Stay on this screen.'}
-              </p>
-            </div>
+            <LiveCamWaitCard
+              anchor={waitAnchor}
+              startedAt={waitTimes?.startedAt ?? null}
+              connectedAt={waitTimes?.connectedAt ?? null}
+              canKeepShopping={hosted}
+              notifyState={notifyState}
+              onKeepShopping={() => navigate('/swipe')}
+              onNotNow={() => void stop()}
+              onNotify={() => void requestNotify()}
+            />
           }
+          overlay={guideOn ? <LiveCamFramingGuide onDismiss={() => setGuideDismissed(true)} /> : null}
           idleContent={
             garment ? (
               <div className="flex flex-col items-center gap-3 text-center">
                 <img src={garment.referenceImageUrl} alt="" className="h-32 w-24 rounded-xl bg-white object-cover" />
-                <p className="max-w-[240px] text-[13px] text-white/80">
-                  Turning on takes about 2–5 minutes the first time. After that, switching outfits is fast.
-                </p>
+                <p className="max-w-[240px] text-[13px] text-white/80">{WAIT_COPY.idleHint}</p>
               </div>
             ) : (
-              <p className="max-w-[240px] text-center text-[15px] text-white/80">
-                Turning on takes about 2–5 minutes the first time. After that, switching outfits is fast.
-              </p>
+              <p className="max-w-[240px] text-center text-[15px] text-white/80">{WAIT_COPY.idleHint}</p>
             )
           }
           bottom={
@@ -164,6 +194,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               {/* Changing the garment while running swaps it live (no reconnect). */}
               {/* A pick made while it starts is swapped in as soon as it's live. */}
               <LiveCamGarmentPicker value={garment} onChange={setGarment} layout="strip" autoSelectFirst />
+              {isStarting && <p className="text-center text-[12px] text-white/70">{WAIT_COPY.pickFirst}</p>}
               {isRunning ? (
                 <div className="grid grid-cols-3 items-center">
                   <button
@@ -207,7 +238,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
             ? hosted
               ? 'Live try-on is on. It stays on while you browse, until you end it or close the app.'
               : 'Live try-on is on. It turns off when you end it or leave this screen.'
-            : 'The first start takes about 2–5 minutes while the GPU wakes up. Once it’s on, outfits switch quickly.'}
+            : WAIT_COPY.idleHint}
         </p>
 
         {notice && <div className="rounded-[14px] bg-fill p-3 text-[13px] text-ink">{notice}</div>}
@@ -332,7 +363,7 @@ const StagePill: React.FC<{ status: LiveCamStatus }> = ({ status }) => {
   const label: Record<LiveCamStatus, string> = {
     idle: 'Ready',
     starting: 'Starting…',
-    warming: 'Warming up…',
+    warming: 'Getting ready…',
     running: 'Live',
     ended: 'Ended',
     failed: 'Stopped',

@@ -23,6 +23,8 @@ interface Props {
   bottom?: React.ReactNode;
   /** Stage only: shown in the middle while it starts up (replaces the warming pill). */
   loadingContent?: React.ReactNode;
+  /** Stage only: drawn over the live view (e.g. the framing guide). */
+  overlay?: React.ReactNode;
 }
 
 export const LiveCamCameraView: React.FC<Props> = ({
@@ -38,10 +40,11 @@ export const LiveCamCameraView: React.FC<Props> = ({
   idleContent,
   bottom,
   loadingContent,
+  overlay,
 }) => {
   const stage = variant === 'stage';
   const isWarming = status === 'warming';
-  const warmingCopy = 'Warming up… the first start takes about 2–5 minutes';
+  const warmingCopy = 'Preparing your mirror… the first time takes about 2–5 minutes';
 
   // Repaint cached frame whenever the visible canvas's box changes size.
   useEffect(() => {
@@ -77,7 +80,8 @@ export const LiveCamCameraView: React.FC<Props> = ({
   // Canvas sized by CSS (max-w/max-h-full) — bitmap stays at 288×512 with
   // contain-fit drawn manually inside renderRemoteFrame, so the frame is
   // always centered on black with no zoom/crop/stretch.
-  const canvasClass = 'max-w-full max-h-full w-auto h-auto object-contain';
+  // The live view fades in when the mirror opens (the ready moment).
+  const canvasClass = `max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-700 ${stage && !isRunning ? 'opacity-0' : 'opacity-100'}`;
 
   return (
     <div className={outerClass}>
@@ -98,6 +102,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
             {warmingCopy}
           </span>
         )}
+        {stage && isRunning && overlay}
         {stage && bottom && <div className="absolute inset-x-0 bottom-0 z-30">{bottom}</div>}
         {stage ? (
           topLeft && <div className="absolute top-3 left-3 right-16 z-20 flex flex-wrap items-center gap-1.5">{topLeft}</div>

@@ -29,7 +29,7 @@ describe('one Live Try-On mode', () => {
   it('waits up to 15 minutes for any cold start (JoyAI or FluxRT)', () => {
     expect(LIVE_CAM_WARMUP_TIMEOUT_MS).toBe(15 * 60_000);
     expect(LIVE_CAM_CONFIG.warmupTimeoutMs).toBe(LIVE_CAM_WARMUP_TIMEOUT_MS);
-    expect(LIVE_CAM_CONFIG.warmupLabel).toBe('Warming up… about 2–5 minutes the first time');
+    expect(LIVE_CAM_CONFIG.warmupLabel).toBe('Preparing your mirror… about 2–5 minutes the first time');
   });
   it('defaults to FluxRT model size until the worker sends its hints', () => {
     expect(LIVE_CAM_CONFIG).toMatchObject({ captureWidth: 288, captureHeight: 512, fpsCap: 12, jpegQuality: 0.7 });

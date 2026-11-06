@@ -36,7 +36,7 @@ export const LIVE_CAM_CONFIG: LiveCamConfig = {
   fpsCap: 12,
   jpegQuality: 0.7,
   warmupTimeoutMs: LIVE_CAM_WARMUP_TIMEOUT_MS,
-  warmupLabel: 'Warming up… about 2–5 minutes the first time',
+  warmupLabel: 'Preparing your mirror… about 2–5 minutes the first time',
 };
 
 /**
