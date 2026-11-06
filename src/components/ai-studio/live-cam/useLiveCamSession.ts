@@ -4,7 +4,8 @@ import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy } from './liveCamFlags';
+import { isLiveCamLegacy, liveCamPlaybackOverride } from './liveCamFlags';
+import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
 import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
@@ -140,10 +141,28 @@ export function useLiveCamSession({
   const swapGarmentRef = useRef<((next: LiveCamGarmentSelection) => Promise<void>) | null>(null);
   const activeGarmentIdRef = useRef<string | null>(null);
   const setPromptCountRef = useRef<number>(0);
+  // Buffered playback (F1b): off unless the URL/localStorage override or the worker's
+  // ready hint turns it on. Decoded frames wait in the scheduler and a rAF loop draws
+  // them on a steady cadence; with it off, frames are drawn the instant they arrive.
+  const playbackRef = useRef<PlaybackScheduler<{ bitmap: ImageBitmap; b64: string }> | null>(null);
+  const playbackRafRef = useRef<number | null>(null);
+
+  const stopPlayback = useCallback(() => {
+    if (playbackRafRef.current !== null) {
+      if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(playbackRafRef.current);
+      playbackRafRef.current = null;
+    }
+    const sched = playbackRef.current;
+    playbackRef.current = null;
+    if (sched) {
+      for (const f of sched.clear()) f.bitmap.close?.();
+    }
+  }, []);
 
 
   const cleanupLocal = useCallback(() => {
     abortRef.current = true;
+    stopPlayback();
     if (retryTimerRef.current !== null) {
       window.clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
@@ -178,7 +197,7 @@ export function useLiveCamSession({
     setPromptCountRef.current = 0;
     swapGarmentRef.current = null;
     activeGarmentIdRef.current = null;
-  }, [localVideoRef]);
+  }, [localVideoRef, stopPlayback]);
 
 
   const callEnd = useCallback(async () => {
@@ -201,49 +220,93 @@ export function useLiveCamSession({
 
   useEffect(() => {
     const w = window as unknown as { __azyahLiveCam?: { stats: () => unknown } };
-    w.__azyahLiveCam = { stats: () => statsRef.current.snapshot() };
+    w.__azyahLiveCam = {
+      stats: () => ({
+        ...statsRef.current.snapshot(),
+        playback: playbackRef.current ? { on: true, ...playbackRef.current.snapshot() } : { on: false },
+      }),
+    };
     return () => {
       delete w.__azyahLiveCam;
     };
   }, []);
 
+  // Draw one decoded frame into the visible canvas (and the offscreen cache). Shared by
+  // the immediate path and the buffered playback loop. Closes the bitmap.
+  const presentBitmap = useCallback((bitmap: ImageBitmap, b64: string) => {
+    const canvas = remoteCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) {
+      bitmap.close?.();
+      return;
+    }
+    // Cache pixels to an offscreen canvas for instant sync redraw on resize/expand.
+    let cache = lastFrameCanvasRef.current;
+    if (!cache) {
+      cache = document.createElement('canvas');
+      lastFrameCanvasRef.current = cache;
+    }
+    if (cache.width !== bitmap.width) cache.width = bitmap.width;
+    if (cache.height !== bitmap.height) cache.height = bitmap.height;
+    const cacheCtx = cache.getContext('2d');
+    if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
+
+    // Pin the visible canvas to the worker's output size (2x capture with FluxRT's
+    // upscaler) so the extra detail isn't scaled away; do not mutate per frame.
+    const out = outputCanvasSize(cfgRef.current);
+    if (canvas.width !== out.width) canvas.width = out.width;
+    if (canvas.height !== out.height) canvas.height = out.height;
+
+    // Contain-fit on a black backdrop — full frame visible, centered, never cropped.
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+    const dw = bitmap.width * scale;
+    const dh = bitmap.height * scale;
+    const dx = (canvas.width - dw) / 2;
+    const dy = (canvas.height - dh) / 2;
+    ctx.drawImage(bitmap, dx, dy, dw, dh);
+    bitmap.close?.();
+    lastFrameB64Ref.current = b64;
+  }, [remoteCanvasRef]);
+
+  // Buffered playback loop: one rAF tick presents at most one frame when it is due.
+  const startPlayback = useCallback((fixedFps: number | undefined) => {
+    stopPlayback();
+    if (typeof requestAnimationFrame !== 'function') return; // no display clock: immediate path
+    const sched = new PlaybackScheduler<{ bitmap: ImageBitmap; b64: string }>(
+      () => performance.now(),
+      fixedFps ? { fixedFps } : {},
+      (dropped) => dropped.bitmap.close?.(),
+    );
+    playbackRef.current = sched;
+    const tick = () => {
+      if (playbackRef.current !== sched) return; // stopped or replaced
+      const due = sched.next(performance.now());
+      if (due) {
+        presentBitmap(due.bitmap, due.b64);
+        statsRef.current.onPresented();
+      }
+      playbackRafRef.current = requestAnimationFrame(tick);
+    };
+    playbackRafRef.current = requestAnimationFrame(tick);
+  }, [presentBitmap, stopPlayback]);
+
   const renderRemoteFrame = useCallback(async (b64: string, seq?: unknown, serverMs?: unknown) => {
     const canvas = remoteCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
     try {
       const blob = base64ToBlob(b64, 'image/jpeg');
       const bitmap = await createImageBitmap(blob);
 
-      // Cache pixels to an offscreen canvas for instant sync redraw on resize/expand.
-      let cache = lastFrameCanvasRef.current;
-      if (!cache) {
-        cache = document.createElement('canvas');
-        lastFrameCanvasRef.current = cache;
+      const sched = playbackRef.current;
+      if (sched) {
+        // Buffered: the rAF loop draws it on cadence. Arrival stats are recorded below.
+        const dropped = sched.push({ bitmap, b64 });
+        if (dropped) statsRef.current.onPlaybackDropped(dropped);
+      } else {
+        presentBitmap(bitmap, b64);
       }
-      if (cache.width !== bitmap.width) cache.width = bitmap.width;
-      if (cache.height !== bitmap.height) cache.height = bitmap.height;
-      const cacheCtx = cache.getContext('2d');
-      if (cacheCtx) cacheCtx.drawImage(bitmap, 0, 0);
-
-      // Pin the visible canvas to the worker's output size (2x capture with FluxRT's
-      // upscaler) so the extra detail isn't scaled away; do not mutate per frame.
-      const out = outputCanvasSize(cfgRef.current);
-      if (canvas.width !== out.width) canvas.width = out.width;
-      if (canvas.height !== out.height) canvas.height = out.height;
-
-      // Contain-fit on a black backdrop — full frame visible, centered, never cropped.
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
-      const dw = bitmap.width * scale;
-      const dh = bitmap.height * scale;
-      const dx = (canvas.width - dw) / 2;
-      const dy = (canvas.height - dh) / 2;
-      ctx.drawImage(bitmap, dx, dy, dw, dh);
-      bitmap.close?.();
-      lastFrameB64Ref.current = b64;
       // Matched round trip when the worker echoes the frame number (JoyAI);
       // otherwise time since the last frame sent (FluxRT).
       const matched = statsRef.current.onFrame(seq, serverMs);
@@ -258,7 +321,7 @@ export function useLiveCamSession({
     } catch {
       // bad frame, skip
     }
-  }, [remoteCanvasRef]);
+  }, [remoteCanvasRef, presentBitmap]);
 
   // Sync redraw of the cached frame into the visible canvas. Safe to call on
   // every resize / expand-toggle without async decode jank or black flashes.
@@ -701,6 +764,14 @@ export function useLiveCamSession({
             const o = outputCanvasSize(c);
             console.log(`[live-cam] engine=${String(parsed.engine)} capture=${c.captureWidth}x${c.captureHeight} output=${o.width}x${o.height} fps=${c.fpsCap} q=${c.jpegQuality}`);
           }
+          // Buffered playback: URL/localStorage override > worker hint > off.
+          const playbackOn = resolvePlaybackMode(liveCamPlaybackOverride(), cfgRef.current.playbackBuffer);
+          if (playbackOn) {
+            startPlayback(cfgRef.current.playbackFps);
+            console.log(`[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'}`);
+          } else {
+            stopPlayback();
+          }
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
@@ -744,7 +815,7 @@ export function useLiveCamSession({
       await callEnd();
       sessionIdRef.current = null;
     }
-  }, [garment, tier, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame]);
+  }, [garment, tier, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, startPlayback, stopPlayback]);
 
   // Picking a different garment while running swaps it in place.
   useEffect(() => {
