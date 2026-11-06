@@ -8,6 +8,7 @@ import {
   arrangingLine,
   endOnHidden,
   needsFreshSession,
+  needsFreshTokenAtReady,
   showFramingGuide,
   waitEstimateMs,
   waitMode,
@@ -105,6 +106,22 @@ describe('needsFreshSession: the 5-minute token never bites', () => {
   });
   it('never once connected (the worker holds the session)', () => {
     expect(needsFreshSession(10 * 60_000, true)).toBe(false);
+  });
+});
+
+describe('needsFreshTokenAtReady: a long start-up keeps the full try-on time', () => {
+  const now = 1_800_000_000_000;
+  it('keeps the session when ready leaves the full 5 minutes', () => {
+    expect(needsFreshTokenAtReady(now / 1000 + 300, now, false)).toBe(false);
+  });
+  it('swaps when the token ceiling would cut the try-on short (e.g. a 7-minute warm-up)', () => {
+    expect(needsFreshTokenAtReady(now / 1000 + 180, now, false)).toBe(true);
+    expect(needsFreshTokenAtReady(now / 1000, now, false)).toBe(true);
+  });
+  it('swaps at most once per start, and never without a deadline', () => {
+    expect(needsFreshTokenAtReady(now / 1000 + 60, now, true)).toBe(false);
+    expect(needsFreshTokenAtReady(undefined, now, false)).toBe(false);
+    expect(needsFreshTokenAtReady('soon', now, false)).toBe(false);
   });
 });
 
