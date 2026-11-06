@@ -6,6 +6,28 @@ function clock() {
   return { now: () => t, advance: (ms: number) => { t += ms; } };
 }
 
+describe('buffered playback counters (F1b)', () => {
+  it('counts presented frames and playback drops separately from arrivals', () => {
+    const c = clock();
+    const s = new LiveCamFrameStats(c.now);
+    s.reset();
+    s.onFrame(undefined, undefined);
+    s.onFrame(undefined, undefined);
+    s.onPresented();
+    s.onPlaybackDropped(1);
+    c.advance(100);
+    s.onPresented();
+    const snap = s.snapshot();
+    expect(snap.framesReceived).toBe(2);
+    expect(snap.framesPresented).toBe(2);
+    expect(snap.playbackDropped).toBe(1);
+    expect(snap.presentedFps).toBe(0.4);
+    s.reset();
+    expect(s.snapshot().framesPresented).toBe(0);
+    expect(s.snapshot().playbackDropped).toBe(0);
+  });
+});
+
 describe('LiveCamFrameStats', () => {
   it('matches echoed frame numbers and measures round trip on one clock', () => {
     const c = clock();

@@ -1,0 +1,182 @@
+// The wait before the mirror is live, designed to feel short (owner, 6 Nov 2026).
+//
+// Shoppers never see GPU / engine / model words. They see an assistant preparing a mirror:
+// a short list of steps, a bar that moves steadily and speeds up at the end, a posted time
+// that is a little above the usual real one (so most waits end "early"), and something to
+// do meanwhile. Only four moments are tied to reality (the anchors below); everything
+// between them is paced to the posted estimate, so the story can never stall and can never
+// say "ready" before the worker does.
+//
+// Pure functions: no React, no timers, so they are unit-tested directly.
+
+/** Real moments in the start-up, in order. Everything else on the card is timed. */
+export type WaitAnchor =
+  | 'requested'  // the server created the session
+  | 'connected'  // the GPU worker accepted the connection (it is up, still loading)
+  | 'ready'      // the worker said ready
+  | 'live';      // the first frame is on screen
+
+const ANCHOR_ORDER: Record<WaitAnchor, number> = { requested: 0, connected: 1, ready: 2, live: 3 };
+
+export function anchorAtLeast(anchor: WaitAnchor, min: WaitAnchor): boolean {
+  return ANCHOR_ORDER[anchor] >= ANCHOR_ORDER[min];
+}
+
+/**
+ * Posted estimate for a cold start. The real range is about 2-4 minutes (FluxRT) and
+ * 3-6 (JoyAI); posting a little above the usual turns the usual ending into relief.
+ * VITE_LIVE_CAM_WAIT_MINUTES overrides it (e.g. 4 while JoyAI is the engine).
+ */
+export const DEFAULT_WAIT_ESTIMATE_MIN = 3;
+
+export function waitEstimateMs(flag: string | undefined = import.meta.env?.VITE_LIVE_CAM_WAIT_MINUTES): number {
+  const n = Number((flag ?? '').trim());
+  const minutes = Number.isFinite(n) && n >= 1 && n <= 15 ? n : DEFAULT_WAIT_ESTIMATE_MIN;
+  return minutes * 60_000;
+}
+
+/** "Last touches" starts by itself at this share of the estimate, whatever the worker says. */
+export const LAST_TOUCHES_AT = 0.8;
+/** After the estimate plus this, the card changes to its slower, gentler tone. */
+export const SLOW_MODE_GRACE_MS = 30_000;
+/** Step 1 is shown as done once the session exists; this keeps it from flashing on at 0 ms. */
+const STEP1_TICK_MS = 600;
+
+export type WaitStepState = 'done' | 'active' | 'todo';
+export interface WaitStep {
+  key: 'reserved' | 'mirror_on' | 'arranging' | 'last_touches' | 'open';
+  label: string;
+  state: WaitStepState;
+}
+
+export const WAIT_STEP_LABELS: Record<WaitStep['key'], string> = {
+  reserved: 'Your mirror is reserved',
+  mirror_on: 'Turning on your mirror',
+  arranging: 'Arranging your outfit',
+  last_touches: 'Last touches',
+  open: 'Stepping up to the mirror',
+};
+
+/** Rotating lines under "Arranging your outfit": what an assistant does with real clothes. */
+export const ARRANGING_LINES = [
+  'Steaming the fabric…',
+  'Getting the fit right…',
+  'Setting the lighting…',
+  'Matching the colours…',
+  'Pressing the seams…',
+  'Checking the length…',
+] as const;
+export const ARRANGING_LINE_PERIOD_MS = 20_000;
+
+export const WAIT_COPY = {
+  title: 'Preparing your mirror',
+  titleSlow: 'Taking a little longer than usual',
+  titleWarm: 'Opening your mirror…',
+  line: (minutes: number) => `We're getting your mirror ready. About ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+  lineSlow: 'Your mirror is almost ready. The first one of the day takes a bit longer. A few more minutes.',
+  lastTouches: 'Almost ready…',
+  pickFirst: 'Choose what you’ll try first',
+  keepShopping: 'Keep shopping, we’ll let you know',
+  notNow: 'Not now',
+  notify: 'Let me know when it’s ready',
+  notifyOn: 'We’ll let you know',
+  ready: 'Your mirror is ready. Every outfit is now instant.',
+  readyHere: 'Your mirror is ready. Tap any item to try it on.',
+  tooLong: 'We couldn’t get your mirror ready this time. Try again, it’s usually much quicker the second time.',
+  failed: 'Couldn’t open your mirror. Try again.',
+  idleHint: 'Turning on takes about 2–5 minutes the first time. After that, switching outfits is fast.',
+  guide: 'Stand here, head and shoulders in view',
+} as const;
+
+/**
+ * The five steps and their states at this moment.
+ * elapsedMs: since Start. estimateMs: the posted estimate.
+ */
+export function waitSteps(anchor: WaitAnchor, elapsedMs: number, estimateMs: number): WaitStep[] {
+  const t = Math.max(0, elapsedMs);
+  const connected = anchorAtLeast(anchor, 'connected');
+  const ready = anchorAtLeast(anchor, 'ready');
+  const live = anchor === 'live';
+  const lastTouchesDue = t >= LAST_TOUCHES_AT * estimateMs;
+
+  let active: WaitStep['key'];
+  if (live) active = 'open';          // all done (the UI treats 'live' as finished)
+  else if (ready) active = 'open';
+  else if (!connected) active = t < STEP1_TICK_MS ? 'reserved' : 'mirror_on';
+  else active = lastTouchesDue ? 'last_touches' : 'arranging';
+
+  const order: WaitStep['key'][] = ['reserved', 'mirror_on', 'arranging', 'last_touches', 'open'];
+  const idx = order.indexOf(active);
+  return order.map((key, i) => ({
+    key,
+    label: WAIT_STEP_LABELS[key],
+    state: live ? 'done' : i < idx ? 'done' : i === idx ? 'active' : 'todo',
+  }));
+}
+
+/**
+ * Bar position 0..1. Slow-to-fast across the estimate (reaches 0.85 at the estimate),
+ * then a slow creep that never stops (to 0.95), then 1 at ready. The shape people
+ * perceive as shortest; it never crawls early and never sits still.
+ */
+export function waitProgress(anchor: WaitAnchor, elapsedMs: number, estimateMs: number): number {
+  if (anchorAtLeast(anchor, 'ready')) return 1;
+  const t = Math.max(0, elapsedMs) / Math.max(1, estimateMs);
+  if (t <= 1) return 0.85 * t ** 1.3;
+  const extra = t - 1;
+  return Math.min(0.95, 0.85 + 0.1 * (1 - Math.exp(-extra / 1.5)));
+}
+
+/** Which rotating line to show while arranging; the first one for the first period. */
+export function arrangingLine(sinceConnectedMs: number, periodMs = ARRANGING_LINE_PERIOD_MS): string {
+  const i = Math.floor(Math.max(0, sinceConnectedMs) / periodMs) % ARRANGING_LINES.length;
+  return ARRANGING_LINES[i];
+}
+
+/** 'warm' (no card: it is about to be live), 'normal', or 'slow' (past the estimate). */
+export type WaitMode = 'normal' | 'slow';
+
+export function waitMode(elapsedMs: number, estimateMs: number): WaitMode {
+  return elapsedMs > estimateMs + SLOW_MODE_GRACE_MS ? 'slow' : 'normal';
+}
+
+/**
+ * The session token is valid for 5 minutes from Start. The worker accepts the connection
+ * within seconds of its container being up, so the token only matters when the container
+ * itself is slow (a first pull of a new image). Past this, the app quietly asks for a fresh
+ * session before the next connection attempt. No Worker change needed.
+ */
+export const FRESH_SESSION_AFTER_MS = 4 * 60_000;
+
+export function needsFreshSession(sinceTokenMs: number, connected: boolean): boolean {
+  return !connected && sinceTokenMs >= FRESH_SESSION_AFTER_MS;
+}
+
+/**
+ * What to do when the app is hidden (phone locked, another app in front).
+ * While live the camera is on, so the session ends (privacy, as before). While it is still
+ * starting the camera is off, so the start-up continues and the app reconnects on return.
+ */
+export function endOnHidden(status: 'idle' | 'starting' | 'warming' | 'running' | 'ended' | 'failed'): boolean {
+  return status === 'running';
+}
+
+/**
+ * The framing guide (dotted head-and-shoulders outline) shows only once the mirror is live:
+ * for the first moments, or whenever the worker says nobody / no face is in view. Never for
+ * items that do not need a face (shoes, bags: the camera points elsewhere), and never once
+ * the shopper has tapped it away during the opening moments.
+ */
+export const GUIDE_INTRO_MS = 8_000;
+
+export function showFramingGuide(args: {
+  running: boolean;
+  faceItem: boolean;
+  sinceLiveMs: number;
+  dismissed: boolean;
+  noticeKey: string | null;
+}): boolean {
+  if (!args.running || !args.faceItem) return false;
+  if (args.noticeKey === 'waiting_face' || args.noticeKey === 'no_person') return true;
+  return !args.dismissed && args.sinceLiveMs < GUIDE_INTRO_MS;
+}

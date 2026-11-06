@@ -2,27 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { TYPICAL_WARMUP_MS, formatElapsed, warmupProgress } from './liveWarmup';
 
 describe('warmupProgress', () => {
-  it('says about 50 seconds', () => {
-    expect(TYPICAL_WARMUP_MS).toBe(50_000);
+  it('assumes a 3 minute cold start (we tell shoppers 2–5 minutes)', () => {
+    expect(TYPICAL_WARMUP_MS).toBe(180_000);
   });
   it('starts at zero', () => {
     expect(warmupProgress(0)).toBe(0);
   });
   it('moves fast at the start: past 40% in the first fifth of the wait', () => {
-    expect(warmupProgress(10_000)).toBeGreaterThan(0.4);
+    expect(warmupProgress(36_000)).toBeGreaterThan(0.4);
   });
-  it('reaches 80% at the typical 50 seconds', () => {
-    expect(warmupProgress(50_000)).toBeCloseTo(0.8, 5);
+  it('reaches 80% at the typical 3 minutes', () => {
+    expect(warmupProgress(180_000)).toBeCloseTo(0.8, 5);
   });
   it('slows down between 80% and 95% and never claims done', () => {
-    const a = warmupProgress(60_000);
-    const b = warmupProgress(120_000);
-    const c = warmupProgress(10 * 60_000);
+    const a = warmupProgress(4 * 60_000);
+    const b = warmupProgress(6 * 60_000);
+    const c = warmupProgress(15 * 60_000);
     expect(a).toBeGreaterThan(0.8);
     expect(b).toBeGreaterThan(a);
     expect(c).toBeLessThanOrEqual(0.95);
-    // The second 10 s past 50 s adds less than the first 10 s of the wait.
-    expect(warmupProgress(60_000) - warmupProgress(50_000)).toBeLessThan(warmupProgress(10_000));
+    // The 36 s after 3 minutes add less than the first 36 s of the wait.
+    expect(warmupProgress(216_000) - warmupProgress(180_000)).toBeLessThan(warmupProgress(36_000));
   });
   it('treats bad input as zero', () => {
     expect(warmupProgress(-5)).toBe(0);

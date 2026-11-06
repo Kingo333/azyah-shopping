@@ -225,7 +225,7 @@ export function garmentDetailsFromHint(hint: string | null | undefined): string 
 }
 
 /**
- * Edit instruction for JoyAI (Premium HD). JoyAI follows prompts that name the
+ * Edit instruction for JoyAI. JoyAI follows prompts that name the
  * garment's concrete visible features, so the product name and description are
  * added when the item has them.
  */

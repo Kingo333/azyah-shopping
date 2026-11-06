@@ -1,8 +1,9 @@
-// Live Cam start-up: a progress estimate while the GPU warms up. We say about
-// 50 seconds. The bar moves fast at first (strong ease-out, ~75% by 25 s, 80% by 50 s), then
-// slows between 80% and 95% until it's actually ready; it never says done early.
+// Live try-on start-up: a progress estimate while the GPU warms up. We tell shoppers about
+// 2-5 minutes for a first (cold) start, so the bar reaches 80% at 3 minutes (strong ease-out
+// before that), then slows between 80% and 95% until it's actually ready; it never says done
+// early. A warm worker is ready much sooner and the bar simply jumps to the live view.
 
-export const TYPICAL_WARMUP_MS = 50_000;
+export const TYPICAL_WARMUP_MS = 180_000;
 
 export function warmupProgress(elapsedMs: number, typicalMs = TYPICAL_WARMUP_MS): number {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;

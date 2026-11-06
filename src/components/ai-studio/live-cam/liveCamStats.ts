@@ -23,6 +23,10 @@ export interface LiveCamStatsSnapshot {
   encodeMsP95: number | null;
   /** Capture ticks skipped because the previous frame was still encoding. */
   encodeSkipped: number;
+  /** Buffered playback (F1b): frames drawn on cadence, and frames dropped to keep the buffer short. */
+  framesPresented: number;
+  presentedFps: number;
+  playbackDropped: number;
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -53,6 +57,9 @@ export class LiveCamFrameStats {
   private lastSwapGapMs: number | null = null;
   private encode: number[] = [];
   private encodeSkipped = 0;
+  private presented = 0;
+  private presentedTimes: number[] = [];
+  private playbackDropped = 0;
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -72,6 +79,19 @@ export class LiveCamFrameStats {
     this.lastSwapGapMs = null;
     this.encode = [];
     this.encodeSkipped = 0;
+    this.presented = 0;
+    this.presentedTimes = [];
+    this.playbackDropped = 0;
+  }
+
+  /** A frame was drawn by the playback buffer. */
+  onPresented(): void {
+    this.presented += 1;
+    pushBounded(this.presentedTimes, this.now(), KEEP_SAMPLES);
+  }
+
+  onPlaybackDropped(n = 1): void {
+    this.playbackDropped += n;
   }
 
   onEncoded(ms: number): void {
@@ -143,6 +163,9 @@ export class LiveCamFrameStats {
       encodeMsP50: percentile(this.encode, 50),
       encodeMsP95: percentile(this.encode, 95),
       encodeSkipped: this.encodeSkipped,
+      framesPresented: this.presented,
+      presentedFps: this.fps(this.presentedTimes),
+      playbackDropped: this.playbackDropped,
     };
   }
 }
