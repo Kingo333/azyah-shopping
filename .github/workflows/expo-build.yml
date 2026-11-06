@@ -1,9 +1,16 @@
 name: Expo EAS Build
 
+# iPhone build of the Capacitor app on EAS. Runs on every push to main and by hand.
+# The EAS builder (macOS) runs the package.json hook `eas-build-post-install`:
+# `npm run build && npx cap sync ios`, which builds the web app into dist/ and syncs it,
+# plus the Capacitor plugin pods, into ios/App before xcodebuild.
+# Android is not built: there is no android/ project in this repo.
+
 on:
   push:
     branches:
-      - main  # Change this if your default branch has another name (like 'master')
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,37 +18,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Login to Expo
+      - name: Check Expo login
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Using Expo token for authentication"
-          eas whoami || echo "Authenticated via EXPO_TOKEN"
+        run: eas whoami
 
-      - name: Build iOS app
+      - name: Build iOS app (App Store)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Starting iOS build..."
-          eas build -p ios --non-interactive --profile production
-
-      - name: Build Android app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Starting Android build..."
-          eas build -p android --non-interactive --profile production
+        run: eas build -p ios --non-interactive --profile production
