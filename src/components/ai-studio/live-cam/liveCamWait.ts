@@ -153,6 +153,24 @@ export function needsFreshSession(sinceTokenMs: number, connected: boolean): boo
 }
 
 /**
+ * Full try-on time after a long start-up. The worker gives every session its try-on time
+ * (5 minutes) from "ready", but never past the session token's expiry plus that time, and
+ * the token is minted at Start. So a warm-up longer than about 5 minutes eats into the
+ * try-on. The worker says when the session will end (`session_deadline`, epoch seconds, in
+ * its ready message); if that leaves less than this, the app quietly swaps to a fresh
+ * session before the mirror opens. The worker is already warm, so the swap takes a second
+ * or two and happens under "Last touches", never as a new wait.
+ */
+export const FULL_TRY_ON_MIN_MS = 4.5 * 60_000;
+
+export function needsFreshTokenAtReady(sessionDeadlineS: unknown, nowMs: number, alreadySwapped: boolean): boolean {
+  // Once per start: if the worker's own cap is set shorter, a second swap would not help.
+  if (alreadySwapped) return false;
+  if (typeof sessionDeadlineS !== 'number' || !Number.isFinite(sessionDeadlineS)) return false;
+  return sessionDeadlineS * 1000 - nowMs < FULL_TRY_ON_MIN_MS;
+}
+
+/**
  * What to do when the app is hidden (phone locked, another app in front).
  * While live the camera is on, so the session ends (privacy, as before). While it is still
  * starting the camera is off, so the start-up continues and the app reconnects on return.

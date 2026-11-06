@@ -15,6 +15,7 @@
 > - [ ] During the start: no camera light, the card shows the five steps, the Try on tab shows an amber ring; locking the phone and coming back continues the same start.
 > - [ ] Once live: the dotted head-and-shoulders guide shows for a few seconds (not for shoes or bags), a tap hides it, and it returns when nobody is in view.
 > - [ ] Switching outfits while live is quick (no restart).
+> - [ ] A cold start longer than about 5 minutes (JoyAI) still gives the full 5 minutes of try-on once the mirror opens. The console shows "[live-cam] long start-up: fresh session so the full try-on time is kept"; the card stays on "Last touches" for a second or two, then opens.
 > - [ ] `live_cam_sessions` row: `tier = standard`.
 
 Run after each deploy step (migration → edge function → Worker → app).

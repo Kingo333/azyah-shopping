@@ -9,7 +9,7 @@ import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
 import { LIVE_CAM_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, startFailureOutcome, type LiveCamConfig, type StartStopReason } from './liveCamTier';
-import { WAIT_COPY, endOnHidden, needsFreshSession, type WaitAnchor } from './liveCamWait';
+import { WAIT_COPY, endOnHidden, needsFreshSession, needsFreshTokenAtReady, type WaitAnchor } from './liveCamWait';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
@@ -807,6 +807,15 @@ export function useLiveCamSession({
         }
 
         if (t === 'ready') {
+          // A long start-up would cut the try-on short (the worker's session ends at most 5
+          // minutes after the token's expiry). Swap to a fresh session first; the worker is
+          // warm, so this takes a second or two and the card stays on "Last touches". The
+          // ready cascade then plays once, when the mirror really opens.
+          if (needsFreshTokenAtReady(parsed.session_deadline, Date.now(), swappedAtReady)) {
+            swappedAtReady = true;
+            void swapToFreshSession(sock);
+            return;
+          }
           setWaitAnchor('ready');
           // The worker (JoyAI, or FluxRT 32206e8+) says which frame size, fps and JPEG quality it wants.
           const before = cfgRef.current;
@@ -857,6 +866,8 @@ export function useLiveCamSession({
       });
       sock.addEventListener('close', () => {
         rejectAllPending('WebSocket closed');
+        // A socket we replaced on purpose (fresh session) or already cleaned up: nothing to do.
+        if (sock !== wsRef.current) return;
         if (!sessionIdRef.current || abortRef.current) return;
         if (frameLoopStarted) {
           setStatus('ended');
@@ -873,16 +884,48 @@ export function useLiveCamSession({
             bindSocket(again);
             console.log('[live-cam] reconnected during start-up');
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            if (msg === 'aborted') return;
-            setErrorMessage(msg);
-            setStatus('failed');
-            cleanupLocal();
-            void callEnd();
-            sessionIdRef.current = null;
+            failWhileStarting(e);
           }
         })();
       });
+      };
+
+      // Fresh session after a long start-up (see needsFreshTokenAtReady): end the old one,
+      // connect with the new token, and carry on. Same failure handling as a reconnect.
+      let swappedAtReady = false;
+      const swapToFreshSession = async (old: WebSocket) => {
+        console.log('[live-cam] long start-up: fresh session so the full try-on time is kept');
+        handshakeStarted = false;
+        const oldId = sessionIdRef.current;
+        wsRef.current = null; // the old socket's close is now ignored
+        try { old.close(); } catch { /* noop */ }
+        try {
+          ({ wsUrl, mintedAt } = await requestSession());
+          if (abortRef.current) {
+            // Cancelled during the swap: end the new session too, not just the old one.
+            void callEnd();
+            sessionIdRef.current = null;
+            return;
+          }
+          if (oldId && oldId !== sessionIdRef.current) {
+            try { await supabase.functions.invoke('live-cam-session-end', { body: { session_id: oldId } }); } catch { /* best-effort */ }
+          }
+          const fresh = await connect();
+          if (abortRef.current) { try { fresh.close(); } catch { /* noop */ } return; }
+          wsRef.current = fresh;
+          bindSocket(fresh);
+        } catch (e: unknown) {
+          failWhileStarting(e);
+        }
+      };
+      const failWhileStarting = (e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg === 'aborted') return;
+        setErrorMessage(msg);
+        setStatus('failed');
+        cleanupLocal();
+        void callEnd();
+        sessionIdRef.current = null;
       };
       bindSocket(ws);
     } catch (e: unknown) {
