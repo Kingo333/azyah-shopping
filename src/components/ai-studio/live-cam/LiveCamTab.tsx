@@ -213,9 +213,9 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
                 <button
                   type="button"
                   onClick={() => void stop()}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white/15 text-[15px] font-semibold text-white"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white/15 text-[15px] font-semibold text-white active:opacity-80"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-[18px] w-[18px]" />
                   Cancel
                 </button>
               ) : (

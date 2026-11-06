@@ -11,7 +11,7 @@ export const LiveCamFramingGuide: React.FC<{ onDismiss: () => void }> = ({ onDis
     type="button"
     onClick={onDismiss}
     aria-label="Framing guide: stand with your head and shoulders in view. Tap to hide."
-    className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-transparent animate-in fade-in duration-500"
+    className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-transparent animate-in fade-in duration-200 motion-reduce:animate-none"
   >
     <svg viewBox="0 0 200 260" className="h-[62%] max-h-[520px] w-auto opacity-80" aria-hidden>
       {/* head */}

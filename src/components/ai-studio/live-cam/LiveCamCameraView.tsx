@@ -81,7 +81,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
   // contain-fit drawn manually inside renderRemoteFrame, so the frame is
   // always centered on black with no zoom/crop/stretch.
   // The live view fades in when the mirror opens (the ready moment).
-  const canvasClass = `max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-700 ${stage && !isRunning ? 'opacity-0' : 'opacity-100'}`;
+  const canvasClass = `max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${stage && !isRunning ? 'opacity-0' : 'opacity-100'}`;
 
   return (
     <div className={outerClass}>
