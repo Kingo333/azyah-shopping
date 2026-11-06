@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  LIVE_CAM_TIER_CONFIG,
+  LIVE_CAM_CONFIG,
+  LIVE_CAM_WARMUP_TIMEOUT_MS,
   applyEngineHints,
   coverCropRect,
   outputCanvasSize,
-  isPremiumUiEnabled,
-  isPremiumUnavailable,
   readFunctionError,
+  startFailureOutcome,
 } from '../liveCamTier';
 
 describe('readFunctionError', () => {
@@ -25,34 +25,40 @@ describe('readFunctionError', () => {
   });
 });
 
-describe('tier helpers', () => {
-  it('premium unavailable codes', () => {
-    expect(isPremiumUnavailable('premium_disabled')).toBe(true);
-    expect(isPremiumUnavailable('premium_not_configured')).toBe(true);
-    expect(isPremiumUnavailable('premium_required')).toBe(false);
-    expect(isPremiumUnavailable(null)).toBe(false);
+describe('one Live Try-On mode', () => {
+  it('waits up to 15 minutes for any cold start (JoyAI or FluxRT)', () => {
+    expect(LIVE_CAM_WARMUP_TIMEOUT_MS).toBe(15 * 60_000);
+    expect(LIVE_CAM_CONFIG.warmupTimeoutMs).toBe(LIVE_CAM_WARMUP_TIMEOUT_MS);
+    expect(LIVE_CAM_CONFIG.warmupLabel).toBe('Warming up… about 2–5 minutes the first time');
   });
-  it('premium UI flag is on unless exactly false', () => {
-    expect(isPremiumUiEnabled(undefined)).toBe(true);
-    expect(isPremiumUiEnabled('true')).toBe(true);
-    expect(isPremiumUiEnabled('false')).toBe(false);
-    expect(isPremiumUiEnabled(' FALSE ')).toBe(false);
+  it('defaults to FluxRT model size until the worker sends its hints', () => {
+    expect(LIVE_CAM_CONFIG).toMatchObject({ captureWidth: 288, captureHeight: 512, fpsCap: 12, jpegQuality: 0.7 });
   });
-  it('premium sends JoyAI-size frames', () => {
-    expect(LIVE_CAM_TIER_CONFIG.premium.captureWidth).toBe(480);
-    expect(LIVE_CAM_TIER_CONFIG.premium.captureHeight).toBe(840);
-    expect(LIVE_CAM_TIER_CONFIG.premium.fpsCap).toBe(24);
-    expect(LIVE_CAM_TIER_CONFIG.premium.jpegQuality).toBe(0.85);
-    expect(LIVE_CAM_TIER_CONFIG.standard.captureWidth).toBe(288);
-    expect(LIVE_CAM_TIER_CONFIG.standard.jpegQuality).toBe(0.7);
-    expect(LIVE_CAM_TIER_CONFIG.premium.warmupTimeoutMs).toBe(300_000);
-    expect(LIVE_CAM_TIER_CONFIG.premium.warmupLabel).toBe('Warming up Premium GPU… this can take a few minutes');
+  it('takes JoyAI-size frames when the worker asks for them', () => {
+    const cfg = applyEngineHints(LIVE_CAM_CONFIG, {
+      engine: 'joyai', input_width: 480, input_height: 840, input_fps: 24, input_jpeg_quality: 0.85,
+    });
+    expect(cfg).toMatchObject({ captureWidth: 480, captureHeight: 840, fpsCap: 24, jpegQuality: 0.85 });
+    expect(cfg.warmupTimeoutMs).toBe(LIVE_CAM_WARMUP_TIMEOUT_MS);
+  });
+});
+
+describe('startFailureOutcome: cancel and timeout never show "aborted"', () => {
+  it('a shopper cancelling while it starts ends quietly', () => {
+    expect(startFailureOutcome('aborted', 'user')).toEqual({ status: 'ended', message: null });
+  });
+  it('a start timeout keeps its own message', () => {
+    expect(startFailureOutcome('aborted', 'timeout')).toEqual({ status: 'failed', message: undefined });
+  });
+  it('real errors are shown', () => {
+    expect(startFailureOutcome('Failed to start session', null)).toEqual({ status: 'failed', message: 'Failed to start session' });
+    expect(startFailureOutcome('Camera blocked', 'user')).toEqual({ status: 'failed', message: 'Camera blocked' });
   });
 });
 
 describe('applyEngineHints: sharp input and playback hints (F1b/F2d)', () => {
-  const std = LIVE_CAM_TIER_CONFIG.standard;
-  it('accepts a capture size larger than the tier default (FluxRT model size x2)', () => {
+  const std = LIVE_CAM_CONFIG;
+  it('accepts a capture size larger than the default (FluxRT model size x2)', () => {
     const cfg = applyEngineHints(std, {
       engine: 'fluxrt', input_width: 576, input_height: 1024, output_width: 576, output_height: 1024,
       input_fps: 10, input_jpeg_quality: 0.8,
@@ -73,7 +79,7 @@ describe('applyEngineHints: sharp input and playback hints (F1b/F2d)', () => {
 });
 
 describe('applyEngineHints', () => {
-  const std = LIVE_CAM_TIER_CONFIG.standard;
+  const std = LIVE_CAM_CONFIG;
   it('adopts JoyAI frame size, fps and quality from ready', () => {
     const cfg = applyEngineHints(std, {
       type: 'ready', engine: 'joyai', input_width: 480, input_height: 840, input_fps: 24, input_jpeg_quality: 0.85,

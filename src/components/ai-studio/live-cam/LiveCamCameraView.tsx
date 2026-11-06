@@ -41,7 +41,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
 }) => {
   const stage = variant === 'stage';
   const isWarming = status === 'warming';
-  const warmingCopy = 'Warming up GPU… this can take up to 3 minutes';
+  const warmingCopy = 'Warming up… the first start takes about 2–5 minutes';
 
   // Repaint cached frame whenever the visible canvas's box changes size.
   useEffect(() => {

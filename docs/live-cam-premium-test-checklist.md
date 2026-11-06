@@ -1,5 +1,20 @@
 # Live Cam Premium HD — manual test checklist
 
+> **Superseded (Nov 2026).** The app no longer has Standard / Premium HD tiers. There is one
+> "Live Try-On" for everyone, free for now. The RunPod endpoint picks the engine (JoyAI or
+> FluxRT, `LIVECAM_ENGINE`), and the app always sends `tier = standard`. The server-side
+> tier code (edge function `tier.ts`, the Worker, the `tier` / `tier_served` columns) is
+> unchanged, so this list is kept for reference only. Current checks:
+>
+> - [ ] No quality picker, no "Premium HD" / "Beta" labels anywhere in Live Try-On.
+> - [ ] Start on a cold endpoint: the loading card says the first start takes about 2–5 minutes;
+>       the elapsed timer counts up; it goes live (JoyAI cold starts take several minutes).
+> - [ ] **Cancel** while it starts: back to idle, no error, no "aborted"; the session row ends.
+> - [ ] A start that never becomes ready fails after 15 minutes with
+>       "Live try-on took too long to start. Please try again."
+> - [ ] Switching outfits while live is quick (no restart).
+> - [ ] `live_cam_sessions` row: `tier = standard`.
+
 Run after each deploy step (migration → edge function → Worker → app).
 Use two accounts: one free, one with `profiles.is_premium = true` (set by the
 service role / webhook, not from the app).

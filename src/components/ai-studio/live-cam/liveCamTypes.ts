@@ -4,8 +4,6 @@ export type GarmentSource = 'product' | 'event_brand_product' | 'wardrobe_item';
 
 export type LiveCamStatus = 'idle' | 'starting' | 'warming' | 'running' | 'ended' | 'failed';
 
-export type LiveCamTier = 'standard' | 'premium';
-
 export interface LiveCamGarmentSelection {
   id: string;
   source: GarmentSource;
@@ -24,10 +22,6 @@ export interface LiveCamSessionInfo {
   sessionId: string;
   podId: string | null;
   wsUrl: string;
-  /** Tier the shopper asked for. */
-  tier: LiveCamTier;
-  /** Tier the server actually started (Premium can fall back to Standard). */
-  tierServed: LiveCamTier;
 }
 
 /** FluxRT WS protocol — JSON messages only, base64 payloads. */

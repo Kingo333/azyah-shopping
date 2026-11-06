@@ -1,8 +1,8 @@
-// Per-tier client settings and error-code helpers for Live Cam.
+// Client settings and error-code helpers for Live Try-On.
+// There is one mode for everyone (no Standard / Premium tiers): the RunPod endpoint decides
+// the engine (JoyAI or FluxRT) and its ready message says which frames it wants.
 
-import type { LiveCamTier } from './liveCamTypes';
-
-export interface LiveCamTierConfig {
+export interface LiveCamConfig {
   /** Frame size sent to the GPU worker (and the output canvas size). */
   captureWidth: number;
   captureHeight: number;
@@ -22,34 +22,31 @@ export interface LiveCamTierConfig {
   playbackFps?: number;
 }
 
-export const LIVE_CAM_TIER_CONFIG: Record<LiveCamTier, LiveCamTierConfig> = {
-  standard: {
-    captureWidth: 288,
-    captureHeight: 512,
-    fpsCap: 12,
-    jpegQuality: 0.7,
-    warmupTimeoutMs: 180_000,
-    warmupLabel: 'Warming up GPU… up to 3 min',
-  },
-  // JoyAI works at 480x840, 24 fps. Smaller frames get upscaled and lose face and garment detail.
-  premium: {
-    captureWidth: 480,
-    captureHeight: 840,
-    fpsCap: 24,
-    jpegQuality: 0.85,
-    warmupTimeoutMs: 300_000,
-    warmupLabel: 'Warming up Premium GPU… this can take a few minutes',
-  },
+/**
+ * How long a start may take before it fails. A cold start (a fresh GPU worker) takes
+ * about 2-5 minutes for either engine; the first start after a new image can take up to
+ * about 15 (image pull + kernel compile). Shoppers can cancel at any time.
+ */
+export const LIVE_CAM_WARMUP_TIMEOUT_MS = 15 * 60_000;
+
+/** Settings until the worker's ready hints arrive (old workers send none: FluxRT model size). */
+export const LIVE_CAM_CONFIG: LiveCamConfig = {
+  captureWidth: 288,
+  captureHeight: 512,
+  fpsCap: 12,
+  jpegQuality: 0.7,
+  warmupTimeoutMs: LIVE_CAM_WARMUP_TIMEOUT_MS,
+  warmupLabel: 'Warming up… about 2–5 minutes the first time',
 };
 
 /**
  * The worker's "ready" message says which frames it wants
  * ({engine: "joyai" | "fluxrt", input_width, input_height, input_fps, input_jpeg_quality,
  * and for FluxRT output_width/output_height}).
- * Use them whatever tier was requested, because the endpoint decides the engine.
- * Older workers send no engine field, so the tier config is kept.
+ * The endpoint decides the engine, so these always win.
+ * Older workers send no engine field, so the defaults are kept.
  */
-export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, unknown>): LiveCamTierConfig {
+export function applyEngineHints(cfg: LiveCamConfig, ready: Record<string, unknown>): LiveCamConfig {
   if (ready?.engine !== 'joyai' && ready?.engine !== 'fluxrt') return cfg;
   const num = (v: unknown, min: number, max: number): number | null =>
     typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : null;
@@ -79,7 +76,7 @@ export function applyEngineHints(cfg: LiveCamTierConfig, ready: Record<string, u
  * so a landscape camera isn't squeezed into a portrait frame (faces looked thin).
  */
 /** Canvas size for the worker's frames: its output size if it sent one, else the capture size. */
-export function outputCanvasSize(cfg: LiveCamTierConfig): { width: number; height: number } {
+export function outputCanvasSize(cfg: LiveCamConfig): { width: number; height: number } {
   return { width: cfg.outputWidth ?? cfg.captureWidth, height: cfg.outputHeight ?? cfg.captureHeight };
 }
 
@@ -101,25 +98,30 @@ export function coverCropRect(
   return { sx: 0, sy: (videoHeight - sh) / 2, sw: videoWidth, sh };
 }
 
+/** Why a start was interrupted before it finished. */
+export type StartStopReason = 'user' | 'timeout' | null;
+
+/**
+ * What the screen shows when a start throws. An internal 'aborted' (from cancelling or
+ * from the start timeout) must never reach shoppers as an error message:
+ * - cancelled by the shopper: status 'ended', no message;
+ * - timed out: status 'failed', keep the timeout's own message (message: undefined = leave as is);
+ * - anything else: status 'failed' with the error's message.
+ */
+export function startFailureOutcome(
+  message: string,
+  reason: StartStopReason,
+): { status: 'ended' | 'failed'; message: string | null | undefined } {
+  if (message === 'aborted' && reason === 'user') return { status: 'ended', message: null };
+  if (message === 'aborted' && reason === 'timeout') return { status: 'failed', message: undefined };
+  return { status: 'failed', message };
+}
+
 export const LIVE_CAM_ERROR_CODES = [
-  'premium_required',
-  'premium_disabled',
-  'premium_not_configured',
-  'invalid_tier',
   'runpod_no_capacity',
   'runpod_create_failed',
 ] as const;
 export type LiveCamErrorCode = (typeof LIVE_CAM_ERROR_CODES)[number];
-
-/** Premium is unavailable for everyone right now (not an account problem). */
-export function isPremiumUnavailable(code: string | null | undefined): boolean {
-  return code === 'premium_disabled' || code === 'premium_not_configured';
-}
-
-/** The Premium selector is shown unless VITE_LIVE_CAM_PREMIUM_UI is exactly "false". */
-export function isPremiumUiEnabled(flag: string | undefined = import.meta.env?.VITE_LIVE_CAM_PREMIUM_UI): boolean {
-  return (flag ?? '').trim().toLowerCase() !== 'false';
-}
 
 export interface FunctionErrorDetails {
   code: string | null;

@@ -8,12 +8,11 @@ import { isLiveCamLegacy, liveCamPlaybackOverride } from './liveCamFlags';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
-import { LIVE_CAM_TIER_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, type LiveCamTierConfig } from './liveCamTier';
+import { LIVE_CAM_CONFIG, applyEngineHints, coverCropRect, outputCanvasSize, readFunctionError, startFailureOutcome, type LiveCamConfig, type StartStopReason } from './liveCamTier';
 import type {
   LiveCamGarmentSelection,
   LiveCamSessionInfo,
   LiveCamStatus,
-  LiveCamTier,
 } from './liveCamTypes';
 
 // Messages for the optional `status` frames a GPU worker may send.
@@ -21,7 +20,7 @@ const STATUS_NOTICES: Record<string, string> = {
   waiting_face: 'Face the camera to start the try-on.',
   no_person: 'No one in frame. Step into view.',
   session_reset: 'Refreshing the try-on…',
-  queued: 'Waiting for a free Premium GPU…',
+  queued: 'Waiting for a free GPU…',
 };
 const FACING_KEY = 'azyah.livecam.facing';
 const WS_FIRST_RETRY_MS = 3_000;
@@ -48,24 +47,25 @@ type SetPromptReason =
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
-  /** Tier to request when start() is called without an override. Defaults to standard. */
-  tier?: LiveCamTier;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
 interface UseLiveCamSessionReturn {
   status: LiveCamStatus;
+  /** Camera in use; remembered on this device. */
+  facing: CameraFacing;
+  /** Switch between the front and back camera (live, without restarting). */
+  flipCamera: () => Promise<void>;
   errorMessage: string | null;
-  /** Machine-readable error code from the server, e.g. premium_required. */
+  /** Machine-readable error code from the server, e.g. runpod_no_capacity. */
   errorCode: string | null;
   /** Short live hint from the GPU worker (e.g. "No one in frame"). */
   notice: string | null;
   latencyMs: number | null;
   session: LiveCamSessionInfo | null;
-  /** Tier the current/last start used (after any override). */
-  activeTier: LiveCamTier;
-  start: (tierOverride?: LiveCamTier) => Promise<void>;
+  start: () => Promise<void>;
+  /** Ends a running session, or cancels one that is still starting. */
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
 }
@@ -95,7 +95,6 @@ function base64ToBlob(b64: string, mime = 'image/jpeg'): Blob {
 
 export function useLiveCamSession({
   garment,
-  tier = 'standard',
   localVideoRef,
   remoteCanvasRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
@@ -115,9 +114,10 @@ export function useLiveCamSession({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [activeTier, setActiveTier] = useState<LiveCamTier>(tier);
-  // Settings for the tier actually being served; read inside frame callbacks.
-  const cfgRef = useRef<LiveCamTierConfig>(LIVE_CAM_TIER_CONFIG.standard);
+  // Settings for this session (defaults, then the worker's ready hints); read inside frame callbacks.
+  const cfgRef = useRef<LiveCamConfig>(LIVE_CAM_CONFIG);
+  // Why a start was interrupted: the shopper cancelled, or it ran out of time.
+  const stopReasonRef = useRef<StartStopReason>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [session, setSession] = useState<LiveCamSessionInfo | null>(null);
 
@@ -211,6 +211,7 @@ export function useLiveCamSession({
   }, []);
 
   const stop = useCallback(async () => {
+    stopReasonRef.current = 'user';
     cleanupLocal();
     await callEnd();
     sessionIdRef.current = null;
@@ -344,13 +345,12 @@ export function useLiveCamSession({
     ctx.drawImage(cache, dx, dy, dw, dh);
   }, [remoteCanvasRef]);
 
-  const start = useCallback(async (tierOverride?: LiveCamTier) => {
-    const requestedTier: LiveCamTier = tierOverride ?? tier;
-    setActiveTier(requestedTier);
+  const start = useCallback(async () => {
     setErrorCode(null);
     setNotice(null);
-    // Until the server says otherwise, use the requested tier's settings.
-    cfgRef.current = LIVE_CAM_TIER_CONFIG[requestedTier];
+    stopReasonRef.current = null;
+    // Until the worker's ready hints arrive, use the defaults.
+    cfgRef.current = LIVE_CAM_CONFIG;
     if (!garment) {
       setErrorMessage('Select a garment first.');
       setStatus('failed');
@@ -370,9 +370,10 @@ export function useLiveCamSession({
     lastSendTsRef.current = null;
     statsRef.current.reset();
 
-    const warmupTimeoutMs = LIVE_CAM_TIER_CONFIG[requestedTier].warmupTimeoutMs;
+    const warmupTimeoutMs = LIVE_CAM_CONFIG.warmupTimeoutMs;
     startTimeoutRef.current = window.setTimeout(() => {
-      setErrorMessage('GPU took too long to start. Please retry.');
+      stopReasonRef.current = 'timeout';
+      setErrorMessage('Live try-on took too long to start. Please try again.');
       setStatus('failed');
       cleanupLocal();
     }, warmupTimeoutMs);
@@ -381,24 +382,20 @@ export function useLiveCamSession({
       // 1. Provision the pod via edge function.
       const { data, error } = await supabase.functions.invoke<{
         session_id: string; ws_url: string; pod_id: string | null;
-        tier?: LiveCamTier; tier_served?: LiveCamTier;
       }>('live-cam-session-start', {
-        body: { garment_id: garment.id, garment_source: garment.source, tier: requestedTier },
+        // One mode for everyone. The server still records a tier; 'standard' is always allowed.
+        body: { garment_id: garment.id, garment_source: garment.source, tier: 'standard' },
       });
       if (error || !data?.ws_url || !data?.session_id) {
         const details = error ? await readFunctionError(error) : { code: null, message: null };
         if (details.code) setErrorCode(details.code);
         throw new Error(details.message || 'Failed to start session');
       }
-      const tierServed: LiveCamTier = data.tier_served === 'premium' ? 'premium' : 'standard';
-      cfgRef.current = LIVE_CAM_TIER_CONFIG[tierServed];
       sessionIdRef.current = data.session_id;
       setSession({
         sessionId: data.session_id,
         podId: data.pod_id,
         wsUrl: data.ws_url,
-        tier: requestedTier,
-        tierServed,
       });
 
       // 2. Acquire camera.
@@ -479,7 +476,7 @@ export function useLiveCamSession({
         description,
         promptHint: hint,
       });
-      // Short edit instruction for JoyAI (Premium HD); FluxRT ignores it.
+      // Short edit instruction for JoyAI; FluxRT ignores it.
       const finalInstruction = buildTryOnInstruction({
         category: garment.category,
         name,
@@ -809,13 +806,16 @@ export function useLiveCamSession({
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      setErrorMessage(msg);
-      setStatus('failed');
+      // Cancelling or the start timeout ends the start with an internal 'aborted'. A later
+      // step (e.g. 'warming') may also have overwritten the status, so set it again here.
+      const outcome = startFailureOutcome(msg, stopReasonRef.current);
+      if (outcome.message !== undefined) setErrorMessage(outcome.message);
+      setStatus(outcome.status);
       cleanupLocal();
       await callEnd();
       sessionIdRef.current = null;
     }
-  }, [garment, tier, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, startPlayback, stopPlayback]);
+  }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, startPlayback, stopPlayback]);
 
   // Picking a different garment while running swaps it in place.
   useEffect(() => {
@@ -952,7 +952,6 @@ export function useLiveCamSession({
     notice,
     latencyMs,
     session,
-    activeTier,
     start,
     stop,
     redrawLastFrame,
