@@ -4,7 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride } from './liveCamFlags';
+import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
+import { CaptureTimePlayout } from './liveCamPlayout';
+import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
@@ -46,6 +48,9 @@ type SetPromptReason =
 
 
 
+/** A worker frame decoded and waiting to be drawn. */
+type DecodedFrame = { bitmap: ImageBitmap; b64: string };
+
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
   localVideoRef: React.RefObject<HTMLVideoElement>;
@@ -71,8 +76,8 @@ interface UseLiveCamSessionReturn {
   latencyMs: number | null;
   session: LiveCamSessionInfo | null;
   start: () => Promise<void>;
-  /** Current per-frame stats (send/receive rate, encode time, stalls); for the debug readout. */
-  readStats: () => ReturnType<LiveCamFrameStats['snapshot']>;
+  /** Current per-frame stats (send/receive rate, encode time, stalls, playback delay); for the debug readout. */
+  readStats: () => ReturnType<LiveCamFrameStats['snapshot']> & { playoutDelayMs: number | null };
   /** Ends a running session, or cancels one that is still starting. */
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
@@ -160,7 +165,9 @@ export function useLiveCamSession({
   // Buffered playback (F1b): off unless the URL/localStorage override or the worker's
   // ready hint turns it on. Decoded frames wait in the scheduler and a rAF loop draws
   // them on a steady cadence; with it off, frames are drawn the instant they arrive.
-  const playbackRef = useRef<PlaybackScheduler<{ bitmap: ImageBitmap; b64: string }> | null>(null);
+  // JoyAI: frames play by capture time (liveCamPlayout.ts); FluxRT, or ?livecam_playout=buffer:
+  // the fixed-rate buffer.
+  const playbackRef = useRef<PlaybackScheduler<DecodedFrame> | CaptureTimePlayout<DecodedFrame> | null>(null);
   const playbackRafRef = useRef<number | null>(null);
 
   const stopPlayback = useCallback(() => {
@@ -240,7 +247,9 @@ export function useLiveCamSession({
     w.__azyahLiveCam = {
       stats: () => ({
         ...statsRef.current.snapshot(),
-        playback: playbackRef.current ? { on: true, ...playbackRef.current.snapshot() } : { on: false },
+        playback: playbackRef.current
+          ? { on: true, mode: playbackRef.current instanceof CaptureTimePlayout ? 'capture' : 'buffer', ...playbackRef.current.snapshot() }
+          : { on: false },
       }),
     };
     return () => {
@@ -288,18 +297,23 @@ export function useLiveCamSession({
   }, [remoteCanvasRef]);
 
   // Buffered playback loop: one rAF tick presents at most one frame when it is due.
-  const startPlayback = useCallback((fixedFps: number | undefined, maxBuffer?: number, targetBuffer?: number) => {
+  // mode 'capture' (JoyAI): each frame at its capture time + a measured delay; 'buffer': the
+  // fixed-rate jitter buffer (FluxRT, and JoyAI with ?livecam_playout=buffer).
+  const startPlayback = useCallback((fixedFps: number | undefined, maxBuffer?: number, targetBuffer?: number, mode: 'capture' | 'buffer' = 'buffer') => {
     stopPlayback();
     if (typeof requestAnimationFrame !== 'function') return; // no display clock: immediate path
-    const sched = new PlaybackScheduler<{ bitmap: ImageBitmap; b64: string }>(
-      () => performance.now(),
-      {
-        ...(fixedFps ? { fixedFps } : {}),
-        ...(maxBuffer ? { maxBuffer } : {}),
-        ...(targetBuffer ? { targetBuffer } : {}),
-      },
-      (dropped) => dropped.bitmap.close?.(),
-    );
+    const release = (dropped: DecodedFrame) => dropped.bitmap.close?.();
+    const sched = mode === 'capture'
+      ? new CaptureTimePlayout<DecodedFrame>(() => performance.now(), {}, release)
+      : new PlaybackScheduler<DecodedFrame>(
+        () => performance.now(),
+        {
+          ...(fixedFps ? { fixedFps } : {}),
+          ...(maxBuffer ? { maxBuffer } : {}),
+          ...(targetBuffer ? { targetBuffer } : {}),
+        },
+        release,
+      );
     playbackRef.current = sched;
     const tick = () => {
       if (playbackRef.current !== sched) return; // stopped or replaced
@@ -313,7 +327,7 @@ export function useLiveCamSession({
     playbackRafRef.current = requestAnimationFrame(tick);
   }, [presentBitmap, stopPlayback]);
 
-  const renderRemoteFrame = useCallback(async (b64: string, seq?: unknown, serverMs?: unknown) => {
+  const renderRemoteFrame = useCallback(async (b64: string, seq?: unknown, serverMs?: unknown, tClientMs?: unknown) => {
     const canvas = remoteCanvasRef.current;
     if (!canvas) return;
     try {
@@ -323,7 +337,10 @@ export function useLiveCamSession({
       const sched = playbackRef.current;
       if (sched) {
         // Buffered: the rAF loop draws it on cadence. Arrival stats are recorded below.
-        const dropped = sched.push({ bitmap, b64 });
+        // JoyAI echoes the phone's own timestamp of the camera frame (t_client_ms).
+        const dropped = sched instanceof CaptureTimePlayout
+          ? sched.push({ bitmap, b64 }, typeof tClientMs === 'number' ? tClientMs : null)
+          : sched.push({ bitmap, b64 });
         if (dropped) statsRef.current.onPlaybackDropped(dropped);
       } else {
         presentBitmap(bitmap, b64);
@@ -606,6 +623,18 @@ export function useLiveCamSession({
         }
 
         const intervalMs = Math.floor(1000 / fpsCap);
+        // Upload queue (liveCamSendQueue.ts): JoyAI keeps at most ~4 frames waiting and always
+        // sends the newest; FluxRT (and ?livecam_sendq=0) keep the old 2 MB rule.
+        const queueFrames = sendQueueFrames(cfgRef.current.engine, liveCamSendQueueOverride());
+        const sendQ = new SendQueue<{ b64: string; at: number }>(queueFrames);
+        console.log(`[live-cam] upload queue ${queueFrames > 0 ? `${queueFrames} frames` : 'old 2 MB rule'} (engine=${cfgRef.current.engine ?? 'unknown'})`);
+        const sendFrame = (f: { b64: string; at: number }) => {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          lastSendTsRef.current = performance.now();
+          const { seq, tClientMs } = statsRef.current.nextFrame(f.at);
+          ws.send(JSON.stringify({ type: 'frame', frame_b64: f.b64, seq, t_client_ms: tClientMs }));
+        };
         // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
         // add latency instead of frames, so a tick is skipped while one is in flight.
         let encoding = false;
@@ -613,7 +642,11 @@ export function useLiveCamSession({
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
-          if (wsNow2.bufferedAmount > 2_000_000) {
+          if (queueFrames > 0) {
+            // A frame held back because the upload was busy goes as soon as there is room.
+            const held = sendQ.poll(wsNow2.bufferedAmount);
+            if (held) sendFrame(held);
+          } else if (wsNow2.bufferedAmount > 2_000_000) {
             statsRef.current.onUploadBlocked();
             return;
           }
@@ -631,14 +664,15 @@ export function useLiveCamSession({
               async (blob) => {
                 try {
                   if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-                  if (wsRef.current.bufferedAmount > 2_000_000) return;
+                  if (queueFrames <= 0 && wsRef.current.bufferedAmount > 2_000_000) return;
                   const b64 = await blobToBase64(blob);
                   statsRef.current.onEncoded(performance.now() - encodeStart);
-                  if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-                  if (wsRef.current.bufferedAmount > 2_000_000) return;
-                  lastSendTsRef.current = performance.now();
-                  const { seq, tClientMs } = statsRef.current.nextFrame();
-                  wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64, seq, t_client_ms: tClientMs }));
+                  const ws = wsRef.current;
+                  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                  const droppedBefore = sendQ.droppedCount;
+                  const now = sendQ.offer({ b64, at: performance.now() }, b64.length, ws.bufferedAmount);
+                  if (queueFrames > 0) statsRef.current.onSendQueueDropped(sendQ.droppedCount - droppedBefore);
+                  if (now) sendFrame(now);
                 } catch {
                   // skip frame
                 } finally {
@@ -784,6 +818,8 @@ export function useLiveCamSession({
         const ackRef = waitForAck('set_reference_image');
         const ackPrompt = waitForAck('set_prompt');
         statsRef.current.markSwap();
+        // The next frames are late by nature (JoyAI restarts): keep them out of the delay estimate.
+        if (playbackRef.current instanceof CaptureTimePlayout) playbackRef.current.transient();
         wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
         const swapMsg = {
           type: 'set_prompt' as const,
@@ -841,8 +877,12 @@ export function useLiveCamSession({
           // Buffered playback: URL/localStorage override > worker hint > off.
           const playbackOn = resolvePlaybackMode(liveCamPlaybackOverride(), cfgRef.current.playbackBuffer);
           if (playbackOn) {
-            startPlayback(cfgRef.current.playbackFps, cfgRef.current.playbackMaxBuffer, cfgRef.current.playbackTargetBuffer);
-            console.log(`[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'} max=${cfgRef.current.playbackMaxBuffer ?? 2} target=${cfgRef.current.playbackTargetBuffer ?? '-'}`);
+            // JoyAI echoes capture timestamps, so its frames can play by capture time.
+            const mode = cfgRef.current.engine === 'joyai' && liveCamPlayoutMode() === 'capture' ? 'capture' : 'buffer';
+            startPlayback(cfgRef.current.playbackFps, cfgRef.current.playbackMaxBuffer, cfgRef.current.playbackTargetBuffer, mode);
+            console.log(mode === 'capture'
+              ? '[live-cam] playback by capture time (delay follows the network)'
+              : `[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'} max=${cfgRef.current.playbackMaxBuffer ?? 2} target=${cfgRef.current.playbackTargetBuffer ?? '-'}`);
           } else {
             stopPlayback();
           }
@@ -850,7 +890,7 @@ export function useLiveCamSession({
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
           setNoticeKey((k) => (k === null ? k : null));
-          void renderRemoteFrame(parsed.frame_b64, parsed.seq, parsed.server_ms);
+          void renderRemoteFrame(parsed.frame_b64, parsed.seq, parsed.server_ms, parsed.t_client_ms);
         } else if (t === 'status' && typeof parsed.status === 'string') {
           if (parsed.status === 'session_limit') {
             // GPU worker ended the session at the time cap; the socket closes next.
@@ -1082,7 +1122,10 @@ export function useLiveCamSession({
     }
   }, [localVideoRef]);
 
-  const readStats = useCallback(() => statsRef.current.snapshot(), []);
+  const readStats = useCallback(() => {
+    const p = playbackRef.current;
+    return { ...statsRef.current.snapshot(), playoutDelayMs: p instanceof CaptureTimePlayout ? p.delayMs : null };
+  }, []);
 
   return {
     status,

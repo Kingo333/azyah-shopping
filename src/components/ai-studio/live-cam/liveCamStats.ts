@@ -25,6 +25,8 @@ export interface LiveCamStatsSnapshot {
   encodeSkipped: number;
   /** Capture ticks skipped because the upload was backed up (over 2 MB waiting): the network limits the send rate. */
   uploadBlocked: number;
+  /** Frames skipped by the short upload queue (JoyAI): a newer frame replaced them before they could be sent. */
+  sendQueueDropped: number;
   /** Buffered playback (F1b): frames drawn on cadence, and frames dropped to keep the buffer short. */
   framesPresented: number;
   presentedFps: number;
@@ -60,6 +62,7 @@ export class LiveCamFrameStats {
   private encode: number[] = [];
   private encodeSkipped = 0;
   private uploadBlocked = 0;
+  private sendQueueDropped = 0;
   private presented = 0;
   private presentedTimes: number[] = [];
   private playbackDropped = 0;
@@ -83,6 +86,7 @@ export class LiveCamFrameStats {
     this.encode = [];
     this.encodeSkipped = 0;
     this.uploadBlocked = 0;
+    this.sendQueueDropped = 0;
     this.presented = 0;
     this.presentedTimes = [];
     this.playbackDropped = 0;
@@ -110,10 +114,17 @@ export class LiveCamFrameStats {
     this.uploadBlocked += 1;
   }
 
-  /** Number and timestamp for the next camera frame. */
-  nextFrame(): { seq: number; tClientMs: number } {
+  onSendQueueDropped(n = 1): void {
+    if (n > 0) this.sendQueueDropped += n;
+  }
+
+  /**
+   * Number and timestamp for the next camera frame. capturedAt: when the frame was ready to
+   * send (a frame that waited in the upload queue still counts its wait in the round trip).
+   */
+  nextFrame(capturedAt?: number): { seq: number; tClientMs: number } {
     this.seq += 1;
-    const t = this.now();
+    const t = typeof capturedAt === 'number' && Number.isFinite(capturedAt) ? capturedAt : this.now();
     this.sent.set(this.seq, t);
     if (this.sent.size > KEEP_SENT) {
       const oldest = this.sent.keys().next().value;
@@ -172,6 +183,7 @@ export class LiveCamFrameStats {
       encodeMsP95: percentile(this.encode, 95),
       encodeSkipped: this.encodeSkipped,
       uploadBlocked: this.uploadBlocked,
+      sendQueueDropped: this.sendQueueDropped,
       framesPresented: this.presented,
       presentedFps: this.fps(this.presentedTimes),
       playbackDropped: this.playbackDropped,
