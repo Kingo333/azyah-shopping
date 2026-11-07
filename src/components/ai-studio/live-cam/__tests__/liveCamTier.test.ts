@@ -74,7 +74,17 @@ describe('applyEngineHints: sharp input and playback hints (F1b/F2d)', () => {
     const off = applyEngineHints(std, { engine: 'joyai', playback_buffer: false, playback_fps: 999 });
     expect(off.playbackBuffer).toBe(false);
     expect(off.playbackFps).toBeUndefined();
-    expect(applyEngineHints(std, { engine: 'joyai', playback_buffer: 'yes' }).playbackBuffer).toBeUndefined();
+    // A non-boolean hint counts as unset: for JoyAI that means the JoyAI default (on).
+    expect(applyEngineHints(std, { engine: 'joyai', playback_buffer: 'yes' }).playbackBuffer).toBe(true);
+    expect(applyEngineHints(std, { engine: 'fluxrt', playback_buffer: 'yes' }).playbackBuffer).toBeUndefined();
+  });
+  it('JoyAI: buffer on by default, at its own frame rate, two chunks max, one chunk held', () => {
+    const j = applyEngineHints(std, { engine: 'joyai', input_width: 480, input_height: 840, input_fps: 24, input_jpeg_quality: 0.85 });
+    expect(j).toMatchObject({ playbackBuffer: true, playbackFps: 24, playbackMaxBuffer: 16, playbackTargetBuffer: 8, captureWidth: 480 });
+    expect(applyEngineHints(std, { engine: 'joyai' }).playbackFps).toBe(24);
+    // The worker can still turn it off, and FluxRT is unchanged (off unless hinted).
+    expect(applyEngineHints(std, { engine: 'joyai', playback_buffer: false }).playbackBuffer).toBe(false);
+    expect(applyEngineHints(std, { engine: 'fluxrt' }).playbackMaxBuffer).toBeUndefined();
   });
 });
 

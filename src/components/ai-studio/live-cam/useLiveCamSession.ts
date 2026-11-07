@@ -286,12 +286,16 @@ export function useLiveCamSession({
   }, [remoteCanvasRef]);
 
   // Buffered playback loop: one rAF tick presents at most one frame when it is due.
-  const startPlayback = useCallback((fixedFps: number | undefined) => {
+  const startPlayback = useCallback((fixedFps: number | undefined, maxBuffer?: number, targetBuffer?: number) => {
     stopPlayback();
     if (typeof requestAnimationFrame !== 'function') return; // no display clock: immediate path
     const sched = new PlaybackScheduler<{ bitmap: ImageBitmap; b64: string }>(
       () => performance.now(),
-      fixedFps ? { fixedFps } : {},
+      {
+        ...(fixedFps ? { fixedFps } : {}),
+        ...(maxBuffer ? { maxBuffer } : {}),
+        ...(targetBuffer ? { targetBuffer } : {}),
+      },
       (dropped) => dropped.bitmap.close?.(),
     );
     playbackRef.current = sched;
@@ -828,8 +832,8 @@ export function useLiveCamSession({
           // Buffered playback: URL/localStorage override > worker hint > off.
           const playbackOn = resolvePlaybackMode(liveCamPlaybackOverride(), cfgRef.current.playbackBuffer);
           if (playbackOn) {
-            startPlayback(cfgRef.current.playbackFps);
-            console.log(`[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'}`);
+            startPlayback(cfgRef.current.playbackFps, cfgRef.current.playbackMaxBuffer, cfgRef.current.playbackTargetBuffer);
+            console.log(`[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'} max=${cfgRef.current.playbackMaxBuffer ?? 2} target=${cfgRef.current.playbackTargetBuffer ?? '-'}`);
           } else {
             stopPlayback();
           }
