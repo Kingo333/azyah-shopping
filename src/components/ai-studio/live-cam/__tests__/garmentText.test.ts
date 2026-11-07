@@ -185,30 +185,30 @@ describe('compact FluxRT prompt: item first, short, positive', () => {
   });
 });
 
-describe('switches: URL > localStorage > env > off', () => {
+describe('switches: on by default (owner, 7 Nov); URL > localStorage > env can turn them off', () => {
   const store = (v: Record<string, string>) => ({ getItem: (k: string) => v[k] ?? null });
-  it('clean details is off unless turned on', () => {
-    expect(liveCamCleanDetails('', store({}), {})).toBe(false);
-    expect(liveCamCleanDetails('', store({}), { VITE_LIVE_CAM_CLEAN_DETAILS: 'true' })).toBe(true);
-    expect(liveCamCleanDetails('', store({ 'azyah.livecam.clean': '1' }), {})).toBe(true);
-    expect(liveCamCleanDetails('?livecam_clean=0', store({ 'azyah.livecam.clean': '1' }), { VITE_LIVE_CAM_CLEAN_DETAILS: '1' })).toBe(false);
-    expect(liveCamCleanDetails('?livecam_clean=1', store({}), {})).toBe(true);
+  it('clean details is on unless turned off', () => {
+    expect(liveCamCleanDetails('', store({}), {})).toBe(true);
+    expect(liveCamCleanDetails('', store({}), { VITE_LIVE_CAM_CLEAN_DETAILS: 'false' })).toBe(false);
+    expect(liveCamCleanDetails('', store({ 'azyah.livecam.clean': '0' }), {})).toBe(false);
+    expect(liveCamCleanDetails('?livecam_clean=1', store({ 'azyah.livecam.clean': '0' }), { VITE_LIVE_CAM_CLEAN_DETAILS: '0' })).toBe(true);
+    expect(liveCamCleanDetails('?livecam_clean=0', store({}), {})).toBe(false);
   });
-  it('a URL value is remembered on the device, and =0 turns it back off', () => {
+  it('a URL value is remembered on the device, and =1 turns it back on', () => {
     const saved: Record<string, string> = {};
     const mem = { getItem: (k: string) => saved[k] ?? null, setItem: (k: string, v: string) => { saved[k] = v; } };
-    expect(liveCamCleanDetails('?livecam_clean=1', mem, {})).toBe(true);
-    expect(liveCamCleanDetails('', mem, {})).toBe(true); // later page without the parameter
     expect(liveCamCleanDetails('?livecam_clean=0', mem, {})).toBe(false);
-    expect(liveCamCleanDetails('', mem, {})).toBe(false);
-    expect(liveCamFluxrtPrompt('?livecam_fluxrt_prompt=compact', mem, {})).toBe('compact');
-    expect(liveCamFluxrtPrompt('', mem, {})).toBe('compact');
+    expect(liveCamCleanDetails('', mem, {})).toBe(false); // later page without the parameter
+    expect(liveCamCleanDetails('?livecam_clean=1', mem, {})).toBe(true);
+    expect(liveCamCleanDetails('', mem, {})).toBe(true);
+    expect(liveCamFluxrtPrompt('?livecam_fluxrt_prompt=full', mem, {})).toBe('full');
+    expect(liveCamFluxrtPrompt('', mem, {})).toBe('full');
   });
-  it('FluxRT prompt is full unless set to compact', () => {
-    expect(liveCamFluxrtPrompt('', store({}), {})).toBe('full');
-    expect(liveCamFluxrtPrompt('', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'compact' })).toBe('compact');
-    expect(liveCamFluxrtPrompt('?livecam_fluxrt_prompt=full', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'compact' })).toBe('full');
-    expect(liveCamFluxrtPrompt('', store({ 'azyah.livecam.fluxrt_prompt': 'compact' }), {})).toBe('compact');
-    expect(liveCamFluxrtPrompt('', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'weird' })).toBe('full');
+  it('FluxRT prompt is compact unless set to full', () => {
+    expect(liveCamFluxrtPrompt('', store({}), {})).toBe('compact');
+    expect(liveCamFluxrtPrompt('', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'full' })).toBe('full');
+    expect(liveCamFluxrtPrompt('?livecam_fluxrt_prompt=compact', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'full' })).toBe('compact');
+    expect(liveCamFluxrtPrompt('', store({ 'azyah.livecam.fluxrt_prompt': 'full' }), {})).toBe('full');
+    expect(liveCamFluxrtPrompt('', store({}), { VITE_LIVE_CAM_FLUXRT_PROMPT: 'weird' })).toBe('compact');
   });
 });
