@@ -39,8 +39,16 @@ export function waitEstimateMs(flag: string | undefined = import.meta.env?.VITE_
 export const LAST_TOUCHES_AT = 0.8;
 /** After the estimate plus this, the card changes to its slower, gentler tone. */
 export const SLOW_MODE_GRACE_MS = 30_000;
-/** Step 1 is shown as done once the session exists; this keeps it from flashing on at 0 ms. */
-const STEP1_TICK_MS = 600;
+/**
+ * Front-loaded pacing (owner, 7 Nov 2026): the first two steps tick quickly, whatever the
+ * worker is doing, so the wait feels like it is moving from the first second; the last
+ * three take the time. Only "ready" (and the first frame) are tied to the worker.
+ */
+export const STEP1_DONE_MS = 800;
+export const STEP2_DONE_MS = 3_500;
+/** The bar's quick opening: this share of the bar in the first QUICK_PHASE_MS. */
+export const QUICK_PHASE_MS = 10_000;
+export const QUICK_PHASE_SHARE = 0.35;
 
 export type WaitStepState = 'done' | 'active' | 'todo';
 export interface WaitStep {
@@ -69,6 +77,7 @@ export const ARRANGING_LINES = [
 export const ARRANGING_LINE_PERIOD_MS = 20_000;
 
 export const WAIT_COPY = {
+  about: (minutes: number) => `About ${minutes} min`,
   title: 'Preparing your mirror',
   titleSlow: 'Taking a little longer than usual',
   titleWarm: 'Opening your mirror…',
@@ -77,6 +86,7 @@ export const WAIT_COPY = {
   lastTouches: 'Almost ready…',
   pickFirst: 'Choose what you’ll try first',
   keepShopping: 'Keep shopping, we’ll let you know',
+  keepShoppingShort: 'Keep shopping',
   notNow: 'Not now',
   notify: 'Let me know when it’s ready',
   notifyOn: 'We’ll let you know',
@@ -94,15 +104,14 @@ export const WAIT_COPY = {
  */
 export function waitSteps(anchor: WaitAnchor, elapsedMs: number, estimateMs: number): WaitStep[] {
   const t = Math.max(0, elapsedMs);
-  const connected = anchorAtLeast(anchor, 'connected');
   const ready = anchorAtLeast(anchor, 'ready');
   const live = anchor === 'live';
   const lastTouchesDue = t >= LAST_TOUCHES_AT * estimateMs;
 
   let active: WaitStep['key'];
-  if (live) active = 'open';          // all done (the UI treats 'live' as finished)
-  else if (ready) active = 'open';
-  else if (!connected) active = t < STEP1_TICK_MS ? 'reserved' : 'mirror_on';
+  if (live || ready) active = 'open';  // live: all done (the UI treats 'live' as finished)
+  else if (t < STEP1_DONE_MS) active = 'reserved';
+  else if (t < STEP2_DONE_MS) active = 'mirror_on';
   else active = lastTouchesDue ? 'last_touches' : 'arranging';
 
   const order: WaitStep['key'][] = ['reserved', 'mirror_on', 'arranging', 'last_touches', 'open'];
@@ -115,15 +124,20 @@ export function waitSteps(anchor: WaitAnchor, elapsedMs: number, estimateMs: num
 }
 
 /**
- * Bar position 0..1. Slow-to-fast across the estimate (reaches 0.85 at the estimate),
- * then a slow creep that never stops (to 0.95), then 1 at ready. The shape people
- * perceive as shortest; it never crawls early and never sits still.
+ * Bar position 0..1, front-loaded to match the steps: a quick opening (35% in the first
+ * 10 s, easing out), then a steady, slower climb to 85% at the estimate, then a creep that
+ * never stops (to 95%), then 1 at ready. It never sits still and never says done early.
  */
 export function waitProgress(anchor: WaitAnchor, elapsedMs: number, estimateMs: number): number {
   if (anchorAtLeast(anchor, 'ready')) return 1;
-  const t = Math.max(0, elapsedMs) / Math.max(1, estimateMs);
-  if (t <= 1) return 0.85 * t ** 1.3;
-  const extra = t - 1;
+  const t = Math.max(0, elapsedMs);
+  const est = Math.max(QUICK_PHASE_MS + 1, estimateMs);
+  if (t <= QUICK_PHASE_MS) {
+    const u = t / QUICK_PHASE_MS;
+    return QUICK_PHASE_SHARE * (1 - (1 - u) ** 2);
+  }
+  if (t <= est) return QUICK_PHASE_SHARE + (0.85 - QUICK_PHASE_SHARE) * ((t - QUICK_PHASE_MS) / (est - QUICK_PHASE_MS));
+  const extra = (t - est) / est;
   return Math.min(0.95, 0.85 + 0.1 * (1 - Math.exp(-extra / 1.5)));
 }
 

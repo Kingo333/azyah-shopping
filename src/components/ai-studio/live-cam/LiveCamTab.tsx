@@ -170,11 +170,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
             <LiveCamWaitCard
               anchor={waitAnchor}
               startedAt={waitTimes?.startedAt ?? null}
-              connectedAt={waitTimes?.connectedAt ?? null}
-              canKeepShopping={hosted}
               notifyState={notifyState}
-              onKeepShopping={() => navigate('/swipe')}
-              onNotNow={() => void stop()}
               onNotify={() => void requestNotify()}
             />
           }
@@ -194,7 +190,6 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               {/* Changing the garment while running swaps it live (no reconnect). */}
               {/* A pick made while it starts is swapped in as soon as it's live. */}
               <LiveCamGarmentPicker value={garment} onChange={setGarment} layout="strip" autoSelectFirst />
-              {isStarting && <p className="text-center text-[12px] text-white/70">{WAIT_COPY.pickFirst}</p>}
               {isRunning ? (
                 <div className="grid grid-cols-3 items-center">
                   <button
@@ -210,14 +205,26 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
                   <span className="justify-self-end text-right text-[11px] leading-tight text-white/70">Snapshots<br />stay private</span>
                 </div>
               ) : isStarting ? (
-                <button
-                  type="button"
-                  onClick={() => void stop()}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white/15 text-[15px] font-semibold text-white active:opacity-80"
-                >
-                  <X className="h-[18px] w-[18px]" />
-                  Cancel
-                </button>
+                // While it gets ready: browse on (the host keeps it starting) or cancel.
+                <div className={hosted ? 'grid grid-cols-[1fr_auto] gap-2' : undefined}>
+                  {hosted && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/swipe')}
+                      className="h-12 rounded-[14px] bg-white px-3 text-[15px] font-semibold text-black active:opacity-80"
+                    >
+                      {WAIT_COPY.keepShoppingShort}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void stop()}
+                    className={`flex h-12 items-center justify-center gap-2 rounded-[14px] bg-white/15 px-4 text-[15px] font-semibold text-white active:opacity-80 ${hosted ? '' : 'w-full'}`}
+                  >
+                    <X className="h-[18px] w-[18px]" />
+                    Cancel
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"
