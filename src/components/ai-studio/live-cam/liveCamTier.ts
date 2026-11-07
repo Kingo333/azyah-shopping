@@ -20,6 +20,9 @@ export interface LiveCamConfig {
   playbackBuffer?: boolean;
   /** Worker hint (ready.playback_fps): fixed presentation rate for the buffer. */
   playbackFps?: number;
+  /** Frames the buffer may hold, and the number it aims to hold (see PlaybackOptions). */
+  playbackMaxBuffer?: number;
+  playbackTargetBuffer?: number;
 }
 
 /**
@@ -58,6 +61,17 @@ export function applyEngineHints(cfg: LiveCamConfig, ready: Record<string, unkno
   const oh = num(ready.output_height, 128, 2048);
   // Optional app-side jitter buffer hints: playback_buffer (boolean), playback_fps (number).
   const playbackFps = num(ready.playback_fps, 1, 60);
+  // JoyAI sends its output in chunks of 8 frames every ~0.3 s. Drawn as they arrive, that is
+  // ~3 visible jumps a second. Unless the worker says otherwise, buffer up to two chunks and
+  // play them at JoyAI's own rate (input_fps, 24), aiming to hold one chunk (~0.3 s delay).
+  if (ready.engine === 'joyai' && typeof ready.playback_buffer !== 'boolean') {
+    const rate = playbackFps ?? fps ?? 24;
+    return {
+      ...applyEngineHints(cfg, { ...ready, playback_buffer: true, playback_fps: rate }),
+      playbackMaxBuffer: 16,
+      playbackTargetBuffer: 8,
+    };
+  }
   return {
     ...cfg,
     captureWidth: w !== null && h !== null ? Math.round(w) : cfg.captureWidth,

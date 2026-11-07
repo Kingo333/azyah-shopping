@@ -145,3 +145,51 @@ describe('resolvePlaybackMode', () => {
     expect(resolvePlaybackMode('off', true)).toBe(false);
   });
 });
+
+describe('PlaybackScheduler: JoyAI chunks (8 frames every ~0.31 s)', () => {
+  // Simulates the phone's display loop (60 Hz ticks) and JoyAI's delivery: a chunk of 8
+  // frames arriving within a few ms, every `periodMs` (±jitter), for `seconds`.
+  function run(periodMs: number, seconds: number, jitterMs = 0) {
+    let t = 0;
+    const s = new PlaybackScheduler<number>(() => t, { fixedFps: 24, maxBuffer: 16, targetBuffer: 8 });
+    const presents: number[] = [];
+    let id = 0;
+    let nextChunk = 0;
+    let k = 0;
+    for (t = 0; t <= seconds * 1000; t += 1000 / 60) {
+      while (t >= nextChunk) {
+        for (let i = 0; i < 8; i++) s.push(id++);
+        k += 1;
+        const j = jitterMs ? ((k * 7919) % (2 * jitterMs)) - jitterMs : 0; // deterministic jitter
+        nextChunk += periodMs + j;
+      }
+      if (s.next(t) !== null) presents.push(t);
+    }
+    const gaps = presents.slice(1).map((p, i) => p - presents[i]);
+    const settled = gaps.slice(Math.floor(gaps.length / 3)); // after the first ~third
+    return { s, presents, gaps: settled, sent: id };
+  }
+
+  it('turns 3 bursts a second into an even ~24 fps, without dropping frames', () => {
+    const { s, gaps, sent } = run(314, 30); // 25.5 fps in, a little faster than 24
+    expect(s.snapshot().framesDropped).toBe(0);
+    expect(s.snapshot().framesPresented).toBeGreaterThan(sent - 17);
+    // No visible jumps: every gap is one or two display ticks (16.7 or 33.3 ms).
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(50.1);
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    expect(1000 / mean).toBeGreaterThan(22);
+    expect(1000 / mean).toBeLessThan(28);
+  });
+
+  it('holds about one chunk, so the added delay stays near 0.3 s', () => {
+    const { s } = run(314, 30);
+    expect(s.snapshot().buffered).toBeLessThanOrEqual(12);
+  });
+
+  it('copes with a producer slightly slower than 24 fps and with arrival jitter', () => {
+    const slow = run(350, 30, 60); // ~22.9 fps in, chunks ±60 ms late or early
+    expect(slow.s.snapshot().framesDropped).toBe(0);
+    // A few longer gaps are allowed when a chunk is late, but no freezes over 0.2 s.
+    expect(Math.max(...slow.gaps)).toBeLessThan(200);
+  });
+});

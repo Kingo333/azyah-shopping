@@ -1,5 +1,5 @@
 // Smooth playback for Live Cam frames (F1b). The GPU worker sends frames unevenly
-// (FluxRT: bursts of interpolated frames; JoyAI: chunks of 4). Drawing each one the
+// (FluxRT: bursts of interpolated frames; JoyAI: chunks of 8 every ~0.3 s). Drawing each one the
 // instant it arrives looks like judder. This jitter buffer holds a frame or two and
 // presents them on a steady cadence derived from the measured arrival rate.
 //
@@ -16,6 +16,13 @@ export interface PlaybackOptions {
   emaAlpha: number;
   /** Fixed presentation rate (from the worker's playback_fps hint); overrides the estimate. */
   fixedFps?: number;
+  /**
+   * With fixedFps: the number of frames the buffer aims to hold (JoyAI: one chunk). The
+   * cadence speeds up a little when more are held and slows a little when fewer are, so a
+   * producer slightly faster or slower than fixedFps neither fills the buffer (a catch-up
+   * jump) nor drains it (a freeze). Correction is gentle (at most ±20%), so motion stays even.
+   */
+  targetBuffer?: number;
 }
 
 export const DEFAULT_PLAYBACK_OPTIONS: PlaybackOptions = {
@@ -90,7 +97,13 @@ export class PlaybackScheduler<T> {
   intervalMs(): number {
     const { minFps, maxFps, fixedFps } = this.opts;
     const clamp = (fps: number) => Math.min(maxFps, Math.max(minFps, fps));
-    if (fixedFps && Number.isFinite(fixedFps) && fixedFps > 0) return 1000 / clamp(fixedFps);
+    if (fixedFps && Number.isFinite(fixedFps) && fixedFps > 0) {
+      const base = 1000 / clamp(fixedFps);
+      const target = this.opts.targetBuffer;
+      if (!target || target <= 0) return base;
+      const factor = Math.min(1.25, Math.max(0.8, 1 + 0.04 * (this.buffer.length - target)));
+      return base / factor;
+    }
     if (this.emaIntervalMs === null) return 1000 / clamp(24);
     return 1000 / clamp(1000 / this.emaIntervalMs);
   }
@@ -107,9 +120,14 @@ export class PlaybackScheduler<T> {
   /** The frame to present now, or null when none is due. Call once per display tick. */
   next(now: number = this.now()): T | null {
     if (this.dueIn(now) > 0) return null;
+    const interval = this.intervalMs();
     const item = this.buffer.shift();
     if (!item) return null;
-    this.lastPresentAt = now;
+    // Keep the schedule on time: the next frame is due one interval after this one was
+    // DUE, not after the display tick that showed it (60 Hz ticks would otherwise turn 24 fps
+    // into 20). After a stall or a catch-up, restart the schedule from now.
+    const scheduled = this.lastPresentAt === null ? null : this.lastPresentAt + interval;
+    this.lastPresentAt = scheduled !== null && now - scheduled < interval ? scheduled : now;
     this.presented += 1;
     return item.frame;
   }
