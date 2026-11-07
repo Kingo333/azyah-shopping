@@ -16,8 +16,13 @@
 
 /** The old rule: skip a frame only once this much is waiting to be uploaded. */
 export const LEGACY_SEND_QUEUE_BYTES = 2_000_000;
-/** JoyAI default: about this many frames may wait (≈170 ms at 24 fps). */
-export const JOYAI_SEND_QUEUE_FRAMES = 4;
+/**
+ * JoyAI default: 2 frames may wait. On a saturated upload each waiting frame adds one
+ * frame's upload time (S/U: ~55 ms at 8 Mbps, ~90 ms at 5 Mbps) to every frame's lag, so
+ * fewer is better; 2 is the fewest that keeps the upload busy (one frame going out, the next
+ * ready), so the frame rate is not cut. Simulated against 1, 3, 4 and 8 (owner, 7 Nov 2026).
+ */
+export const JOYAI_SEND_QUEUE_FRAMES = 2;
 export const MAX_SEND_QUEUE_FRAMES = 30;
 
 /**

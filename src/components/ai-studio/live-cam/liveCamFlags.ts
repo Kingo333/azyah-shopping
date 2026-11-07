@@ -91,12 +91,22 @@ export function liveCamFluxrtPrompt(
 // the download rate and the round trip, so one test tells phone, network and GPU apart.
 // Upload queue for JoyAI (liveCamSendQueue.ts): ?livecam_sendq=<frames> (0-30, remembered on
 // the device). 0 = the old rule (skip only once 2 MB is waiting); "default" (or anything that
-// is not a number) = the default, 4 frames. FluxRT always keeps the old rule.
+// is not a number) = the default, 2 frames. FluxRT always keeps the old rule.
 export function liveCamSendQueueOverride(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
 ): number | null {
   return parseSendQueueFrames(readSwitch('livecam_sendq', 'azyah.livecam.sendq', undefined, search, storage));
+}
+
+// Playback for JoyAI (liveCamPlayout.ts): ?livecam_playout=capture|buffer (remembered on the
+// device). capture (default) = each frame at its capture time + a measured delay; buffer = the
+// earlier fixed 24 fps buffer (8 frames, up to 16). FluxRT always uses the buffer.
+export function liveCamPlayoutMode(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'capture' | 'buffer' {
+  return readSwitch('livecam_playout', 'azyah.livecam.playout', undefined, search, storage) === 'buffer' ? 'buffer' : 'capture';
 }
 
 export function liveCamDebug(

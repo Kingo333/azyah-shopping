@@ -14,9 +14,9 @@ const KB = 1000;
 const FRAME = 60 * KB; // a 480x840 JoyAI frame as base64, roughly
 
 describe('sendQueueFrames: JoyAI gets the short queue, FluxRT keeps the old rule', () => {
-  it('defaults to 4 frames for JoyAI only', () => {
-    expect(JOYAI_SEND_QUEUE_FRAMES).toBe(4);
-    expect(sendQueueFrames('joyai', null)).toBe(4);
+  it('defaults to 2 frames for JoyAI only', () => {
+    expect(JOYAI_SEND_QUEUE_FRAMES).toBe(2);
+    expect(sendQueueFrames('joyai', null)).toBe(2);
     expect(sendQueueFrames('fluxrt', null)).toBe(0);
     expect(sendQueueFrames(undefined, null)).toBe(0); // old workers say no engine
   });
