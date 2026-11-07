@@ -4,7 +4,7 @@ import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy, liveCamPlaybackOverride } from './liveCamFlags';
+import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride } from './liveCamFlags';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
@@ -506,19 +506,22 @@ export function useLiveCamSession({
       const name = garment.label?.trim();
       const description = garment.description?.trim();
       const hint = garment.promptHint?.trim();
+      // Garment text switches (off by default; legacy mode is the untouched baseline).
+      const textOpts = legacy ? {} : { cleanDetails: liveCamCleanDetails(), fluxrtPrompt: liveCamFluxrtPrompt() };
+      console.log(`[live-cam] garment text clean=${textOpts.cleanDetails ? 'on' : 'off'} fluxrt_prompt=${textOpts.fluxrtPrompt ?? 'full'}`);
       const finalPrompt = buildTryOnPrompt({
         category: garment.category,
         name,
         description,
         promptHint: hint,
-      });
+      }, textOpts);
       // Short edit instruction for JoyAI; FluxRT ignores it.
       const finalInstruction = buildTryOnInstruction({
         category: garment.category,
         name,
         description,
         promptHint: hint,
-      }, { useHintDetails: !legacy });
+      }, { useHintDetails: !legacy, ...textOpts });
 
       const sleeveInference = inferSleeveLength({
         category: garment.category,
@@ -771,7 +774,8 @@ export function useLiveCamSession({
         };
         // Image and prompt go out back to back (no round trip between them); the worker
         // turns the pair into one restart.
-        const nextPrompt = buildTryOnPrompt(meta);
+        const swapTextOpts = legacy ? {} : { cleanDetails: liveCamCleanDetails(), fluxrtPrompt: liveCamFluxrtPrompt() };
+        const nextPrompt = buildTryOnPrompt(meta, swapTextOpts);
         const ackRef = waitForAck('set_reference_image');
         const ackPrompt = waitForAck('set_prompt');
         statsRef.current.markSwap();
@@ -779,7 +783,7 @@ export function useLiveCamSession({
         const swapMsg = {
           type: 'set_prompt' as const,
           prompt: nextPrompt,
-          instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy }),
+          instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy, ...swapTextOpts }),
           face_gate: needsFaceGate(next.category, facingRef.current),
           category: next.category ?? null,
         };

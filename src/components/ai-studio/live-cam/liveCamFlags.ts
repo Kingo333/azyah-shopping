@@ -32,3 +32,53 @@ export function liveCamPlaybackOverride(
     return null;
   }
 }
+
+// Garment text switches (owner, 7 Nov 2026), off by default. Each reads the URL first, then
+// localStorage, then the build-time env var, so the owner can test on one device without a
+// redeploy. A value given in the URL is remembered on the device (localStorage), so it
+// survives in-app navigation; set it back with =0 / =full:
+//   clean details:   ?livecam_clean=1|0,  localStorage "azyah.livecam.clean" = "1"|"0",
+//                    VITE_LIVE_CAM_CLEAN_DETAILS = "1"|"true"
+//   FluxRT prompt:   ?livecam_fluxrt_prompt=compact|full, localStorage "azyah.livecam.fluxrt_prompt",
+//                    VITE_LIVE_CAM_FLUXRT_PROMPT = "compact"|"full"
+type Env = Record<string, string | boolean | undefined> | undefined;
+const viteEnv = (): Env => {
+  try { return (import.meta as unknown as { env?: Env }).env; } catch { return undefined; }
+};
+
+type SwitchStorage = Pick<Storage, 'getItem'> & Partial<Pick<Storage, 'setItem'>>;
+
+function readSwitch(
+  urlKey: string, storageKey: string, envValue: unknown,
+  search: string | undefined, storage: SwitchStorage | undefined,
+): string | null {
+  try {
+    const fromUrl = search ? new URLSearchParams(search).get(urlKey) : null;
+    if (fromUrl) {
+      const v = fromUrl.trim().toLowerCase();
+      try { storage?.setItem?.(storageKey, v); } catch { /* private mode */ }
+      return v;
+    }
+    const fromStorage = storage?.getItem(storageKey);
+    if (fromStorage) return fromStorage.trim().toLowerCase();
+  } catch { /* private mode */ }
+  return typeof envValue === 'string' && envValue.trim() ? envValue.trim().toLowerCase() : null;
+}
+
+export function liveCamCleanDetails(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  env: Env = viteEnv(),
+): boolean {
+  const v = readSwitch('livecam_clean', 'azyah.livecam.clean', env?.VITE_LIVE_CAM_CLEAN_DETAILS, search, storage);
+  return v === '1' || v === 'true' || v === 'on';
+}
+
+export function liveCamFluxrtPrompt(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  env: Env = viteEnv(),
+): 'full' | 'compact' {
+  const v = readSwitch('livecam_fluxrt_prompt', 'azyah.livecam.fluxrt_prompt', env?.VITE_LIVE_CAM_FLUXRT_PROMPT, search, storage);
+  return v === 'compact' ? 'compact' : 'full';
+}
