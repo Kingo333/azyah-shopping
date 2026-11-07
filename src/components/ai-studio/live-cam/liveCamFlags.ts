@@ -83,3 +83,13 @@ export function liveCamFluxrtPrompt(
   const v = readSwitch('livecam_fluxrt_prompt', 'azyah.livecam.fluxrt_prompt', env?.VITE_LIVE_CAM_FLUXRT_PROMPT, search, storage);
   return v === 'full' ? 'full' : 'compact';
 }
+
+// Diagnostics readout on the Live stage (owner phone tests): ?livecam_debug=1 (remembered on
+// the device; =0 hides it). Shows the upload rate, the phone's encode time, upload stalls,
+// the download rate and the round trip, so one test tells phone, network and GPU apart.
+export function liveCamDebug(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): boolean {
+  return readSwitch('livecam_debug', 'azyah.livecam.debug', undefined, search, storage) === '1';
+}

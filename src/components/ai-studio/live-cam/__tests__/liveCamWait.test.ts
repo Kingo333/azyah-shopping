@@ -14,6 +14,9 @@ import {
   waitMode,
   waitProgress,
   waitSteps,
+  waitView,
+  CARD_DELAY_MS,
+  WARM_READY_MS,
 } from '../liveCamWait';
 
 const EST = 180_000;
@@ -148,5 +151,21 @@ describe('showFramingGuide', () => {
     expect(showFramingGuide({ ...base, sinceLiveMs: 60_000, dismissed: true, noticeKey: 'no_person' })).toBe(true);
     expect(showFramingGuide({ ...base, sinceLiveMs: 60_000, noticeKey: 'waiting_face' })).toBe(true);
     expect(showFramingGuide({ ...base, faceItem: false, noticeKey: 'no_person' })).toBe(false);
+  });
+});
+
+describe('waitView: a warm worker goes straight in', () => {
+  it('shows only the small line for the first moment of any start', () => {
+    expect(waitView(0, null)).toBe('pill');
+    expect(waitView(CARD_DELAY_MS - 1, null)).toBe('pill');
+    expect(waitView(CARD_DELAY_MS, null)).toBe('card');
+  });
+  it('skips the steps and the cascade when ready arrives quickly (warm worker)', () => {
+    expect(waitView(900, 900)).toBe('pill');
+    expect(waitView(7_000, WARM_READY_MS - 1)).toBe('pill');
+  });
+  it('keeps the card and the cascade for a real cold start', () => {
+    expect(waitView(120_000, 120_000)).toBe('card');
+    expect(waitView(WARM_READY_MS, WARM_READY_MS)).toBe('card');
   });
 });

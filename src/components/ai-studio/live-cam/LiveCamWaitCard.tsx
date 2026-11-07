@@ -8,6 +8,7 @@ import {
   waitMode,
   waitProgress,
   waitSteps,
+  waitView,
   type WaitAnchor,
 } from './liveCamWait';
 
@@ -37,6 +38,11 @@ export const LiveCamWaitCard: React.FC<Props> = ({ anchor, startedAt, notifyStat
   const estimate = waitEstimateMs();
   const elapsed = startedAt ? now - startedAt : 0;
   const a: WaitAnchor = anchor ?? 'requested';
+  // When "ready" first arrived, measured from Start (decides the warm fast path).
+  const readyAfterRef = useRef<number | null>(null);
+  if ((a === 'ready' || a === 'live') && readyAfterRef.current === null) readyAfterRef.current = elapsed;
+  if (a !== 'ready' && a !== 'live') readyAfterRef.current = null;
+  const view = waitView(elapsed, readyAfterRef.current);
   const steps = waitSteps(a, elapsed, estimate);
   const mode = waitMode(elapsed, estimate);
   const ready = a === 'ready' || a === 'live';
@@ -68,6 +74,16 @@ export const LiveCamWaitCard: React.FC<Props> = ({ anchor, startedAt, notifyStat
         : null;
   const minutes = Math.round(estimate / 60_000);
   const slow = mode === 'slow' && !ready;
+
+  // Warm worker (or the first moment of any start): a small line instead of the card.
+  if (view === 'pill') {
+    return (
+      <div className="flex items-center gap-2 rounded-full bg-neutral-900/90 px-4 py-2 text-[14px] font-medium text-white animate-in fade-in duration-200 motion-reduce:animate-none" role="status">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300 motion-reduce:animate-none" aria-hidden />
+        {WAIT_COPY.titleWarm}
+      </div>
+    );
+  }
 
   // Design v3: flat card (no shadow, no blur), radius 20, 15/600 title, 13 body, motion
   // 150–250 ms on opacity/transform only, reduced motion respected.

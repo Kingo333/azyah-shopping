@@ -23,6 +23,8 @@ export interface LiveCamStatsSnapshot {
   encodeMsP95: number | null;
   /** Capture ticks skipped because the previous frame was still encoding. */
   encodeSkipped: number;
+  /** Capture ticks skipped because the upload was backed up (over 2 MB waiting): the network limits the send rate. */
+  uploadBlocked: number;
   /** Buffered playback (F1b): frames drawn on cadence, and frames dropped to keep the buffer short. */
   framesPresented: number;
   presentedFps: number;
@@ -57,6 +59,7 @@ export class LiveCamFrameStats {
   private lastSwapGapMs: number | null = null;
   private encode: number[] = [];
   private encodeSkipped = 0;
+  private uploadBlocked = 0;
   private presented = 0;
   private presentedTimes: number[] = [];
   private playbackDropped = 0;
@@ -79,6 +82,7 @@ export class LiveCamFrameStats {
     this.lastSwapGapMs = null;
     this.encode = [];
     this.encodeSkipped = 0;
+    this.uploadBlocked = 0;
     this.presented = 0;
     this.presentedTimes = [];
     this.playbackDropped = 0;
@@ -100,6 +104,10 @@ export class LiveCamFrameStats {
 
   onEncodeSkipped(): void {
     this.encodeSkipped += 1;
+  }
+
+  onUploadBlocked(): void {
+    this.uploadBlocked += 1;
   }
 
   /** Number and timestamp for the next camera frame. */
@@ -163,6 +171,7 @@ export class LiveCamFrameStats {
       encodeMsP50: percentile(this.encode, 50),
       encodeMsP95: percentile(this.encode, 95),
       encodeSkipped: this.encodeSkipped,
+      uploadBlocked: this.uploadBlocked,
       framesPresented: this.presented,
       presentedFps: this.fps(this.presentedTimes),
       playbackDropped: this.playbackDropped,
