@@ -4,7 +4,8 @@ import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride } from './liveCamFlags';
+import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamSendQueueOverride } from './liveCamFlags';
+import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
 import { garmentRefCache } from './liveCamGarmentCache';
 import { needsFaceGate } from './liveCamFaceGate';
@@ -606,6 +607,18 @@ export function useLiveCamSession({
         }
 
         const intervalMs = Math.floor(1000 / fpsCap);
+        // Upload queue (liveCamSendQueue.ts): JoyAI keeps at most ~4 frames waiting and always
+        // sends the newest; FluxRT (and ?livecam_sendq=0) keep the old 2 MB rule.
+        const queueFrames = sendQueueFrames(cfgRef.current.engine, liveCamSendQueueOverride());
+        const sendQ = new SendQueue<{ b64: string; at: number }>(queueFrames);
+        console.log(`[live-cam] upload queue ${queueFrames > 0 ? `${queueFrames} frames` : 'old 2 MB rule'} (engine=${cfgRef.current.engine ?? 'unknown'})`);
+        const sendFrame = (f: { b64: string; at: number }) => {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          lastSendTsRef.current = performance.now();
+          const { seq, tClientMs } = statsRef.current.nextFrame(f.at);
+          ws.send(JSON.stringify({ type: 'frame', frame_b64: f.b64, seq, t_client_ms: tClientMs }));
+        };
         // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
         // add latency instead of frames, so a tick is skipped while one is in flight.
         let encoding = false;
@@ -613,7 +626,11 @@ export function useLiveCamSession({
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
-          if (wsNow2.bufferedAmount > 2_000_000) {
+          if (queueFrames > 0) {
+            // A frame held back because the upload was busy goes as soon as there is room.
+            const held = sendQ.poll(wsNow2.bufferedAmount);
+            if (held) sendFrame(held);
+          } else if (wsNow2.bufferedAmount > 2_000_000) {
             statsRef.current.onUploadBlocked();
             return;
           }
@@ -631,14 +648,15 @@ export function useLiveCamSession({
               async (blob) => {
                 try {
                   if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-                  if (wsRef.current.bufferedAmount > 2_000_000) return;
+                  if (queueFrames <= 0 && wsRef.current.bufferedAmount > 2_000_000) return;
                   const b64 = await blobToBase64(blob);
                   statsRef.current.onEncoded(performance.now() - encodeStart);
-                  if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-                  if (wsRef.current.bufferedAmount > 2_000_000) return;
-                  lastSendTsRef.current = performance.now();
-                  const { seq, tClientMs } = statsRef.current.nextFrame();
-                  wsRef.current.send(JSON.stringify({ type: 'frame', frame_b64: b64, seq, t_client_ms: tClientMs }));
+                  const ws = wsRef.current;
+                  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                  const droppedBefore = sendQ.droppedCount;
+                  const now = sendQ.offer({ b64, at: performance.now() }, b64.length, ws.bufferedAmount);
+                  if (queueFrames > 0) statsRef.current.onSendQueueDropped(sendQ.droppedCount - droppedBefore);
+                  if (now) sendFrame(now);
                 } catch {
                   // skip frame
                 } finally {

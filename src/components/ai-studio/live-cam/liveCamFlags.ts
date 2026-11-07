@@ -1,3 +1,5 @@
+import { parseSendQueueFrames } from './liveCamSendQueue';
+
 // Benchmark switch (review R3): `?livecam_legacy=1` in the URL, or localStorage
 // "azyah.livecam.legacy" = "1", turns off the Gemini-details instruction and the
 // garment photo clean-up, so a before/after test can run in one session.
@@ -87,6 +89,16 @@ export function liveCamFluxrtPrompt(
 // Diagnostics readout on the Live stage (owner phone tests): ?livecam_debug=1 (remembered on
 // the device; =0 hides it). Shows the upload rate, the phone's encode time, upload stalls,
 // the download rate and the round trip, so one test tells phone, network and GPU apart.
+// Upload queue for JoyAI (liveCamSendQueue.ts): ?livecam_sendq=<frames> (0-30, remembered on
+// the device). 0 = the old rule (skip only once 2 MB is waiting); "default" (or anything that
+// is not a number) = the default, 4 frames. FluxRT always keeps the old rule.
+export function liveCamSendQueueOverride(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): number | null {
+  return parseSendQueueFrames(readSwitch('livecam_sendq', 'azyah.livecam.sendq', undefined, search, storage));
+}
+
 export function liveCamDebug(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,

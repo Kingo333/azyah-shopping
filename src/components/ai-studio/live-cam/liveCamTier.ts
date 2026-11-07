@@ -3,6 +3,8 @@
 // the engine (JoyAI or FluxRT) and its ready message says which frames it wants.
 
 export interface LiveCamConfig {
+  /** Engine named in the worker's ready message (undefined for old workers). */
+  engine?: 'joyai' | 'fluxrt';
   /** Frame size sent to the GPU worker (and the output canvas size). */
   captureWidth: number;
   captureHeight: number;
@@ -74,6 +76,7 @@ export function applyEngineHints(cfg: LiveCamConfig, ready: Record<string, unkno
   }
   return {
     ...cfg,
+    engine: ready.engine === 'joyai' ? 'joyai' : 'fluxrt',
     captureWidth: w !== null && h !== null ? Math.round(w) : cfg.captureWidth,
     captureHeight: w !== null && h !== null ? Math.round(h) : cfg.captureHeight,
     fpsCap: fps ?? cfg.fpsCap,
