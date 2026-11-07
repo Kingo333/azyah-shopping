@@ -147,6 +147,23 @@ export function arrangingLine(sinceConnectedMs: number, periodMs = ARRANGING_LIN
   return ARRANGING_LINES[i];
 }
 
+/**
+ * Warm worker fast path (owner, 7 Nov): when the GPU is already warm the mirror is ready in
+ * a few seconds, and a five-step card would only slow it down visually. So the card shows
+ * only after CARD_DELAY_MS, and when "ready" arrives within WARM_READY_MS of Start the steps
+ * and the cascade are skipped: just a small "Opening your mirror…" line until it is live.
+ */
+export const CARD_DELAY_MS = 4_000; // a warm start needs ~1-3 s (session, garment photo, connect)
+export const WARM_READY_MS = 8_000;
+
+export type WaitView = 'pill' | 'card';
+
+/** readyAfterMs: time from Start to "ready", or null while not ready yet. */
+export function waitView(elapsedMs: number, readyAfterMs: number | null): WaitView {
+  if (readyAfterMs !== null) return readyAfterMs < WARM_READY_MS ? 'pill' : 'card';
+  return elapsedMs < CARD_DELAY_MS ? 'pill' : 'card';
+}
+
 /** 'warm' (no card: it is about to be live), 'normal', or 'slow' (past the estimate). */
 export type WaitMode = 'normal' | 'slow';
 

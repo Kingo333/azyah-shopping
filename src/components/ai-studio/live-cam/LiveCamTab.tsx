@@ -5,6 +5,7 @@ import { LiveCamWaitCard } from './LiveCamWaitCard';
 import { LiveCamFramingGuide } from './LiveCamFramingGuide';
 import { WAIT_COPY, showFramingGuide, waitEstimateMs, waitProgress } from './liveCamWait';
 import { needsFaceGate } from './liveCamFaceGate';
+import { liveCamDebug } from './liveCamFlags';
 import { triggerHaptic } from '@/utils/haptics';
 import { LiveCamCameraView } from './LiveCamCameraView';
 import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
@@ -43,12 +44,27 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const navigate = useNavigate();
 
   const {
-    status, facing, flipCamera, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame,
+    status, facing, flipCamera, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame, readStats,
   } = useLiveCamSession({
     garment,
     localVideoRef,
     remoteCanvasRef,
   });
+
+  // Diagnostics readout (?livecam_debug=1): upload fps, phone encode time, upload stalls,
+  // download fps and round trip, refreshed every second while live.
+  const [debugOn] = useState(() => liveCamDebug());
+  const [debugLine, setDebugLine] = useState<string | null>(null);
+  useEffect(() => {
+    if (!debugOn || status !== 'running') { setDebugLine(null); return; }
+    const tick = () => {
+      const s = readStats();
+      setDebugLine(`↑${s.sentFps} fps · enc ${s.encodeMsP50 ?? '–'} ms · skip ${s.encodeSkipped} · stall ${s.uploadBlocked} · ↓${s.receivedFps} fps · rtt ${s.rttMsP50 ?? '–'} ms`);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [debugOn, status, readStats]);
 
   // Framing guide: the opening moments once live, or whenever nobody is in view.
   const [guideDismissed, setGuideDismissed] = useState(false);
@@ -163,6 +179,9 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               <FlipCameraButton facing={facing} onFlip={flipCamera} variant="stage" />
               {isRunning && latencyMs !== null && (
                 <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white tabular-nums">{latencyMs} ms</span>
+              )}
+              {debugLine && (
+                <span className="basis-full rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white tabular-nums">{debugLine}</span>
               )}
             </>
           }

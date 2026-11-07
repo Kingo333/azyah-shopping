@@ -71,6 +71,8 @@ interface UseLiveCamSessionReturn {
   latencyMs: number | null;
   session: LiveCamSessionInfo | null;
   start: () => Promise<void>;
+  /** Current per-frame stats (send/receive rate, encode time, stalls); for the debug readout. */
+  readStats: () => ReturnType<LiveCamFrameStats['snapshot']>;
   /** Ends a running session, or cancels one that is still starting. */
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
@@ -611,7 +613,10 @@ export function useLiveCamSession({
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
-          if (wsNow2.bufferedAmount > 2_000_000) return;
+          if (wsNow2.bufferedAmount > 2_000_000) {
+            statsRef.current.onUploadBlocked();
+            return;
+          }
           if (encoding) {
             statsRef.current.onEncodeSkipped();
             return;
@@ -1077,6 +1082,8 @@ export function useLiveCamSession({
     }
   }, [localVideoRef]);
 
+  const readStats = useCallback(() => statsRef.current.snapshot(), []);
+
   return {
     status,
     facing,
@@ -1090,6 +1097,7 @@ export function useLiveCamSession({
     latencyMs,
     session,
     start,
+    readStats,
     stop,
     redrawLastFrame,
   };
