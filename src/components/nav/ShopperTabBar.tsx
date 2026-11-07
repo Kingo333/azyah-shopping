@@ -80,19 +80,24 @@ export const ShopperTabBar: React.FC = () => {
                     }`}
                   >
                     {ring !== null && (
-                      // Progress ring: fills as the mirror gets ready (amber, like the dot).
+                      // Progress ring while the mirror gets ready: a faint full track with the
+                      // amber progress on top, starting at 12 o'clock. It replaces the amber dot.
                       <span
-                        aria-hidden
-                        className="absolute -inset-[3px] rounded-full"
+                        role="progressbar"
+                        aria-label="Live try-on is getting ready"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(ring * 100)}
+                        className="absolute -inset-[4px] rounded-full"
                         style={{
-                          background: `conic-gradient(#fbbf24 ${Math.round(ring * 360)}deg, transparent 0deg)`,
+                          background: `conic-gradient(#fbbf24 ${Math.round(ring * 360)}deg, ${dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.10)'} 0deg)`,
                           WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px))',
                           mask: 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px))',
                         }}
                       />
                     )}
                     <Icon className="h-[18px] w-[18px]" aria-hidden />
-                    {badge && (
+                    {badge && ring === null && (
                       <span
                         aria-label={badge === 'ready' ? 'Live try-on is ready' : 'Live try-on is turning on'}
                         className={`absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ${dark ? 'ring-black' : 'ring-card'} ${

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import type { LiveCamStatus } from './liveCamTypes';
 
@@ -43,6 +43,18 @@ export const LiveCamCameraView: React.FC<Props> = ({
   overlay,
 }) => {
   const stage = variant === 'stage';
+  // Stage: the bottom bar (clothes strip + buttons) is measured, so the idle and loading
+  // content always sits in the space above it and never under the strip.
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [bottomH, setBottomH] = useState(176);
+  useEffect(() => {
+    const el = bottomRef.current;
+    if (!stage || !el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setBottomH(el.offsetHeight));
+    ro.observe(el);
+    setBottomH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, [stage]);
   const isWarming = status === 'warming';
   const warmingCopy = 'Preparing your mirror… the first time takes about 2–5 minutes';
 
@@ -89,13 +101,14 @@ export const LiveCamCameraView: React.FC<Props> = ({
       <div className={remoteWrapClass}>
         <canvas ref={remoteCanvasRef} width={288} height={512} className={canvasClass} />
         {!isRunning && !isWarming && (stage ? (
-          idleContent && status !== 'starting' && <div className="absolute inset-x-0 top-0 bottom-44 z-20 flex items-center justify-center p-6">{idleContent}</div>
+          idleContent && status !== 'starting' && <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center p-6" style={{ bottom: bottomH }}>{idleContent}</div>
         ) : (
           <span className="absolute text-white/70 text-xs z-20">Try-on preview</span>
         ))}
         {stage ? (
           loadingContent && (status === 'starting' || isWarming) && (
-            <div className="absolute inset-x-0 top-0 bottom-44 z-20 flex items-center justify-center p-6">{loadingContent}</div>
+            // Below the status pills (top 56 px), above the measured bottom bar.
+            <div className="absolute inset-x-0 top-14 z-20 flex items-center justify-center px-4 pb-2" style={{ bottom: bottomH }}>{loadingContent}</div>
           )
         ) : isWarming && (
           <span className="absolute text-white/80 text-[11px] px-2 py-1 rounded-full bg-black/50 text-center max-w-[90%] z-20">
@@ -103,7 +116,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
           </span>
         )}
         {stage && isRunning && overlay}
-        {stage && bottom && <div className="absolute inset-x-0 bottom-0 z-30">{bottom}</div>}
+        {stage && bottom && <div ref={bottomRef} className="absolute inset-x-0 bottom-0 z-30">{bottom}</div>}
         {stage ? (
           topLeft && <div className="absolute top-3 left-3 right-16 z-20 flex flex-wrap items-center gap-1.5">{topLeft}</div>
         ) : (
