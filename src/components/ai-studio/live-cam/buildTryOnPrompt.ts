@@ -1,5 +1,16 @@
 // Category-aware Live Cam try-on prompt builder.
 // Pure function — no AI, no network. Uses existing item metadata only.
+import { cleanGarmentName, cleanGarmentText } from './garmentText';
+
+/**
+ * Text options (switches, off by default; see liveCamFlags.ts):
+ * - cleanDetails: item text describes only the garment (garmentText.ts), for both engines.
+ * - fluxrtPrompt 'compact': short, item-first FluxRT prompt instead of the long rule list.
+ */
+export interface GarmentTextOptions {
+  cleanDetails?: boolean;
+  fluxrtPrompt?: 'full' | 'compact';
+}
 
 export type TryOnCategory =
   | 'tops'
@@ -147,7 +158,18 @@ export interface BuildTryOnPromptInput {
   promptHint?: string | null;
 }
 
-export function buildTryOnPrompt(input: BuildTryOnPromptInput): string {
+export function buildTryOnPrompt(input: BuildTryOnPromptInput, opts: GarmentTextOptions = {}): string {
+  if (opts.fluxrtPrompt === 'compact') return buildCompactTryOnPrompt(input, opts);
+  if (opts.cleanDetails) {
+    // Same long prompt, but the item text is garment-only and the Gemini hint loses the
+    // generic rules this prompt already states (they pushed the item text past 512 tokens).
+    input = {
+      ...input,
+      name: cleanGarmentName(input.name),
+      description: cleanGarmentText(input.description),
+      promptHint: garmentDetailsFromHint(input.promptHint, HINT_DETAIL_CHARS_CLEAN),
+    };
+  }
   const parts: string[] = [UNIVERSAL_BASE];
 
   const cat = normalizeCategory(input.category);
@@ -165,8 +187,51 @@ export function buildTryOnPrompt(input: BuildTryOnPromptInput): string {
   if (description) parts.push(`Item description: ${description}.`);
 
   const hint = input.promptHint?.trim();
-  if (hint) parts.push(`Additional item guidance: ${hint}.`);
+  if (hint) parts.push(`Additional item guidance: ${opts.cleanDetails ? hint.replace(/[.!]+$/, '') : hint}.`);
 
+  return parts.join(' ');
+}
+
+const COMPACT_PLACEMENT: Record<TryOnCategory, string> = {
+  tops: 'It replaces the current top; the pants or skirt stay as they are',
+  bottoms: 'It replaces the current pants or skirt; the top stays as it is',
+  dresses: 'It is worn as a dress and replaces the current outfit, at its own length',
+  outerwear: 'It is worn over the current outfit',
+  shoes: 'They replace the current shoes, on the feet',
+  bags: 'The person carries it naturally; the outfit stays as it is',
+  accessories: 'The person wears it naturally; the outfit stays as it is',
+};
+const COMPACT_SLEEVES: Record<SleeveLength, string> = {
+  sleeveless: ', and keep it sleeveless',
+  short_sleeve: ', with short sleeves',
+  long_sleeve: ', with full-length sleeves',
+  three_quarter_sleeve: ', with three-quarter sleeves',
+  unknown: '',
+};
+
+/**
+ * Compact FluxRT prompt (about a third of the long one): the item and its own details
+ * first, then where it goes, then what stays. Positive wording; the category falls back to
+ * the product name when the stored category is generic ("clothing").
+ */
+export function buildCompactTryOnPrompt(input: BuildTryOnPromptInput, opts: GarmentTextOptions = {}): string {
+  const clean = opts.cleanDetails === true;
+  const cat =
+    normalizeCategory(input.category) ??
+    normalizeCategory(input.name) ??
+    normalizeCategory(input.promptHint);
+  const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
+  const details = clean
+    ? cleanGarmentText(input.description) || garmentDetailsFromHint(input.promptHint, HINT_DETAIL_CHARS_CLEAN)
+    : cleanProductText(input.description) || garmentDetailsFromHint(input.promptHint);
+  const item = name ? `the ${name}` : 'the item';
+  const parts = [
+    `Virtual try-on. The person in the camera frame wears ${item} from the reference image${details ? `: ${details.replace(/[.!]+$/, '')}.` : '.'}`,
+  ];
+  if (cat) parts.push(`${COMPACT_PLACEMENT[cat]}.`);
+  const sleeves = cat && SLEEVE_CATEGORIES.has(cat) ? COMPACT_SLEEVES[inferSleeveLength(input)] : '';
+  parts.push(`Keep its exact colour, print, pattern, logo, fabric and fit${sleeves}.`);
+  parts.push("Keep the person's face, hair, body, pose and the background unchanged.");
   return parts.join(' ');
 }
 
@@ -215,13 +280,16 @@ const GEMINI_BOILERPLATE = [
   /^if any text description conflicts/i,
 ];
 
+/** Character budget for Gemini details when cleaning is on (texture and logo placement fit). */
+const HINT_DETAIL_CHARS_CLEAN = 480;
+
 /** Garment-specific sentences from a Gemini prompt hint (colours, prints, logo placement...). */
-export function garmentDetailsFromHint(hint: string | null | undefined): string {
+export function garmentDetailsFromHint(hint: string | null | undefined, maxChars = MAX_DETAIL_CHARS): string {
   const text = cleanProductText(hint, 2000);
   if (!text) return '';
   const sentences = text.match(/[^.!?]+[.!?]?/g) ?? [];
   const kept = sentences.map((s) => s.trim()).filter((s) => s && !GEMINI_BOILERPLATE.some((re) => re.test(s)));
-  return cleanProductText(kept.join(' '));
+  return cleanProductText(kept.join(' '), maxChars);
 }
 
 /**
@@ -231,17 +299,20 @@ export function garmentDetailsFromHint(hint: string | null | undefined): string 
  */
 export function buildTryOnInstruction(
   input: BuildTryOnPromptInput,
-  opts: { useHintDetails?: boolean } = {},
+  opts: { useHintDetails?: boolean } & GarmentTextOptions = {},
 ): string {
   const cat =
     normalizeCategory(input.category) ??
     normalizeCategory(input.name) ??
     normalizeCategory(input.promptHint);
   const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
-  const name = cleanProductText(input.name, 120);
+  const clean = opts.cleanDetails === true;
+  const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
   // Store products have a description; wardrobe items have the Gemini analysis hint.
-  const description =
-    cleanProductText(input.description) || (opts.useHintDetails === false ? '' : garmentDetailsFromHint(input.promptHint));
+  const hintDetails = opts.useHintDetails === false
+    ? ''
+    : garmentDetailsFromHint(input.promptHint, clean ? HINT_DETAIL_CHARS_CLEAN : MAX_DETAIL_CHARS);
+  const description = (clean ? cleanGarmentText(input.description) : cleanProductText(input.description)) || hintDetails;
   if (name || description) {
     const label = name ? `The reference garment is the ${name}` : 'The reference garment';
     parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);
