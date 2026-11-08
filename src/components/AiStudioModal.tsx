@@ -17,6 +17,9 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { useTheNewBlack } from '@/hooks/useTheNewBlack';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { SalesModeButton } from '@/components/SalesModeButton';
+
+const TAB_COLS: Record<number, string> = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' };
 import { useNavigate } from 'react-router-dom';
 import { AnimatedProgress } from '@/components/ui/animated-progress';
 import { ExpiryIndicator } from '@/components/ui/expiry-indicator';
@@ -63,8 +66,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const [activeTab, setActiveTab] = useState<StudioTab>('picture');
   const { user } = useAuth();
   const isShopper = !!user && (user.user_metadata?.role ?? 'shopper') === 'shopper';
+  // Guests see the same tabs as shoppers (every try-on action asks them to sign up, or works in
+  // sales mode once the device is signed in to the demo account).
+  const isGuestViewer = !user;
+  const showsShopperTabs = isShopper || isGuestViewer;
   // Picture first and default; Live Cam is turned on from its own tab.
-  const tabOrder = studioTabs(isShopper, features.video_tryon);
+  const tabOrder = studioTabs(showsShopperTabs, features.video_tryon);
   const tabTouched = useRef(false);
   const chooseTab = (tab: StudioTab) => {
     tabTouched.current = true;
@@ -72,8 +79,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   };
   useEffect(() => {
     // The user loads after the first render, so pick the default once it's known.
-    if (!tabTouched.current) setActiveTab(defaultStudioTab(isShopper, features.video_tryon));
-  }, [isShopper]);
+    if (!tabTouched.current) setActiveTab(defaultStudioTab(showsShopperTabs, features.video_tryon));
+  }, [showsShopperTabs]);
 
   // Design v3: Live Cam can keep running while people browse. Come back to it
   // when it's on, or when they tap "Open" on the pill or the ready message.
@@ -553,7 +560,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   if (!open) return null;
 
   // What's left, never totals (get_user_credits returns remaining credits only).
-  const creditsLeftLine = creditsLoading
+  const creditsLeftLine = isGuestViewer
+    ? 'Sign up free to try on'
+    : creditsLoading
     ? ' '
     : features.video_tryon
       ? `${pictureCredits} picture${pictureCredits === 1 ? '' : 's'} · ${videoCredits} video${videoCredits === 1 ? '' : 's'} left${isPremium ? ' today' : ''}`
@@ -564,7 +573,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             {/* Header: large title + what's left in page mode; frosty glass in the dialog */}
             {isPage ? (
               <div className="flex-shrink-0 px-4 pt-1 pb-1">
-                <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
+                <div className="flex items-center justify-between gap-2">
+                  <h1 className="text-[26px] font-semibold leading-tight text-ink">Try on</h1>
+                  {isGuestViewer && <SalesModeButton />}
+                </div>
                 <p className="text-[13px] text-ink-2 tabular-nums">
                   {activeTab === 'live-cam' ? 'Turn it on once, then try outfits on live' : creditsLeftLine}
                 </p>
@@ -581,6 +593,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
+                {isGuestViewer && <SalesModeButton />}
                 <button
                   onClick={onClose}
                   className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 active:scale-95 transition"
@@ -595,7 +608,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             {/* Tabs - Soft Glass Pill Style */}
             <Tabs value={activeTab} onValueChange={(v) => { tabTouched.current = true; setActiveTab(v as StudioTab); }} className="flex-1 flex flex-col min-h-0">
               <div className="flex-shrink-0 px-4 pt-3">
-                <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${isShopper ? 'grid-cols-3' : 'grid-cols-2'} gap-1 v3:bg-fill v3:border-0 v3:p-0.5 v3:rounded-[10px] v3:gap-0.5`}>
+                <TabsList className={`w-full bg-gray-100/80 border border-gray-200/50 p-1 rounded-full grid ${TAB_COLS[tabOrder.length] ?? 'grid-cols-3'} gap-1 v3:bg-fill v3:border-0 v3:p-0.5 v3:rounded-[10px] v3:gap-0.5`}>
                   {tabOrder.map((tab) => (
                     <TabsTrigger key={tab} value={tab} className="flex items-center gap-2 text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full transition-all v3:rounded-[8px] v3:text-ink v3:data-[state=active]:bg-card v3:data-[state=active]:shadow-none v3:[&_svg]:hidden">
                       {tab === 'picture' ? <Image className="h-4 w-4" /> : tab === 'video' ? <Video className="h-4 w-4" /> : <Radio className="h-4 w-4" />}
@@ -734,7 +747,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   )}
 
                   {/* Upgrade prompt for non-premium */}
-                  {!isPremium && pictureCredits <= 0 && (
+                  {!isGuestViewer && !isPremium && pictureCredits <= 0 && (
                     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
                       <p className="text-sm text-foreground mb-2">
                         You've used your free credits
@@ -1023,7 +1036,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   )}
 
                   {/* Upgrade prompt for video */}
-                  {!isPremium && videoCredits <= 0 && (
+                  {!isGuestViewer && !isPremium && videoCredits <= 0 && (
                     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
                       <p className="text-sm text-foreground mb-2">
                         Sign up for premium to get 4 video credits daily!
@@ -1038,7 +1051,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   )}
                 </TabsContent>
 
-                {isShopper && (
+                {showsShopperTabs && (
                   <TabsContent value="live-cam" className="mt-0 space-y-4">
                     {v3 ? <LiveCamSlot /> : <LiveCamTab />}
                   </TabsContent>
