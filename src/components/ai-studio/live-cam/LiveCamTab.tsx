@@ -15,6 +15,8 @@ import { LIVE_CAM_CONFIG } from './liveCamTier';
 import type { LiveCamGarmentSelection, LiveCamStatus } from './liveCamTypes';
 import { useDesignV3 } from '@/hooks/useDesignV3';
 import { toast } from 'sonner';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 const supportsLiveCam = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -50,6 +52,12 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
     localVideoRef,
     remoteCanvasRef,
   });
+
+  // Guests (no account) get the sign-up popup instead of a session the server would refuse.
+  // In sales mode the device is signed in to the demo account, so this just starts.
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
+  const startGated = () => requireAuth('use the live try-on', () => void start());
+  const guestPrompt = <GuestActionPrompt open={showPrompt} onOpenChange={setShowPrompt} action={promptAction} />;
 
   // Diagnostics readout (?livecam_debug=1): upload fps, phone encode time, upload stalls,
   // frames skipped by the short JoyAI upload queue (drop), JoyAI's playback delay (play),
@@ -165,6 +173,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   if (v3) {
     return (
       <div className="space-y-4">
+        {guestPrompt}
         <LiveCamCameraView
           variant="stage"
           localVideoRef={localVideoRef}
@@ -248,7 +257,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               ) : (
                 <button
                   type="button"
-                  onClick={() => void start()}
+                  onClick={startGated}
                   disabled={!garment}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-white text-[15px] font-semibold text-black disabled:bg-white/20 disabled:text-white/70"
                 >
@@ -273,7 +282,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
         {status === 'failed' && errorMessage && (
           <div className="flex items-center justify-between gap-2 rounded-[14px] bg-bad p-3 text-[13px] text-bad-foreground">
             <span>{errorMessage}</span>
-            <button type="button" onClick={() => void start()} className="shrink-0 font-semibold">Try again</button>
+            <button type="button" onClick={startGated} className="shrink-0 font-semibold">Try again</button>
           </div>
         )}
       </div>
@@ -282,6 +291,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
 
   return (
     <div className="space-y-4">
+      {guestPrompt}
       {/* Changing the garment while running swaps it live (no reconnect). */}
       <LiveCamGarmentPicker
         value={garment}
@@ -329,7 +339,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           ) : !isRunning ? (
             <button
               type="button"
-              onClick={() => void start()}
+              onClick={startGated}
               disabled={!garment}
               className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95"
             >
@@ -358,7 +368,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           <span>{errorMessage}</span>
           <button
             type="button"
-            onClick={() => void start()}
+            onClick={startGated}
             className="px-3 py-1 rounded-md bg-red-600 text-white text-xs hover:bg-red-700"
           >
             Retry

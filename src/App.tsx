@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
+import { SalesModeBadge } from '@/components/SalesModeBadge';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -353,6 +354,7 @@ function AppContent() {
       <Toaster />
       <SonnerToaster position="top-center" />
       <AppNavigation />
+      <SalesModeBadge />
     </LiveCamHostProvider>
   );
 }

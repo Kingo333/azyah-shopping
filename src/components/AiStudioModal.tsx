@@ -787,7 +787,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                           
                           {/* Generate Try-On Button */}
                           <motion.button
-                            onClick={handleGeneratePictureForVideo}
+                            onClick={() => requireAuth('use the AI try-on', () => void handleGeneratePictureForVideo())}
                             disabled={generatingVideoInput || !videoPersonUrl || !videoOutfitUrl || videoUploadMode === 'direct' || pictureCredits <= 0}
                             whileTap={{ scale: 0.99 }}
                             className="w-full py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2
@@ -1053,7 +1053,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               >
                 {activeTab === 'live-cam' ? null : activeTab === 'picture' ? (
                   <motion.button
-                    onClick={handleGeneratePicture}
+                    onClick={() => requireAuth('use the AI try-on', () => void handleGeneratePicture())}
                     disabled={loading || uploadingPerson || uploadingOutfit || !personUrl || !outfitUrl || pictureCredits <= 0}
                     whileTap={{ scale: 0.99 }}
                     className="w-full h-12 rounded-xl font-semibold transition-all flex items-center justify-center gap-2
@@ -1079,7 +1079,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   </motion.button>
                 ) : (
                   <motion.button
-                    onClick={videoInputUrl ? handleGenerateVideo : handleGeneratePictureForVideo}
+                    onClick={() => requireAuth('make try-on videos', () => void (videoInputUrl ? handleGenerateVideo() : handleGeneratePictureForVideo()))}
                     disabled={
                       videoPolling || 
                       generatingVideoInput || 
