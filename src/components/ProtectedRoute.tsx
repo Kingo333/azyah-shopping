@@ -7,6 +7,7 @@ import { getUserRole } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
 import { isVisualEditsMode } from '@/utils/visualEditsDetection';
 import { isGuestMode } from '@/hooks/useGuestMode';
+import { GuestLockedScreen } from '@/components/GuestLockedScreen';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +27,9 @@ const GUEST_ACCESSIBLE_ROUTES = [
   '/forum',
   '/p/', // Product detail pages
   '/brand/', // Brand detail pages
+  // Try-on (AI Studio: picture, video, live cam): guests can open it; every try-on action asks
+  // them to sign up (or, in sales mode, works with the demo account).
+  '/try-on',
 ];
 
 // Routes that explicitly require authentication (no guest access)
@@ -43,6 +47,9 @@ const AUTH_REQUIRED_ROUTES = [
   '/brand-portal',
   '/retailer-portal',
 ];
+
+// Business portals: not shopper pages, so guests are still sent to sign-up there.
+const GUEST_REDIRECT_ROUTES = ['/brand-portal', '/retailer-portal'];
 
 const isGuestAccessibleRoute = (pathname: string): boolean => {
   return GUEST_ACCESSIBLE_ROUTES.some(route => 
@@ -156,7 +163,12 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
         return <>{children}</>;
       }
       
-      // Guest trying to access auth-required route - redirect to signup
+      // Any other shopper page: the guest sees it is there, but it needs an account
+      // (a sign-up screen, with the hidden sales-mode entry). Business portals still redirect.
+      if (!GUEST_REDIRECT_ROUTES.some(route => location.pathname.startsWith(route))) {
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Guest sees locked page:', location.pathname);
+        return <GuestLockedScreen pathname={location.pathname} />;
+      }
       if (DEBUG_AUTH) console.log('ProtectedRoute: Guest blocked from:', location.pathname);
       return <Navigate to="/onboarding/signup" state={{ from: location }} replace />;
     }
