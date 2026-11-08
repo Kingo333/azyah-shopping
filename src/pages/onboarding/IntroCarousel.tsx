@@ -753,13 +753,23 @@ export default function IntroCarousel() {
           ))}
         </div>
 
-        {/* Primary CTA - reddish see-through pill */}
-        <Button
-          onClick={handleJoinCommunity}
-          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-primary/20 backdrop-blur-sm border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
-        >
-          Join the Community
-        </Button>
+        {/* Primary CTA (70%) and Guest (30%) on one row, so it is clear the app can be used as a guest */}
+        {/* While the bottom menu is collapsed, its round "^" handle sits at the bottom right: keep clear of it. */}
+        <div className="flex w-full gap-2" style={{ paddingRight: isNavMinimized ? 58 : 0 }}>
+          <Button
+            onClick={handleJoinCommunity}
+            className="basis-[70%] min-w-0 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-primary/20 backdrop-blur-sm border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
+          >
+            Join the Community
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleSkipToFeed}
+            className="basis-[30%] min-w-0 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full bg-background/60 backdrop-blur-sm border border-foreground/20 text-foreground hover:bg-foreground/5 transition-colors"
+          >
+            Guest
+          </Button>
+        </div>
       </div>
     </div>
   );
