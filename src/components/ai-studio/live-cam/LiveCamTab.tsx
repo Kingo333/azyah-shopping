@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Play, Square, SwitchCamera, X } from 'lucide-react';
+import { Feather, Loader2, Play, Square, SwitchCamera, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveCamWaitCard } from './LiveCamWaitCard';
 import { LiveCamFramingGuide } from './LiveCamFramingGuide';
@@ -46,7 +46,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const navigate = useNavigate();
 
   const {
-    status, facing, flipCamera, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame, readStats,
+    status, facing, flipCamera, lite, setLite, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame, readStats,
   } = useLiveCamSession({
     garment,
     localVideoRef,
@@ -187,6 +187,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
             <>
               <StagePill status={status} />
               <FlipCameraButton facing={facing} onFlip={flipCamera} variant="stage" />
+              <LiteButton lite={lite} onToggle={setLite} variant="stage" />
               {isRunning && latencyMs !== null && (
                 <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white tabular-nums">{latencyMs} ms</span>
               )}
@@ -318,6 +319,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
         </div>
         <div className="flex items-center gap-2">
           <FlipCameraButton facing={facing} onFlip={flipCamera} variant="classic" />
+          <LiteButton lite={lite} onToggle={setLite} variant="classic" />
           {isRunning && (
             <LiveCamSnapshotButton sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} />
           )}
@@ -415,6 +417,22 @@ const StagePill: React.FC<{ status: LiveCamStatus }> = ({ status }) => {
 };
 
 /** Front <-> back camera. Works before Start (sets the choice) and while live. */
+// "Lite" for a slow device or connection: smaller camera picture, fewer frames sent.
+// The try-on model gets the same 288x512 frame either way; movement updates a little less often.
+function LiteButton({ lite, onToggle, variant }: { lite: boolean; onToggle: (on: boolean) => void; variant: 'stage' | 'classic' }) {
+  const label = lite ? 'Lite mode on: tap for normal' : 'Lite mode: for a slow device or connection';
+  const className =
+    variant === 'stage'
+      ? `flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${lite ? 'bg-white text-black' : 'bg-black/60 text-white'}`
+      : `h-10 px-3 rounded-lg border text-sm flex items-center gap-1.5 ${lite ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'}`;
+  return (
+    <button type="button" onClick={() => onToggle(!lite)} aria-pressed={lite} aria-label={label} title={label} className={className}>
+      <Feather className={variant === 'stage' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+      Lite
+    </button>
+  );
+}
+
 function FlipCameraButton({
   facing,
   onFlip,

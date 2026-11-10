@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveCamLegacy, liveCamCameraSize, liveCamPlaybackOverride, parseLiveCamCameraHeight } from '../liveCamFlags';
+import { isLiveCamLegacy, liveCamCameraSize, liveCamLite, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
 
 describe('buffered playback override (F1b)', () => {
   it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
@@ -43,5 +43,19 @@ describe('liveCamCameraSize (?livecam_cam=)', () => {
     expect(liveCamCameraSize('?livecam_cam=720', mem())).toEqual({ width: 1280, height: 720 });
     expect(liveCamCameraSize('?livecam_cam=1080', mem())).toEqual({ width: 960, height: 540 });
     expect(parseLiveCamCameraHeight('abc')).toBeNull();
+  });
+});
+
+describe('Lite mode', () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+  it('is off by default, remembered when switched, and gives a 480-high camera unless ?livecam_cam= says otherwise', () => {
+    const s = mem();
+    expect(liveCamLite('', s)).toBe(false);
+    setLiveCamLite(true, s);
+    expect(liveCamLite('', s)).toBe(true);
+    expect(liveCamCameraSize('', s)).toEqual({ width: 853, height: 480 });
+    expect(liveCamCameraSize('?livecam_cam=720', s)).toEqual({ width: 1280, height: 720 });
+    setLiveCamLite(false, s);
+    expect(liveCamLite('', s)).toBe(false);
   });
 });

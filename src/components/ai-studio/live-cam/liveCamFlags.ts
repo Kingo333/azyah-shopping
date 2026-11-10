@@ -129,11 +129,34 @@ export function parseLiveCamCameraHeight(value: string | null | undefined): numb
   return (LIVE_CAM_CAMERA_HEIGHTS as readonly number[]).includes(n) ? n : null;
 }
 
-/** Camera width and height to ask for (16:9, landscape numbers). */
+// Lite mode (the on-screen "Lite" button, or ?livecam_lite=1; remembered on the device): for a
+// slow device or connection. Camera 480 high and at most 8 frames a second are sent, so there is
+// less to decode, encode and upload. The model still gets a 288x512 frame.
+export const LIVE_CAM_LITE_HEIGHT = 480;
+export const LIVE_CAM_LITE_FPS = 8;
+const LITE_KEY = 'azyah.livecam.lite';
+
+export function liveCamLite(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): boolean {
+  return readSwitch('livecam_lite', LITE_KEY, undefined, search, storage) === '1';
+}
+
+export function setLiveCamLite(
+  on: boolean,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): void {
+  try { storage?.setItem?.(LITE_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+}
+
+/** Camera width and height to ask for (16:9, landscape numbers). ?livecam_cam= beats Lite. */
 export function liveCamCameraSize(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  lite: boolean = liveCamLite(search, storage),
 ): { width: number; height: number } {
-  const h = parseLiveCamCameraHeight(readSwitch('livecam_cam', 'azyah.livecam.cam', undefined, search, storage)) ?? LIVE_CAM_CAMERA_DEFAULT;
+  const h = parseLiveCamCameraHeight(readSwitch('livecam_cam', 'azyah.livecam.cam', undefined, search, storage))
+    ?? (lite ? LIVE_CAM_LITE_HEIGHT : LIVE_CAM_CAMERA_DEFAULT);
   return { width: Math.round((h * 16) / 9), height: h };
 }
