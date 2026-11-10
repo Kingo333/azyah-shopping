@@ -140,15 +140,17 @@ export function useLiveCamSession({
   const [waitTimes, setWaitTimes] = useState<{ startedAt: number; connectedAt: number | null; liveAt: number | null } | null>(null);
   // Settings for this session (defaults, then the worker's ready hints); read inside frame callbacks.
   const cfgRef = useRef<LiveCamConfig>(LIVE_CAM_CONFIG);
-  // Camera request for Live Cam: a small picture (the model only needs 288x512; ?livecam_cam=) and a
-  // frame rate just above the send rate, so weak devices (smart screens, old phones) are not
+  // Camera request for Live Cam. Normal keeps today's request; Lite (or ?livecam_cam=) asks for a
+  // smaller picture and frame rate, so weak devices (smart screens, old phones) are not
   // decoding a large, fast camera stream they then throw away.
   const [lite, setLiteState] = useState<boolean>(() => liveCamLite());
   const liteRef = useRef(lite);
-  const cameraRequest = (): CameraRequest => ({
-    ...liveCamCameraSize(undefined, undefined, liteRef.current),
-    frameRate: liteRef.current ? LIVE_CAM_LITE_FPS + 2 : Math.min(30, Math.max(15, cfgRef.current.fpsCap + 3)),
-  });
+  // Normal (default): undefined = today's camera request, unchanged. Lite: smaller and slower.
+  const cameraRequest = (): CameraRequest | undefined => {
+    const size = liveCamCameraSize(undefined, undefined, liteRef.current);
+    if (!size) return undefined;
+    return liteRef.current ? { ...size, frameRate: LIVE_CAM_LITE_FPS + 2 } : size;
+  };
   // Why a start was interrupted: the shopper cancelled, or it ran out of time.
   const stopReasonRef = useRef<StartStopReason>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
@@ -1151,8 +1153,8 @@ export function useLiveCamSession({
     setLiveCamLite(on);
     const track = streamRef.current?.getVideoTracks()[0];
     if (track) {
-      const r = cameraRequest();
-      track.applyConstraints({ width: { ideal: r.width }, height: { ideal: r.height }, frameRate: { ideal: r.frameRate } })
+      const r = cameraRequest() ?? { width: 1280, height: 720 }; // back to Normal: the default request
+      track.applyConstraints({ width: { ideal: r.width }, height: { ideal: r.height }, ...(r.frameRate ? { frameRate: { ideal: r.frameRate } } : {}) })
         .catch((e) => console.warn('[live-cam] lite camera change failed', e));
     }
   // cameraRequest only reads refs, so no dependencies.

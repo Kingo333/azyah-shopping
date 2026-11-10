@@ -31,31 +31,26 @@ describe('legacy benchmark switch', () => {
   });
 });
 
-describe('liveCamCameraSize (?livecam_cam=)', () => {
+describe('Live Cam camera size and Lite mode', () => {
   const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
-  it('defaults to 960x540, smaller than the old 1280x720', () => {
-    expect(liveCamCameraSize('', mem())).toEqual({ width: 960, height: 540 });
+  it('Normal (default) keeps today\'s camera request: no override', () => {
+    expect(liveCamLite('', mem())).toBe(false);
+    expect(liveCamCameraSize('', mem())).toBeNull();
   });
-  it('accepts the listed sizes, remembers them, and ignores anything else', () => {
+  it('Lite asks for 960x540, never below the 288x512 model input; remembered; ?livecam_cam= wins', () => {
     const s = mem();
-    expect(liveCamCameraSize('?livecam_cam=360', s)).toEqual({ width: 640, height: 360 });
-    expect(liveCamCameraSize('', s)).toEqual({ width: 640, height: 360 });
-    expect(liveCamCameraSize('?livecam_cam=720', mem())).toEqual({ width: 1280, height: 720 });
-    expect(liveCamCameraSize('?livecam_cam=1080', mem())).toEqual({ width: 960, height: 540 });
-    expect(parseLiveCamCameraHeight('abc')).toBeNull();
-  });
-});
-
-describe('Lite mode', () => {
-  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
-  it('is off by default, remembered when switched, and gives a 480-high camera unless ?livecam_cam= says otherwise', () => {
-    const s = mem();
-    expect(liveCamLite('', s)).toBe(false);
     setLiveCamLite(true, s);
     expect(liveCamLite('', s)).toBe(true);
-    expect(liveCamCameraSize('', s)).toEqual({ width: 853, height: 480 });
-    expect(liveCamCameraSize('?livecam_cam=720', s)).toEqual({ width: 1280, height: 720 });
+    expect(liveCamCameraSize('', s)).toEqual({ width: 960, height: 540 });
+    const lite720 = mem(); setLiveCamLite(true, lite720);
+    expect(liveCamCameraSize('?livecam_cam=720', lite720)).toEqual({ width: 1280, height: 720 });
     setLiveCamLite(false, s);
-    expect(liveCamLite('', s)).toBe(false);
+    expect(liveCamCameraSize('', s)).toBeNull();
+  });
+  it('?livecam_cam= only accepts sizes at or above the model input', () => {
+    expect(parseLiveCamCameraHeight('540')).toBe(540);
+    expect(parseLiveCamCameraHeight('360')).toBeNull();
+    expect(parseLiveCamCameraHeight('480')).toBeNull();
+    expect(liveCamCameraSize('?livecam_cam=360', mem())).toBeNull();
   });
 });
