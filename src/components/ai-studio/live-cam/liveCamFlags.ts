@@ -115,3 +115,25 @@ export function liveCamDebug(
 ): boolean {
   return readSwitch('livecam_debug', 'azyah.livecam.debug', undefined, search, storage) === '1';
 }
+
+// Camera size for Live Cam: ?livecam_cam=360|480|540|720 (the short side, remembered on the
+// device). The model only needs 288x512, so 540 (960x540) is the default: a smaller camera
+// picture is cheaper for weak devices (smart screens, old phones) to decode, crop and encode.
+// 720 = the earlier 1280x720.
+export const LIVE_CAM_CAMERA_HEIGHTS = [360, 480, 540, 720] as const;
+export const LIVE_CAM_CAMERA_DEFAULT = 540;
+
+export function parseLiveCamCameraHeight(value: string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value.trim());
+  return (LIVE_CAM_CAMERA_HEIGHTS as readonly number[]).includes(n) ? n : null;
+}
+
+/** Camera width and height to ask for (16:9, landscape numbers). */
+export function liveCamCameraSize(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): { width: number; height: number } {
+  const h = parseLiveCamCameraHeight(readSwitch('livecam_cam', 'azyah.livecam.cam', undefined, search, storage)) ?? LIVE_CAM_CAMERA_DEFAULT;
+  return { width: Math.round((h * 16) / 9), height: h };
+}

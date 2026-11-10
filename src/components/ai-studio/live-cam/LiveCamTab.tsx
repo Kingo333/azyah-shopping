@@ -59,7 +59,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const startGated = () => requireAuth('use the live try-on', () => void start());
   const guestPrompt = <GuestActionPrompt open={showPrompt} onOpenChange={setShowPrompt} action={promptAction} />;
 
-  // Diagnostics readout (?livecam_debug=1): upload fps, phone encode time, upload stalls,
+  // Diagnostics readout (?livecam_debug=1): camera size, upload fps, draw and encode time, timer lag (main-thread load), upload stalls,
   // frames skipped by the short JoyAI upload queue (drop), JoyAI's playback delay (play),
   // download fps and round trip, refreshed every second while live.
   const [debugOn] = useState(() => liveCamDebug());
@@ -68,7 +68,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
     if (!debugOn || status !== 'running') { setDebugLine(null); return; }
     const tick = () => {
       const s = readStats();
-      setDebugLine(`↑${s.sentFps} fps · enc ${s.encodeMsP50 ?? '–'} ms · skip ${s.encodeSkipped} · stall ${s.uploadBlocked} · drop ${s.sendQueueDropped} · ↓${s.receivedFps} fps · rtt ${s.rttMsP50 ?? '–'} ms · play ${s.playoutDelayMs ?? '–'} ms`);
+      setDebugLine(`cam ${s.camera ?? '–'} · ↑${s.sentFps} fps · draw ${s.drawMsP50 ?? '–'} ms · enc ${s.encodeMsP50 ?? '–'} ms · lag ${s.tickLagMsP50 ?? '–'} ms · skip ${s.encodeSkipped} · stall ${s.uploadBlocked} · drop ${s.sendQueueDropped} · ↓${s.receivedFps} fps · rtt ${s.rttMsP50 ?? '–'} ms · play ${s.playoutDelayMs ?? '–'} ms`);
     };
     tick();
     const id = window.setInterval(tick, 1000);

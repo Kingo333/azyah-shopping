@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@/ar/core/CameraManager';
+import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
+import { isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -137,6 +137,10 @@ export function useLiveCamSession({
   const [waitTimes, setWaitTimes] = useState<{ startedAt: number; connectedAt: number | null; liveAt: number | null } | null>(null);
   // Settings for this session (defaults, then the worker's ready hints); read inside frame callbacks.
   const cfgRef = useRef<LiveCamConfig>(LIVE_CAM_CONFIG);
+  // Camera request for Live Cam: a small picture (the model only needs 288x512; ?livecam_cam=) and a
+  // frame rate just above the send rate, so weak devices (smart screens, old phones) are not
+  // decoding a large, fast camera stream they then throw away.
+  const cameraRequest = (): CameraRequest => ({ ...liveCamCameraSize(), frameRate: Math.min(30, Math.max(15, cfgRef.current.fpsCap + 3)) });
   // Why a start was interrupted: the shopper cancelled, or it ran out of time.
   const stopReasonRef = useRef<StartStopReason>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
@@ -638,10 +642,15 @@ export function useLiveCamSession({
         // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
         // add latency instead of frames, so a tick is skipped while one is in flight.
         let encoding = false;
+        let lastTick = performance.now();
         frameTimerRef.current = window.setInterval(() => {
+          const tickAt = performance.now();
+          statsRef.current.onTickLag(tickAt - lastTick - intervalMs);
+          lastTick = tickAt;
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
+          statsRef.current.setCamera(v.videoWidth, v.videoHeight);
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);
@@ -660,6 +669,7 @@ export function useLiveCamSession({
           const { sx, sy, sw, sh } = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
           try {
             capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
+            statsRef.current.onDraw(performance.now() - encodeStart);
             cap.toBlob(
               async (blob) => {
                 try {
@@ -699,7 +709,7 @@ export function useLiveCamSession({
           try {
             const video = localVideoRef.current;
             if (!video) throw new Error('Video element missing');
-            const cam: CameraResult = await startCamera(video, facingRef.current);
+            const cam: CameraResult = await startCamera(video, facingRef.current, cameraRequest());
             streamRef.current = cam.stream;
           } catch (e: unknown) {
             const why = e instanceof Error ? e.message : String(e);
@@ -1095,7 +1105,7 @@ export function useLiveCamSession({
     stopCamera(streamRef.current);
     streamRef.current = null;
     try {
-      const cam = await startCamera(video, next);
+      const cam = await startCamera(video, next, cameraRequest());
       streamRef.current = cam.stream;
       remember(next);
       // The face check depends on the camera (off on the back camera): tell the worker.
@@ -1112,7 +1122,7 @@ export function useLiveCamSession({
       console.warn('[live-cam] camera flip failed', e);
       setNotice('Could not switch camera.');
       try {
-        const cam = await startCamera(video, previous);
+        const cam = await startCamera(video, previous, cameraRequest());
         streamRef.current = cam.stream;
       } catch {
         setNotice('Camera stopped. End and start again.');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveCamLegacy, liveCamPlaybackOverride } from '../liveCamFlags';
+import { isLiveCamLegacy, liveCamCameraSize, liveCamPlaybackOverride, parseLiveCamCameraHeight } from '../liveCamFlags';
 
 describe('buffered playback override (F1b)', () => {
   it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
@@ -28,5 +28,20 @@ describe('legacy benchmark switch', () => {
       "Substitute the current top with the garment in the reference image. The reference garment is the Tee. " +
         "Match its exact color, pattern, print, logo, fabric and construction details. Keep the person's face, body, pose and the background unchanged.",
     );
+  });
+});
+
+describe('liveCamCameraSize (?livecam_cam=)', () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+  it('defaults to 960x540, smaller than the old 1280x720', () => {
+    expect(liveCamCameraSize('', mem())).toEqual({ width: 960, height: 540 });
+  });
+  it('accepts the listed sizes, remembers them, and ignores anything else', () => {
+    const s = mem();
+    expect(liveCamCameraSize('?livecam_cam=360', s)).toEqual({ width: 640, height: 360 });
+    expect(liveCamCameraSize('', s)).toEqual({ width: 640, height: 360 });
+    expect(liveCamCameraSize('?livecam_cam=720', mem())).toEqual({ width: 1280, height: 720 });
+    expect(liveCamCameraSize('?livecam_cam=1080', mem())).toEqual({ width: 960, height: 540 });
+    expect(parseLiveCamCameraHeight('abc')).toBeNull();
   });
 });

@@ -22,12 +22,23 @@ export interface CameraResult {
 /** Front ('user') or back ('environment') camera. */
 export type CameraFacing = 'user' | 'environment';
 
+/** Camera size to ask for (landscape numbers; phones rotate them). Default 1280x720. */
+export interface CameraRequest {
+  width: number;
+  height: number;
+  /** Frames per second to ask for; leave out to let the camera choose. */
+  frameRate?: number;
+}
+
 /** Ordered constraint chain: tries ideal first, then progressively relaxes. */
 export function buildConstraintChain(
   facing: CameraFacing = 'user',
+  request: CameraRequest = { width: 1280, height: 720 },
 ): Array<{ tier: CameraResult['constraintTier']; constraints: MediaStreamConstraints }> {
+  const ideal: MediaTrackConstraints = { facingMode: facing, width: { ideal: request.width }, height: { ideal: request.height } };
+  if (request.frameRate) ideal.frameRate = { ideal: request.frameRate };
   return [
-    { tier: 'ideal', constraints: { video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } } } },
+    { tier: 'ideal', constraints: { video: ideal } },
     { tier: 'fallback-720', constraints: { video: { facingMode: facing, width: { max: 1280 }, height: { max: 720 } } } },
     { tier: 'fallback-basic', constraints: { video: { facingMode: facing } } },
   ];
@@ -59,11 +70,11 @@ export async function checkCameraPermission(): Promise<'granted' | 'denied' | 'p
  * @throws DOMException with name 'NotFoundError' if no camera is present.
  * @throws The last error from the constraint chain if all tiers fail.
  */
-export async function startCamera(video: HTMLVideoElement, facing: CameraFacing = 'user'): Promise<CameraResult> {
+export async function startCamera(video: HTMLVideoElement, facing: CameraFacing = 'user', request?: CameraRequest): Promise<CameraResult> {
   let lastErr: any = null;
   let acquired: { stream: MediaStream; tier: CameraResult['constraintTier'] } | null = null;
 
-  for (const { tier, constraints } of buildConstraintChain(facing)) {
+  for (const { tier, constraints } of buildConstraintChain(facing, request)) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       acquired = { stream, tier };
