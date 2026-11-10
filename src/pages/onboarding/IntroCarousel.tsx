@@ -626,13 +626,13 @@ export default function IntroCarousel() {
             {slide.type === "interactive-swipe" && (
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                <div className="text-center mb-6 pt-4 desktop:pt-10">
+                  <h2 className="text-2xl md:text-3xl desktop:text-5xl font-serif font-medium text-foreground mb-2 desktop:mb-3">{slide.title}</h2>
+                  <p className="text-base desktop:text-xl font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 {/* Interactive Swipe Area with Side Indicators */}
-                <div className="flex-1 relative max-w-sm mx-auto w-full px-12 flex items-start pt-4 max-h-[350px]">
+                <div className="flex-1 relative max-w-sm desktop:max-w-xl mx-auto w-full px-12 flex items-start pt-4 max-h-[350px] desktop:max-h-none desktop:flex-none desktop:h-[min(720px,calc(100vh-360px))]">
                   <SwipeableImages images={slide.images} productInfo={slide.productInfo} />
 
                   {/* Side X/Heart Indicators */}
@@ -669,9 +669,9 @@ export default function IntroCarousel() {
             {slide.type === "live" && (
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-4 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                <div className="text-center mb-4 pt-4 desktop:pt-10">
+                  <h2 className="text-2xl md:text-3xl desktop:text-5xl font-serif font-medium text-foreground mb-2 desktop:mb-3">{slide.title}</h2>
+                  <p className="text-base desktop:text-xl font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
 
                   {/* Live first; photo (and video, when it's on) come second */}
                   <div className="flex items-center justify-center gap-2 mt-3">
@@ -692,7 +692,7 @@ export default function IntroCarousel() {
 
                 {/* Live try-on stage */}
                 <div className="flex-1 flex items-start justify-center pt-2">
-                  <LiveTryOnPreview className="max-w-sm aspect-[3/4] max-h-[440px]" />
+                  <LiveTryOnPreview className="max-w-sm aspect-[3/4] max-h-[440px] desktop:w-auto desktop:max-w-none desktop:max-h-none desktop:h-[min(760px,calc(100vh-400px))]" />
                 </div>
               </div>
             )}
@@ -700,9 +700,9 @@ export default function IntroCarousel() {
             {slide.type === "gallery" && (
               <div className="h-full flex flex-col px-6">
                 {/* One feature, one short caption */}
-                <div className="text-center mb-4 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                <div className="text-center mb-4 pt-4 desktop:pt-10">
+                  <h2 className="text-2xl md:text-3xl desktop:text-5xl font-serif font-medium text-foreground mb-2 desktop:mb-3">{slide.title}</h2>
+                  <p className="text-base desktop:text-xl font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 <div className="flex-1 flex items-start justify-center pt-2">
@@ -710,7 +710,7 @@ export default function IntroCarousel() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={currentSlide === GALLERY_SLIDE_INDEX ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                     transition={{ duration: 0.3 }}
-                    className="relative h-[min(440px,55vh)] aspect-[9/16] overflow-hidden rounded-3xl bg-muted shadow-lg"
+                    className="relative h-[min(440px,55vh)] desktop:h-[min(760px,calc(100vh-360px))] aspect-[9/16] overflow-hidden rounded-3xl bg-muted shadow-lg"
                   >
                     <OutfitInspoInlineSlider />
                   </motion.div>
