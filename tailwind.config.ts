@@ -20,6 +20,10 @@ export default {
 			}
 		},
 		extend: {
+			// Laptops/desktops only (wide screen + mouse/trackpad); phones and tablets keep their layout.
+			screens: {
+				desktop: { raw: '(min-width: 1024px) and (hover: hover) and (pointer: fine)' }
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
