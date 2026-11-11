@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type CameraResult } from '@/ar/core/CameraManager';
-import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
+import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength, tryOnCategory } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
@@ -127,7 +127,7 @@ export function useLiveCamSession({
   });
   const facingRef = useRef<CameraFacing>(facing);
   // Last set_prompt sent, so a camera flip can resend it with the new face_gate.
-  const lastPromptMsgRef = useRef<{ type: 'set_prompt'; prompt: string; instruction: string; face_gate: boolean; category: string | null } | null>(null);
+  const lastPromptMsgRef = useRef<{ type: 'set_prompt'; prompt: string; instruction: string; face_gate: boolean; category: string | null; garment_type: string | null } | null>(null);
   const flippingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -556,6 +556,9 @@ export function useLiveCamSession({
         promptHint: hint,
       }, { useHintDetails: !legacy, ...textOpts });
 
+      // The try-on type the prompt was built for ("dresses" for an abaya filed as "modestwear"); the
+      // worker's dress-photo cleaner keys on it.
+      const garmentType = tryOnCategory({ category: garment.category, name, description, promptHint: hint });
       const sleeveInference = inferSleeveLength({
         category: garment.category,
         name,
@@ -747,9 +750,10 @@ export function useLiveCamSession({
         }
 
         try {
-          // Step A: set_reference_image — register resolver before sending.
+          // Step A: set_reference_image — register resolver before sending. The category lets the
+          // worker clean a dress photo right away (its dress cleaner), even when set_prompt is skipped.
           const ackRef = waitForAck('set_reference_image');
-          wsNow.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64 }));
+          wsNow.send(JSON.stringify({ type: 'set_reference_image', image_b64: refB64, category: garment.category ?? null, garment_type: garmentType }));
           await ackRef;
           console.log('[live-cam] set_reference_image ack=true');
 
@@ -784,6 +788,7 @@ export function useLiveCamSession({
               instruction: finalInstruction,
               face_gate: needsFaceGate(garment.category, facingRef.current),
               category: garment.category ?? null,
+              garment_type: garmentType,
             };
             lastPromptMsgRef.current = promptMsg;
             wsNow2.send(JSON.stringify(promptMsg));
@@ -844,13 +849,15 @@ export function useLiveCamSession({
         statsRef.current.markSwap();
         // The next frames are late by nature (JoyAI restarts): keep them out of the delay estimate.
         if (playbackRef.current instanceof CaptureTimePlayout) playbackRef.current.transient();
-        wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef }));
+        const nextType = tryOnCategory(meta);
+        wsSwap.send(JSON.stringify({ type: 'set_reference_image', image_b64: nextRef, category: next.category ?? null, garment_type: nextType }));
         const swapMsg = {
           type: 'set_prompt' as const,
           prompt: nextPrompt,
           instruction: buildTryOnInstruction(meta, { useHintDetails: !legacy, ...swapTextOpts }),
           face_gate: needsFaceGate(next.category, facingRef.current),
           category: next.category ?? null,
+          garment_type: nextType,
         };
         lastPromptMsgRef.current = swapMsg;
         wsSwap.send(JSON.stringify(swapMsg));

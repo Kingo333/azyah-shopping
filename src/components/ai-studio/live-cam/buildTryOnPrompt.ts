@@ -37,7 +37,7 @@ const CATEGORY_CLAUSES: Record<TryOnCategory, string> = {
   bottoms:
     "Replace only the lower-body clothing with the exact bottoms from the reference image. Preserve the person's existing top/shirt exactly as it appears in the camera frame. Preserve the waistline, leg length, fit, color, fabric appearance, pockets, seams, print, and visible design details of the bottoms. Do not change the shirt, face, hair, arms, shoes, or background.",
   dresses:
-    "Apply the exact dress from the reference image as a full-body garment. Preserve the dress length, neckline, waist shape, silhouette, color, fabric appearance, print, pattern, logo, embroidery, and visible design details. Preserve the exact visible sleeve style and sleeve length from the reference image. Do not shorten the dress. Do not remove or add sleeves. Do not turn the dress into a top and skirt.",
+    "Apply the exact dress from the reference image as a full-body garment. Preserve the dress length, neckline, waist shape, silhouette, color, fabric appearance, print, pattern, logo, embroidery, and visible design details. Preserve the exact visible sleeve style and sleeve length from the reference image. Do not shorten the dress. Do not remove or add sleeves. Do not turn the dress into a top and skirt. Preserve the person's own hijab or head covering exactly as it appears in the camera frame.",
   outerwear:
     "Apply the exact outerwear from the reference image over the person's existing outfit. Preserve the clothing underneath where visible. Preserve the outerwear length, collar, opening, buttons, zipper, color, fabric appearance, pattern, silhouette, and visible sleeve style. Do not replace the entire outfit unless the reference item clearly covers it.",
   shoes:
@@ -57,6 +57,15 @@ const KEYWORD_MAP: Array<[TryOnCategory, string[]]> = [
   ['bottoms', ['bottom', 'pant', 'trouser', 'jean', 'short', 'skirt', 'legging', 'jogger', 'chino']],
   ['tops', ['top', 'shirt', 'tee', 't-shirt', 'blouse', 'sweater', 'hoodie', 'jumper', 'cardigan', 'polo', 'tank', 'crop']],
 ];
+
+/**
+ * The try-on type the prompts use: the stored category, else the product name, else the Gemini hint
+ * (a product filed under "modestwear" named "Black Abaya" is a dress). Sent to the worker as
+ * garment_type, so its dress-photo cleaner treats exactly the same items as dresses.
+ */
+export function tryOnCategory(input: BuildTryOnPromptInput): TryOnCategory | null {
+  return normalizeCategory(input.category) ?? normalizeCategory(input.name) ?? normalizeCategory(input.promptHint);
+}
 
 export function normalizeCategory(raw?: string | null): TryOnCategory | null {
   if (!raw) return null;
@@ -201,6 +210,12 @@ const COMPACT_PLACEMENT: Record<TryOnCategory, string> = {
   bags: 'The person carries it naturally; the outfit stays as it is',
   accessories: 'The person wears it naturally; the outfit stays as it is',
 };
+// What stays. For a dress or abaya the shopper's own hijab or head covering is named too (owner, 2026-11-11):
+// the dress replaces her outfit, never what she wears on her head. Python twin (keep in sync):
+// fluxrt-serverless training/data_tools/fluxrt_prompt.py, which the FluxRT LoRA is trained with.
+const COMPACT_KEEP = "Keep the person's face, hair, body, pose and the background unchanged.";
+const COMPACT_KEEP_DRESS =
+  "Keep the person's face, hair, hijab or head covering, body, pose and the background unchanged.";
 const COMPACT_SLEEVES: Record<SleeveLength, string> = {
   sleeveless: ', and keep it sleeveless',
   short_sleeve: ', with short sleeves',
@@ -216,10 +231,7 @@ const COMPACT_SLEEVES: Record<SleeveLength, string> = {
  */
 export function buildCompactTryOnPrompt(input: BuildTryOnPromptInput, opts: GarmentTextOptions = {}): string {
   const clean = opts.cleanDetails === true;
-  const cat =
-    normalizeCategory(input.category) ??
-    normalizeCategory(input.name) ??
-    normalizeCategory(input.promptHint);
+  const cat = tryOnCategory(input);
   const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
   const details = clean
     ? cleanGarmentText(input.description) || garmentDetailsFromHint(input.promptHint, HINT_DETAIL_CHARS_CLEAN)
@@ -231,7 +243,7 @@ export function buildCompactTryOnPrompt(input: BuildTryOnPromptInput, opts: Garm
   if (cat) parts.push(`${COMPACT_PLACEMENT[cat]}.`);
   const sleeves = cat && SLEEVE_CATEGORIES.has(cat) ? COMPACT_SLEEVES[inferSleeveLength(input)] : '';
   parts.push(`Keep its exact colour, print, pattern, logo, fabric and fit${sleeves}.`);
-  parts.push("Keep the person's face, hair, body, pose and the background unchanged.");
+  parts.push(cat === 'dresses' ? COMPACT_KEEP_DRESS : COMPACT_KEEP);
   return parts.join(' ');
 }
 
@@ -248,6 +260,8 @@ const INSTRUCTIONS: Record<TryOnCategory, string> = {
 };
 const INSTRUCTION_FALLBACK = 'Substitute the matching clothing item with the garment in the reference image.';
 const INSTRUCTION_KEEP = "Keep the person's face, body, pose and the background unchanged.";
+// A dress or abaya: the shopper's own hijab or head covering stays (owner, 2026-11-11).
+const INSTRUCTION_KEEP_DRESS = "Keep the person's face, hijab or head covering, body, pose and the background unchanged.";
 
 const INSTRUCTION_FIDELITY =
   'Match its exact color, pattern, print, logo, fabric and construction details.';
@@ -301,10 +315,7 @@ export function buildTryOnInstruction(
   input: BuildTryOnPromptInput,
   opts: { useHintDetails?: boolean } & GarmentTextOptions = {},
 ): string {
-  const cat =
-    normalizeCategory(input.category) ??
-    normalizeCategory(input.name) ??
-    normalizeCategory(input.promptHint);
+  const cat = tryOnCategory(input);
   const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
   const clean = opts.cleanDetails === true;
   const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
@@ -318,6 +329,6 @@ export function buildTryOnInstruction(
     parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);
     parts.push(INSTRUCTION_FIDELITY);
   }
-  parts.push(INSTRUCTION_KEEP);
+  parts.push(cat === 'dresses' ? INSTRUCTION_KEEP_DRESS : INSTRUCTION_KEEP);
   return parts.join(' ');
 }
