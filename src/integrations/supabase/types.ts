@@ -3752,6 +3752,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_unlock_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          ok: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip_hash: string
+          ok: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip_hash?: string
+          ok?: boolean
+        }
+        Relationships: []
+      }
       salon_reward_offers: {
         Row: {
           cooldown_days: number
