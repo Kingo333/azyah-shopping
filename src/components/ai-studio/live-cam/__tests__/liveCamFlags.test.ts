@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveCamLegacy, liveCamCameraSize, liveCamLite, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
+import { LIVE_CAM_LITE_DEFAULT, isLiveCamLegacy, liveCamCameraSize, liveCamLite, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
 
 describe('buffered playback override (F1b)', () => {
   it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
@@ -33,9 +33,12 @@ describe('legacy benchmark switch', () => {
 
 describe('Live Cam camera size and Lite mode', () => {
   const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
-  it('Normal (default) keeps today\'s camera request: no override', () => {
-    expect(liveCamLite('', mem())).toBe(false);
-    expect(liveCamCameraSize('', mem())).toBeNull();
+  it('Lite is the default for now; tapping Normal is remembered and keeps today\'s camera request', () => {
+    expect(liveCamLite('', mem())).toBe(LIVE_CAM_LITE_DEFAULT);
+    const s = mem();
+    setLiveCamLite(false, s);
+    expect(liveCamLite('', s)).toBe(false);
+    expect(liveCamCameraSize('', s)).toBeNull();
   });
   it('Lite asks for 960x540, never below the 288x512 model input; remembered; ?livecam_cam= wins', () => {
     const s = mem();
@@ -51,6 +54,7 @@ describe('Live Cam camera size and Lite mode', () => {
     expect(parseLiveCamCameraHeight('540')).toBe(540);
     expect(parseLiveCamCameraHeight('360')).toBeNull();
     expect(parseLiveCamCameraHeight('480')).toBeNull();
-    expect(liveCamCameraSize('?livecam_cam=360', mem())).toBeNull();
+    const normal = mem(); setLiveCamLite(false, normal);
+    expect(liveCamCameraSize('?livecam_cam=360', normal)).toBeNull();
   });
 });
