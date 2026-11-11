@@ -98,3 +98,16 @@ describe('LiveCamFrameStats', () => {
     expect(snap.encodeSkipped).toBe(1);
   });
 });
+
+describe('LiveCamFrameStats weak-device readout', () => {
+  it('reports draw time, timer lag and camera size', () => {
+    const s = new LiveCamFrameStats();
+    s.setCamera(960, 540);
+    [3, 5, 4].forEach((ms) => s.onDraw(ms));
+    [-2, 10, 400].forEach((ms) => s.onTickLag(ms));
+    const snap = s.snapshot();
+    expect(snap.camera).toBe('960x540');
+    expect(snap.drawMsP50).toBe(4);
+    expect(snap.tickLagMsP50).toBe(10);
+  });
+});

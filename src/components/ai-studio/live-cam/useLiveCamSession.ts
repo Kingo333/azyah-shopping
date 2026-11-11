@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { startCamera, stopCamera, type CameraFacing, type CameraResult } from '@/ar/core/CameraManager';
+import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats } from './liveCamStats';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { isLiveCamLegacy, liveCamCleanDetails, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
+import { LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -78,6 +78,9 @@ interface UseLiveCamSessionReturn {
   start: () => Promise<void>;
   /** Current per-frame stats (send/receive rate, encode time, stalls, playback delay); for the debug readout. */
   readStats: () => ReturnType<LiveCamFrameStats['snapshot']> & { playoutDelayMs: number | null };
+  /** Lite mode (smaller camera, max 8 frames a second) for slow devices or connections; remembered on the device. */
+  lite: boolean;
+  setLite: (on: boolean) => void;
   /** Ends a running session, or cancels one that is still starting. */
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
@@ -137,6 +140,17 @@ export function useLiveCamSession({
   const [waitTimes, setWaitTimes] = useState<{ startedAt: number; connectedAt: number | null; liveAt: number | null } | null>(null);
   // Settings for this session (defaults, then the worker's ready hints); read inside frame callbacks.
   const cfgRef = useRef<LiveCamConfig>(LIVE_CAM_CONFIG);
+  // Camera request for Live Cam. Normal keeps today's request; Lite (or ?livecam_cam=) asks for a
+  // smaller picture and frame rate, so weak devices (smart screens, old phones) are not
+  // decoding a large, fast camera stream they then throw away.
+  const [lite, setLiteState] = useState<boolean>(() => liveCamLite());
+  const liteRef = useRef(lite);
+  // Normal (default): undefined = today's camera request, unchanged. Lite: smaller and slower.
+  const cameraRequest = (): CameraRequest | undefined => {
+    const size = liveCamCameraSize(undefined, undefined, liteRef.current);
+    if (!size) return undefined;
+    return liteRef.current ? { ...size, frameRate: LIVE_CAM_LITE_FPS + 2 } : size;
+  };
   // Why a start was interrupted: the shopper cancelled, or it ran out of time.
   const stopReasonRef = useRef<StartStopReason>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
@@ -638,10 +652,16 @@ export function useLiveCamSession({
         // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
         // add latency instead of frames, so a tick is skipped while one is in flight.
         let encoding = false;
+        let lastTick = performance.now();
+        let lastCaptureAt = 0;
         frameTimerRef.current = window.setInterval(() => {
+          const tickAt = performance.now();
+          statsRef.current.onTickLag(tickAt - lastTick - intervalMs);
+          lastTick = tickAt;
           const wsNow2 = wsRef.current;
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
+          statsRef.current.setCamera(v.videoWidth, v.videoHeight);
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);
@@ -654,12 +674,16 @@ export function useLiveCamSession({
             statsRef.current.onEncodeSkipped();
             return;
           }
+          // Lite mode: at most LIVE_CAM_LITE_FPS frames a second, whatever the worker's cap.
+          if (liteRef.current && tickAt - lastCaptureAt < 1000 / LIVE_CAM_LITE_FPS - 10) return;
+          lastCaptureAt = tickAt;
           encoding = true;
           const encodeStart = performance.now();
           // Center-crop to the capture aspect instead of stretching the camera frame.
           const { sx, sy, sw, sh } = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
           try {
             capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
+            statsRef.current.onDraw(performance.now() - encodeStart);
             cap.toBlob(
               async (blob) => {
                 try {
@@ -699,7 +723,7 @@ export function useLiveCamSession({
           try {
             const video = localVideoRef.current;
             if (!video) throw new Error('Video element missing');
-            const cam: CameraResult = await startCamera(video, facingRef.current);
+            const cam: CameraResult = await startCamera(video, facingRef.current, cameraRequest());
             streamRef.current = cam.stream;
           } catch (e: unknown) {
             const why = e instanceof Error ? e.message : String(e);
@@ -1095,7 +1119,7 @@ export function useLiveCamSession({
     stopCamera(streamRef.current);
     streamRef.current = null;
     try {
-      const cam = await startCamera(video, next);
+      const cam = await startCamera(video, next, cameraRequest());
       streamRef.current = cam.stream;
       remember(next);
       // The face check depends on the camera (off on the back camera): tell the worker.
@@ -1112,7 +1136,7 @@ export function useLiveCamSession({
       console.warn('[live-cam] camera flip failed', e);
       setNotice('Could not switch camera.');
       try {
-        const cam = await startCamera(video, previous);
+        const cam = await startCamera(video, previous, cameraRequest());
         streamRef.current = cam.stream;
       } catch {
         setNotice('Camera stopped. End and start again.');
@@ -1121,6 +1145,20 @@ export function useLiveCamSession({
       flippingRef.current = false;
     }
   }, [localVideoRef]);
+
+  // Lite button: remember it on this device and resize the running camera without restarting it.
+  const setLite = useCallback((on: boolean) => {
+    liteRef.current = on;
+    setLiteState(on);
+    setLiveCamLite(on);
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (track) {
+      const r = cameraRequest() ?? { width: 1280, height: 720 }; // back to Normal: the default request
+      track.applyConstraints({ width: { ideal: r.width }, height: { ideal: r.height }, ...(r.frameRate ? { frameRate: { ideal: r.frameRate } } : {}) })
+        .catch((e) => console.warn('[live-cam] lite camera change failed', e));
+    }
+  // cameraRequest only reads refs, so no dependencies.
+  }, []);
 
   const readStats = useCallback(() => {
     const p = playbackRef.current;
@@ -1140,6 +1178,8 @@ export function useLiveCamSession({
     latencyMs,
     session,
     start,
+    lite,
+    setLite,
     readStats,
     stop,
     redrawLastFrame,

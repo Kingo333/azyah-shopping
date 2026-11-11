@@ -115,3 +115,55 @@ export function liveCamDebug(
 ): boolean {
   return readSwitch('livecam_debug', 'azyah.livecam.debug', undefined, search, storage) === '1';
 }
+
+// Camera size for Live Cam. Default (Normal): unchanged, the camera is asked for 1280x720 as
+// before. ?livecam_cam=540|720 (the short side, remembered on the device) overrides it; nothing
+// smaller is allowed, so the 288x512 model input is never upscaled, even from a landscape camera
+// (540 high gives a 304x540 crop).
+export const LIVE_CAM_CAMERA_HEIGHTS = [540, 720] as const;
+
+export function parseLiveCamCameraHeight(value: string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value.trim());
+  return (LIVE_CAM_CAMERA_HEIGHTS as readonly number[]).includes(n) ? n : null;
+}
+
+// Lite mode (the on-screen "Lite" button, or ?livecam_lite=1; remembered on the device): only
+// for a slow device or connection. Camera 960x540 and at most 8 frames a second are sent, so
+// there is less to decode, encode and upload; the model still gets the same 288x512 frame.
+export const LIVE_CAM_LITE_HEIGHT = 540;
+export const LIVE_CAM_LITE_FPS = 8;
+const LITE_KEY = 'azyah.livecam.lite';
+
+// Owner, 11 Nov 2026: Lite is the default for now (testing). Set to false to make Normal the
+// default again; a device where someone tapped the button keeps its own choice either way.
+export const LIVE_CAM_LITE_DEFAULT = true;
+
+export function liveCamLite(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): boolean {
+  const v = readSwitch('livecam_lite', LITE_KEY, undefined, search, storage);
+  return v === null ? LIVE_CAM_LITE_DEFAULT : v === '1';
+}
+
+export function setLiveCamLite(
+  on: boolean,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): void {
+  try { storage?.setItem?.(LITE_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+}
+
+/**
+ * Camera width and height to ask for (16:9, landscape numbers), or null for the default
+ * (Normal: today's request, unchanged). ?livecam_cam= beats Lite.
+ */
+export function liveCamCameraSize(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  lite: boolean = liveCamLite(search, storage),
+): { width: number; height: number } | null {
+  const h = parseLiveCamCameraHeight(readSwitch('livecam_cam', 'azyah.livecam.cam', undefined, search, storage))
+    ?? (lite ? LIVE_CAM_LITE_HEIGHT : null);
+  return h === null ? null : { width: Math.round((h * 16) / 9), height: h };
+}

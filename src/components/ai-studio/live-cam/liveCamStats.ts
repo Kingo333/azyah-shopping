@@ -21,6 +21,12 @@ export interface LiveCamStatsSnapshot {
   /** Phone-side JPEG encode + base64 time per camera frame; shows when the phone limits the send rate. */
   encodeMsP50: number | null;
   encodeMsP95: number | null;
+  /** Time to copy (crop + scale) one camera frame into the small capture canvas. */
+  drawMsP50: number | null;
+  /** How late the capture timer fires: high means the device's main thread is overloaded. */
+  tickLagMsP50: number | null;
+  /** Camera picture size actually delivered, e.g. "960x540". */
+  camera: string | null;
   /** Capture ticks skipped because the previous frame was still encoding. */
   encodeSkipped: number;
   /** Capture ticks skipped because the upload was backed up (over 2 MB waiting): the network limits the send rate. */
@@ -61,6 +67,9 @@ export class LiveCamFrameStats {
   private lastSwapGapMs: number | null = null;
   private encode: number[] = [];
   private encodeSkipped = 0;
+  private draw: number[] = [];
+  private tickLag: number[] = [];
+  private camera: string | null = null;
   private uploadBlocked = 0;
   private sendQueueDropped = 0;
   private presented = 0;
@@ -85,6 +94,8 @@ export class LiveCamFrameStats {
     this.lastSwapGapMs = null;
     this.encode = [];
     this.encodeSkipped = 0;
+    this.draw = [];
+    this.tickLag = [];
     this.uploadBlocked = 0;
     this.sendQueueDropped = 0;
     this.presented = 0;
@@ -104,6 +115,18 @@ export class LiveCamFrameStats {
 
   onEncoded(ms: number): void {
     if (Number.isFinite(ms) && ms >= 0) pushBounded(this.encode, ms, KEEP_SAMPLES);
+  }
+
+  onDraw(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.draw, ms, KEEP_SAMPLES);
+  }
+
+  onTickLag(ms: number): void {
+    if (Number.isFinite(ms)) pushBounded(this.tickLag, Math.max(0, ms), KEEP_SAMPLES);
+  }
+
+  setCamera(width: number, height: number): void {
+    this.camera = width > 0 && height > 0 ? `${width}x${height}` : null;
   }
 
   onEncodeSkipped(): void {
@@ -181,6 +204,9 @@ export class LiveCamFrameStats {
       lastSwapGapMs: this.lastSwapGapMs,
       encodeMsP50: percentile(this.encode, 50),
       encodeMsP95: percentile(this.encode, 95),
+      drawMsP50: percentile(this.draw, 50),
+      tickLagMsP50: percentile(this.tickLag, 50),
+      camera: this.camera,
       encodeSkipped: this.encodeSkipped,
       uploadBlocked: this.uploadBlocked,
       sendQueueDropped: this.sendQueueDropped,

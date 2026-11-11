@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveCamLegacy, liveCamPlaybackOverride } from '../liveCamFlags';
+import { LIVE_CAM_LITE_DEFAULT, isLiveCamLegacy, liveCamCameraSize, liveCamLite, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
 
 describe('buffered playback override (F1b)', () => {
   it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
@@ -28,5 +28,33 @@ describe('legacy benchmark switch', () => {
       "Substitute the current top with the garment in the reference image. The reference garment is the Tee. " +
         "Match its exact color, pattern, print, logo, fabric and construction details. Keep the person's face, body, pose and the background unchanged.",
     );
+  });
+});
+
+describe('Live Cam camera size and Lite mode', () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+  it('Lite is the default for now; tapping Normal is remembered and keeps today\'s camera request', () => {
+    expect(liveCamLite('', mem())).toBe(LIVE_CAM_LITE_DEFAULT);
+    const s = mem();
+    setLiveCamLite(false, s);
+    expect(liveCamLite('', s)).toBe(false);
+    expect(liveCamCameraSize('', s)).toBeNull();
+  });
+  it('Lite asks for 960x540, never below the 288x512 model input; remembered; ?livecam_cam= wins', () => {
+    const s = mem();
+    setLiveCamLite(true, s);
+    expect(liveCamLite('', s)).toBe(true);
+    expect(liveCamCameraSize('', s)).toEqual({ width: 960, height: 540 });
+    const lite720 = mem(); setLiveCamLite(true, lite720);
+    expect(liveCamCameraSize('?livecam_cam=720', lite720)).toEqual({ width: 1280, height: 720 });
+    setLiveCamLite(false, s);
+    expect(liveCamCameraSize('', s)).toBeNull();
+  });
+  it('?livecam_cam= only accepts sizes at or above the model input', () => {
+    expect(parseLiveCamCameraHeight('540')).toBe(540);
+    expect(parseLiveCamCameraHeight('360')).toBeNull();
+    expect(parseLiveCamCameraHeight('480')).toBeNull();
+    const normal = mem(); setLiveCamLite(false, normal);
+    expect(liveCamCameraSize('?livecam_cam=360', normal)).toBeNull();
   });
 });
