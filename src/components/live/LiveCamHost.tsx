@@ -6,6 +6,7 @@ import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
 import type { LiveCamStatus } from '@/components/ai-studio/live-cam/liveCamTypes';
 import { keepMounted } from '@/lib/liveCamHost';
 import { WAIT_COPY } from '@/components/ai-studio/live-cam/liveCamWait';
+import { liveCamDebug, liveCamEndpoint, liveCamTransport } from '@/components/ai-studio/live-cam/liveCamFlags';
 
 /**
  * Design v3: one Live Cam for the whole app, so it keeps starting up (and
@@ -45,6 +46,16 @@ export function LiveCamHostProvider({ children }: { children: React.ReactNode })
   const [waitProgress, setWaitProgress] = useState<number | null>(null);
   const [openRequest, setOpenRequest] = useState(0);
   const onScreenRef = useRef(false);
+
+  // Test switches given in the address (?livecam_transport=webrtc, ?livecam_endpoint=test, ?livecam_debug=1)
+  // are remembered on this device as soon as the site opens, so they survive moving around the site.
+  useEffect(() => {
+    try {
+      liveCamTransport();
+      liveCamEndpoint();
+      liveCamDebug();
+    } catch { /* private mode: they still work while in the address */ }
+  }, []);
 
   // The stable container the Live Cam is rendered into, and where it waits off screen.
   const container = useMemo(() => document.createElement('div'), []);
