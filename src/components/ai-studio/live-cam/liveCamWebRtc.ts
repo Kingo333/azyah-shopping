@@ -7,14 +7,14 @@
 // - the generated frames come back as a video track and are drawn into the same result canvas as the
 //   JPEG frames, so the screen, the stage and the snapshots do not change.
 // While it is connected the page sends no JPEG frames (and the worker sends none). Anything that goes
-// wrong (no TURN servers, no crop support, ICE failure, no video within 6 s, the worker says no) closes
+// wrong (no TURN servers, no crop support, ICE failure, no video within 10 s, the worker says no) closes
 // it and the JPEG path carries on, usually without the shopper noticing.
 //
 // Both peers reach each other through the TURN relay (RunPod serverless takes no inbound UDP); the app
 // hands the worker the same short-lived TURN credentials in its offer, so the worker holds no secret.
 
 export const RTC_MAX_BITRATE = 1_000_000; // camera track, 288x512 at 8-10 fps: about 0.4-0.7 Mbit/s used
-export const RTC_CONNECT_TIMEOUT_MS = 6000;
+export const RTC_CONNECT_TIMEOUT_MS = 10_000; // JPEG keeps running meanwhile, so waiting longer costs the shopper nothing
 export const RTC_GATHER_TIMEOUT_MS = 2000;
 export const RTC_DISCONNECT_GRACE_MS = 4000;
 

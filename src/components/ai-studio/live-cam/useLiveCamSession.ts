@@ -6,7 +6,7 @@ import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
 import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -486,8 +486,11 @@ export function useLiveCamSession({
           throw new Error(details.message || 'Failed to start session');
         }
         sessionIdRef.current = data.session_id;
-        setSession({ sessionId: data.session_id, podId: data.pod_id, wsUrl: data.ws_url });
-        return { wsUrl: data.ws_url, mintedAt: Date.now() };
+        // ?livecam_endpoint=test: the same session on the Worker's test endpoint (listed accounts only).
+        const routed = withEndpointRoute(data.ws_url, liveCamEndpoint());
+        if (routed !== data.ws_url) console.log('[live-cam] endpoint=test (Worker test route)');
+        setSession({ sessionId: data.session_id, podId: data.pod_id, wsUrl: routed });
+        return { wsUrl: routed, mintedAt: Date.now() };
       };
       let { wsUrl, mintedAt } = await requestSession();
       setWaitAnchor('requested');

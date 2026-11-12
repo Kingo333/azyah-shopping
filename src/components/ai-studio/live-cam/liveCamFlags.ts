@@ -123,6 +123,22 @@ export function liveCamTransport(
   return readSwitch('livecam_transport', 'azyah.livecam.transport', env?.VITE_LIVE_CAM_TRANSPORT, search, storage) === 'webrtc' ? 'webrtc' : 'ws';
 }
 
+// Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
+// device). test = the Worker's separate test endpoint (TEST_RUNPOD_LB_ENDPOINT_ID), allowed only for the
+// accounts listed in the Worker's LIVECAM_TEST_USER_IDS; everyone else, and the default, is live.
+export function liveCamEndpoint(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'live' | 'test' {
+  return readSwitch('livecam_endpoint', 'azyah.livecam.endpoint', undefined, search, storage) === 'test' ? 'test' : 'live';
+}
+
+/** The socket URL for the chosen endpoint: the test route adds route=test (the Worker checks the account). */
+export function withEndpointRoute(wsUrl: string, endpoint: 'live' | 'test'): string {
+  if (endpoint !== 'test' || /[?&]route=/.test(wsUrl)) return wsUrl;
+  return `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}route=test`;
+}
+
 export function liveCamDebug(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,

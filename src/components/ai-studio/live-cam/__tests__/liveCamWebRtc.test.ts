@@ -10,7 +10,7 @@ import {
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { liveCamTransport } from '../liveCamFlags';
+import { liveCamEndpoint, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -38,6 +38,18 @@ describe('ICE servers, codecs, support', () => {
     expect(canUseWebRtc({ RTCPeerConnection: f, MediaStreamTrackProcessor: f, createImageBitmap: f })).toBe(true);
     expect(canUseWebRtc({ RTCPeerConnection: f, createImageBitmap: f })).toBe(false); // Safari: stays on JPEG
     expect(canUseWebRtc({})).toBe(false);
+  });
+
+  it('endpoint switch: live by default; test adds route=test to the socket URL', () => {
+    const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+    expect(liveCamEndpoint('', mem())).toBe('live');
+    const s = mem();
+    expect(liveCamEndpoint('?livecam_endpoint=test', s)).toBe('test');
+    expect(liveCamEndpoint('', s)).toBe('test'); // remembered on the device
+    expect(liveCamEndpoint('?livecam_endpoint=live', s)).toBe('live');
+    expect(withEndpointRoute('wss://w.example/ws?token=abc', 'test')).toBe('wss://w.example/ws?token=abc&route=test');
+    expect(withEndpointRoute('wss://w.example/ws?token=abc', 'live')).toBe('wss://w.example/ws?token=abc');
+    expect(withEndpointRoute('wss://w.example/ws?token=abc&route=test', 'test')).toBe('wss://w.example/ws?token=abc&route=test');
   });
 
   it('transport switch: ws by default, webrtc only when asked', () => {
@@ -129,7 +141,7 @@ describe('LiveCamRtcLink', () => {
     expect(pc.addTransceiver).toHaveBeenCalledWith(clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_000_000, maxFramerate: 10 }] });
     expect(transceiver.setCodecPreferences).toHaveBeenCalledWith([{ mimeType: 'video/H264' }, { mimeType: 'video/VP8' }]);
     expect(sent).toEqual([{ type: 'webrtc_offer', sdp: 'v=0 offer', ice_servers: cleanIceServers(CF) }]);
-    expect(timers.some((t) => t.ms === 6000 && !t.cleared)).toBe(true);
+    expect(timers.some((t) => t.ms === 10_000 && !t.cleared)).toBe(true);
   });
 
   it('applies the answer, then counts as connected only at the first generated frame', async () => {
@@ -143,14 +155,14 @@ describe('LiveCamRtcLink', () => {
     link.markConnected();
     expect(calls.connected).toBe(1);
     expect(link.state).toBe('connected');
-    expect(timers.find((t) => t.ms === 6000)?.cleared).toBe(true);
+    expect(timers.find((t) => t.ms === 10_000)?.cleared).toBe(true);
   });
 
-  it('no video within 6 s: gives up, tells the worker, frees the camera clone', async () => {
+  it('no video within 10 s: gives up, tells the worker, frees the camera clone', async () => {
     const { link, pc, sent, calls, timers, clones } = setup();
     await link.start();
-    timers.find((t) => t.ms === 6000)!.fn();
-    expect(calls.failed).toEqual(['no video within 6 s']);
+    timers.find((t) => t.ms === 10_000)!.fn();
+    expect(calls.failed).toEqual(['no video within 10 s']);
     expect(link.state).toBe('failed');
     expect(sent.at(-1)).toEqual({ type: 'webrtc_close' });
     expect(pc.close).toHaveBeenCalled();

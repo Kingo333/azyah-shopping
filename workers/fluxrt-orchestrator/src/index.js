@@ -36,7 +36,10 @@ export function config(env) {
     endpoints: {
       standard: env.RUNPOD_LB_ENDPOINT_ID || "",
       premium: env.PREMIUM_RUNPOD_LB_ENDPOINT_ID || "",
+      // Test route (WebRTC trials etc.): reached only with ?route=test on /ws by the listed users.
+      test: env.TEST_RUNPOD_LB_ENDPOINT_ID || "",
     },
+    testUserIds: String(env.LIVECAM_TEST_USER_IDS || "").split(/[\s,]+/).filter(Boolean),
     // Connect window: how long the browser may keep retrying the WebSocket
     // while a cold worker boots. Premium cold starts are longer.
     connectTtl: {
@@ -136,6 +139,8 @@ async function handleDiag(env) {
       SESSION_SIGNING_SECRET: present(env.SESSION_SIGNING_SECRET),
       RUNPOD_LB_ENDPOINT_ID: present(env.RUNPOD_LB_ENDPOINT_ID),
       PREMIUM_RUNPOD_LB_ENDPOINT_ID: present(env.PREMIUM_RUNPOD_LB_ENDPOINT_ID),
+      TEST_RUNPOD_LB_ENDPOINT_ID: present(env.TEST_RUNPOD_LB_ENDPOINT_ID),
+      LIVECAM_TEST_USER_IDS: present(env.LIVECAM_TEST_USER_IDS),
     },
     premium_fallback_to_standard: cfg.premiumFallbackToStandard,
     session_max_seconds: cfg.maxSessionSeconds,
@@ -153,8 +158,15 @@ async function handleWs(req, env, url) {
   const claims = await verifySessionToken(cfg.signingSecret, token);
   if (!claims) return json({ ok: false, error: "invalid_or_expired_token" }, 401);
 
-  // The tier inside the signed token decides the upstream endpoint.
-  const endpointId = cfg.endpoints[claims.tier];
+  // The tier inside the signed token decides the upstream endpoint...
+  let endpointId = cfg.endpoints[claims.tier];
+  // ...unless the app asks for the test route (?route=test): the same signed token, a separate test
+  // endpoint (TEST_RUNPOD_LB_ENDPOINT_ID), and only for users listed in LIVECAM_TEST_USER_IDS.
+  if (url.searchParams.get("route") === "test") {
+    if (!cfg.endpoints.test) return json({ ok: false, error: "test_not_configured" }, 503);
+    if (!claims.userId || !cfg.testUserIds.includes(claims.userId)) return json({ ok: false, error: "test_not_allowed" }, 403);
+    endpointId = cfg.endpoints.test;
+  }
   if (!endpointId) {
     const code = claims.tier === "premium" ? "premium_not_configured" : "missing_runpod_lb_endpoint_id";
     return json({ ok: false, error: code }, claims.tier === "premium" ? 503 : 500);
