@@ -161,4 +161,15 @@ describe('per-stage timing (kiosk speed work)', () => {
     s.reset();
     expect(s.snapshot()).toMatchObject({ pageFps: null, longTaskMsPerS: null, pageHidden: false, pageFocused: null });
   });
+
+  it('shows the WebRTC readout while it carries the frames, nothing on JPEG', async () => {
+    const { formatStageLine } = await import('../liveCamStats');
+    const s = new LiveCamFrameStats(() => 0);
+    s.reset();
+    expect(formatStageLine(s.snapshot())).not.toContain('webrtc');
+    s.setTransport('webrtc srflx/udp -> relay · rtt 140 ms');
+    expect(formatStageLine(s.snapshot()).endsWith('webrtc srflx/udp -> relay · rtt 140 ms')).toBe(true);
+    s.setTransport(null);
+    expect(s.snapshot().transport).toBeNull();
+  });
 });

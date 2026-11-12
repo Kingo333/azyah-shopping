@@ -64,6 +64,8 @@ export interface LiveCamStatsSnapshot {
   /** The page is hidden or the window lost focus (browsers slow timers for hidden pages). */
   pageHidden: boolean;
   pageFocused: boolean | null;
+  /** WebRTC readout while it carries the frames (path, round trip, jitter buffer, bitrates); null on JPEG. */
+  transport: string | null;
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -115,6 +117,7 @@ export class LiveCamFrameStats {
   private longTaskMsPerS: number | null = null;
   private pageHidden = false;
   private pageFocused: boolean | null = null;
+  private transport: string | null = null;
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -154,6 +157,7 @@ export class LiveCamFrameStats {
     this.longTaskMsPerS = null;
     this.pageHidden = false;
     this.pageFocused = null;
+    this.transport = null;
   }
 
   setCameraFps(fps: number | null): void {
@@ -170,6 +174,10 @@ export class LiveCamFrameStats {
 
   setEncoder(mode: string | null): void {
     this.encoder = mode;
+  }
+
+  setTransport(line: string | null): void {
+    this.transport = line;
   }
 
   setPageLoad(fps: number | null, longTaskMsPerS: number | null, hidden: boolean, focused: boolean | null): void {
@@ -322,6 +330,7 @@ export class LiveCamFrameStats {
       longTaskMsPerS: this.longTaskMsPerS,
       pageHidden: this.pageHidden,
       pageFocused: this.pageFocused,
+      transport: this.transport,
     };
   }
 }
@@ -341,5 +350,6 @@ export function formatStageLine(s: LiveCamStatsSnapshot): string {
     `paint ${ms(s.paintMsP50)}`,
     `same-frame skips ${s.staleSkipped}`,
     `page ${s.pageFps === null ? '–' : `${s.pageFps}/s`} long tasks ${s.longTaskMsPerS === null ? '–' : `${s.longTaskMsPerS} ms/s`}${s.pageHidden ? ' HIDDEN' : ''}${s.pageFocused === false ? ' no-focus' : ''}`,
+    ...(s.transport ? [s.transport] : []),
   ].join(' · ');
 }

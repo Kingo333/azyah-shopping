@@ -109,6 +109,37 @@ export function liveCamPlayoutMode(
   return readSwitch('livecam_playout', 'azyah.livecam.playout', undefined, search, storage) === 'buffer' ? 'buffer' : 'capture';
 }
 
+// How camera and result frames travel (WebRTC work, 12 Nov 2026): ?livecam_transport=webrtc|ws
+// (remembered on the device), else VITE_LIVE_CAM_TRANSPORT, else ws. ws = JPEG over the WebSocket, as
+// before. webrtc = when the worker offers it (ready.webrtc) and our TURN function answers, frames move
+// to a WebRTC connection; any failure falls back to ws within seconds.
+export type LiveCamTransport = 'ws' | 'webrtc';
+
+export function liveCamTransport(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  env: Env = viteEnv(),
+): LiveCamTransport {
+  return readSwitch('livecam_transport', 'azyah.livecam.transport', env?.VITE_LIVE_CAM_TRANSPORT, search, storage) === 'webrtc' ? 'webrtc' : 'ws';
+}
+
+// Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
+// device). test = the same session through the separate fluxrt-orchestrator-test Worker
+// (workers/fluxrt-orchestrator/test-worker), which serves any valid live session (or only the accounts it
+// lists) and points at the TEST RunPod endpoint; the live Worker and endpoint are untouched. Default: live.
+export function liveCamEndpoint(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'live' | 'test' {
+  return readSwitch('livecam_endpoint', 'azyah.livecam.endpoint', undefined, search, storage) === 'test' ? 'test' : 'live';
+}
+
+/** The socket URL for the chosen endpoint: test swaps the Worker host fluxrt-orchestrator.* for fluxrt-orchestrator-test.*. */
+export function withEndpointRoute(wsUrl: string, endpoint: 'live' | 'test'): string {
+  if (endpoint !== 'test') return wsUrl;
+  return wsUrl.replace(/^(wss?:\/\/)fluxrt-orchestrator\./, '$1fluxrt-orchestrator-test.');
+}
+
 export function liveCamDebug(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
