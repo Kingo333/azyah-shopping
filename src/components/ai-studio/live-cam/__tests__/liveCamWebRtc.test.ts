@@ -10,7 +10,7 @@ import {
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { liveCamEndpoint, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
+import { LIVE_CAM_DEFAULT_WEBRTC_TEST, liveCamEndpoint, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -40,27 +40,35 @@ describe('ICE servers, codecs, support', () => {
     expect(canUseWebRtc({})).toBe(false);
   });
 
-  it('endpoint switch: live by default; test goes through the test Worker', () => {
+  it('one constant sets both defaults (owner, 12 Nov: WebRTC through the test path for everyone)', () => {
     const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
-    expect(liveCamEndpoint('', mem())).toBe('live');
+    expect(LIVE_CAM_DEFAULT_WEBRTC_TEST).toBe(true);
+    expect(liveCamEndpoint('', mem())).toBe(LIVE_CAM_DEFAULT_WEBRTC_TEST ? 'test' : 'live');
+    expect(liveCamTransport('', mem(), {})).toBe(LIVE_CAM_DEFAULT_WEBRTC_TEST ? 'webrtc' : 'ws');
+    expect(liveCamEndpoint('?livecam_endpoint=nonsense', mem())).toBe('test'); // junk = the default
+  });
+
+  it('endpoint switch: the device can choose live or test, remembered', () => {
+    const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
     const s = mem();
-    expect(liveCamEndpoint('?livecam_endpoint=test', s)).toBe('test');
-    expect(liveCamEndpoint('', s)).toBe('test'); // remembered on the device
     expect(liveCamEndpoint('?livecam_endpoint=live', s)).toBe('live');
+    expect(liveCamEndpoint('', s)).toBe('live'); // remembered on the device
+    expect(liveCamEndpoint('?livecam_endpoint=test', s)).toBe('test');
+    expect(liveCamEndpoint('', s)).toBe('test');
     const live = 'wss://fluxrt-orchestrator.acct.workers.dev/ws?token=abc';
     expect(withEndpointRoute(live, 'test')).toBe('wss://fluxrt-orchestrator-test.acct.workers.dev/ws?token=abc');
     expect(withEndpointRoute(live, 'live')).toBe(live);
     expect(withEndpointRoute('wss://other.example/ws?token=abc', 'test')).toBe('wss://other.example/ws?token=abc'); // only our Worker host
   });
 
-  it('transport switch: ws by default, webrtc only when asked', () => {
+  it('transport switch: the device can choose ws or webrtc, remembered; the build env can too', () => {
     const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
-    expect(liveCamTransport('', mem(), {})).toBe('ws');
     const s = mem();
-    expect(liveCamTransport('?livecam_transport=webrtc', s, {})).toBe('webrtc');
-    expect(liveCamTransport('', s, {})).toBe('webrtc'); // remembered on the device
     expect(liveCamTransport('?livecam_transport=ws', s, {})).toBe('ws');
-    expect(liveCamTransport('', mem(), { VITE_LIVE_CAM_TRANSPORT: 'webrtc' })).toBe('webrtc');
+    expect(liveCamTransport('', s, {})).toBe('ws'); // remembered on the device: the manual way back
+    expect(liveCamTransport('?livecam_transport=webrtc', s, {})).toBe('webrtc');
+    expect(liveCamTransport('', s, {})).toBe('webrtc');
+    expect(liveCamTransport('', mem(), { VITE_LIVE_CAM_TRANSPORT: 'ws' })).toBe('ws');
   });
 });
 
