@@ -135,9 +135,9 @@ export const LIVE_CAM_LITE_HEIGHT = 540;
 export const LIVE_CAM_LITE_FPS = 8;
 const LITE_KEY = 'azyah.livecam.lite';
 
-// Owner, 11 Nov 2026: Lite is the default for now (testing). Set to false to make Normal the
-// default again; a device where someone tapped the button keeps its own choice either way.
-export const LIVE_CAM_LITE_DEFAULT = true;
+// Owner, 12 Nov 2026: Normal is the default again; Lite stays the second option (the button or
+// ?livecam_lite=1). A device where someone tapped the button keeps its own choice either way.
+export const LIVE_CAM_LITE_DEFAULT = false;
 
 export function liveCamLite(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
