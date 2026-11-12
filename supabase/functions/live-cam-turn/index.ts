@@ -3,7 +3,7 @@
 // (body: { session_id }). The relay is set with Supabase Edge Function secrets only (see turn.ts):
 //   Cloudflare Realtime TURN: CF_TURN_KEY_ID, CF_TURN_API_TOKEN   (the owner's choice)
 //   self-hosted coturn:       TURN_URLS, TURN_SHARED_SECRET        (kept as an option)
-//   TURN_PROVIDER (optional, cloudflare | coturn), TURN_TTL_SECONDS (optional, default 900)
+//   TURN_PROVIDER (optional, cloudflare | coturn), TURN_TTL_SECONDS (optional, default 3600)
 // No secrets set = WebRTC off: no servers, and the app stays on WebSocket JPEG.
 // The app calls this only when it is about to try WebRTC, and passes the servers to the GPU worker in
 // its webrtc_offer, so the worker never holds a TURN secret.

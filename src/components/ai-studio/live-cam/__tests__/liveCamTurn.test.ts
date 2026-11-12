@@ -17,7 +17,8 @@ describe('live-cam-turn: which relay', () => {
   it('Cloudflare when its two secrets are set (the owner\'s choice), with a short TTL', () => {
     const cfg = readTurnConfig(env({ CF_TURN_KEY_ID: 'kid', CF_TURN_API_TOKEN: 'tok' }));
     expect(cfg).toMatchObject({ provider: 'cloudflare', cfKeyId: 'kid', cfApiToken: 'tok', ttlSeconds: DEFAULT_TTL_SECONDS });
-    expect(readTurnConfig(env({ CF_TURN_KEY_ID: 'kid', CF_TURN_API_TOKEN: 'tok', TURN_TTL_SECONDS: '3600' })).ttlSeconds).toBe(3600);
+    expect(DEFAULT_TTL_SECONDS).toBe(3600); // about an hour, as the owner asked
+    expect(readTurnConfig(env({ CF_TURN_KEY_ID: 'kid', CF_TURN_API_TOKEN: 'tok', TURN_TTL_SECONDS: '900' })).ttlSeconds).toBe(900);
     expect(readTurnConfig(env({ CF_TURN_KEY_ID: 'kid', CF_TURN_API_TOKEN: 'tok', TURN_TTL_SECONDS: '5' })).ttlSeconds).toBe(60);
     expect(readTurnConfig(env({ CF_TURN_KEY_ID: 'kid', CF_TURN_API_TOKEN: 'tok', TURN_TTL_SECONDS: 'x' })).ttlSeconds).toBe(DEFAULT_TTL_SECONDS);
   });
@@ -91,7 +92,7 @@ describe('live-cam-turn: credentials', () => {
     const out = await iceServersFor(coturn, 'uabc', 1_800_000_000, vi.fn());
     expect(out.provider).toBe('coturn');
     expect(out.ice_servers[0]).toEqual({ urls: ['stun:t.example.com:3478'] });
-    expect(out.ice_servers[1]).toMatchObject({ urls: ['turn:t.example.com:3478?transport=udp'], username: '1800000900:uabc' });
+    expect(out.ice_servers[1]).toMatchObject({ urls: ['turn:t.example.com:3478?transport=udp'], username: `${1_800_000_000 + DEFAULT_TTL_SECONDS}:uabc` });
     expect(await iceServersFor(readTurnConfig(env({})), 'u', 0, vi.fn())).toEqual({ provider: 'none', ice_servers: [], ttl: 0 });
   });
 });

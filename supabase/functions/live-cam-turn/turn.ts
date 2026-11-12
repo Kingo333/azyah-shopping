@@ -34,8 +34,8 @@ export interface TurnResult {
   ttl: number;
 }
 
-/** A live session lasts at most ~6 minutes; 15 minutes covers it with margin (TURN_TTL_SECONDS overrides). */
-export const DEFAULT_TTL_SECONDS = 900;
+/** About an hour (owner, 12 Nov 2026): a live session lasts minutes; TURN_TTL_SECONDS overrides. */
+export const DEFAULT_TTL_SECONDS = 3600;
 /** Credentials are only issued for a live session started this recently and not ended. */
 export const SESSION_MAX_AGE_SECONDS = 20 * 60;
 
