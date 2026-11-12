@@ -109,10 +109,18 @@ export function liveCamPlayoutMode(
   return readSwitch('livecam_playout', 'azyah.livecam.playout', undefined, search, storage) === 'buffer' ? 'buffer' : 'capture';
 }
 
+// THE ONE SWITCH for everyone (owner, 12 Nov 2026): true = the normal Live Cam button uses WebRTC through
+// the test Worker (fluxrt-orchestrator-test) and the test RunPod endpoint, falling back to JPEG on that
+// same endpoint whenever WebRTC cannot start. To go back to the old path for everyone (JPEG over the
+// WebSocket, live Worker and live endpoint), set this to false, merge and publish.
+// A device can still choose for itself with ?livecam_transport=ws|webrtc and ?livecam_endpoint=live|test
+// (remembered on that device until changed).
+export const LIVE_CAM_DEFAULT_WEBRTC_TEST = true;
+
 // How camera and result frames travel (WebRTC work, 12 Nov 2026): ?livecam_transport=webrtc|ws
-// (remembered on the device), else VITE_LIVE_CAM_TRANSPORT, else ws. ws = JPEG over the WebSocket, as
-// before. webrtc = when the worker offers it (ready.webrtc) and our TURN function answers, frames move
-// to a WebRTC connection; any failure falls back to ws within seconds.
+// (remembered on the device), else VITE_LIVE_CAM_TRANSPORT, else LIVE_CAM_DEFAULT_WEBRTC_TEST.
+// ws = JPEG over the WebSocket. webrtc = when the worker offers it (ready.webrtc) and our TURN function
+// answers, frames move to a WebRTC connection; any failure falls back to ws within seconds.
 export type LiveCamTransport = 'ws' | 'webrtc';
 
 export function liveCamTransport(
@@ -120,18 +128,23 @@ export function liveCamTransport(
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
   env: Env = viteEnv(),
 ): LiveCamTransport {
-  return readSwitch('livecam_transport', 'azyah.livecam.transport', env?.VITE_LIVE_CAM_TRANSPORT, search, storage) === 'webrtc' ? 'webrtc' : 'ws';
+  const v = readSwitch('livecam_transport', 'azyah.livecam.transport', env?.VITE_LIVE_CAM_TRANSPORT, search, storage);
+  if (v === 'webrtc' || v === 'ws') return v;
+  return LIVE_CAM_DEFAULT_WEBRTC_TEST ? 'webrtc' : 'ws';
 }
 
 // Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
 // device). test = the same session through the separate fluxrt-orchestrator-test Worker
 // (workers/fluxrt-orchestrator/test-worker), which serves any valid live session (or only the accounts it
-// lists) and points at the TEST RunPod endpoint; the live Worker and endpoint are untouched. Default: live.
+// lists) and points at the TEST RunPod endpoint. live = the live Worker and endpoint.
+// Default: LIVE_CAM_DEFAULT_WEBRTC_TEST (true = test).
 export function liveCamEndpoint(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
 ): 'live' | 'test' {
-  return readSwitch('livecam_endpoint', 'azyah.livecam.endpoint', undefined, search, storage) === 'test' ? 'test' : 'live';
+  const v = readSwitch('livecam_endpoint', 'azyah.livecam.endpoint', undefined, search, storage);
+  if (v === 'test' || v === 'live') return v;
+  return LIVE_CAM_DEFAULT_WEBRTC_TEST ? 'test' : 'live';
 }
 
 /** The socket URL for the chosen endpoint: test swaps the Worker host fluxrt-orchestrator.* for fluxrt-orchestrator-test.*. */
