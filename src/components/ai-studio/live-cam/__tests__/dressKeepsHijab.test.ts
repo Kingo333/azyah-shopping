@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTryOnInstruction, buildTryOnPrompt, tryOnCategory } from '../buildTryOnPrompt';
+import { buildTryOnInstruction, buildTryOnPrompt } from '../buildTryOnPrompt';
 
 // Owner, 2026-11-11: a dress or abaya replaces the shopper's outfit, never her own hijab or head covering.
 describe('dress prompts keep the shopper\'s own hijab', () => {
@@ -23,14 +23,5 @@ describe('dress prompts keep the shopper\'s own hijab', () => {
       "Keep the person's face, hijab or head covering, body, pose and the background unchanged.",
     );
     expect(buildTryOnInstruction({ category: 'tops' })).toContain("Keep the person's face, body, pose and the background unchanged.");
-  });
-
-  it('gives the worker the same try-on type the prompt used', () => {
-    expect(tryOnCategory(abaya)).toBe('dresses');
-    expect(tryOnCategory({ category: 'abaya' })).toBe('dresses');
-    expect(tryOnCategory({ category: 'dress' })).toBe('dresses');
-    expect(tryOnCategory({ category: 'modestwear', name: 'Silk Hijab Scarf' })).toBe('accessories');
-    expect(tryOnCategory({ category: 'top', name: 'Linen shirt' })).toBe('tops');
-    expect(tryOnCategory({})).toBeNull();
   });
 });

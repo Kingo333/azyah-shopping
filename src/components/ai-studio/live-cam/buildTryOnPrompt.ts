@@ -58,15 +58,6 @@ const KEYWORD_MAP: Array<[TryOnCategory, string[]]> = [
   ['tops', ['top', 'shirt', 'tee', 't-shirt', 'blouse', 'sweater', 'hoodie', 'jumper', 'cardigan', 'polo', 'tank', 'crop']],
 ];
 
-/**
- * The try-on type the prompts use: the stored category, else the product name, else the Gemini hint
- * (a product filed under "modestwear" named "Black Abaya" is a dress). Sent to the worker as
- * garment_type, so its dress-photo cleaner treats exactly the same items as dresses.
- */
-export function tryOnCategory(input: BuildTryOnPromptInput): TryOnCategory | null {
-  return normalizeCategory(input.category) ?? normalizeCategory(input.name) ?? normalizeCategory(input.promptHint);
-}
-
 export function normalizeCategory(raw?: string | null): TryOnCategory | null {
   if (!raw) return null;
   const v = raw.toLowerCase();
@@ -231,7 +222,10 @@ const COMPACT_SLEEVES: Record<SleeveLength, string> = {
  */
 export function buildCompactTryOnPrompt(input: BuildTryOnPromptInput, opts: GarmentTextOptions = {}): string {
   const clean = opts.cleanDetails === true;
-  const cat = tryOnCategory(input);
+  const cat =
+    normalizeCategory(input.category) ??
+    normalizeCategory(input.name) ??
+    normalizeCategory(input.promptHint);
   const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
   const details = clean
     ? cleanGarmentText(input.description) || garmentDetailsFromHint(input.promptHint, HINT_DETAIL_CHARS_CLEAN)
@@ -315,7 +309,10 @@ export function buildTryOnInstruction(
   input: BuildTryOnPromptInput,
   opts: { useHintDetails?: boolean } & GarmentTextOptions = {},
 ): string {
-  const cat = tryOnCategory(input);
+  const cat =
+    normalizeCategory(input.category) ??
+    normalizeCategory(input.name) ??
+    normalizeCategory(input.promptHint);
   const parts = [cat ? INSTRUCTIONS[cat] : INSTRUCTION_FALLBACK];
   const clean = opts.cleanDetails === true;
   const name = clean ? cleanGarmentName(input.name) : cleanProductText(input.name, 120);
