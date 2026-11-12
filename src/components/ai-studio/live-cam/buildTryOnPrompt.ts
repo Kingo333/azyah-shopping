@@ -37,7 +37,7 @@ const CATEGORY_CLAUSES: Record<TryOnCategory, string> = {
   bottoms:
     "Replace only the lower-body clothing with the exact bottoms from the reference image. Preserve the person's existing top/shirt exactly as it appears in the camera frame. Preserve the waistline, leg length, fit, color, fabric appearance, pockets, seams, print, and visible design details of the bottoms. Do not change the shirt, face, hair, arms, shoes, or background.",
   dresses:
-    "Apply the exact dress from the reference image as a full-body garment. Preserve the dress length, neckline, waist shape, silhouette, color, fabric appearance, print, pattern, logo, embroidery, and visible design details. Preserve the exact visible sleeve style and sleeve length from the reference image. Do not shorten the dress. Do not remove or add sleeves. Do not turn the dress into a top and skirt. Preserve the person's own hijab or head covering exactly as it appears in the camera frame.",
+    "Apply the exact dress from the reference image as a full-body garment. Preserve the dress length, neckline, waist shape, silhouette, color, fabric appearance, print, pattern, logo, embroidery, and visible design details. Preserve the exact visible sleeve style and sleeve length from the reference image. Do not shorten the dress. Do not remove or add sleeves. Do not turn the dress into a top and skirt.",
   outerwear:
     "Apply the exact outerwear from the reference image over the person's existing outfit. Preserve the clothing underneath where visible. Preserve the outerwear length, collar, opening, buttons, zipper, color, fabric appearance, pattern, silhouette, and visible sleeve style. Do not replace the entire outfit unless the reference item clearly covers it.",
   shoes:
@@ -201,12 +201,11 @@ const COMPACT_PLACEMENT: Record<TryOnCategory, string> = {
   bags: 'The person carries it naturally; the outfit stays as it is',
   accessories: 'The person wears it naturally; the outfit stays as it is',
 };
-// What stays. For a dress or abaya the shopper's own hijab or head covering is named too (owner, 2026-11-11):
-// the dress replaces her outfit, never what she wears on her head. Python twin (keep in sync):
+// What stays. For a dress or abaya the sentence also names the head covering (owner, 12 Nov 2026):
+// the dress replaces her outfit, never what she wears on her head. Python twin:
 // fluxrt-serverless training/data_tools/fluxrt_prompt.py, which the FluxRT LoRA is trained with.
 const COMPACT_KEEP = "Keep the person's face, hair, body, pose and the background unchanged.";
-const COMPACT_KEEP_DRESS =
-  "Keep the person's face, hair, hijab or head covering, body, pose and the background unchanged.";
+const COMPACT_KEEP_DRESS = "Keep the person's face, hair, head covering, body, pose and the background unchanged.";
 const COMPACT_SLEEVES: Record<SleeveLength, string> = {
   sleeveless: ', and keep it sleeveless',
   short_sleeve: ', with short sleeves',
@@ -254,8 +253,8 @@ const INSTRUCTIONS: Record<TryOnCategory, string> = {
 };
 const INSTRUCTION_FALLBACK = 'Substitute the matching clothing item with the garment in the reference image.';
 const INSTRUCTION_KEEP = "Keep the person's face, body, pose and the background unchanged.";
-// A dress or abaya: the shopper's own hijab or head covering stays (owner, 2026-11-11).
-const INSTRUCTION_KEEP_DRESS = "Keep the person's face, hijab or head covering, body, pose and the background unchanged.";
+// A dress or abaya: the head covering stays too (owner, 12 Nov 2026).
+const INSTRUCTION_KEEP_DRESS = "Keep the person's face, head covering, body, pose and the background unchanged.";
 
 const INSTRUCTION_FIDELITY =
   'Match its exact color, pattern, print, logo, fabric and construction details.';
