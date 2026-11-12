@@ -4,8 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
+import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -165,6 +166,12 @@ export function useLiveCamSession({
   const frameClockRef = useRef<CameraFrameClock | null>(null);
   const encoderRef = useRef<FrameEncoder | null>(null);
   const pageLoadRef = useRef<PageLoadMonitor | null>(null);
+  // WebRTC (?livecam_transport=webrtc): the link, whether it carries the frames now, its frame reader,
+  // and whether this worker offered it (ready.webrtc).
+  const rtcRef = useRef<LiveCamRtcLink | null>(null);
+  const rtcActiveRef = useRef(false);
+  const rtcStopDrawRef = useRef<(() => void) | null>(null);
+  const workerWebrtcRef = useRef(false);
   const pingTimerRef = useRef<number | null>(null);
   const pingSentAtRef = useRef<number | null>(null);
   const frameTimerRef = useRef<number | null>(null);
@@ -231,6 +238,12 @@ export function useLiveCamSession({
     encoderRef.current = null;
     pageLoadRef.current?.stop();
     pageLoadRef.current = null;
+    rtcStopDrawRef.current?.();
+    rtcStopDrawRef.current = null;
+    rtcRef.current?.close();
+    rtcRef.current = null;
+    rtcActiveRef.current = false;
+    workerWebrtcRef.current = false;
     if (startTimeoutRef.current !== null) {
       window.clearTimeout(startTimeoutRef.current);
       startTimeoutRef.current = null;
@@ -636,6 +649,77 @@ export function useLiveCamSession({
       // 7. Start frame loop helper — invoked only after both acks received.
       let handshakeStarted = false;
       let frameLoopStarted = false;
+
+      // Buffered playback: URL/localStorage override > worker hint > off (also re-applied after WebRTC ends).
+      const applyPlaybackFromHints = () => {
+        const playbackOn = resolvePlaybackMode(liveCamPlaybackOverride(), cfgRef.current.playbackBuffer);
+        if (playbackOn) {
+          // JoyAI echoes capture timestamps, so its frames can play by capture time.
+          const mode = cfgRef.current.engine === 'joyai' && liveCamPlayoutMode() === 'capture' ? 'capture' : 'buffer';
+          startPlayback(cfgRef.current.playbackFps, cfgRef.current.playbackMaxBuffer, cfgRef.current.playbackTargetBuffer, mode);
+          console.log(mode === 'capture'
+            ? '[live-cam] playback by capture time (delay follows the network)'
+            : `[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'} max=${cfgRef.current.playbackMaxBuffer ?? 2} target=${cfgRef.current.playbackTargetBuffer ?? '-'}`);
+        } else {
+          stopPlayback();
+        }
+      };
+
+      // WebRTC (liveCamWebRtc.ts): tried once the try-on runs on JPEG, only when asked for
+      // (?livecam_transport=webrtc), offered by the worker and given TURN servers; any failure leaves JPEG on.
+      const maybeStartRtc = async () => {
+        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current || !canUseWebRtc()) return;
+        const sid = sessionIdRef.current;
+        const camTrack = streamRef.current?.getVideoTracks()[0];
+        if (!sid || !camTrack) return;
+        let ice: RTCIceServer[] = [];
+        try {
+          const { data, error } = await supabase.functions.invoke('live-cam-turn', { body: { session_id: sid } });
+          if (!error) ice = cleanIceServers((data as { ice_servers?: unknown } | null)?.ice_servers);
+        } catch { /* no servers: stay on JPEG */ }
+        if (!ice.length || abortRef.current || sessionIdRef.current !== sid || rtcRef.current) {
+          if (!ice.length) console.log('[live-cam] webrtc: no TURN servers, staying on JPEG');
+          return;
+        }
+        const c = cfgRef.current;
+        const link: LiveCamRtcLink = new LiveCamRtcLink({
+          cameraTrack: camTrack,
+          width: c.captureWidth,
+          height: c.captureHeight,
+          fps: liteRef.current ? Math.min(LIVE_CAM_LITE_FPS, c.fpsCap) : c.fpsCap,
+          iceServers: ice,
+          send: (m) => {
+            const w = wsRef.current;
+            if (w && w.readyState === WebSocket.OPEN) w.send(JSON.stringify(m));
+          },
+          onRemoteTrack: (track) => {
+            rtcStopDrawRef.current?.();
+            rtcStopDrawRef.current = drawRemoteFrames(track, (bitmap) => {
+              statsRef.current.onFrame(undefined, undefined);
+              presentBitmap(bitmap, '');
+              statsRef.current.onPresented();
+            }, () => link.markConnected());
+          },
+          onConnected: () => {
+            rtcActiveRef.current = true;
+            stopPlayback(); // WebRTC has its own jitter buffer
+            statsRef.current.setTransport(`webrtc (worker relay ${link.workerTurn ?? '?'})`);
+            console.log(`[live-cam] webrtc on: frames travel as video (worker relay ${link.workerTurn ?? '?'})`);
+          },
+          onFailed: (reason) => {
+            rtcActiveRef.current = false;
+            rtcStopDrawRef.current?.();
+            rtcStopDrawRef.current = null;
+            if (rtcRef.current === link) rtcRef.current = null;
+            statsRef.current.setTransport(null);
+            if (!abortRef.current) applyPlaybackFromHints();
+            console.warn(`[live-cam] webrtc off (${reason}): JPEG over the socket`);
+          },
+        });
+        rtcRef.current = link;
+        await link.start();
+      };
+
       const startFrameLoop = () => {
         if (frameLoopStarted) return;
         frameLoopStarted = true;
@@ -708,6 +792,8 @@ export function useLiveCamSession({
             document.visibilityState === 'hidden',
             typeof document.hasFocus === 'function' ? document.hasFocus() : null,
           );
+          // WebRTC carries the camera frames now: no JPEG on the socket.
+          if (rtcActiveRef.current) return;
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);
@@ -763,6 +849,10 @@ export function useLiveCamSession({
           const ws = wsRef.current;
           if (!ws || ws.readyState !== WebSocket.OPEN) return;
           pings += 1;
+          const link = rtcRef.current;
+          if (link && link.state === 'connected') {
+            void link.stats().then((st) => { if (st) statsRef.current.setTransport(formatRtcLine(st)); });
+          }
           if (pings % 5 === 0) console.log(`[live-cam] stages ${formatStageLine(statsRef.current.snapshot())}`);
           const outstanding = pingSentAtRef.current;
           if (outstanding !== null && performance.now() - outstanding < 10_000) return;
@@ -861,6 +951,7 @@ export function useLiveCamSession({
 
           activeGarmentIdRef.current = garment.id;
           startFrameLoop();
+          void maybeStartRtc();
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           setErrorMessage(msg);
@@ -957,18 +1048,8 @@ export function useLiveCamSession({
             const o = outputCanvasSize(c);
             console.log(`[live-cam] engine=${String(parsed.engine)} capture=${c.captureWidth}x${c.captureHeight} output=${o.width}x${o.height} fps=${c.fpsCap} q=${c.jpegQuality}`);
           }
-          // Buffered playback: URL/localStorage override > worker hint > off.
-          const playbackOn = resolvePlaybackMode(liveCamPlaybackOverride(), cfgRef.current.playbackBuffer);
-          if (playbackOn) {
-            // JoyAI echoes capture timestamps, so its frames can play by capture time.
-            const mode = cfgRef.current.engine === 'joyai' && liveCamPlayoutMode() === 'capture' ? 'capture' : 'buffer';
-            startPlayback(cfgRef.current.playbackFps, cfgRef.current.playbackMaxBuffer, cfgRef.current.playbackTargetBuffer, mode);
-            console.log(mode === 'capture'
-              ? '[live-cam] playback by capture time (delay follows the network)'
-              : `[live-cam] playback buffer on fps=${cfgRef.current.playbackFps ?? 'auto'} max=${cfgRef.current.playbackMaxBuffer ?? 2} target=${cfgRef.current.playbackTargetBuffer ?? '-'}`);
-          } else {
-            stopPlayback();
-          }
+          applyPlaybackFromHints();
+          workerWebrtcRef.current = parsed.webrtc === true;
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
           setNotice((n) => (n === null ? n : null));
@@ -991,6 +1072,15 @@ export function useLiveCamSession({
           const at = pingSentAtRef.current;
           if (at !== null) statsRef.current.onNetRtt(performance.now() - at);
           pingSentAtRef.current = null;
+        } else if (t === 'webrtc_answer' && typeof parsed.sdp === 'string') {
+          void rtcRef.current?.onAnswer(parsed.sdp, parsed.turn);
+        } else if (t === 'webrtc_state') {
+          rtcRef.current?.onServerState(String(parsed.state ?? ''));
+        } else if (t === 'webrtc_failed' || t === 'webrtc_unavailable') {
+          rtcRef.current?.fail(t === 'webrtc_failed' ? `worker: ${String(parsed.message ?? 'failed')}` : 'worker has no WebRTC');
+        } else if (t === 'error' && typeof parsed.message === 'string' && parsed.message.startsWith('unknown_type:webrtc')) {
+          // A worker without WebRTC: never end the session over it.
+          rtcRef.current?.fail('worker has no WebRTC');
         } else if (t === 'error' && parsed.message === 'unknown_type:ping') {
           // An older worker without ping: stop measuring, never end the session over it.
           if (pingTimerRef.current !== null) window.clearInterval(pingTimerRef.current);
@@ -1084,7 +1174,7 @@ export function useLiveCamSession({
       await callEnd();
       sessionIdRef.current = null;
     }
-  }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, startPlayback, stopPlayback]);
+  }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, presentBitmap, startPlayback, stopPlayback]);
 
   // Picking a different garment while running swaps it in place.
   useEffect(() => {
@@ -1190,6 +1280,8 @@ export function useLiveCamSession({
       const cam = await startCamera(video, next, cameraRequest());
       streamRef.current = cam.stream;
       remember(next);
+      const flipped = cam.stream.getVideoTracks()[0];
+      if (flipped) void rtcRef.current?.replaceCamera(flipped);
       // The face check depends on the camera (off on the back camera): tell the worker.
       const last = lastPromptMsgRef.current;
       const ws = wsRef.current;
@@ -1206,6 +1298,8 @@ export function useLiveCamSession({
       try {
         const cam = await startCamera(video, previous, cameraRequest());
         streamRef.current = cam.stream;
+        const back = cam.stream.getVideoTracks()[0];
+        if (back) void rtcRef.current?.replaceCamera(back);
       } catch {
         setNotice('Camera stopped. End and start again.');
       }
@@ -1219,6 +1313,7 @@ export function useLiveCamSession({
     liteRef.current = on;
     setLiteState(on);
     setLiveCamLite(on);
+    void rtcRef.current?.setFps(on ? Math.min(LIVE_CAM_LITE_FPS, cfgRef.current.fpsCap) : cfgRef.current.fpsCap);
     const track = streamRef.current?.getVideoTracks()[0];
     if (track) {
       const r = cameraRequest(); // back to Normal: the default 1280x720 request

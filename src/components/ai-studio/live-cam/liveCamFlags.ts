@@ -109,6 +109,20 @@ export function liveCamPlayoutMode(
   return readSwitch('livecam_playout', 'azyah.livecam.playout', undefined, search, storage) === 'buffer' ? 'buffer' : 'capture';
 }
 
+// How camera and result frames travel (WebRTC work, 12 Nov 2026): ?livecam_transport=webrtc|ws
+// (remembered on the device), else VITE_LIVE_CAM_TRANSPORT, else ws. ws = JPEG over the WebSocket, as
+// before. webrtc = when the worker offers it (ready.webrtc) and our TURN function answers, frames move
+// to a WebRTC connection; any failure falls back to ws within seconds.
+export type LiveCamTransport = 'ws' | 'webrtc';
+
+export function liveCamTransport(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  env: Env = viteEnv(),
+): LiveCamTransport {
+  return readSwitch('livecam_transport', 'azyah.livecam.transport', env?.VITE_LIVE_CAM_TRANSPORT, search, storage) === 'webrtc' ? 'webrtc' : 'ws';
+}
+
 export function liveCamDebug(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
