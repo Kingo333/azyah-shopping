@@ -27,9 +27,18 @@ test("listed accounts reach the TEST endpoint with the live Worker's token", asy
   }
 });
 
-test("everyone else is refused; an empty list refuses all; bad or expired tokens are refused", async () => {
+test("with a list, only listed accounts; without one, any valid live session (sale-code guests too); bad or expired tokens never", async () => {
   assert.equal((await ws(await liveToken("shopper-9"))).status, 403);
-  assert.equal((await ws(await liveToken("owner-1"), { ...ENV, LIVECAM_TEST_USER_IDS: "" })).status, 403);
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("ok");
+  try {
+    const open = { ...ENV, LIVECAM_TEST_USER_IDS: "" };
+    assert.equal((await ws(await liveToken("sales-demo-account"), open)).status, 200);
+    assert.equal((await ws("u.g.123.bad", open)).status, 401);
+    assert.equal((await ws(await liveToken("sales-demo-account", -10), open)).status, 401);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
   assert.equal((await ws("u.g.123.bad")).status, 401);
   assert.equal((await ws(await liveToken("owner-1", -10))).status, 401);
   const noUpgrade = await worker.fetch(new Request("https://t.example/ws?token=x"), ENV);

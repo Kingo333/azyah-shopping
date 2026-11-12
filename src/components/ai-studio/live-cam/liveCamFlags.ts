@@ -125,8 +125,8 @@ export function liveCamTransport(
 
 // Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
 // device). test = the same session through the separate fluxrt-orchestrator-test Worker
-// (workers/fluxrt-orchestrator/test-worker), which serves only the accounts it lists and points at the
-// TEST RunPod endpoint; the live Worker and endpoint are untouched. Default: live.
+// (workers/fluxrt-orchestrator/test-worker), which serves any valid live session (or only the accounts it
+// lists) and points at the TEST RunPod endpoint; the live Worker and endpoint are untouched. Default: live.
 export function liveCamEndpoint(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,

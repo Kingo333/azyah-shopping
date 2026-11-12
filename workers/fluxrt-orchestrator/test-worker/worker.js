@@ -1,11 +1,13 @@
 // fluxrt-orchestrator-test: a separate Cloudflare Worker for trying a TEST GPU endpoint (WebRTC trials,
 // 12 Nov 2026) without touching the live Worker or the live RunPod endpoint.
 //
-// It is the live fluxrt-orchestrator's /ws proxy (code as deployed on 22 May 2026), with two differences:
-// - RUNPOD_LB_ENDPOINT_ID here is the TEST endpoint;
-// - only the accounts listed in LIVECAM_TEST_USER_IDS may connect (comma-separated Supabase user ids;
-//   empty = nobody).
-// Session tokens are still minted by the live Worker, so both Workers need the same SESSION_SIGNING_SECRET.
+// It is the live fluxrt-orchestrator's /ws proxy (code as deployed on 22 May 2026), with RUNPOD_LB_ENDPOINT_ID
+// pointing at the TEST endpoint. Like the live Worker it only serves a valid live session: the signed session
+// token the live Worker mints when a session starts (signed-in shoppers and sale-code guests alike), checked
+// for signature and expiry. No token, no relay.
+// Optional LIVECAM_TEST_USER_IDS (comma-separated Supabase user ids) narrows it to those accounts;
+// empty = any valid live session.
+// Session tokens are minted by the live Worker, so both Workers need the same SESSION_SIGNING_SECRET.
 // The app reaches this Worker with ?livecam_endpoint=test, which swaps the socket host
 // fluxrt-orchestrator.<account>.workers.dev -> fluxrt-orchestrator-test.<account>.workers.dev.
 //
@@ -13,7 +15,7 @@
 //   RUNPOD_API_KEY          secret   same as the live Worker
 //   SESSION_SIGNING_SECRET  secret   same as the live Worker
 //   RUNPOD_LB_ENDPOINT_ID   text     the TEST endpoint id
-//   LIVECAM_TEST_USER_IDS   text     user ids allowed to test, e.g. "uuid-1,uuid-2"
+//   LIVECAM_TEST_USER_IDS   text     optional: only these user ids, e.g. "uuid-1,uuid-2" (empty = any valid session)
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -67,7 +69,8 @@ async function handleWs(req, env, url) {
   if (!token) return json({ ok: false, error: "missing_token" }, 401);
   const claims = await verifySessionToken(env, token);
   if (!claims) return json({ ok: false, error: "invalid_or_expired_token" }, 401);
-  if (!testUsers(env).includes(claims.userId)) return json({ ok: false, error: "test_not_allowed" }, 403);
+  const only = testUsers(env);
+  if (only.length && !only.includes(claims.userId)) return json({ ok: false, error: "test_not_allowed" }, 403);
   const endpointId = env.RUNPOD_LB_ENDPOINT_ID;
   if (!endpointId) return json({ ok: false, error: "missing_runpod_lb_endpoint_id" }, 500);
   if (!env.RUNPOD_API_KEY) return json({ ok: false, error: "missing_runpod_api_key" }, 500);
