@@ -124,8 +124,9 @@ export function liveCamTransport(
 }
 
 // Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
-// device). test = the Worker's separate test endpoint (TEST_RUNPOD_LB_ENDPOINT_ID), allowed only for the
-// accounts listed in the Worker's LIVECAM_TEST_USER_IDS; everyone else, and the default, is live.
+// device). test = the same session through the separate fluxrt-orchestrator-test Worker
+// (workers/fluxrt-orchestrator/test-worker), which serves only the accounts it lists and points at the
+// TEST RunPod endpoint; the live Worker and endpoint are untouched. Default: live.
 export function liveCamEndpoint(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
@@ -133,10 +134,10 @@ export function liveCamEndpoint(
   return readSwitch('livecam_endpoint', 'azyah.livecam.endpoint', undefined, search, storage) === 'test' ? 'test' : 'live';
 }
 
-/** The socket URL for the chosen endpoint: the test route adds route=test (the Worker checks the account). */
+/** The socket URL for the chosen endpoint: test swaps the Worker host fluxrt-orchestrator.* for fluxrt-orchestrator-test.*. */
 export function withEndpointRoute(wsUrl: string, endpoint: 'live' | 'test'): string {
-  if (endpoint !== 'test' || /[?&]route=/.test(wsUrl)) return wsUrl;
-  return `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}route=test`;
+  if (endpoint !== 'test') return wsUrl;
+  return wsUrl.replace(/^(wss?:\/\/)fluxrt-orchestrator\./, '$1fluxrt-orchestrator-test.');
 }
 
 export function liveCamDebug(

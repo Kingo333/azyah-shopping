@@ -55,7 +55,7 @@ export async function mintSessionToken(secret, { userId, garmentId, tier, maxSes
   return { token: payload + "." + (await hmacHex(secret, payload)), exp };
 }
 
-// Returns { userId, tier, exp, maxSessionSeconds, legacy } or null. Fails closed on an empty secret.
+// Returns { tier, exp, maxSessionSeconds, legacy } or null. Fails closed on an empty secret.
 export async function verifySessionToken(secret, token, now) {
   if (!secret || typeof token !== "string" || !token.includes(".")) return null;
   const lastDot = token.lastIndexOf(".");
@@ -84,5 +84,5 @@ export async function verifySessionToken(secret, token, now) {
   if (!isEpoch(expStr)) return null;
   const exp = Number(expStr);
   if (exp < Math.floor((now ?? Date.now()) / 1000)) return null;
-  return { userId: parts[0], tier, exp, maxSessionSeconds, legacy };
+  return { tier, exp, maxSessionSeconds, legacy };
 }

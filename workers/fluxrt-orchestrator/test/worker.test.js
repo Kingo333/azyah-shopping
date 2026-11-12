@@ -130,31 +130,3 @@ test("resolveTier matrix", () => {
   assert.throws(() => resolveTier("premium", cfg({})), /premium_not_configured/);
   assert.equal(resolveTier("premium", cfg({ premiumFallbackToStandard: true })), "standard");
 });
-
-test("ws test route: listed users reach the test endpoint; others are refused; off unless configured", async () => {
-  const seen = [];
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = async (req) => { seen.push(new URL(req.url).host + new URL(req.url).search.replace(/token=[^&]+/, "token=T")); return new Response("ok"); };
-  try {
-    const env = { ...BASE_ENV, TEST_RUNPOD_LB_ENDPOINT_ID: "test789", LIVECAM_TEST_USER_IDS: "owner-1, kiosk-2" };
-    const tok = async (userId) => (await mintSessionToken(SECRET, { userId, garmentId: "g", tier: "standard", maxSessionSeconds: 300, ttlSeconds: 60 })).token;
-    const ws = (token, extra = "") => worker.fetch(new Request(`https://w.example/ws?token=${encodeURIComponent(token)}${extra}`, { headers: { Upgrade: "websocket" } }), env);
-    await ws(await tok("kiosk-2"), "&route=test");
-    await ws(await tok("kiosk-2")); // no route: the live endpoint as always
-    const denied = await ws(await tok("shopper-9"), "&route=test");
-    assert.equal(denied.status, 403);
-    assert.equal((await denied.json()).error, "test_not_allowed");
-    const off = await worker.fetch(new Request(`https://w.example/ws?token=${encodeURIComponent(await tok("kiosk-2"))}&route=test`, { headers: { Upgrade: "websocket" } }), BASE_ENV);
-    assert.equal(off.status, 503);
-    assert.equal((await off.json()).error, "test_not_configured");
-    // The route parameter is not forwarded; only the token goes upstream.
-    assert.deepEqual(seen, ["test789.api.runpod.ai?token=T", "std123.api.runpod.ai?token=T"]);
-  } finally {
-    globalThis.fetch = realFetch;
-  }
-});
-
-test("verified claims carry the user id for the test-route check", async () => {
-  const { token } = await mintSessionToken(SECRET, { userId: "abc-1", garmentId: "g", tier: "standard", maxSessionSeconds: 300, ttlSeconds: 60 });
-  assert.equal((await verifySessionToken(SECRET, token)).userId, "abc-1");
-});

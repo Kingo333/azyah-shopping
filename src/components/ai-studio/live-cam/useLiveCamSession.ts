@@ -486,9 +486,9 @@ export function useLiveCamSession({
           throw new Error(details.message || 'Failed to start session');
         }
         sessionIdRef.current = data.session_id;
-        // ?livecam_endpoint=test: the same session on the Worker's test endpoint (listed accounts only).
+        // ?livecam_endpoint=test: the same session through the test Worker and TEST endpoint (listed accounts only).
         const routed = withEndpointRoute(data.ws_url, liveCamEndpoint());
-        if (routed !== data.ws_url) console.log('[live-cam] endpoint=test (Worker test route)');
+        if (routed !== data.ws_url) console.log('[live-cam] endpoint=test (fluxrt-orchestrator-test)');
         setSession({ sessionId: data.session_id, podId: data.pod_id, wsUrl: routed });
         return { wsUrl: routed, mintedAt: Date.now() };
       };

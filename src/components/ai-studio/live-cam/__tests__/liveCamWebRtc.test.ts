@@ -40,16 +40,17 @@ describe('ICE servers, codecs, support', () => {
     expect(canUseWebRtc({})).toBe(false);
   });
 
-  it('endpoint switch: live by default; test adds route=test to the socket URL', () => {
+  it('endpoint switch: live by default; test goes through the test Worker', () => {
     const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
     expect(liveCamEndpoint('', mem())).toBe('live');
     const s = mem();
     expect(liveCamEndpoint('?livecam_endpoint=test', s)).toBe('test');
     expect(liveCamEndpoint('', s)).toBe('test'); // remembered on the device
     expect(liveCamEndpoint('?livecam_endpoint=live', s)).toBe('live');
-    expect(withEndpointRoute('wss://w.example/ws?token=abc', 'test')).toBe('wss://w.example/ws?token=abc&route=test');
-    expect(withEndpointRoute('wss://w.example/ws?token=abc', 'live')).toBe('wss://w.example/ws?token=abc');
-    expect(withEndpointRoute('wss://w.example/ws?token=abc&route=test', 'test')).toBe('wss://w.example/ws?token=abc&route=test');
+    const live = 'wss://fluxrt-orchestrator.acct.workers.dev/ws?token=abc';
+    expect(withEndpointRoute(live, 'test')).toBe('wss://fluxrt-orchestrator-test.acct.workers.dev/ws?token=abc');
+    expect(withEndpointRoute(live, 'live')).toBe(live);
+    expect(withEndpointRoute('wss://other.example/ws?token=abc', 'test')).toBe('wss://other.example/ws?token=abc'); // only our Worker host
   });
 
   it('transport switch: ws by default, webrtc only when asked', () => {
