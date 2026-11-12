@@ -73,7 +73,7 @@ export const LiveCamCameraView: React.FC<Props> = ({
   const outerClass = stage
     ? expanded
       ? 'fixed inset-x-0 top-[var(--safe-top,0px)] bottom-[var(--safe-bottom,0px)] z-[60] bg-black shadow-[0_0_0_100vmax_#000]'
-      : 'relative w-full rounded-[20px] overflow-hidden bg-black h-[calc(100dvh-250px)] min-h-[440px] max-h-[760px]'
+      : 'relative w-full rounded-[20px] overflow-hidden bg-black h-[calc(100dvh-250px)] min-h-[440px] max-h-[760px] tallPortrait:max-h-none'
     : expanded
       ? 'relative w-full rounded-xl overflow-hidden bg-black aspect-[9/16] sm:aspect-auto sm:h-[calc(100vh-160px)] sm:max-h-[calc(100vh-160px)]'
       : 'relative grid grid-cols-2 gap-3';
@@ -89,11 +89,13 @@ export const LiveCamCameraView: React.FC<Props> = ({
     ? 'absolute inset-0 z-0 flex items-center justify-center bg-black'
     : 'order-2 rounded-xl overflow-hidden bg-black aspect-[9/16] relative flex items-center justify-center';
 
-  // Canvas sized by CSS (max-w/max-h-full) — bitmap stays at 288×512 with
-  // contain-fit drawn manually inside renderRemoteFrame, so the frame is
-  // always centered on black with no zoom/crop/stretch.
+  // The canvas box fills the view and object-contain scales the picture to fit, keeping its shape
+  // (the browser's compositor does the scaling, so a 55-inch 4K standee shows it full size at no
+  // extra cost per frame). Before, w-auto/h-auto kept it at its pixel size (288 or 576 px wide):
+  // a small box in the middle of a big screen. The bitmap stays at the worker's output size with
+  // contain-fit drawn inside renderRemoteFrame, never cropped or stretched.
   // The live view fades in when the mirror opens (the ready moment).
-  const canvasClass = `max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${stage && !isRunning ? 'opacity-0' : 'opacity-100'}`;
+  const canvasClass = `w-full h-full object-contain transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${stage && !isRunning ? 'opacity-0' : 'opacity-100'}`;
 
   return (
     <div className={outerClass}>

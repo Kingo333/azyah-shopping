@@ -167,3 +167,29 @@ export function liveCamCameraSize(
     ?? (lite ? LIVE_CAM_LITE_HEIGHT : null);
   return h === null ? null : { width: Math.round((h * 16) / 9), height: h };
 }
+
+// Kiosk speed work (2026-11-12). Both remembered on the device when given in the URL.
+// JPEG encoder: ?livecam_encoder=worker|main. Default worker (crop + resize with createImageBitmap,
+// JPEG in a Web Worker) where the browser supports it; main = today's main-thread canvas path.
+export function liveCamEncoderMode(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'worker' | 'main' {
+  return readSwitch('livecam_encoder', 'azyah.livecam.encoder', undefined, search, storage) === 'main' ? 'main' : 'worker';
+}
+
+// New camera frames only: ?livecam_newframes=1|0. Default on: a send tick is skipped when the
+// camera has not delivered a new frame since the last one sent, instead of re-encoding and
+// re-uploading the same picture (the kiosk repeated each frame ~12x). The worker keeps drawing
+// from its latest frame either way. Needs requestVideoFrameCallback; without it, or if the camera
+// clock stalls, every tick sends as before.
+export function liveCamNewFramesOnly(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): boolean {
+  return readSwitch('livecam_newframes', 'azyah.livecam.newframes', undefined, search, storage) !== '0';
+}
+
+// The camera is asked for at most this many pixels on its long side (720p class), so a 4K kiosk
+// camera never hands the page 4K frames to crop and scale. The model input is 288x512 either way.
+export const LIVE_CAM_CAMERA_MAX_LONG_SIDE = 1280;

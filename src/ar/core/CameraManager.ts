@@ -16,7 +16,7 @@ export interface CameraResult {
   videoWidth: number;
   videoHeight: number;
   /** Which constraint tier produced this stream (for diagnostics). */
-  constraintTier: 'ideal' | 'fallback-720' | 'fallback-basic';
+  constraintTier: 'ideal-capped' | 'ideal' | 'fallback-720' | 'fallback-basic';
 }
 
 /** Front ('user') or back ('environment') camera. */
@@ -28,6 +28,11 @@ export interface CameraRequest {
   height: number;
   /** Frames per second to ask for; leave out to let the camera choose. */
   frameRate?: number;
+  /**
+   * Upper bound for both sides (either orientation), e.g. 1280 keeps a 4K camera at 720p class.
+   * Tried first; a camera that cannot meet it falls back to the plain request.
+   */
+  maxLongSide?: number;
 }
 
 /** Ordered constraint chain: tries ideal first, then progressively relaxes. */
@@ -37,7 +42,15 @@ export function buildConstraintChain(
 ): Array<{ tier: CameraResult['constraintTier']; constraints: MediaStreamConstraints }> {
   const ideal: MediaTrackConstraints = { facingMode: facing, width: { ideal: request.width }, height: { ideal: request.height } };
   if (request.frameRate) ideal.frameRate = { ideal: request.frameRate };
+  const capped: MediaTrackConstraints[] = request.maxLongSide
+    ? [{
+        ...ideal,
+        width: { ideal: request.width, max: request.maxLongSide },
+        height: { ideal: request.height, max: request.maxLongSide },
+      }]
+    : [];
   return [
+    ...capped.map((video) => ({ tier: 'ideal-capped' as const, constraints: { video } })),
     { tier: 'ideal', constraints: { video: ideal } },
     { tier: 'fallback-720', constraints: { video: { facingMode: facing, width: { max: 1280 }, height: { max: 720 } } } },
     { tier: 'fallback-basic', constraints: { video: { facingMode: facing } } },
