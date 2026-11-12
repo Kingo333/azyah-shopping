@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CameraFrameClock, FrameEncoder, noNewCameraFrame } from '../liveCamCapture';
+import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from '../liveCamCapture';
 
 function fakeVideo(withCallback = true) {
   const cbs: Array<(now: number, meta: { captureTime?: number }) => void> = [];
@@ -102,5 +102,66 @@ describe('FrameEncoder', () => {
     expect(new FrameEncoder('main', make as unknown as () => Worker, true).mode).toBe('main');
     expect(new FrameEncoder('worker', make as unknown as () => Worker, false).mode).toBe('main');
     expect(make).not.toHaveBeenCalled();
+  });
+
+  function fakeCanvas(dataUrl: string | (() => string)) {
+    const drawImage = vi.fn();
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage }),
+      // toBlob waits for idle time in Chrome (up to 1 s on desktop): the main path must not use it.
+      toBlob: vi.fn(),
+      toDataURL: vi.fn(typeof dataUrl === 'function' ? dataUrl : () => dataUrl),
+    };
+    vi.stubGlobal('document', { createElement: () => canvas });
+    return { canvas, drawImage };
+  }
+
+  it('main thread: crops into a small canvas and encodes with toDataURL, never toBlob', async () => {
+    const { canvas, drawImage } = fakeCanvas('data:image/jpeg;base64,QUJD');
+    const enc = new FrameEncoder('main', vi.fn() as unknown as () => Worker, true);
+    const res = await enc.encode({} as unknown as CanvasImageSource, crop, 288, 512, 0.8);
+    expect(res).toMatchObject({ b64: 'QUJD', mode: 'main' });
+    expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 405, 720, 0, 0, 288, 512);
+    expect(canvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.8);
+    expect(canvas.toBlob).not.toHaveBeenCalled();
+    expect([canvas.width, canvas.height]).toEqual([288, 512]);
+  });
+
+  it('main thread: skips the frame when the browser gives no JPEG or throws', async () => {
+    fakeCanvas('data:,');
+    const enc = new FrameEncoder('main', vi.fn() as unknown as () => Worker, true);
+    expect(await enc.encode({} as unknown as CanvasImageSource, crop, 288, 512, 0.8)).toBeNull();
+    fakeCanvas(() => { throw new Error('tainted'); });
+    const enc2 = new FrameEncoder('main', vi.fn() as unknown as () => Worker, true);
+    expect(await enc2.encode({} as unknown as CanvasImageSource, crop, 288, 512, 0.8)).toBeNull();
+  });
+});
+
+describe('PageLoadMonitor', () => {
+  it('reports display frames per second and long-task time per second', () => {
+    let now = 0;
+    const m = new PageLoadMonitor(() => now);
+    expect(m.fps()).toBeNull();
+    expect(m.longTaskMsPerS()).toBeNull(); // no Long Tasks API seen yet
+    for (let i = 0; i < 150; i++) {
+      now += 1000 / 30;
+      m.onFrame();
+    }
+    expect(m.fps(5000)).toBe(30);
+    m.onLongTask(120);
+    m.onLongTask(80);
+    expect(m.longTaskMsPerS(5000)).toBe(40);
+    now += 6000;
+    expect(m.fps(5000)).toBe(0);
+    expect(m.longTaskMsPerS(5000)).toBe(0);
+  });
+
+  it('starts and stops without requestAnimationFrame or PerformanceObserver', () => {
+    const m = new PageLoadMonitor(() => 0);
+    m.start();
+    m.stop();
+    expect(m.fps()).toBeNull();
   });
 });

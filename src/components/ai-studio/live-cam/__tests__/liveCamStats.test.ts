@@ -145,4 +145,20 @@ describe('per-stage timing (kiosk speed work)', () => {
     expect(s.snapshot()).toMatchObject({ cameraFps: null, staleSkipped: 0, netRttMsP50: null, encoder: null });
     t += 1;
   });
+
+  it('shows how loaded the page is, and flags a hidden or unfocused page', async () => {
+    const { formatStageLine } = await import('../liveCamStats');
+    const s = new LiveCamFrameStats(() => 0);
+    s.reset();
+    s.setPageLoad(41.5, 380, false, true);
+    expect(s.snapshot()).toMatchObject({ pageFps: 41.5, longTaskMsPerS: 380, pageHidden: false, pageFocused: true });
+    expect(formatStageLine(s.snapshot())).toContain('page 41.5/s long tasks 380 ms/s');
+    s.setPageLoad(0, null, true, false);
+    const line = formatStageLine(s.snapshot());
+    expect(line).toContain('page 0/s long tasks – HIDDEN no-focus');
+    s.setPageLoad(Number.NaN, Number.POSITIVE_INFINITY, false, null);
+    expect(s.snapshot()).toMatchObject({ pageFps: null, longTaskMsPerS: null, pageFocused: null });
+    s.reset();
+    expect(s.snapshot()).toMatchObject({ pageFps: null, longTaskMsPerS: null, pageHidden: false, pageFocused: null });
+  });
 });

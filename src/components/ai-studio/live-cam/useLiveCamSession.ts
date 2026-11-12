@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
-import { CameraFrameClock, FrameEncoder, noNewCameraFrame } from './liveCamCapture';
+import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
@@ -164,6 +164,7 @@ export function useLiveCamSession({
   // Capture pipeline (kiosk speed work): camera-frame clock, encoder, network ping.
   const frameClockRef = useRef<CameraFrameClock | null>(null);
   const encoderRef = useRef<FrameEncoder | null>(null);
+  const pageLoadRef = useRef<PageLoadMonitor | null>(null);
   const pingTimerRef = useRef<number | null>(null);
   const pingSentAtRef = useRef<number | null>(null);
   const frameTimerRef = useRef<number | null>(null);
@@ -228,6 +229,8 @@ export function useLiveCamSession({
     frameClockRef.current = null;
     encoderRef.current?.dispose();
     encoderRef.current = null;
+    pageLoadRef.current?.stop();
+    pageLoadRef.current = null;
     if (startTimeoutRef.current !== null) {
       window.clearTimeout(startTimeoutRef.current);
       startTimeoutRef.current = null;
@@ -661,6 +664,11 @@ export function useLiveCamSession({
         const clock = videoEl ? new CameraFrameClock(videoEl) : null;
         clock?.start();
         frameClockRef.current = clock;
+        // Page load for the stage readout: frames/s the page gets and long main-thread tasks.
+        pageLoadRef.current?.stop();
+        const pageLoad = new PageLoadMonitor();
+        pageLoad.start();
+        pageLoadRef.current = pageLoad;
         const newFramesOnly = liveCamNewFramesOnly();
         statsRef.current.setEncoder(encoder.mode);
         console.log(`[live-cam] capture ${captureWidth}x${captureHeight} encoder=${encoder.mode} camera-clock=${clock?.supported ? 'on' : 'unsupported'} new-frames-only=${newFramesOnly && !!clock?.supported}`);
@@ -694,6 +702,12 @@ export function useLiveCamSession({
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
           statsRef.current.setCamera(v.videoWidth, v.videoHeight);
           statsRef.current.setCameraFps(clock?.fps() ?? null);
+          statsRef.current.setPageLoad(
+            pageLoad.fps(),
+            pageLoad.longTaskMsPerS(),
+            document.visibilityState === 'hidden',
+            typeof document.hasFocus === 'function' ? document.hasFocus() : null,
+          );
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);

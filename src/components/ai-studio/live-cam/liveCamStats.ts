@@ -57,6 +57,13 @@ export interface LiveCamStatsSnapshot {
   waitMsP50: number | null;
   /** Drawing one output frame on screen. */
   paintMsP50: number | null;
+  /** Display frames the page gets per second (below the screen's rate = the page misses frames). */
+  pageFps: number | null;
+  /** Main-thread long-task time per second (Long Tasks API); null where unsupported. */
+  longTaskMsPerS: number | null;
+  /** The page is hidden or the window lost focus (browsers slow timers for hidden pages). */
+  pageHidden: boolean;
+  pageFocused: boolean | null;
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -104,6 +111,10 @@ export class LiveCamFrameStats {
   private decode: number[] = [];
   private wait: number[] = [];
   private paint: number[] = [];
+  private pageFps: number | null = null;
+  private longTaskMsPerS: number | null = null;
+  private pageHidden = false;
+  private pageFocused: boolean | null = null;
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -139,6 +150,10 @@ export class LiveCamFrameStats {
     this.decode = [];
     this.wait = [];
     this.paint = [];
+    this.pageFps = null;
+    this.longTaskMsPerS = null;
+    this.pageHidden = false;
+    this.pageFocused = null;
   }
 
   setCameraFps(fps: number | null): void {
@@ -155,6 +170,13 @@ export class LiveCamFrameStats {
 
   setEncoder(mode: string | null): void {
     this.encoder = mode;
+  }
+
+  setPageLoad(fps: number | null, longTaskMsPerS: number | null, hidden: boolean, focused: boolean | null): void {
+    this.pageFps = typeof fps === 'number' && Number.isFinite(fps) ? fps : null;
+    this.longTaskMsPerS = typeof longTaskMsPerS === 'number' && Number.isFinite(longTaskMsPerS) ? longTaskMsPerS : null;
+    this.pageHidden = hidden;
+    this.pageFocused = focused;
   }
 
   onUpBacklog(bytes: number): void {
@@ -296,6 +318,10 @@ export class LiveCamFrameStats {
       decodeMsP50: percentile(this.decode, 50),
       waitMsP50: percentile(this.wait, 50),
       paintMsP50: percentile(this.paint, 50),
+      pageFps: this.pageFps,
+      longTaskMsPerS: this.longTaskMsPerS,
+      pageHidden: this.pageHidden,
+      pageFocused: this.pageFocused,
     };
   }
 }
@@ -314,5 +340,6 @@ export function formatStageLine(s: LiveCamStatsSnapshot): string {
     `wait ${ms(s.waitMsP50)}`,
     `paint ${ms(s.paintMsP50)}`,
     `same-frame skips ${s.staleSkipped}`,
+    `page ${s.pageFps === null ? '–' : `${s.pageFps}/s`} long tasks ${s.longTaskMsPerS === null ? '–' : `${s.longTaskMsPerS} ms/s`}${s.pageHidden ? ' HIDDEN' : ''}${s.pageFocused === false ? ' no-focus' : ''}`,
   ].join(' · ');
 }

@@ -6,7 +6,16 @@
 // - CameraFrameClock counts the camera frames the page really gets (requestVideoFrameCallback),
 //   so the send loop can skip ticks that would only repeat the last frame.
 // - FrameEncoder crops + resizes with createImageBitmap and JPEG-encodes in a Web Worker
-//   (OffscreenCanvas), falling back to today's main-thread canvas path. Same size, same quality.
+//   (OffscreenCanvas), falling back to a main-thread canvas. Same size, same quality.
+//
+// Why not canvas.toBlob (what the page used before): Chrome encodes toBlob JPEGs on the main
+// thread only in idle time, and if no idle time comes it waits 1 s on desktop (4 s on Android)
+// before forcing the encode (CanvasAsyncBlobCreator, kIdleTaskStartTimeoutDelayMs). A page that
+// keeps missing its frame budget gets no idle time, so with one encode at a time it sends about
+// one frame a second. That matches the 4K kiosk: ~0.97 new frames/s. Measured in Chromium 141 on
+// a page busy 20 ms per frame: toBlob 1060 ms, toDataURL 2 ms, worker 21 ms. All three give
+// byte-identical JPEGs. Workers encode at once, and toDataURL is synchronous, so neither waits.
+// - PageLoadMonitor shows how loaded the page is (frames/s it gets, long main-thread tasks).
 
 export type EncoderMode = 'worker' | 'main';
 
@@ -122,16 +131,6 @@ export function canEncodeOffThread(): boolean {
   );
 }
 
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize) as unknown as number[]);
-  }
-  return btoa(binary);
-}
-
 function defaultWorker(): Worker {
   return new Worker(new URL('./liveCamEncode.worker.ts', import.meta.url), { type: 'module' });
 }
@@ -239,7 +238,10 @@ export class FrameEncoder {
     this.dispose();
   }
 
-  /** Today's path: draw into a small canvas, canvas.toBlob JPEG, base64. */
+  /**
+   * Main-thread path: draw into a small canvas, then toDataURL JPEG. toDataURL encodes at once
+   * (a few ms at 288x512); canvas.toBlob would wait for idle time, up to 1 s (see the top).
+   */
   private encodeMain(src: CanvasImageSource, crop: CropRect, width: number, height: number, quality: number): Promise<EncodedFrame | null> {
     if (!this.canvas) this.canvas = document.createElement('canvas');
     const canvas = this.canvas;
@@ -254,27 +256,100 @@ export class FrameEncoder {
       return Promise.resolve(null);
     }
     const resizeMs = performance.now() - t0;
-    return new Promise((resolve) => {
-      try {
-        canvas.toBlob(
-          async (blob) => {
-            try {
-              if (!blob) {
-                resolve(null);
-                return;
-              }
-              const b64 = arrayBufferToBase64(await blob.arrayBuffer());
-              resolve({ b64, resizeMs, encodeMs: performance.now() - t0 - resizeMs, mode: 'main' });
-            } catch {
-              resolve(null);
-            }
-          },
-          'image/jpeg',
-          quality,
-        );
-      } catch {
-        resolve(null);
+    try {
+      const url = canvas.toDataURL('image/jpeg', quality);
+      const comma = url.indexOf(',');
+      if (!url.startsWith('data:image/jpeg') || comma < 0) return Promise.resolve(null);
+      const b64 = url.slice(comma + 1);
+      return Promise.resolve({ b64, resizeMs, encodeMs: performance.now() - t0 - resizeMs, mode: 'main' });
+    } catch {
+      return Promise.resolve(null);
+    }
+  }
+}
+
+interface PerformanceObserverLike {
+  observe(options: { type: string; buffered?: boolean }): void;
+  disconnect(): void;
+}
+
+/**
+ * How loaded the page is, for the stage readout: display frames the page gets per second
+ * (below the screen's rate = the page misses frames) and main-thread long-task time per second
+ * (Long Tasks API; null where the browser has none).
+ */
+export class PageLoadMonitor {
+  private raf: number | null = null;
+  private frames: number[] = [];
+  private longTasks: Array<{ at: number; ms: number }> = [];
+  private observer: PerformanceObserverLike | null = null;
+  private longTasksSupported = false;
+
+  constructor(private readonly now: () => number = () => performance.now()) {}
+
+  start(): void {
+    if (this.raf === null && typeof requestAnimationFrame === 'function') {
+      const loop = () => {
+        this.onFrame();
+        if (this.raf !== null) this.raf = requestAnimationFrame(loop);
+      };
+      this.raf = requestAnimationFrame(loop);
+    }
+    if (this.observer) return;
+    try {
+      const PO = (globalThis as { PerformanceObserver?: { new (cb: (list: { getEntries(): Array<{ duration: number }> }) => void): PerformanceObserverLike; supportedEntryTypes?: readonly string[] } }).PerformanceObserver;
+      if (PO && PO.supportedEntryTypes?.includes('longtask')) {
+        const obs = new PO((list) => {
+          for (const e of list.getEntries()) this.onLongTask(e.duration);
+        });
+        obs.observe({ type: 'longtask', buffered: false });
+        this.observer = obs;
+        this.longTasksSupported = true;
       }
-    });
+    } catch {
+      this.observer = null;
+    }
+  }
+
+  stop(): void {
+    if (this.raf !== null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.raf);
+    this.raf = null;
+    try {
+      this.observer?.disconnect();
+    } catch {
+      /* already gone */
+    }
+    this.observer = null;
+  }
+
+  /** One display frame (public for tests). */
+  onFrame(): void {
+    const t = this.now();
+    this.frames.push(t);
+    if (this.frames.length > 600) this.frames.splice(0, this.frames.length - 600);
+  }
+
+  /** One long main-thread task (public for tests). */
+  onLongTask(ms: number): void {
+    if (!Number.isFinite(ms) || ms < 0) return;
+    this.longTasksSupported = true;
+    this.longTasks.push({ at: this.now(), ms });
+    if (this.longTasks.length > 600) this.longTasks.splice(0, this.longTasks.length - 600);
+  }
+
+  /** Display frames per second over the last windowMs; null before any frame. */
+  fps(windowMs = 5000): number | null {
+    if (this.frames.length === 0) return null;
+    const t = this.now();
+    const n = this.frames.filter((x) => t - x <= windowMs).length;
+    return Math.round((n / (windowMs / 1000)) * 10) / 10;
+  }
+
+  /** Long-task milliseconds per second over the last windowMs; null where unsupported. */
+  longTaskMsPerS(windowMs = 5000): number | null {
+    if (!this.longTasksSupported) return null;
+    const t = this.now();
+    const total = this.longTasks.filter((x) => t - x.at <= windowMs).reduce((a, x) => a + x.ms, 0);
+    return Math.round(total / (windowMs / 1000));
   }
 }
