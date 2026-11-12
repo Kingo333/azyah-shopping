@@ -6,6 +6,7 @@ import { LiveCamFramingGuide } from './LiveCamFramingGuide';
 import { WAIT_COPY, showFramingGuide, waitEstimateMs, waitProgress } from './liveCamWait';
 import { needsFaceGate } from './liveCamFaceGate';
 import { liveCamDebug } from './liveCamFlags';
+import { formatStageLine } from './liveCamStats';
 import { triggerHaptic } from '@/utils/haptics';
 import { LiveCamCameraView } from './LiveCamCameraView';
 import { LiveCamGarmentPicker } from './LiveCamGarmentPicker';
@@ -61,13 +62,17 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
 
   // Diagnostics readout (?livecam_debug=1): camera size, upload fps, draw and encode time, timer lag (main-thread load), upload stalls,
   // frames skipped by the short JoyAI upload queue (drop), JoyAI's playback delay (play),
-  // download fps and round trip, refreshed every second while live.
+  // download fps and round trip, refreshed every second while live. A second line follows one
+  // frame through each stage (kiosk speed work): camera frames/s and age, resize, encode (worker or
+  // main thread), upload, network round trip (ping), output frames/s, decode, buffer wait, paint.
   const [debugOn] = useState(() => liveCamDebug());
   const [debugLine, setDebugLine] = useState<string | null>(null);
+  const [stageLine, setStageLine] = useState<string | null>(null);
   useEffect(() => {
-    if (!debugOn || status !== 'running') { setDebugLine(null); return; }
+    if (!debugOn || status !== 'running') { setDebugLine(null); setStageLine(null); return; }
     const tick = () => {
       const s = readStats();
+      setStageLine(formatStageLine(s));
       setDebugLine(`cam ${s.camera ?? '–'} · ↑${s.sentFps} fps · draw ${s.drawMsP50 ?? '–'} ms · enc ${s.encodeMsP50 ?? '–'} ms · lag ${s.tickLagMsP50 ?? '–'} ms · skip ${s.encodeSkipped} · stall ${s.uploadBlocked} · drop ${s.sendQueueDropped} · ↓${s.receivedFps} fps · rtt ${s.rttMsP50 ?? '–'} ms · play ${s.playoutDelayMs ?? '–'} ms`);
     };
     tick();
@@ -193,6 +198,9 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               )}
               {debugLine && (
                 <span className="basis-full rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white tabular-nums">{debugLine}</span>
+              )}
+              {stageLine && (
+                <span className="basis-full rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white tabular-nums">{stageLine}</span>
               )}
             </>
           }

@@ -22,7 +22,9 @@ export default {
 		extend: {
 			// Laptops/desktops only (wide screen + mouse/trackpad); phones and tablets keep their layout.
 			screens: {
-				desktop: { raw: '(min-width: 1024px) and (hover: hover) and (pointer: fine)' }
+				desktop: { raw: '(min-width: 1024px) and (hover: hover) and (pointer: fine)' },
+				// Tall portrait screens (kiosks, standees, big tablets upright): the Live Cam stage may grow.
+				tallPortrait: { raw: '(min-height: 1000px) and (orientation: portrait)' }
 			},
 			colors: {
 				border: 'hsl(var(--border))',
