@@ -9,7 +9,7 @@
 // empty = any valid live session.
 // Session tokens are minted by the live Worker, so both Workers need the same SESSION_SIGNING_SECRET.
 // The app reaches this Worker with ?livecam_endpoint=test, which swaps the socket host
-// fluxrt-orchestrator.<account>.workers.dev -> fluxrt-orchestrator-test.<account>.workers.dev.
+// fluxrt-orchestrator.ACCOUNT.workers.dev for fluxrt-orchestrator-test.ACCOUNT.workers.dev.
 //
 // Settings (Workers > fluxrt-orchestrator-test > Settings > Variables and Secrets):
 //   RUNPOD_API_KEY          secret   same as the live Worker
@@ -75,10 +75,10 @@ async function handleWs(req, env, url) {
   if (!endpointId) return json({ ok: false, error: "missing_runpod_lb_endpoint_id" }, 500);
   if (!env.RUNPOD_API_KEY) return json({ ok: false, error: "missing_runpod_api_key" }, 500);
   // Cloudflare fetch() uses https:// for WebSocket subrequests; the Upgrade header opens a WebSocket upstream.
-  const upstreamUrl = new URL(`https://${endpointId}.api.runpod.ai/ws`);
+  const upstreamUrl = new URL("https://" + endpointId + ".api.runpod.ai/ws");
   upstreamUrl.searchParams.set("token", token);
   const headers = new Headers(req.headers);
-  headers.set("Authorization", `Bearer ${env.RUNPOD_API_KEY}`);
+  headers.set("Authorization", "Bearer " + env.RUNPOD_API_KEY);
   headers.delete("Host");
   return fetch(new Request(upstreamUrl.toString(), { method: "GET", headers }));
 }
