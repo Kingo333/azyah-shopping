@@ -37,6 +37,33 @@ export interface LiveCamStatsSnapshot {
   framesPresented: number;
   presentedFps: number;
   playbackDropped: number;
+  // Per-stage timing (kiosk speed work, 2026-11-12): camera -> resize -> encode -> send -> network
+  // -> worker -> decode -> wait -> paint. "draw" above is the crop + resize step.
+  /** New camera frames the page receives per second (requestVideoFrameCallback); null if unknown. */
+  cameraFps: number | null;
+  /** How old the camera frame was when it was picked up for sending. */
+  cameraAgeMsP50: number | null;
+  /** Send ticks skipped because the camera had no new frame (instead of re-sending the same picture). */
+  staleSkipped: number;
+  /** Where the JPEG is made: 'worker' (off the main thread) or 'main'. */
+  encoder: string | null;
+  /** Bytes still waiting in the upload when a frame was sent (KB, median). */
+  upBacklogKbP50: number | null;
+  /** Network round trip to the worker (ping -> pong), without the model. */
+  netRttMsP50: number | null;
+  /** Decoding one output JPEG. */
+  decodeMsP50: number | null;
+  /** Time a decoded output waits in the playback buffer before it is drawn (0 without the buffer). */
+  waitMsP50: number | null;
+  /** Drawing one output frame on screen. */
+  paintMsP50: number | null;
+  /** Display frames the page gets per second (below the screen's rate = the page misses frames). */
+  pageFps: number | null;
+  /** Main-thread long-task time per second (Long Tasks API); null where unsupported. */
+  longTaskMsPerS: number | null;
+  /** The page is hidden or the window lost focus (browsers slow timers for hidden pages). */
+  pageHidden: boolean;
+  pageFocused: boolean | null;
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -75,6 +102,19 @@ export class LiveCamFrameStats {
   private presented = 0;
   private presentedTimes: number[] = [];
   private playbackDropped = 0;
+  private cameraFps: number | null = null;
+  private cameraAge: number[] = [];
+  private staleSkipped = 0;
+  private encoder: string | null = null;
+  private upBacklog: number[] = [];
+  private netRtt: number[] = [];
+  private decode: number[] = [];
+  private wait: number[] = [];
+  private paint: number[] = [];
+  private pageFps: number | null = null;
+  private longTaskMsPerS: number | null = null;
+  private pageHidden = false;
+  private pageFocused: boolean | null = null;
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
@@ -101,6 +141,62 @@ export class LiveCamFrameStats {
     this.presented = 0;
     this.presentedTimes = [];
     this.playbackDropped = 0;
+    this.cameraFps = null;
+    this.cameraAge = [];
+    this.staleSkipped = 0;
+    this.encoder = null;
+    this.upBacklog = [];
+    this.netRtt = [];
+    this.decode = [];
+    this.wait = [];
+    this.paint = [];
+    this.pageFps = null;
+    this.longTaskMsPerS = null;
+    this.pageHidden = false;
+    this.pageFocused = null;
+  }
+
+  setCameraFps(fps: number | null): void {
+    this.cameraFps = typeof fps === 'number' && Number.isFinite(fps) ? fps : null;
+  }
+
+  onCameraAge(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.cameraAge, ms, KEEP_SAMPLES);
+  }
+
+  onStaleSkipped(): void {
+    this.staleSkipped += 1;
+  }
+
+  setEncoder(mode: string | null): void {
+    this.encoder = mode;
+  }
+
+  setPageLoad(fps: number | null, longTaskMsPerS: number | null, hidden: boolean, focused: boolean | null): void {
+    this.pageFps = typeof fps === 'number' && Number.isFinite(fps) ? fps : null;
+    this.longTaskMsPerS = typeof longTaskMsPerS === 'number' && Number.isFinite(longTaskMsPerS) ? longTaskMsPerS : null;
+    this.pageHidden = hidden;
+    this.pageFocused = focused;
+  }
+
+  onUpBacklog(bytes: number): void {
+    if (Number.isFinite(bytes) && bytes >= 0) pushBounded(this.upBacklog, bytes / 1024, KEEP_SAMPLES);
+  }
+
+  onNetRtt(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.netRtt, ms, KEEP_SAMPLES);
+  }
+
+  onDecode(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.decode, ms, KEEP_SAMPLES);
+  }
+
+  onWait(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.wait, ms, KEEP_SAMPLES);
+  }
+
+  onPaint(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) pushBounded(this.paint, ms, KEEP_SAMPLES);
   }
 
   /** A frame was drawn by the playback buffer. */
@@ -213,6 +309,37 @@ export class LiveCamFrameStats {
       framesPresented: this.presented,
       presentedFps: this.fps(this.presentedTimes),
       playbackDropped: this.playbackDropped,
+      cameraFps: this.cameraFps,
+      cameraAgeMsP50: percentile(this.cameraAge, 50),
+      staleSkipped: this.staleSkipped,
+      encoder: this.encoder,
+      upBacklogKbP50: percentile(this.upBacklog, 50),
+      netRttMsP50: percentile(this.netRtt, 50),
+      decodeMsP50: percentile(this.decode, 50),
+      waitMsP50: percentile(this.wait, 50),
+      paintMsP50: percentile(this.paint, 50),
+      pageFps: this.pageFps,
+      longTaskMsPerS: this.longTaskMsPerS,
+      pageHidden: this.pageHidden,
+      pageFocused: this.pageFocused,
     };
   }
+}
+
+/** One line per stage, in pipeline order, for the debug overlay and the console. */
+export function formatStageLine(s: LiveCamStatsSnapshot): string {
+  const ms = (v: number | null) => (v === null ? '–' : `${v} ms`);
+  return [
+    `cam ${s.cameraFps === null ? '–' : `${s.cameraFps}/s`} ${s.camera ?? ''} age ${ms(s.cameraAgeMsP50)}`.replace(/\s+/g, ' '),
+    `resize ${ms(s.drawMsP50)}`,
+    `enc ${ms(s.encodeMsP50)}${s.encoder ? ` (${s.encoder})` : ''}`,
+    `↑${s.sentFps}/s backlog ${s.upBacklogKbP50 === null ? '–' : `${s.upBacklogKbP50} KB`}`,
+    `net ${ms(s.netRttMsP50)}`,
+    `↓${s.receivedFps}/s`,
+    `dec ${ms(s.decodeMsP50)}`,
+    `wait ${ms(s.waitMsP50)}`,
+    `paint ${ms(s.paintMsP50)}`,
+    `same-frame skips ${s.staleSkipped}`,
+    `page ${s.pageFps === null ? '–' : `${s.pageFps}/s`} long tasks ${s.longTaskMsPerS === null ? '–' : `${s.longTaskMsPerS} ms/s`}${s.pageHidden ? ' HIDDEN' : ''}${s.pageFocused === false ? ' no-focus' : ''}`,
+  ].join(' · ');
 }

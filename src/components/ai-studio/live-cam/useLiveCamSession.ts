@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type CameraResult } from '@/ar/core/CameraManager';
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
-import { LiveCamFrameStats } from './liveCamStats';
+import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
+import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -49,7 +50,7 @@ type SetPromptReason =
 
 
 /** A worker frame decoded and waiting to be drawn. */
-type DecodedFrame = { bitmap: ImageBitmap; b64: string };
+type DecodedFrame = { bitmap: ImageBitmap; b64: string; decodedAt: number };
 
 interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
@@ -145,11 +146,13 @@ export function useLiveCamSession({
   // decoding a large, fast camera stream they then throw away.
   const [lite, setLiteState] = useState<boolean>(() => liveCamLite());
   const liteRef = useRef(lite);
-  // Normal (default): undefined = today's camera request, unchanged. Lite: smaller and slower.
-  const cameraRequest = (): CameraRequest | undefined => {
-    const size = liveCamCameraSize(undefined, undefined, liteRef.current);
-    if (!size) return undefined;
-    return liteRef.current ? { ...size, frameRate: LIVE_CAM_LITE_FPS + 2 } : size;
+  // Normal: today's 1280x720 request. Lite: smaller and slower. Both capped at 1280 px (see below).
+  const cameraRequest = (): CameraRequest => {
+    // Normal keeps today's 1280x720 request; both modes first ask for at most 1280 px on the long
+    // side, so a 4K kiosk camera never hands the page 4K frames (falls back if it cannot).
+    const size = liveCamCameraSize(undefined, undefined, liteRef.current) ?? { width: 1280, height: 720 };
+    const req: CameraRequest = { ...size, maxLongSide: LIVE_CAM_CAMERA_MAX_LONG_SIDE };
+    return liteRef.current ? { ...req, frameRate: LIVE_CAM_LITE_FPS + 2 } : req;
   };
   // Why a start was interrupted: the shopper cancelled, or it ran out of time.
   const stopReasonRef = useRef<StartStopReason>(null);
@@ -158,7 +161,12 @@ export function useLiveCamSession({
 
   const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Capture pipeline (kiosk speed work): camera-frame clock, encoder, network ping.
+  const frameClockRef = useRef<CameraFrameClock | null>(null);
+  const encoderRef = useRef<FrameEncoder | null>(null);
+  const pageLoadRef = useRef<PageLoadMonitor | null>(null);
+  const pingTimerRef = useRef<number | null>(null);
+  const pingSentAtRef = useRef<number | null>(null);
   const frameTimerRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const startTimeoutRef = useRef<number | null>(null);
@@ -212,6 +220,17 @@ export function useLiveCamSession({
       window.clearInterval(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+    if (pingTimerRef.current !== null) {
+      window.clearInterval(pingTimerRef.current);
+      pingTimerRef.current = null;
+    }
+    pingSentAtRef.current = null;
+    frameClockRef.current?.stop();
+    frameClockRef.current = null;
+    encoderRef.current?.dispose();
+    encoderRef.current = null;
+    pageLoadRef.current?.stop();
+    pageLoadRef.current = null;
     if (startTimeoutRef.current !== null) {
       window.clearTimeout(startTimeoutRef.current);
       startTimeoutRef.current = null;
@@ -225,7 +244,6 @@ export function useLiveCamSession({
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
-    captureCanvasRef.current = null;
     lastSendTsRef.current = null;
     lastFrameB64Ref.current = null;
     lastPromptMsgRef.current = null;
@@ -280,6 +298,7 @@ export function useLiveCamSession({
       bitmap.close?.();
       return;
     }
+    const paintStart = performance.now();
     // Cache pixels to an offscreen canvas for instant sync redraw on resize/expand.
     let cache = lastFrameCanvasRef.current;
     if (!cache) {
@@ -308,6 +327,7 @@ export function useLiveCamSession({
     ctx.drawImage(bitmap, dx, dy, dw, dh);
     bitmap.close?.();
     lastFrameB64Ref.current = b64;
+    statsRef.current.onPaint(performance.now() - paintStart);
   }, [remoteCanvasRef]);
 
   // Buffered playback loop: one rAF tick presents at most one frame when it is due.
@@ -333,6 +353,7 @@ export function useLiveCamSession({
       if (playbackRef.current !== sched) return; // stopped or replaced
       const due = sched.next(performance.now());
       if (due) {
+        statsRef.current.onWait(performance.now() - due.decodedAt);
         presentBitmap(due.bitmap, due.b64);
         statsRef.current.onPresented();
       }
@@ -345,18 +366,22 @@ export function useLiveCamSession({
     const canvas = remoteCanvasRef.current;
     if (!canvas) return;
     try {
+      const decodeStart = performance.now();
       const blob = base64ToBlob(b64, 'image/jpeg');
       const bitmap = await createImageBitmap(blob);
+      const decodedAt = performance.now();
+      statsRef.current.onDecode(decodedAt - decodeStart);
 
       const sched = playbackRef.current;
       if (sched) {
         // Buffered: the rAF loop draws it on cadence. Arrival stats are recorded below.
         // JoyAI echoes the phone's own timestamp of the camera frame (t_client_ms).
         const dropped = sched instanceof CaptureTimePlayout
-          ? sched.push({ bitmap, b64 }, typeof tClientMs === 'number' ? tClientMs : null)
-          : sched.push({ bitmap, b64 });
+          ? sched.push({ bitmap, b64, decodedAt }, typeof tClientMs === 'number' ? tClientMs : null)
+          : sched.push({ bitmap, b64, decodedAt });
         if (dropped) statsRef.current.onPlaybackDropped(dropped);
       } else {
+        statsRef.current.onWait(0);
         presentBitmap(bitmap, b64);
       }
       // Matched round trip when the worker echoes the frame number (JoyAI);
@@ -624,17 +649,29 @@ export function useLiveCamSession({
         setWaitTimes((w) => (w ? { ...w, liveAt: Date.now() } : w));
 
         const { captureWidth, captureHeight, fpsCap, jpegQuality } = cfgRef.current;
-        const cap = document.createElement('canvas');
-        cap.width = captureWidth;
-        cap.height = captureHeight;
-        captureCanvasRef.current = cap;
-        const capCtx = cap.getContext('2d');
-        if (!capCtx) {
+        // Capture pipeline: a clock that counts the camera frames the page really gets, and the
+        // JPEG encoder (crop + resize with createImageBitmap, encode in a Web Worker; today's
+        // main-thread canvas path where the browser has no OffscreenCanvas).
+        const encoder = new FrameEncoder(liveCamEncoderMode());
+        encoderRef.current = encoder;
+        if (encoder.mode === 'main' && !document.createElement('canvas').getContext('2d')) {
           setErrorMessage('Capture canvas context unavailable');
           setStatus('failed');
           cleanupLocal();
           return;
         }
+        const videoEl = localVideoRef.current;
+        const clock = videoEl ? new CameraFrameClock(videoEl) : null;
+        clock?.start();
+        frameClockRef.current = clock;
+        // Page load for the stage readout: frames/s the page gets and long main-thread tasks.
+        pageLoadRef.current?.stop();
+        const pageLoad = new PageLoadMonitor();
+        pageLoad.start();
+        pageLoadRef.current = pageLoad;
+        const newFramesOnly = liveCamNewFramesOnly();
+        statsRef.current.setEncoder(encoder.mode);
+        console.log(`[live-cam] capture ${captureWidth}x${captureHeight} encoder=${encoder.mode} camera-clock=${clock?.supported ? 'on' : 'unsupported'} new-frames-only=${newFramesOnly && !!clock?.supported}`);
 
         const intervalMs = Math.floor(1000 / fpsCap);
         // Upload queue (liveCamSendQueue.ts): JoyAI keeps at most ~4 frames waiting and always
@@ -648,12 +685,14 @@ export function useLiveCamSession({
           lastSendTsRef.current = performance.now();
           const { seq, tClientMs } = statsRef.current.nextFrame(f.at);
           ws.send(JSON.stringify({ type: 'frame', frame_b64: f.b64, seq, t_client_ms: tClientMs }));
+          statsRef.current.onUpBacklog(ws.bufferedAmount);
         };
         // One JPEG encode at a time: on a slow phone, overlapping encodes queue up and
         // add latency instead of frames, so a tick is skipped while one is in flight.
         let encoding = false;
         let lastTick = performance.now();
         let lastCaptureAt = 0;
+        let lastSentVersion = -1;
         frameTimerRef.current = window.setInterval(() => {
           const tickAt = performance.now();
           statsRef.current.onTickLag(tickAt - lastTick - intervalMs);
@@ -662,6 +701,13 @@ export function useLiveCamSession({
           const v = localVideoRef.current;
           if (!wsNow2 || wsNow2.readyState !== WebSocket.OPEN || !v || v.readyState < 2) return;
           statsRef.current.setCamera(v.videoWidth, v.videoHeight);
+          statsRef.current.setCameraFps(clock?.fps() ?? null);
+          statsRef.current.setPageLoad(
+            pageLoad.fps(),
+            pageLoad.longTaskMsPerS(),
+            document.visibilityState === 'hidden',
+            typeof document.hasFocus === 'function' ? document.hasFocus() : null,
+          );
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);
@@ -676,40 +722,53 @@ export function useLiveCamSession({
           }
           // Lite mode: at most LIVE_CAM_LITE_FPS frames a second, whatever the worker's cap.
           if (liteRef.current && tickAt - lastCaptureAt < 1000 / LIVE_CAM_LITE_FPS - 10) return;
+          // No new camera frame since the last one sent: skip rather than re-send the same picture
+          // (the worker keeps drawing from its latest frame either way).
+          if (newFramesOnly && clock && noNewCameraFrame(clock, lastSentVersion, tickAt)) {
+            statsRef.current.onStaleSkipped();
+            return;
+          }
           lastCaptureAt = tickAt;
           encoding = true;
-          const encodeStart = performance.now();
+          const version = clock?.frameVersion ?? 0;
+          const frameAt = clock?.lastFrameAt ?? null;
+          if (frameAt !== null && tickAt - frameAt < 10_000) statsRef.current.onCameraAge(tickAt - frameAt);
           // Center-crop to the capture aspect instead of stretching the camera frame.
-          const { sx, sy, sw, sh } = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
-          try {
-            capCtx.drawImage(v, sx, sy, sw, sh, 0, 0, captureWidth, captureHeight);
-            statsRef.current.onDraw(performance.now() - encodeStart);
-            cap.toBlob(
-              async (blob) => {
-                try {
-                  if (!blob || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-                  if (queueFrames <= 0 && wsRef.current.bufferedAmount > 2_000_000) return;
-                  const b64 = await blobToBase64(blob);
-                  statsRef.current.onEncoded(performance.now() - encodeStart);
-                  const ws = wsRef.current;
-                  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                  const droppedBefore = sendQ.droppedCount;
-                  const now = sendQ.offer({ b64, at: performance.now() }, b64.length, ws.bufferedAmount);
-                  if (queueFrames > 0) statsRef.current.onSendQueueDropped(sendQ.droppedCount - droppedBefore);
-                  if (now) sendFrame(now);
-                } catch {
-                  // skip frame
-                } finally {
-                  encoding = false;
-                }
-              },
-              'image/jpeg',
-              jpegQuality,
-            );
-          } catch {
-            encoding = false; // drawImage/toBlob threw: never leave the loop stuck
-          }
+          const crop = coverCropRect(v.videoWidth, v.videoHeight, captureWidth, captureHeight);
+          encoder.encode(v, crop, captureWidth, captureHeight, jpegQuality)
+            .then((res) => {
+              statsRef.current.setEncoder(encoder.mode);
+              if (!res) return;
+              statsRef.current.onDraw(res.resizeMs);
+              statsRef.current.onEncoded(res.encodeMs);
+              const ws = wsRef.current;
+              if (!ws || ws.readyState !== WebSocket.OPEN) return;
+              if (queueFrames <= 0 && ws.bufferedAmount > 2_000_000) return;
+              lastSentVersion = version;
+              const droppedBefore = sendQ.droppedCount;
+              const now = sendQ.offer({ b64: res.b64, at: performance.now() }, res.b64.length, ws.bufferedAmount);
+              if (queueFrames > 0) statsRef.current.onSendQueueDropped(sendQ.droppedCount - droppedBefore);
+              if (now) sendFrame(now);
+            })
+            .catch(() => { /* skip frame */ })
+            .finally(() => {
+              encoding = false; // never leave the loop stuck
+            });
         }, intervalMs);
+
+        // Network round trip to the worker (ping -> pong, no model work), and a stage summary in
+        // the console every 10 s for remote debugging.
+        let pings = 0;
+        pingTimerRef.current = window.setInterval(() => {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          pings += 1;
+          if (pings % 5 === 0) console.log(`[live-cam] stages ${formatStageLine(statsRef.current.snapshot())}`);
+          const outstanding = pingSentAtRef.current;
+          if (outstanding !== null && performance.now() - outstanding < 10_000) return;
+          pingSentAtRef.current = performance.now();
+          try { ws.send(JSON.stringify({ type: 'ping' })); } catch { pingSentAtRef.current = null; }
+        }, 2000);
       };
 
       const runHandshake = async () => {
@@ -928,6 +987,15 @@ export function useLiveCamSession({
             setNotice(STATUS_NOTICES[parsed.status] ?? null);
             setNoticeKey(parsed.status);
           }
+        } else if (t === 'pong') {
+          const at = pingSentAtRef.current;
+          if (at !== null) statsRef.current.onNetRtt(performance.now() - at);
+          pingSentAtRef.current = null;
+        } else if (t === 'error' && parsed.message === 'unknown_type:ping') {
+          // An older worker without ping: stop measuring, never end the session over it.
+          if (pingTimerRef.current !== null) window.clearInterval(pingTimerRef.current);
+          pingTimerRef.current = null;
+          pingSentAtRef.current = null;
         } else if (t === 'error') {
           const msg = typeof parsed.message === 'string' ? parsed.message : 'Worker error';
           rejectAllPending(msg);
@@ -1153,7 +1221,7 @@ export function useLiveCamSession({
     setLiveCamLite(on);
     const track = streamRef.current?.getVideoTracks()[0];
     if (track) {
-      const r = cameraRequest() ?? { width: 1280, height: 720 }; // back to Normal: the default request
+      const r = cameraRequest(); // back to Normal: the default 1280x720 request
       track.applyConstraints({ width: { ideal: r.width }, height: { ideal: r.height }, ...(r.frameRate ? { frameRate: { ideal: r.frameRate } } : {}) })
         .catch((e) => console.warn('[live-cam] lite camera change failed', e));
     }

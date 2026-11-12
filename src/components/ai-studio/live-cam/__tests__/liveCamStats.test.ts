@@ -111,3 +111,54 @@ describe('LiveCamFrameStats weak-device readout', () => {
     expect(snap.tickLagMsP50).toBe(10);
   });
 });
+
+describe('per-stage timing (kiosk speed work)', () => {
+  it('records every stage and prints them in pipeline order', async () => {
+    const { formatStageLine } = await import('../liveCamStats');
+    let t = 0;
+    const s = new LiveCamFrameStats(() => t);
+    s.reset();
+    s.setCamera(720, 1280);
+    s.setCameraFps(0.9);
+    s.onCameraAge(40);
+    s.onDraw(3);
+    s.onEncoded(12);
+    s.setEncoder('worker');
+    s.onUpBacklog(2048);
+    s.onNetRtt(95);
+    s.onDecode(8);
+    s.onWait(60);
+    s.onPaint(2);
+    s.onStaleSkipped();
+    const snap = s.snapshot();
+    expect(snap).toMatchObject({ cameraFps: 0.9, cameraAgeMsP50: 40, encoder: 'worker', upBacklogKbP50: 2, netRttMsP50: 95,
+      decodeMsP50: 8, waitMsP50: 60, paintMsP50: 2, staleSkipped: 1 });
+    const line = formatStageLine(snap);
+    const order = ['cam 0.9/s 720x1280 age 40 ms', 'resize 3 ms', 'enc 12 ms (worker)', 'backlog 2 KB', 'net 95 ms', 'dec 8 ms', 'wait 60 ms', 'paint 2 ms', 'same-frame skips 1'];
+    let at = -1;
+    for (const part of order) {
+      const i = line.indexOf(part);
+      expect(i, part).toBeGreaterThan(at);
+      at = i;
+    }
+    s.reset();
+    expect(s.snapshot()).toMatchObject({ cameraFps: null, staleSkipped: 0, netRttMsP50: null, encoder: null });
+    t += 1;
+  });
+
+  it('shows how loaded the page is, and flags a hidden or unfocused page', async () => {
+    const { formatStageLine } = await import('../liveCamStats');
+    const s = new LiveCamFrameStats(() => 0);
+    s.reset();
+    s.setPageLoad(41.5, 380, false, true);
+    expect(s.snapshot()).toMatchObject({ pageFps: 41.5, longTaskMsPerS: 380, pageHidden: false, pageFocused: true });
+    expect(formatStageLine(s.snapshot())).toContain('page 41.5/s long tasks 380 ms/s');
+    s.setPageLoad(0, null, true, false);
+    const line = formatStageLine(s.snapshot());
+    expect(line).toContain('page 0/s long tasks – HIDDEN no-focus');
+    s.setPageLoad(Number.NaN, Number.POSITIVE_INFINITY, false, null);
+    expect(s.snapshot()).toMatchObject({ pageFps: null, longTaskMsPerS: null, pageFocused: null });
+    s.reset();
+    expect(s.snapshot()).toMatchObject({ pageFps: null, longTaskMsPerS: null, pageHidden: false, pageFocused: null });
+  });
+});

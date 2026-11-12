@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIVE_CAM_LITE_DEFAULT, isLiveCamLegacy, liveCamCameraSize, liveCamLite, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_DEFAULT, isLiveCamLegacy, liveCamCameraSize, liveCamEncoderMode, liveCamLite, liveCamNewFramesOnly, liveCamPlaybackOverride, parseLiveCamCameraHeight, setLiveCamLite } from '../liveCamFlags';
 
 describe('buffered playback override (F1b)', () => {
   it('URL param beats localStorage; 1 = on, 0 = off, anything else = no override', () => {
@@ -56,5 +56,31 @@ describe('Live Cam camera size and Lite mode', () => {
     expect(parseLiveCamCameraHeight('480')).toBeNull();
     const normal = mem(); setLiveCamLite(false, normal);
     expect(liveCamCameraSize('?livecam_cam=360', normal)).toBeNull();
+  });
+});
+
+
+describe('kiosk speed switches', () => {
+  const mem = () => {
+    const m = new Map<string, string>();
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
+  };
+  it('encodes in a worker by default; ?livecam_encoder=main goes back and is remembered', () => {
+    const st = mem();
+    expect(liveCamEncoderMode('', st)).toBe('worker');
+    expect(liveCamEncoderMode('?livecam_encoder=main', st)).toBe('main');
+    expect(liveCamEncoderMode('', st)).toBe('main');
+    expect(liveCamEncoderMode('?livecam_encoder=worker', st)).toBe('worker');
+  });
+  it('sends new camera frames only by default; ?livecam_newframes=0 turns it off', () => {
+    const st = mem();
+    expect(liveCamNewFramesOnly('', st)).toBe(true);
+    expect(liveCamNewFramesOnly('?livecam_newframes=0', st)).toBe(false);
+    expect(liveCamNewFramesOnly('', st)).toBe(false);
+    expect(liveCamNewFramesOnly('?livecam_newframes=1', st)).toBe(true);
+  });
+  it('caps the camera at 720p class and keeps Lite as it was', () => {
+    expect(LIVE_CAM_CAMERA_MAX_LONG_SIDE).toBe(1280);
+    expect(typeof LIVE_CAM_LITE_DEFAULT).toBe('boolean');
   });
 });
