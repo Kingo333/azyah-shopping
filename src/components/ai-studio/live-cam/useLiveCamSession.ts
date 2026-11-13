@@ -4,9 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
-import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, primeVideoForPlayback, rtcAllowedHere, rtcCameraMode, rtcEngine, rtcIsAndroid, showRemoteVideo } from './liveCamWebRtc';
+import { LiveCamRtcLink, RTC_CONNECTING_NOTICE, RTC_ONLY_FAILURE_MESSAGE, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, primeVideoForPlayback, rtcAllowedHere, rtcCameraMode, rtcEngine, rtcIsAndroid, showRemoteVideo } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncroppedSwitch, liveCamRtcBrowserPolicy } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, LIVE_CAM_WEBSOCKET_FALLBACK, liveCamEffectiveTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncroppedSwitch, liveCamRtcBrowserPolicy } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -90,6 +90,8 @@ interface UseLiveCamSessionReturn {
   redrawLastFrame: () => void;
   /** WebRTC carries the result and the remote <video> shows it (the canvas is underneath). */
   rtcVideoOn: boolean;
+  /** WebRTC carries the frames now (the stage shows a WebRTC badge). */
+  rtcOn: boolean;
   /** Copies the current WebRTC video frame into the result canvas (snapshots read the canvas). */
   syncRemoteCanvas: () => void;
 }
@@ -180,6 +182,7 @@ export function useLiveCamSession({
   const rtcStopDrawRef = useRef<(() => void) | null>(null);
   const workerWebrtcRef = useRef(false);
   const [rtcVideoOn, setRtcVideoOn] = useState(false);
+  const [rtcOn, setRtcOn] = useState(false);
   const pingTimerRef = useRef<number | null>(null);
   const pingSentAtRef = useRef<number | null>(null);
   const frameTimerRef = useRef<number | null>(null);
@@ -253,6 +256,7 @@ export function useLiveCamSession({
     rtcActiveRef.current = false;
     workerWebrtcRef.current = false;
     setRtcVideoOn(false);
+    setRtcOn(false);
     if (startTimeoutRef.current !== null) {
       window.clearTimeout(startTimeoutRef.current);
       startTimeoutRef.current = null;
@@ -703,28 +707,58 @@ export function useLiveCamSession({
         }
       };
 
-      // WebRTC (liveCamWebRtc.ts): tried once the try-on runs on JPEG, only when asked for
-      // (?livecam_transport=webrtc), offered by the worker and given TURN servers; any failure leaves JPEG on.
+      // WebRTC only (LIVE_CAM_WEBSOCKET_FALLBACK = false): there is no JPEG to fall back on, so say so and end
+      // the session (the shopper taps Try again) instead of leaving a picture that never arrives.
+      const rtcOnly = !LIVE_CAM_WEBSOCKET_FALLBACK;
+      const rtcOnlyFail = (reason: string) => {
+        if (abortRef.current || !sessionIdRef.current) return;
+        console.warn(`[live-cam] webrtc only, no JPEG fallback: ${reason}`);
+        rejectAllPending(RTC_ONLY_FAILURE_MESSAGE);
+        setNotice(null);
+        setNoticeKey(null);
+        setErrorMessage(RTC_ONLY_FAILURE_MESSAGE);
+        setStatus('failed');
+        cleanupLocal();
+        void callEnd();
+        sessionIdRef.current = null;
+      };
+
+      // WebRTC (liveCamWebRtc.ts): tried once the session is live, when the worker offers it and our TURN
+      // function answers. With the JPEG fallback on, any failure leaves JPEG on; WebRTC only, it ends the session.
       const maybeStartRtc = async () => {
         // The result shows in the remote <video> (like Decart's SDK) unless ?livecam_rtc_view=canvas.
         const videoEl = remoteVideoRef?.current ?? null;
         const useVideo = liveCamRtcView() === 'video' && !!videoEl;
-        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current) return;
+        if (liveCamEffectiveTransport() !== 'webrtc' || rtcRef.current) return;
+        if (!workerWebrtcRef.current) {
+          if (rtcOnly) rtcOnlyFail('the GPU worker does not offer WebRTC');
+          return;
+        }
         const engine = rtcEngine(globalThis as never);
         if (!rtcAllowedHere(globalThis as never, useVideo ? 'video' : 'canvas', liveCamRtcBrowserPolicy())) {
+          if (rtcOnly) {
+            rtcOnlyFail(`WebRTC is not on for this browser (${engine})`);
+            return;
+          }
           if (canUseWebRtc(globalThis as never, 'video')) console.log(`[live-cam] webrtc: not on this browser (${engine}; ?livecam_rtc_all=1 tries it), staying on JPEG`);
           return;
         }
         const sid = sessionIdRef.current;
         const camTrack = streamRef.current?.getVideoTracks()[0];
-        if (!sid || !camTrack) return;
+        if (!sid || !camTrack) {
+          if (rtcOnly) rtcOnlyFail('no camera track');
+          return;
+        }
+        if (rtcOnly) setNotice(RTC_CONNECTING_NOTICE);
         let ice: RTCIceServer[] = [];
         try {
           const { data, error } = await supabase.functions.invoke('live-cam-turn', { body: { session_id: sid } });
           if (!error) ice = cleanIceServers((data as { ice_servers?: unknown } | null)?.ice_servers);
-        } catch { /* no servers: stay on JPEG */ }
-        if (!ice.length || abortRef.current || sessionIdRef.current !== sid || rtcRef.current) {
-          if (!ice.length) console.log('[live-cam] webrtc: no TURN servers, staying on JPEG');
+        } catch { /* no servers: stay on JPEG (or end, WebRTC only) */ }
+        if (abortRef.current || sessionIdRef.current !== sid || rtcRef.current) return;
+        if (!ice.length) {
+          if (rtcOnly) rtcOnlyFail('no TURN servers');
+          else console.log('[live-cam] webrtc: no TURN servers, staying on JPEG');
           return;
         }
         const c = cfgRef.current;
@@ -758,6 +792,8 @@ export function useLiveCamSession({
           onConnected: () => {
             rtcActiveRef.current = true;
             setRtcVideoOn(useVideo);
+            setRtcOn(true);
+            if (rtcOnly) setNotice((n) => (n === RTC_CONNECTING_NOTICE ? null : n));
             stopPlayback(); // WebRTC has its own jitter buffer
             console.log(`[live-cam] webrtc ${engine} view=${useVideo ? 'video' : 'canvas'} camera=${link.sentCropped ? 'cropped by the browser' : 'as it is (worker crops)'}`);
             statsRef.current.setTransport(`webrtc ${engine === 'webkit' ? 'safari' : engine}${rtcIsAndroid(globalThis as never) ? ' android' : ''} cam ${link.sentCropped ? 'cropped' : `as-is /${link.rawScale}`} (worker relay ${link.workerTurn ?? '?'})`);
@@ -767,10 +803,15 @@ export function useLiveCamSession({
             rtcActiveRef.current = false;
             if (useVideo && videoEl) drawVideoIntoCanvas(videoEl); // keep the last picture while JPEG resumes
             setRtcVideoOn(false);
+            setRtcOn(false);
             rtcStopDrawRef.current?.();
             rtcStopDrawRef.current = null;
             if (rtcRef.current === link) rtcRef.current = null;
             statsRef.current.setTransport(null);
+            if (rtcOnly) {
+              rtcOnlyFail(reason);
+              return;
+            }
             if (!abortRef.current) applyPlaybackFromHints();
             console.warn(`[live-cam] webrtc off (${reason}): JPEG over the socket`);
           },
@@ -851,8 +892,8 @@ export function useLiveCamSession({
             document.visibilityState === 'hidden',
             typeof document.hasFocus === 'function' ? document.hasFocus() : null,
           );
-          // WebRTC carries the camera frames now: no JPEG on the socket.
-          if (rtcActiveRef.current) return;
+          // WebRTC carries the camera frames now, or the JPEG fallback is paused (WebRTC only): no JPEG on the socket.
+          if (rtcActiveRef.current || !LIVE_CAM_WEBSOCKET_FALLBACK) return;
           if (queueFrames > 0) {
             // A frame held back because the upload was busy goes as soon as there is room.
             const held = sendQ.poll(wsNow2.bufferedAmount);
@@ -1111,6 +1152,8 @@ export function useLiveCamSession({
           workerWebrtcRef.current = parsed.webrtc === true;
           void runHandshake();
         } else if (t === 'frame' && typeof parsed.frame_b64 === 'string') {
+          // WebRTC only: a JPEG frame on the socket is never shown.
+          if (!LIVE_CAM_WEBSOCKET_FALLBACK) return;
           setNotice((n) => (n === null ? n : null));
           setNoticeKey((k) => (k === null ? k : null));
           void renderRemoteFrame(parsed.frame_b64, parsed.seq, parsed.server_ms, parsed.t_client_ms);
@@ -1136,10 +1179,13 @@ export function useLiveCamSession({
         } else if (t === 'webrtc_state') {
           rtcRef.current?.onServerState(String(parsed.state ?? ''));
         } else if (t === 'webrtc_failed' || t === 'webrtc_unavailable') {
-          rtcRef.current?.fail(t === 'webrtc_failed' ? `worker: ${String(parsed.message ?? 'failed')}` : 'worker has no WebRTC');
+          const why = t === 'webrtc_failed' ? `worker: ${String(parsed.message ?? 'failed')}` : 'worker has no WebRTC';
+          if (rtcRef.current) rtcRef.current.fail(why);
+          else if (!LIVE_CAM_WEBSOCKET_FALLBACK) rtcOnlyFail(why);
         } else if (t === 'error' && typeof parsed.message === 'string' && parsed.message.startsWith('unknown_type:webrtc')) {
-          // A worker without WebRTC: never end the session over it.
-          rtcRef.current?.fail('worker has no WebRTC');
+          // A worker without WebRTC: never end the session over it (unless WebRTC is all there is).
+          if (rtcRef.current) rtcRef.current.fail('worker has no WebRTC');
+          else if (!LIVE_CAM_WEBSOCKET_FALLBACK) rtcOnlyFail('worker has no WebRTC');
         } else if (t === 'error' && parsed.message === 'unknown_type:ping') {
           // An older worker without ping: stop measuring, never end the session over it.
           if (pingTimerRef.current !== null) window.clearInterval(pingTimerRef.current);
@@ -1406,6 +1452,7 @@ export function useLiveCamSession({
     stop,
     redrawLastFrame,
     rtcVideoOn,
+    rtcOn,
     syncRemoteCanvas,
   };
 }

@@ -133,6 +133,24 @@ export function liveCamTransport(
   return LIVE_CAM_DEFAULT_WEBRTC_TEST ? 'webrtc' : 'ws';
 }
 
+// WebRTC only (owner, 13 Nov 2026: "pause the WebSocket completely so only WebRTC connects, so I know that's
+// what I'm using"). false = no JPEG frames on the WebSocket either way: the socket still carries the start-up,
+// garment changes, pings and the WebRTC offer/answer, but the camera and the try-on travel only as WebRTC
+// video, and when WebRTC cannot connect the session ends with a clear message (RTC_ONLY_FAILURE_MESSAGE in
+// liveCamWebRtc.ts) instead of quietly switching to JPEG. true = the JPEG fallback as before (one line).
+export const LIVE_CAM_WEBSOCKET_FALLBACK = false;
+
+/** The transport this session uses: always WebRTC while the JPEG fallback is paused, else the device's
+ * choice (liveCamTransport, which still remembers a ?livecam_transport switch for when it comes back). */
+export function liveCamEffectiveTransport(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+  env: Env = viteEnv(),
+): LiveCamTransport {
+  const chosen = liveCamTransport(search, storage, env);
+  return LIVE_CAM_WEBSOCKET_FALLBACK ? chosen : 'webrtc';
+}
+
 // Which GPU endpoint (WebRTC trials, 12 Nov 2026): ?livecam_endpoint=test|live (remembered on the
 // device). test = the same session through the separate fluxrt-orchestrator-test Worker
 // (workers/fluxrt-orchestrator/test-worker), which serves any valid live session (or only the accounts it
