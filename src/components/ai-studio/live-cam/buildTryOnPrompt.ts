@@ -201,6 +201,11 @@ const COMPACT_PLACEMENT: Record<TryOnCategory, string> = {
   bags: 'The person carries it naturally; the outfit stays as it is',
   accessories: 'The person wears it naturally; the outfit stays as it is',
 };
+// What stays. For a dress or abaya the sentence also names the head covering (owner, 12 Nov 2026):
+// the dress replaces her outfit, never what she wears on her head. Python twin:
+// fluxrt-serverless training/data_tools/fluxrt_prompt.py, which the FluxRT LoRA is trained with.
+const COMPACT_KEEP = "Keep the person's face, hair, body, pose and the background unchanged.";
+const COMPACT_KEEP_DRESS = "Keep the person's face, hair, head covering, body, pose and the background unchanged.";
 const COMPACT_SLEEVES: Record<SleeveLength, string> = {
   sleeveless: ', and keep it sleeveless',
   short_sleeve: ', with short sleeves',
@@ -231,7 +236,7 @@ export function buildCompactTryOnPrompt(input: BuildTryOnPromptInput, opts: Garm
   if (cat) parts.push(`${COMPACT_PLACEMENT[cat]}.`);
   const sleeves = cat && SLEEVE_CATEGORIES.has(cat) ? COMPACT_SLEEVES[inferSleeveLength(input)] : '';
   parts.push(`Keep its exact colour, print, pattern, logo, fabric and fit${sleeves}.`);
-  parts.push("Keep the person's face, hair, body, pose and the background unchanged.");
+  parts.push(cat === 'dresses' ? COMPACT_KEEP_DRESS : COMPACT_KEEP);
   return parts.join(' ');
 }
 
@@ -248,6 +253,8 @@ const INSTRUCTIONS: Record<TryOnCategory, string> = {
 };
 const INSTRUCTION_FALLBACK = 'Substitute the matching clothing item with the garment in the reference image.';
 const INSTRUCTION_KEEP = "Keep the person's face, body, pose and the background unchanged.";
+// A dress or abaya: the head covering stays too (owner, 12 Nov 2026).
+const INSTRUCTION_KEEP_DRESS = "Keep the person's face, head covering, body, pose and the background unchanged.";
 
 const INSTRUCTION_FIDELITY =
   'Match its exact color, pattern, print, logo, fabric and construction details.';
@@ -318,6 +325,6 @@ export function buildTryOnInstruction(
     parts.push(description ? `${label}: ${description.replace(/[.!]?$/, '.')}` : `${label}.`);
     parts.push(INSTRUCTION_FIDELITY);
   }
-  parts.push(INSTRUCTION_KEEP);
+  parts.push(cat === 'dresses' ? INSTRUCTION_KEEP_DRESS : INSTRUCTION_KEEP);
   return parts.join(' ');
 }
