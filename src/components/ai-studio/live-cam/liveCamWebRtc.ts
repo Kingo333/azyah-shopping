@@ -11,7 +11,8 @@
 // - which browsers try it (rtcAllowedHere): Chrome's engine (Chrome, Edge, Samsung Internet, Android, the
 //   kiosk) and, since 13 Nov 2026, Safari (iPhone, iPad, Mac: LIVE_CAM_RTC_SAFARI_DEFAULT). Firefox keeps
 //   JPEG unless ?livecam_rtc_all=1; ?livecam_rtc_all=0 keeps one device on Chrome-only.
-// - iPhone like Decart's SDK: the camera track goes out as it is (rtcCameraMode) and the worker crops it;
+// - Android (13 Nov 2026) and iPhone like Decart's SDK: the camera track goes out as it is, scaled down as a
+//   whole to a 540 px short side, and the worker crops it like the JPEG path (rtcCameraMode, rawScaleFor);
 //   the result plays in the <video>, unlocked inside the Start tap (primeVideoForPlayback); a page that
 //   cannot show it goes back to JPEG within RTC_FIRST_FRAME_MS of connecting.
 // - a browser that cannot crop the camera track (iPhone Safari) may send the camera as it is; the GPU
@@ -27,6 +28,9 @@ export const RTC_MAX_BITRATE = 1_000_000; // camera track, 288x512 at 8-10 fps: 
 // The camera as it is (iPhone, like Decart: up to 1280x720 at the Normal or Lite rate); the worker scales
 // it down to 288x512, so a bit more room keeps that picture as clean as the cropped one.
 export const RTC_MAX_BITRATE_UNCROPPED = 1_500_000;
+// The camera as it is goes out scaled down as a whole (never cropped) to about this short side; the worker
+// crops the 9:16 centre and scales it to 288x512, exactly like the JPEG path. 540 = 3/4 of a 720p camera.
+export const RTC_RAW_SHORT_SIDE = 540;
 export const RTC_CONNECT_TIMEOUT_MS = 10_000; // JPEG keeps running meanwhile, so waiting longer costs the shopper nothing
 export const RTC_GATHER_TIMEOUT_MS = 2000;
 export const RTC_DISCONNECT_GRACE_MS = 4000;
@@ -111,17 +115,34 @@ export function rtcAllowedHere(
   return engine === 'webkit' ? p.safari : p.others;
 }
 
+/** Android (any browser): its camera frames reach Chrome's per-track crop rotated, see rtcCameraMode. */
+export function rtcIsAndroid(g: { navigator?: { userAgent?: string } } = globalThis as never): boolean {
+  return /Android/i.test(g.navigator?.userAgent ?? '');
+}
+
 /**
  * How the camera goes out, unless a device switch says otherwise (?livecam_rtc_uncropped):
- * Chrome crops and scales it to the model size itself ('off', checked end to end); Safari sends the camera
- * as it is ('always', like Decart's SDK: no per-track resize, so the picture is upright in any orientation
- * and the worker crops and scales it exactly like the JPEG path); other engines crop when they can.
+ * - Chrome on a computer (and the kiosk) crops and scales it to the model size itself ('off', checked end to end).
+ * - Android sends it as it is ('always'), 13 Nov 2026: on Android the camera frames reach Chrome's per-track
+ *   crop with width and height swapped (Chromium issue 40519078), so on some phones (a Galaxy S7 edge) the
+ *   crop came out as a horizontal band reported as 288x512, and the worker's 9:16 centre of that band was a
+ *   ~3x zoom on the face. As it is, the worker sees the real frame and crops it like the JPEG path.
+ * - Safari sends it as it is ('always', like Decart's SDK: upright in any orientation).
+ * - Other engines crop when they can, else send it as it is.
  */
-export function rtcCameraMode(engine: RtcEngine, override: 'off' | 'fallback' | 'always' | null): 'off' | 'fallback' | 'always' {
+export function rtcCameraMode(engine: RtcEngine, override: 'off' | 'fallback' | 'always' | null, android = false): 'off' | 'fallback' | 'always' {
   if (override) return override;
-  if (engine === 'chromium') return 'off';
+  if (engine === 'chromium') return android ? 'always' : 'off';
   if (engine === 'webkit') return 'always';
   return 'fallback';
+}
+
+/** The whole-picture scale for the camera as it is: short side down to about RTC_RAW_SHORT_SIDE, never up,
+ * the same in either orientation (so nothing is cropped in the browser). 1 = as captured. */
+export function rawScaleFor(width: number | undefined, height: number | undefined): number {
+  const short = Math.min(width ?? 0, height ?? 0);
+  if (!(short > RTC_RAW_SHORT_SIDE)) return 1;
+  return Math.round((short / RTC_RAW_SHORT_SIDE) * 100) / 100;
 }
 
 /** H.264 first (hardware on phones and the kiosk), the rest as the browser lists them. */
@@ -150,6 +171,8 @@ export interface RtcStats {
   outKbps: number | null;
   /** e.g. "srflx/udp -> relay": this device's side of the chosen path, then the worker's. */
   path: string | null;
+  /** Frame sizes on the wire, e.g. "540x960 up / 576x1024 down" (checks the camera framing on any device). */
+  sizes?: string | null;
   codec: string | null;
 }
 
@@ -241,6 +264,13 @@ export function summarizeRtcStats(
   };
   const inCodec = codecOf(inbound);
   const outCodec = codecOf(outbound);
+  const sizeOf = (r: StatEntry | undefined) => {
+    const w = num(r?.frameWidth);
+    const h = num(r?.frameHeight);
+    return w && h ? `${w}x${h}` : null;
+  };
+  const upSize = sizeOf(outbound);
+  const downSize = sizeOf(inbound);
   return {
     stats: {
       rttMs: rtt === null ? null : Math.round(rtt * 1000),
@@ -251,6 +281,7 @@ export function summarizeRtcStats(
       outKbps: kbps(bytesOut, prev?.bytesOut ?? 0),
       path,
       codec: inCodec || outCodec ? `${outCodec ?? '?'} up / ${inCodec ?? '?'} down` : null,
+      sizes: upSize || downSize ? `${upSize ?? '?'} up / ${downSize ?? '?'} down` : null,
     },
     counters: { at: now, bytesIn, bytesOut },
   };
@@ -267,6 +298,7 @@ export function formatRtcLine(s: RtcStats): string {
     `up ${mbit(s.outKbps)} / down ${mbit(s.inKbps)} Mbit/s`,
     `${s.outFps ?? '–'}/${s.inFps ?? '–'} fps`,
     s.codec ?? '',
+    s.sizes ?? '',
   ].filter(Boolean).join(' · ');
 }
 
@@ -305,6 +337,8 @@ export class LiveCamRtcLink {
 
   /** Whether the camera goes out cropped by the browser (true) or as it is, for the worker to crop (false). */
   sentCropped: boolean | null = null;
+  /** For the camera as it is: the whole-picture scale-down handed to the encoder (rawScaleFor). */
+  rawScale = 1;
 
   private async croppedClone(track: MediaStreamTrack): Promise<MediaStreamTrack | null> {
     const mode = this.opts.uncropped ?? 'off';
@@ -331,9 +365,12 @@ export class LiveCamRtcLink {
       }
     }
     // As it is (like Decart's SDK): only the frame rate is capped; the GPU worker crops the centre and
-    // scales to the model's size itself, the same crop the JPEG path makes.
+    // scales to the model's size itself, the same crop the JPEG path makes. The encoder scales the whole
+    // picture down (sendEncodings.scaleResolutionDownBy), which keeps every pixel of the view.
     try { await t.applyConstraints({ frameRate: { max: this.fps } }); } catch { /* keep the camera's rate */ }
     try { t.contentHint = 'detail'; } catch { /* older browsers */ }
+    const raw = t.getSettings?.() ?? {};
+    this.rawScale = rawScaleFor(raw.width, raw.height);
     this.sentCropped = false;
     return t;
   }
@@ -367,8 +404,10 @@ export class LiveCamRtcLink {
       const maxBitrate = this.opts.maxBitrate ?? (this.sentCropped ? RTC_MAX_BITRATE : RTC_MAX_BITRATE_UNCROPPED);
       let tr: RTCRtpTransceiver;
       let limitsLater = false;
+      const encoding: RTCRtpEncodingParameters = { maxBitrate, maxFramerate: this.fps };
+      if (!this.sentCropped && this.rawScale > 1) encoding.scaleResolutionDownBy = this.rawScale;
       try {
-        tr = pc.addTransceiver(track, { direction: 'sendrecv', sendEncodings: [{ maxBitrate, maxFramerate: this.fps }] });
+        tr = pc.addTransceiver(track, { direction: 'sendrecv', sendEncodings: [encoding] });
       } catch {
         // Safari before 14.1 takes no sendEncodings here: add the track plainly, set the limits below.
         tr = pc.addTransceiver(track, { direction: 'sendrecv' });
@@ -381,6 +420,7 @@ export class LiveCamRtcLink {
         if (limitsLater && p.encodings?.[0]) {
           p.encodings[0].maxBitrate = maxBitrate;
           p.encodings[0].maxFramerate = this.fps;
+          if (encoding.scaleResolutionDownBy) p.encodings[0].scaleResolutionDownBy = encoding.scaleResolutionDownBy;
         }
         await tr.sender.setParameters(p);
       } catch { /* not supported: the browser's default */ }
@@ -480,6 +520,16 @@ export class LiveCamRtcLink {
       await this.sender.replaceTrack(next);
       this.sendTrack?.stop();
       this.sendTrack = next;
+      if (!this.sentCropped) {
+        // The other camera may have another size: keep the whole-picture scale in step.
+        try {
+          const p = this.sender.getParameters();
+          if (p.encodings?.[0]) {
+            p.encodings[0].scaleResolutionDownBy = this.rawScale;
+            await this.sender.setParameters(p);
+          }
+        } catch { /* keep the previous scale */ }
+      }
     } catch (e) {
       next.stop();
       this.fail(`camera switch failed: ${String(e)}`);

@@ -9,8 +9,10 @@ import {
   primeVideoForPlayback,
   RTC_FIRST_FRAME_MS,
   rtcAllowedHere,
+  rawScaleFor,
   rtcCameraMode,
   rtcEngine,
+  rtcIsAndroid,
   showRemoteVideo,
   summarizeRtcStats,
   type RtcLinkDeps,
@@ -263,7 +265,7 @@ describe('stats readout', () => {
       { type: 'codec', id: 'C2', mimeType: 'video/H264' },
     ];
     const { stats, counters } = summarizeRtcStats(report, { at: 0, bytesIn: 0, bytesOut: 0 }, 1000);
-    expect(stats).toEqual({ rttMs: 142, jitterBufferMs: 40, inFps: 24, outFps: 10, inKbps: 2400, outKbps: 600, path: 'srflx/udp -> relay', codec: 'H264 up / H264 down' });
+    expect(stats).toEqual({ rttMs: 142, jitterBufferMs: 40, inFps: 24, outFps: 10, inKbps: 2400, outKbps: 600, path: 'srflx/udp -> relay', codec: 'H264 up / H264 down', sizes: null });
     expect(counters).toEqual({ at: 1000, bytesIn: 300_000, bytesOut: 75_000 });
     expect(formatRtcLine(stats)).toBe('webrtc srflx/udp -> relay · rtt 142 ms · jb 40 ms · up 0.6 / down 2.4 Mbit/s · 10/24 fps · H264 up / H264 down');
     expect(summarizeRtcStats([], null, 0).stats.rttMs).toBeNull();
@@ -433,7 +435,7 @@ describe('iPhone like Decart: raw camera, unlock in the tap, fast hand-back (13 
     const raw = setup({ uncropped: 'always' }, { width: 1280, height: 720 });
     await raw.link.start();
     expect(raw.link.sentCropped).toBe(false);
-    expect(raw.pc.addTransceiver).toHaveBeenCalledWith(raw.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_500_000, maxFramerate: 10 }] });
+    expect(raw.pc.addTransceiver).toHaveBeenCalledWith(raw.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_500_000, maxFramerate: 10, scaleResolutionDownBy: 1.33 }] });
     const cropped = setup();
     await cropped.link.start();
     expect(cropped.pc.addTransceiver).toHaveBeenCalledWith(cropped.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_000_000, maxFramerate: 10 }] });
@@ -449,7 +451,7 @@ describe('iPhone like Decart: raw camera, unlock in the tap, fast hand-back (13 
     await t.link.start();
     expect(t.calls.failed).toEqual([]);
     expect(t.pc.addTransceiver).toHaveBeenLastCalledWith(t.clones[0], { direction: 'sendrecv' });
-    expect((t.params.encodings as Array<{ maxBitrate?: number; maxFramerate?: number }>)[0]).toMatchObject({ maxBitrate: 1_500_000, maxFramerate: 10 });
+    expect((t.params.encodings as Array<{ maxBitrate?: number; maxFramerate?: number }>)[0]).toMatchObject({ maxBitrate: 1_500_000, maxFramerate: 10, scaleResolutionDownBy: 1.33 });
     expect(t.sent[0]).toMatchObject({ type: 'webrtc_offer' });
   });
 
@@ -504,5 +506,43 @@ describe('iPhone like Decart: raw camera, unlock in the tap, fast hand-back (13 
     primeVideoForPlayback(v as unknown as HTMLVideoElement);
     expect(v.play).toHaveBeenCalledTimes(1);
     primeVideoForPlayback(null); // no element: nothing
+  });
+});
+
+describe('Android framing (13 Nov 2026): the camera as it is, scaled down whole, never cropped in the browser', () => {
+  it('Android Chrome sends the camera as it is; Chrome on a computer still crops; a device switch wins', () => {
+    expect(rtcIsAndroid({ navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G935F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Mobile Safari/537.36' } })).toBe(true);
+    expect(rtcIsAndroid({ navigator: { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/141.0 Safari/537.36' } })).toBe(false);
+    expect(rtcIsAndroid({})).toBe(false);
+    expect(rtcCameraMode('chromium', null, true)).toBe('always');
+    expect(rtcCameraMode('chromium', null, false)).toBe('off'); // the kiosk and computers: unchanged
+    expect(rtcCameraMode('chromium', 'off', true)).toBe('off'); // ?livecam_rtc_uncropped=0 on that device
+    expect(rtcCameraMode('webkit', null, false)).toBe('always');
+  });
+
+  it('rawScaleFor: short side to 540, same in either orientation, never up', () => {
+    expect(rawScaleFor(1280, 720)).toBe(1.33);
+    expect(rawScaleFor(720, 1280)).toBe(1.33); // portrait phone: same scale, so the view is never cropped
+    expect(rawScaleFor(1920, 1080)).toBe(2);
+    expect(rawScaleFor(640, 480)).toBe(1); // already small: as captured
+    expect(rawScaleFor(undefined, undefined)).toBe(1);
+  });
+
+  it('a portrait Android camera goes out whole (no size constraint on the track), scaled by the encoder', async () => {
+    const t = setup({ uncropped: 'always' }, { width: 720, height: 1280 });
+    await t.link.start();
+    expect(t.clones[0].constraints).toEqual({ frameRate: { max: 10 } }); // no width/height: nothing cropped
+    expect(t.link.sentCropped).toBe(false);
+    expect(t.link.rawScale).toBe(1.33);
+    expect(t.pc.addTransceiver).toHaveBeenCalledWith(t.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_500_000, maxFramerate: 10, scaleResolutionDownBy: 1.33 }] });
+  });
+
+  it('the debug line shows the frame sizes on the wire (checks the framing on any device)', () => {
+    const { stats } = summarizeRtcStats([
+      { type: 'outbound-rtp', kind: 'video', frameWidth: 540, frameHeight: 960, bytesSent: 0 },
+      { type: 'inbound-rtp', kind: 'video', frameWidth: 576, frameHeight: 1024, bytesReceived: 0 },
+    ], null, 0);
+    expect(stats.sizes).toBe('540x960 up / 576x1024 down');
+    expect(formatRtcLine(stats)).toContain('540x960 up / 576x1024 down');
   });
 });

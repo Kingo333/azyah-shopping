@@ -4,7 +4,7 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
-import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, primeVideoForPlayback, rtcAllowedHere, rtcCameraMode, rtcEngine, showRemoteVideo } from './liveCamWebRtc';
+import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, primeVideoForPlayback, rtcAllowedHere, rtcCameraMode, rtcEngine, rtcIsAndroid, showRemoteVideo } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
 import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncroppedSwitch, liveCamRtcBrowserPolicy } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
@@ -734,9 +734,9 @@ export function useLiveCamSession({
           height: c.captureHeight,
           fps: liteRef.current ? Math.min(LIVE_CAM_LITE_FPS, c.fpsCap) : c.fpsCap,
           // iPhone Safari cannot crop the camera track: send it as it is (the worker crops) when allowed.
-          // Chrome crops the camera to the model size itself; Safari sends it as it is (like Decart's SDK)
-          // and the worker crops it the same way the JPEG path does (rtcCameraMode).
-          uncropped: rtcCameraMode(engine, liveCamRtcUncroppedSwitch()),
+          // Chrome on a computer crops the camera to the model size itself; Android and Safari send it as it
+          // is (like Decart's SDK) and the worker crops it the same way the JPEG path does (rtcCameraMode).
+          uncropped: rtcCameraMode(engine, liveCamRtcUncroppedSwitch(), rtcIsAndroid(globalThis as never)),
           iceServers: ice,
           send: (m) => {
             const w = wsRef.current;
@@ -760,7 +760,7 @@ export function useLiveCamSession({
             setRtcVideoOn(useVideo);
             stopPlayback(); // WebRTC has its own jitter buffer
             console.log(`[live-cam] webrtc ${engine} view=${useVideo ? 'video' : 'canvas'} camera=${link.sentCropped ? 'cropped by the browser' : 'as it is (worker crops)'}`);
-            statsRef.current.setTransport(`webrtc ${engine === 'webkit' ? 'safari' : engine} cam ${link.sentCropped ? 'cropped' : 'as-is'} (worker relay ${link.workerTurn ?? '?'})`);
+            statsRef.current.setTransport(`webrtc ${engine === 'webkit' ? 'safari' : engine}${rtcIsAndroid(globalThis as never) ? ' android' : ''} cam ${link.sentCropped ? 'cropped' : `as-is /${link.rawScale}`} (worker relay ${link.workerTurn ?? '?'})`);
             console.log(`[live-cam] webrtc on: frames travel as video (worker relay ${link.workerTurn ?? '?'})`);
           },
           onFailed: (reason) => {
