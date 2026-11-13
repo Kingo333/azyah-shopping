@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.13.0"
+    "version": ">= 3.13.0",
+    "appVersionSource": "local"
   },
   "build": {
     "production": {
@@ -11,7 +12,8 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "node": "20.18.0"
     }
   },
   "submit": {
