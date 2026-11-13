@@ -164,37 +164,57 @@ export function liveCamRtcView(
   return readSwitch('livecam_rtc_view', 'azyah.livecam.rtc_view', undefined, search, storage) === 'canvas' ? 'canvas' : 'video';
 }
 
-// Browsers that cannot crop the camera track (iPhone Safari) send the camera as it is and the GPU worker
-// crops it. Off for everyone until checked on a real iPhone: then set this to 'fallback' (one line).
-// One device can try it now with ?livecam_rtc_uncropped=1 (remembered; =0 off; =always: Chrome too).
+// The camera as it is (the GPU worker crops it) vs cropped by the browser. Per browser by default
+// (rtcCameraMode in liveCamWebRtc.ts): Chrome crops, Safari sends it as it is (like Decart's SDK).
+// One device can choose with ?livecam_rtc_uncropped=1 (crop if it can, else as it is), =always, =0 (crop
+// or stay on JPEG); remembered. This constant is only the fallback of liveCamRtcUncropped().
 export const LIVE_CAM_RTC_UNCROPPED_DEFAULT: 'off' | 'fallback' | 'always' = 'off';
 
 export function liveCamRtcUncropped(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
 ): 'off' | 'fallback' | 'always' {
+  return liveCamRtcUncroppedSwitch(search, storage) ?? LIVE_CAM_RTC_UNCROPPED_DEFAULT;
+}
+
+/** The device's own ?livecam_rtc_uncropped choice, or null (then rtcCameraMode picks per browser:
+ * Chrome crops, Safari sends the camera as it is). */
+export function liveCamRtcUncroppedSwitch(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'off' | 'fallback' | 'always' | null {
   const v = readSwitch('livecam_rtc_uncropped', 'azyah.livecam.rtc_uncropped', undefined, search, storage);
   if (v === '1' || v === 'on' || v === 'fallback') return 'fallback';
   if (v === 'always') return 'always';
   if (v === '0' || v === 'off') return 'off';
-  return LIVE_CAM_RTC_UNCROPPED_DEFAULT;
+  return null;
 }
 
-// Which browsers try WebRTC (13 Nov 2026, before the owner merges): Chrome's engine (Chrome, Edge, Samsung
-// Internet, Android phones, the Windows kiosk) is the one checked end to end. Safari (every browser on an
-// iPhone or iPad, Mac Safari) and Firefox stay on the JPEG path they use today until a real iPhone is checked:
-// one device tries it with ?livecam_rtc_all=1 (remembered; =0 off). After a good iPhone test, set this to
-// true (one line) and every browser that has WebRTC tries it.
+// Which browsers try WebRTC. Chrome's engine (Chrome, Edge, Samsung Internet, Android phones, the Windows
+// kiosk) always. Safari (every browser on an iPhone or iPad, and Mac Safari) since 13 Nov 2026 (owner: "make
+// WebRTC work on iPhone the way Decart does"): set LIVE_CAM_RTC_SAFARI_DEFAULT to false to send every iPhone
+// back to JPEG (one line). Firefox and others: LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT (off).
+// One device: ?livecam_rtc_all=1 = every browser that has WebRTC; =0 = Chrome's engine only (remembered).
+export const LIVE_CAM_RTC_SAFARI_DEFAULT = true;
 export const LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT = false;
 
+/** The device switch: 'on', 'off', or null when this device has none (the defaults above apply). */
 export function liveCamRtcAllBrowsers(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
-): boolean {
+): 'on' | 'off' | null {
   const v = readSwitch('livecam_rtc_all', 'azyah.livecam.rtc_all', undefined, search, storage);
-  if (v === '1' || v === 'on') return true;
-  if (v === '0' || v === 'off') return false;
-  return LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT;
+  if (v === '1' || v === 'on') return 'on';
+  if (v === '0' || v === 'off') return 'off';
+  return null;
+}
+
+/** Who tries WebRTC on this device (see rtcAllowedHere in liveCamWebRtc.ts). */
+export function liveCamRtcBrowserPolicy(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): { allBrowsers: 'on' | 'off' | null; safari: boolean; others: boolean } {
+  return { allBrowsers: liveCamRtcAllBrowsers(search, storage), safari: LIVE_CAM_RTC_SAFARI_DEFAULT, others: LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT };
 }
 
 export function liveCamDebug(

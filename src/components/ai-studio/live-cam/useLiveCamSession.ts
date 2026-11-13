@@ -4,9 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
-import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, rtcAllowedHere, showRemoteVideo } from './liveCamWebRtc';
+import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, primeVideoForPlayback, rtcAllowedHere, rtcCameraMode, rtcEngine, showRemoteVideo } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncropped, liveCamRtcAllBrowsers } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncroppedSwitch, liveCamRtcBrowserPolicy } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -467,6 +467,9 @@ export function useLiveCamSession({
   }, [remoteCanvasRef]);
 
   const start = useCallback(async () => {
+    // Still inside the shopper's tap (nothing awaited yet): unlock the result <video> so Safari can play
+    // the WebRTC stream later without another tap (liveCamWebRtc.ts, primeVideoForPlayback).
+    primeVideoForPlayback(remoteVideoRef?.current);
     setErrorCode(null);
     setNotice(null);
     setNoticeKey(null);
@@ -707,8 +710,9 @@ export function useLiveCamSession({
         const videoEl = remoteVideoRef?.current ?? null;
         const useVideo = liveCamRtcView() === 'video' && !!videoEl;
         if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current) return;
-        if (!rtcAllowedHere(globalThis as never, useVideo ? 'video' : 'canvas', liveCamRtcAllBrowsers())) {
-          if (canUseWebRtc(globalThis as never, 'video')) console.log('[live-cam] webrtc: not on this browser yet (Safari/Firefox until an iPhone check; ?livecam_rtc_all=1 tries it), staying on JPEG');
+        const engine = rtcEngine(globalThis as never);
+        if (!rtcAllowedHere(globalThis as never, useVideo ? 'video' : 'canvas', liveCamRtcBrowserPolicy())) {
+          if (canUseWebRtc(globalThis as never, 'video')) console.log(`[live-cam] webrtc: not on this browser (${engine}; ?livecam_rtc_all=1 tries it), staying on JPEG`);
           return;
         }
         const sid = sessionIdRef.current;
@@ -730,7 +734,9 @@ export function useLiveCamSession({
           height: c.captureHeight,
           fps: liteRef.current ? Math.min(LIVE_CAM_LITE_FPS, c.fpsCap) : c.fpsCap,
           // iPhone Safari cannot crop the camera track: send it as it is (the worker crops) when allowed.
-          uncropped: liveCamRtcUncropped(),
+          // Chrome crops the camera to the model size itself; Safari sends it as it is (like Decart's SDK)
+          // and the worker crops it the same way the JPEG path does (rtcCameraMode).
+          uncropped: rtcCameraMode(engine, liveCamRtcUncroppedSwitch()),
           iceServers: ice,
           send: (m) => {
             const w = wsRef.current;
@@ -742,7 +748,7 @@ export function useLiveCamSession({
               ? showRemoteVideo(videoEl, track, () => {
                 statsRef.current.onFrame(undefined, undefined);
                 statsRef.current.onPresented();
-              }, () => link.markConnected())
+              }, () => link.markConnected(), undefined, (why) => link.fail(why))
               : drawRemoteFrames(track, (bitmap) => {
                 statsRef.current.onFrame(undefined, undefined);
                 presentBitmap(bitmap, '');
@@ -753,8 +759,8 @@ export function useLiveCamSession({
             rtcActiveRef.current = true;
             setRtcVideoOn(useVideo);
             stopPlayback(); // WebRTC has its own jitter buffer
-            console.log(`[live-cam] webrtc view=${useVideo ? 'video' : 'canvas'} camera=${link.sentCropped ? 'cropped by the browser' : 'as it is (worker crops)'}`);
-            statsRef.current.setTransport(`webrtc (worker relay ${link.workerTurn ?? '?'})`);
+            console.log(`[live-cam] webrtc ${engine} view=${useVideo ? 'video' : 'canvas'} camera=${link.sentCropped ? 'cropped by the browser' : 'as it is (worker crops)'}`);
+            statsRef.current.setTransport(`webrtc ${engine === 'webkit' ? 'safari' : engine} cam ${link.sentCropped ? 'cropped' : 'as-is'} (worker relay ${link.workerTurn ?? '?'})`);
             console.log(`[live-cam] webrtc on: frames travel as video (worker relay ${link.workerTurn ?? '?'})`);
           },
           onFailed: (reason) => {

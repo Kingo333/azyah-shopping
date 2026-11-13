@@ -9,8 +9,11 @@
 //   video pipeline decodes and draws it, so the page does no work per frame (and it would work on Safari).
 //   ?livecam_rtc_view=canvas keeps the older way (each frame drawn into the canvas; Chrome/Edge only).
 // - which browsers try it (rtcAllowedHere): Chrome's engine (Chrome, Edge, Samsung Internet, Android, the
-//   kiosk). Safari (iPhone, iPad, Mac) and Firefox keep today's JPEG path until a real iPhone is checked
-//   (?livecam_rtc_all=1 tries it on one device; LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT turns it on for all).
+//   kiosk) and, since 13 Nov 2026, Safari (iPhone, iPad, Mac: LIVE_CAM_RTC_SAFARI_DEFAULT). Firefox keeps
+//   JPEG unless ?livecam_rtc_all=1; ?livecam_rtc_all=0 keeps one device on Chrome-only.
+// - iPhone like Decart's SDK: the camera track goes out as it is (rtcCameraMode) and the worker crops it;
+//   the result plays in the <video>, unlocked inside the Start tap (primeVideoForPlayback); a page that
+//   cannot show it goes back to JPEG within RTC_FIRST_FRAME_MS of connecting.
 // - a browser that cannot crop the camera track (iPhone Safari) may send the camera as it is; the GPU
 //   worker then crops and scales it to the model's size itself (?livecam_rtc_uncropped, liveCamFlags.ts).
 // While it is connected the page sends no JPEG frames (and the worker sends none). Anything that goes
@@ -21,9 +24,15 @@
 // hands the worker the same short-lived TURN credentials in its offer, so the worker holds no secret.
 
 export const RTC_MAX_BITRATE = 1_000_000; // camera track, 288x512 at 8-10 fps: about 0.4-0.7 Mbit/s used
+// The camera as it is (iPhone, like Decart: up to 1280x720 at the Normal or Lite rate); the worker scales
+// it down to 288x512, so a bit more room keeps that picture as clean as the cropped one.
+export const RTC_MAX_BITRATE_UNCROPPED = 1_500_000;
 export const RTC_CONNECT_TIMEOUT_MS = 10_000; // JPEG keeps running meanwhile, so waiting longer costs the shopper nothing
 export const RTC_GATHER_TIMEOUT_MS = 2000;
 export const RTC_DISCONNECT_GRACE_MS = 4000;
+// Once connected, the worker sends video only (no JPEG), so a stream the page cannot show must hand back
+// to JPEG fast: the first frame normally shows within 0.1-0.5 s of connecting.
+export const RTC_FIRST_FRAME_MS = 3000;
 
 const ICE_URL_RE = /^(stun|turn|turns):([^?:/\s]+)(?::(\d+))?(?:\?transport=(udp|tcp))?$/i;
 
@@ -61,21 +70,73 @@ export function canUseWebRtc(g: Globals = globalThis as unknown as Globals, view
   return typeof g.MediaStreamTrackProcessor === 'function' && typeof g.createImageBitmap === 'function';
 }
 
+/** Which browser engine: 'chromium' (Chrome, Edge, Samsung Internet, Android, the kiosk: it has the frame
+ * reader the canvas view needs), 'webkit' (Safari, and every browser on an iPhone or iPad), 'other' (Firefox). */
+export type RtcEngine = 'chromium' | 'webkit' | 'other';
+
+export function rtcEngine(g: Globals & { navigator?: { vendor?: string } } = globalThis as never): RtcEngine {
+  // Every WebKit browser (Safari on Mac, any browser on iOS and iPadOS) reports Apple as the vendor;
+  // checked first so a future Safari with the frame reader still counts as Safari.
+  if (g.navigator?.vendor === 'Apple Computer, Inc.') return 'webkit';
+  if (typeof g.MediaStreamTrackProcessor === 'function') return 'chromium';
+  return 'other';
+}
+
+/** Who tries WebRTC: liveCamFlags.ts sets these (per-device switch first, then the defaults). */
+export interface RtcBrowserPolicy {
+  /** ?livecam_rtc_all: 'on' = every browser with WebRTC, 'off' = Chrome's engine only, null = defaults. */
+  allBrowsers: 'on' | 'off' | null;
+  /** Safari / iPhone by default (LIVE_CAM_RTC_SAFARI_DEFAULT). */
+  safari: boolean;
+  /** Firefox and other engines by default (LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT). */
+  others: boolean;
+}
+
 /**
- * Whether this browser tries WebRTC at all. Chrome's engine (it has the frame reader the canvas view needs:
- * Chrome, Edge, Samsung Internet, Android, the kiosk) is the one checked end to end. Safari (iPhone, iPad,
- * Mac) and Firefox only when `allBrowsers` (liveCamRtcAllBrowsers, ?livecam_rtc_all=1) until a real iPhone
- * is checked; until then they keep the JPEG path they use today.
+ * Whether this browser tries WebRTC at all. Chrome's engine always (checked end to end). Safari (iPhone,
+ * iPad, Mac) by default since 13 Nov 2026 (policy.safari), Firefox only when switched on; the per-device
+ * ?livecam_rtc_all switch overrides both. Elsewhere the JPEG path stays.
  */
-export function rtcAllowedHere(g: Globals = globalThis as unknown as Globals, view: RtcView = 'video', allBrowsers = false): boolean {
+export function rtcAllowedHere(
+  g: Globals & { navigator?: { vendor?: string } } = globalThis as never,
+  view: RtcView = 'video',
+  policy: RtcBrowserPolicy | boolean = { allBrowsers: null, safari: false, others: false },
+): boolean {
   if (!canUseWebRtc(g, view)) return false;
-  return allBrowsers || canUseWebRtc(g, 'canvas');
+  const engine = rtcEngine(g);
+  if (engine === 'chromium') return true;
+  const p: RtcBrowserPolicy = typeof policy === 'boolean' ? { allBrowsers: policy ? 'on' : null, safari: false, others: false } : policy;
+  if (p.allBrowsers === 'on') return true;
+  if (p.allBrowsers === 'off') return false;
+  return engine === 'webkit' ? p.safari : p.others;
+}
+
+/**
+ * How the camera goes out, unless a device switch says otherwise (?livecam_rtc_uncropped):
+ * Chrome crops and scales it to the model size itself ('off', checked end to end); Safari sends the camera
+ * as it is ('always', like Decart's SDK: no per-track resize, so the picture is upright in any orientation
+ * and the worker crops and scales it exactly like the JPEG path); other engines crop when they can.
+ */
+export function rtcCameraMode(engine: RtcEngine, override: 'off' | 'fallback' | 'always' | null): 'off' | 'fallback' | 'always' {
+  if (override) return override;
+  if (engine === 'chromium') return 'off';
+  if (engine === 'webkit') return 'always';
+  return 'fallback';
 }
 
 /** H.264 first (hardware on phones and the kiosk), the rest as the browser lists them. */
-export function orderCodecs<T extends { mimeType: string }>(codecs: T[]): T[] {
-  const h264 = codecs.filter((c) => c.mimeType.toLowerCase() === 'video/h264');
-  return [...h264, ...codecs.filter((c) => c.mimeType.toLowerCase() !== 'video/h264')];
+export function orderCodecs<T extends { mimeType: string; sdpFmtpLine?: string }>(codecs: T[]): T[] {
+  // H.264 first (hardware on phones and the kiosk). Within it, what the worker (aiortc) takes: Constrained
+  // Baseline or Baseline with packetization-mode 1. Safari lists High first, so this puts its usable one on top.
+  const rank = (c: T): number => {
+    const f = (c.sdpFmtpLine ?? '').toLowerCase();
+    const mode1 = /packetization-mode=1/.test(f);
+    const baseline = /profile-level-id=42(e0|00|c0)/.test(f);
+    return mode1 && baseline ? 0 : mode1 ? 1 : 2;
+  };
+  const h264 = codecs.filter((c) => c.mimeType.toLowerCase() === 'video/h264').map((c, i) => ({ c, i }));
+  h264.sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i);
+  return [...h264.map((x) => x.c), ...codecs.filter((c) => c.mimeType.toLowerCase() !== 'video/h264')];
 }
 
 export type RtcLinkState = 'idle' | 'starting' | 'connected' | 'failed' | 'closed';
@@ -96,8 +157,9 @@ export interface RtcLinkOptions {
   /** The live camera track; the link sends a clone, cropped and scaled by the browser where it can. */
   cameraTrack: MediaStreamTrack;
   /**
-   * Where the browser cannot crop (iPhone Safari): 'off' = stay on JPEG (default); 'fallback' = send the
-   * camera as it is and let the worker crop; 'always' = send it as it is even where the browser could crop.
+   * 'off' = the browser crops to the model size or the link stays on JPEG (Chrome's default); 'fallback' =
+   * crop where it can, else send the camera as it is and let the worker crop; 'always' = send the camera as
+   * it is (Safari's default, see rtcCameraMode).
    */
   uncropped?: 'off' | 'fallback' | 'always';
   width: number;
@@ -232,6 +294,7 @@ export class LiveCamRtcLink {
   private sendTrack: MediaStreamTrack | null = null;
   private connectTimer: unknown = null;
   private dropTimer: unknown = null;
+  private firstFrameTimer: unknown = null;
   private offerSent = false;
   private counters: { at: number; bytesIn: number; bytesOut: number } | null = null;
   private fps: number;
@@ -301,14 +364,24 @@ export class LiveCamRtcLink {
     });
     pc.addEventListener('connectionstatechange', () => this.onIceChange());
     try {
-      const tr = pc.addTransceiver(track, {
-        direction: 'sendrecv',
-        sendEncodings: [{ maxBitrate: this.opts.maxBitrate ?? RTC_MAX_BITRATE, maxFramerate: this.fps }],
-      });
+      const maxBitrate = this.opts.maxBitrate ?? (this.sentCropped ? RTC_MAX_BITRATE : RTC_MAX_BITRATE_UNCROPPED);
+      let tr: RTCRtpTransceiver;
+      let limitsLater = false;
+      try {
+        tr = pc.addTransceiver(track, { direction: 'sendrecv', sendEncodings: [{ maxBitrate, maxFramerate: this.fps }] });
+      } catch {
+        // Safari before 14.1 takes no sendEncodings here: add the track plainly, set the limits below.
+        tr = pc.addTransceiver(track, { direction: 'sendrecv' });
+        limitsLater = true;
+      }
       this.sender = tr.sender;
       try {
         const p = tr.sender.getParameters() as RTCRtpSendParameters & { degradationPreference?: string };
         p.degradationPreference = 'maintain-resolution'; // fewer frames, never a smaller picture for the model
+        if (limitsLater && p.encodings?.[0]) {
+          p.encodings[0].maxBitrate = maxBitrate;
+          p.encodings[0].maxFramerate = this.fps;
+        }
         await tr.sender.setParameters(p);
       } catch { /* not supported: the browser's default */ }
       const codecs = this.deps.getCodecs();
@@ -350,6 +423,8 @@ export class LiveCamRtcLink {
     this.state = 'connected';
     this.deps.clearTimer(this.connectTimer);
     this.connectTimer = null;
+    if (this.firstFrameTimer !== null) this.deps.clearTimer(this.firstFrameTimer);
+    this.firstFrameTimer = null;
     this.opts.onConnected();
   }
 
@@ -365,9 +440,19 @@ export class LiveCamRtcLink {
           if (this.pc?.connectionState === 'disconnected') this.fail('connection lost');
         }, RTC_DISCONNECT_GRACE_MS);
       }
-    } else if (s === 'connected' && this.dropTimer !== null) {
-      this.deps.clearTimer(this.dropTimer);
-      this.dropTimer = null;
+    } else if (s === 'connected') {
+      if (this.dropTimer !== null) {
+        this.deps.clearTimer(this.dropTimer);
+        this.dropTimer = null;
+      }
+      // Connected, so the worker now sends video only: if this page cannot show it (playback blocked,
+      // a codec it cannot decode), go back to JPEG within seconds instead of a frozen picture.
+      if (this.state === 'starting' && this.firstFrameTimer === null) {
+        this.firstFrameTimer = this.deps.setTimer(() => {
+          this.firstFrameTimer = null;
+          if (this.state === 'starting') this.fail(`connected but no video shown within ${Math.round(RTC_FIRST_FRAME_MS / 1000)} s`);
+        }, RTC_FIRST_FRAME_MS);
+      }
     }
   }
 
@@ -432,8 +517,10 @@ export class LiveCamRtcLink {
   private teardown(): void {
     if (this.connectTimer !== null) this.deps.clearTimer(this.connectTimer);
     if (this.dropTimer !== null) this.deps.clearTimer(this.dropTimer);
+    if (this.firstFrameTimer !== null) this.deps.clearTimer(this.firstFrameTimer);
     this.connectTimer = null;
     this.dropTimer = null;
+    this.firstFrameTimer = null;
     try { this.sendTrack?.stop(); } catch { /* already stopped */ }
     this.sendTrack = null;
     try { this.pc?.close(); } catch { /* already closed */ }
@@ -494,6 +581,9 @@ export function drawRemoteFrames(
   };
 }
 
+/** Smaller than this is a placeholder, not a generated frame (those are 288x512 and up). */
+export const MIN_REAL_FRAME_PX = 16;
+
 type VideoWithCallback = HTMLVideoElement & {
   requestVideoFrameCallback?: (cb: (now: number, meta: unknown) => void) => number;
   cancelVideoFrameCallback?: (id: number) => void;
@@ -510,6 +600,8 @@ export function showRemoteVideo(
   onFrame: () => void,
   onFirst: () => void,
   makeStream: (tracks: MediaStreamTrack[]) => MediaStream = (tracks) => new MediaStream(tracks),
+  /** The browser refused to play it (NotAllowedError): the caller goes back to JPEG at once. */
+  onBlocked?: (reason: string) => void,
 ): () => void {
   const v = video as VideoWithCallback;
   let stopped = false;
@@ -523,24 +615,56 @@ export function showRemoteVideo(
       onFirst();
     }
   };
-  v.muted = true;
-  v.playsInline = true;
-  v.autoplay = true;
+  setInlinePlayback(v);
   v.srcObject = makeStream([track]);
-  const onLoaded = () => { if (v.videoWidth > 0 && typeof v.requestVideoFrameCallback !== 'function') seen(); };
+  // A real picture only: a browser may present a tiny black placeholder (2x2) while the stream starts or
+  // ends, which must not count as "the video shows" (that would skip the hand-back to JPEG).
+  const real = (w: number | undefined, h: number | undefined) => (w ?? 0) >= MIN_REAL_FRAME_PX && (h ?? 0) >= MIN_REAL_FRAME_PX;
+  const onLoaded = () => { if (real(v.videoWidth, v.videoHeight) && typeof v.requestVideoFrameCallback !== 'function') seen(); };
   v.addEventListener('loadeddata', onLoaded);
   if (typeof v.requestVideoFrameCallback === 'function') {
-    const loop = () => {
-      seen();
+    const loop = (_now: number, meta: unknown) => {
+      const m = meta as { width?: number; height?: number } | undefined;
+      if (real(m?.width ?? v.videoWidth, m?.height ?? v.videoHeight)) seen();
       if (!stopped) cbId = v.requestVideoFrameCallback!(loop);
     };
     cbId = v.requestVideoFrameCallback(loop);
   }
-  void v.play?.()?.catch?.(() => undefined);
+  void v.play?.()?.catch?.((e: unknown) => {
+    // AbortError only means the source changed; NotAllowedError means this page may not play video now.
+    if (!stopped && (e as { name?: string } | null)?.name === 'NotAllowedError') onBlocked?.('video playback blocked');
+  });
   return () => {
     stopped = true;
     v.removeEventListener('loadeddata', onLoaded);
     if (cbId !== null) v.cancelVideoFrameCallback?.(cbId);
     v.srcObject = null;
   };
+}
+
+/** iPhone Safari plays a video in the page (not full screen) only when it is muted and inline. */
+function setInlinePlayback(v: HTMLVideoElement): void {
+  v.muted = true;
+  v.defaultMuted = true;
+  v.playsInline = true;
+  v.autoplay = true;
+  try {
+    v.setAttribute('muted', '');
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+  } catch { /* not an element (tests) */ }
+}
+
+/**
+ * Called inside the shopper's tap on Start (before anything async): playing the still-empty result <video>
+ * there lets Safari play the WebRTC stream later without another tap. Safari already allows a camera or
+ * WebRTC stream while the page uses the camera (even in Low Power Mode, MediaElementSession.cpp); this
+ * covers older iPhones too. Harmless elsewhere (Chrome just rejects the empty play).
+ */
+export function primeVideoForPlayback(video: HTMLVideoElement | null | undefined): void {
+  if (!video) return;
+  try {
+    setInlinePlayback(video);
+    if (!video.srcObject) void video.play?.()?.catch?.(() => undefined);
+  } catch { /* old browsers */ }
 }
