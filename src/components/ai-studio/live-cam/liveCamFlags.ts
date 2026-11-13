@@ -153,6 +153,32 @@ export function withEndpointRoute(wsUrl: string, endpoint: 'live' | 'test'): str
   return wsUrl.replace(/^(wss?:\/\/)fluxrt-orchestrator\./, '$1fluxrt-orchestrator-test.');
 }
 
+// How the WebRTC result is shown (13 Nov 2026): ?livecam_rtc_view=video|canvas (remembered), default video:
+// a <video> element shows the stream like Decart's SDK (no work per frame in the page, works on iPhone).
+// canvas = the earlier way, each frame drawn into the result canvas (Chrome, Edge, Android Chrome only).
+export function liveCamRtcView(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'video' | 'canvas' {
+  return readSwitch('livecam_rtc_view', 'azyah.livecam.rtc_view', undefined, search, storage) === 'canvas' ? 'canvas' : 'video';
+}
+
+// Browsers that cannot crop the camera track (iPhone Safari) send the camera as it is and the GPU worker
+// crops it. Off for everyone until checked on a real iPhone: then set this to 'fallback' (one line).
+// One device can try it now with ?livecam_rtc_uncropped=1 (remembered; =0 off; =always: Chrome too).
+export const LIVE_CAM_RTC_UNCROPPED_DEFAULT: 'off' | 'fallback' | 'always' = 'off';
+
+export function liveCamRtcUncropped(
+  search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
+  storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,
+): 'off' | 'fallback' | 'always' {
+  const v = readSwitch('livecam_rtc_uncropped', 'azyah.livecam.rtc_uncropped', undefined, search, storage);
+  if (v === '1' || v === 'on' || v === 'fallback') return 'fallback';
+  if (v === 'always') return 'always';
+  if (v === '0' || v === 'off') return 'off';
+  return LIVE_CAM_RTC_UNCROPPED_DEFAULT;
+}
+
 export function liveCamDebug(
   search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined,
   storage: SwitchStorage | undefined = typeof window !== 'undefined' ? window.localStorage : undefined,

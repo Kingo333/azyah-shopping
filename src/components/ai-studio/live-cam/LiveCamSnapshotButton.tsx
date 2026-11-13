@@ -9,13 +9,16 @@ interface Props {
   disabled?: boolean;
   /** 'round' (design v3): a camera-style shutter button. */
   variant?: 'default' | 'round';
+  /** Called just before the canvas is read (WebRTC: copies the current video frame into it). */
+  onBeforeCapture?: () => void;
 }
 
-export const LiveCamSnapshotButton: React.FC<Props> = ({ sessionId, remoteCanvasRef, disabled, variant = 'default' }) => {
+export const LiveCamSnapshotButton: React.FC<Props> = ({ sessionId, remoteCanvasRef, disabled, variant = 'default', onBeforeCapture }) => {
   const [saving, setSaving] = useState(false);
 
   const handleCapture = async () => {
     if (!sessionId || !remoteCanvasRef.current) return;
+    onBeforeCapture?.();
     const canvas = remoteCanvasRef.current;
     if (canvas.width === 0 || canvas.height === 0) {
       toast.error('No try-on frame yet');

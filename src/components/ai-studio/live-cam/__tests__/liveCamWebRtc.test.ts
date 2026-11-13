@@ -6,11 +6,12 @@ import {
   drawRemoteFrames,
   formatRtcLine,
   orderCodecs,
+  showRemoteVideo,
   summarizeRtcStats,
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { LIVE_CAM_DEFAULT_WEBRTC_TEST, liveCamEndpoint, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
+import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcUncropped, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -271,5 +272,92 @@ describe('drawRemoteFrames', () => {
     expect(reader.cancel).toHaveBeenCalled();
     // Without the API it does nothing (and says so by returning a no-op stop).
     expect(drawRemoteFrames({} as MediaStreamTrack, () => undefined, () => undefined, {})).toBeTypeOf('function');
+  });
+});
+
+
+describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)', () => {
+  it('a <video> view needs only RTCPeerConnection (iPhone Safari too); the canvas view needs frame access', () => {
+    const f = () => undefined;
+    expect(canUseWebRtc({ RTCPeerConnection: f }, 'video')).toBe(true);
+    expect(canUseWebRtc({ RTCPeerConnection: f }, 'canvas')).toBe(false);
+    expect(canUseWebRtc({}, 'video')).toBe(false);
+  });
+
+  it('switches: video view by default; camera as it is off until checked on an iPhone', () => {
+    const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+    expect(liveCamRtcView('', mem())).toBe('video');
+    expect(liveCamRtcView('?livecam_rtc_view=canvas', mem())).toBe('canvas');
+    expect(LIVE_CAM_RTC_UNCROPPED_DEFAULT).toBe('off');
+    expect(liveCamRtcUncropped('', mem())).toBe('off');
+    const s = mem();
+    expect(liveCamRtcUncropped('?livecam_rtc_uncropped=1', s)).toBe('fallback');
+    expect(liveCamRtcUncropped('', s)).toBe('fallback'); // remembered on the device
+    expect(liveCamRtcUncropped('?livecam_rtc_uncropped=always', mem())).toBe('always');
+    expect(liveCamRtcUncropped('?livecam_rtc_uncropped=0', s)).toBe('off');
+  });
+
+  it('a browser that cannot crop sends the camera as it is when allowed (the worker crops)', async () => {
+    const { link, deps, calls, sent, clones } = setup({ uncropped: 'fallback' }, { width: 1280, height: 720 });
+    await link.start();
+    expect(calls.failed).toEqual([]);
+    expect(deps.makePeerConnection).toHaveBeenCalled();
+    expect(link.sentCropped).toBe(false);
+    expect(clones[0].constraints).toEqual({ frameRate: { max: 10 } }); // only the rate is capped
+    expect(sent[0]).toMatchObject({ type: 'webrtc_offer' });
+  });
+
+  it("'always' sends the camera as it is even where the browser could crop; 'off' keeps today's rule", async () => {
+    const a = setup({ uncropped: 'always' });
+    await a.link.start();
+    expect(a.link.sentCropped).toBe(false);
+    expect(a.clones[0].constraints).toEqual({ frameRate: { max: 10 } });
+    const b = setup({ uncropped: 'off' }, { width: 1280, height: 720 });
+    await b.link.start();
+    expect(b.calls.failed[0]).toMatch(/cannot crop/);
+    const c = setup({});
+    await c.link.start();
+    expect(c.link.sentCropped).toBe(true); // Chrome: cropped by the browser, as before
+  });
+
+  it('showRemoteVideo: the stream goes into the <video>, each presented frame is counted, the first marks it live', () => {
+    const cbs: Array<() => void> = [];
+    let cancelled = 0;
+    const video = {
+      muted: false, playsInline: false, autoplay: false, srcObject: null as unknown, videoWidth: 0,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      requestVideoFrameCallback: (cb: () => void) => { cbs.push(cb); return cbs.length; },
+      cancelVideoFrameCallback: () => { cancelled += 1; },
+      play: vi.fn(() => Promise.resolve()),
+    };
+    const frames: number[] = [];
+    const onFirst = vi.fn();
+    const stream = { id: 's' };
+    const stop = showRemoteVideo(video as unknown as HTMLVideoElement, {} as MediaStreamTrack, () => frames.push(1), onFirst, () => stream as unknown as MediaStream);
+    expect(video.srcObject).toBe(stream);
+    expect(video.muted && video.playsInline && video.autoplay).toBe(true);
+    expect(video.play).toHaveBeenCalled();
+    cbs.shift()!();
+    cbs.shift()!();
+    expect(frames).toHaveLength(2);
+    expect(onFirst).toHaveBeenCalledTimes(1);
+    stop();
+    expect(video.srcObject).toBeNull();
+    expect(cancelled).toBe(1);
+  });
+
+  it('showRemoteVideo without requestVideoFrameCallback: the first loaded picture counts', () => {
+    let loaded: (() => void) | null = null;
+    const video = {
+      muted: false, playsInline: false, autoplay: false, srcObject: null as unknown, videoWidth: 0,
+      addEventListener: (ev: string, fn: () => void) => { if (ev === 'loadeddata') loaded = fn; },
+      removeEventListener: vi.fn(),
+      play: () => Promise.resolve(),
+    };
+    const onFirst = vi.fn();
+    showRemoteVideo(video as unknown as HTMLVideoElement, {} as MediaStreamTrack, () => undefined, onFirst, () => ({}) as MediaStream);
+    video.videoWidth = 576;
+    loaded!();
+    expect(onFirst).toHaveBeenCalledTimes(1);
   });
 });
