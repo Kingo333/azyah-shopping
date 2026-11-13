@@ -6,12 +6,13 @@ import {
   drawRemoteFrames,
   formatRtcLine,
   orderCodecs,
+  rtcAllowedHere,
   showRemoteVideo,
   summarizeRtcStats,
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcUncropped, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
+import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcUncropped, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -282,6 +283,26 @@ describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)',
     expect(canUseWebRtc({ RTCPeerConnection: f }, 'video')).toBe(true);
     expect(canUseWebRtc({ RTCPeerConnection: f }, 'canvas')).toBe(false);
     expect(canUseWebRtc({}, 'video')).toBe(false);
+  });
+
+  it('which browsers try it: Chrome engine yes; Safari and Firefox keep JPEG until the iPhone check (or ?livecam_rtc_all=1)', () => {
+    const f = () => undefined;
+    const chrome = { RTCPeerConnection: f, MediaStreamTrackProcessor: f, createImageBitmap: f };
+    const safari = { RTCPeerConnection: f, createImageBitmap: f }; // iPhone, iPad, Mac Safari (and Firefox)
+    expect(rtcAllowedHere(chrome, 'video')).toBe(true);
+    expect(rtcAllowedHere(chrome, 'canvas')).toBe(true);
+    expect(rtcAllowedHere(safari, 'video')).toBe(false); // today's JPEG path, as before 13 Nov
+    expect(rtcAllowedHere(safari, 'video', true)).toBe(true); // ?livecam_rtc_all=1 on one device
+    expect(rtcAllowedHere(safari, 'canvas', true)).toBe(false); // the canvas view still needs Chrome's frame reader
+    expect(rtcAllowedHere({}, 'video', true)).toBe(false); // no WebRTC at all
+    const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+    expect(LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT).toBe(false);
+    expect(liveCamRtcAllBrowsers('', mem())).toBe(false);
+    const s = mem();
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=1', s)).toBe(true);
+    expect(liveCamRtcAllBrowsers('', s)).toBe(true); // remembered on the device
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=0', s)).toBe(false);
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=junk', mem())).toBe(LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT);
   });
 
   it('switches: video view by default; camera as it is off until checked on an iPhone', () => {

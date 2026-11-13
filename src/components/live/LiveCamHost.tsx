@@ -6,7 +6,7 @@ import { LiveCamTab } from '@/components/ai-studio/live-cam/LiveCamTab';
 import type { LiveCamStatus } from '@/components/ai-studio/live-cam/liveCamTypes';
 import { keepMounted } from '@/lib/liveCamHost';
 import { WAIT_COPY } from '@/components/ai-studio/live-cam/liveCamWait';
-import { liveCamDebug, liveCamEndpoint, liveCamRtcUncropped, liveCamRtcView, liveCamTransport } from '@/components/ai-studio/live-cam/liveCamFlags';
+import { liveCamDebug, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcUncropped, liveCamRtcView, liveCamTransport } from '@/components/ai-studio/live-cam/liveCamFlags';
 
 /**
  * Design v3: one Live Cam for the whole app, so it keeps starting up (and
@@ -56,6 +56,7 @@ export function LiveCamHostProvider({ children }: { children: React.ReactNode })
       liveCamDebug();
       liveCamRtcView();
       liveCamRtcUncropped();
+      liveCamRtcAllBrowsers();
     } catch { /* private mode: they still work while in the address */ }
   }, []);
 

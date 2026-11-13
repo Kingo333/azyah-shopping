@@ -6,8 +6,11 @@
 //   model's portrait size (288x512 today), at the Normal or Lite frame rate;
 // - the generated frames come back as a video track. By default (13 Nov 2026, like Decart's SDK) the app
 //   shows that stream straight in a <video> element (srcObject) over the result canvas: the browser's
-//   video pipeline decodes and draws it, so the page does no work per frame, and it works on iPhone Safari.
+//   video pipeline decodes and draws it, so the page does no work per frame (and it would work on Safari).
 //   ?livecam_rtc_view=canvas keeps the older way (each frame drawn into the canvas; Chrome/Edge only).
+// - which browsers try it (rtcAllowedHere): Chrome's engine (Chrome, Edge, Samsung Internet, Android, the
+//   kiosk). Safari (iPhone, iPad, Mac) and Firefox keep today's JPEG path until a real iPhone is checked
+//   (?livecam_rtc_all=1 tries it on one device; LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT turns it on for all).
 // - a browser that cannot crop the camera track (iPhone Safari) may send the camera as it is; the GPU
 //   worker then crops and scales it to the model's size itself (?livecam_rtc_uncropped, liveCamFlags.ts).
 // While it is connected the page sends no JPEG frames (and the worker sends none). Anything that goes
@@ -56,6 +59,17 @@ export function canUseWebRtc(g: Globals = globalThis as unknown as Globals, view
   if (typeof g.RTCPeerConnection !== 'function') return false;
   if (view === 'video') return true;
   return typeof g.MediaStreamTrackProcessor === 'function' && typeof g.createImageBitmap === 'function';
+}
+
+/**
+ * Whether this browser tries WebRTC at all. Chrome's engine (it has the frame reader the canvas view needs:
+ * Chrome, Edge, Samsung Internet, Android, the kiosk) is the one checked end to end. Safari (iPhone, iPad,
+ * Mac) and Firefox only when `allBrowsers` (liveCamRtcAllBrowsers, ?livecam_rtc_all=1) until a real iPhone
+ * is checked; until then they keep the JPEG path they use today.
+ */
+export function rtcAllowedHere(g: Globals = globalThis as unknown as Globals, view: RtcView = 'video', allBrowsers = false): boolean {
+  if (!canUseWebRtc(g, view)) return false;
+  return allBrowsers || canUseWebRtc(g, 'canvas');
 }
 
 /** H.264 first (hardware on phones and the kiosk), the rest as the browser lists them. */

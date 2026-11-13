@@ -4,9 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
-import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, showRemoteVideo } from './liveCamWebRtc';
+import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, rtcAllowedHere, showRemoteVideo } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncropped } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncropped, liveCamRtcAllBrowsers } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -706,8 +706,11 @@ export function useLiveCamSession({
         // The result shows in the remote <video> (like Decart's SDK) unless ?livecam_rtc_view=canvas.
         const videoEl = remoteVideoRef?.current ?? null;
         const useVideo = liveCamRtcView() === 'video' && !!videoEl;
-        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current
-          || !canUseWebRtc(globalThis as never, useVideo ? 'video' : 'canvas')) return;
+        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current) return;
+        if (!rtcAllowedHere(globalThis as never, useVideo ? 'video' : 'canvas', liveCamRtcAllBrowsers())) {
+          if (canUseWebRtc(globalThis as never, 'video')) console.log('[live-cam] webrtc: not on this browser yet (Safari/Firefox until an iPhone check; ?livecam_rtc_all=1 tries it), staying on JPEG');
+          return;
+        }
         const sid = sessionIdRef.current;
         const camTrack = streamRef.current?.getVideoTracks()[0];
         if (!sid || !camTrack) return;
