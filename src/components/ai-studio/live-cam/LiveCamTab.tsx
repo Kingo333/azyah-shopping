@@ -49,7 +49,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
 
   const {
     status, facing, flipCamera, lite, setLite, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame, readStats,
-    rtcVideoOn, syncRemoteCanvas,
+    rtcVideoOn, rtcOn, syncRemoteCanvas,
   } = useLiveCamSession({
     garment,
     localVideoRef,
@@ -201,6 +201,10 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
               {isRunning && latencyMs !== null && (
                 <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white tabular-nums">{latencyMs} ms</span>
               )}
+              {isRunning && rtcOn && (
+                // The frames travel as WebRTC video now (the owner's check that it is WebRTC).
+                <span className="rounded-full bg-emerald-600/90 px-2.5 py-1 text-[11px] font-semibold text-white" title="Live video over WebRTC">WebRTC</span>
+              )}
               {debugLine && (
                 <span className="basis-full rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white tabular-nums">{debugLine}</span>
               )}
@@ -330,6 +334,9 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           <StatusBadge status={status} />
           {isRunning && latencyMs !== null && (
             <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{latencyMs} ms</span>
+          )}
+          {isRunning && rtcOn && (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium" title="Live video over WebRTC">WebRTC</span>
           )}
         </div>
         <div className="flex items-center gap-2">

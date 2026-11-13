@@ -9,6 +9,8 @@ import {
   primeVideoForPlayback,
   RTC_FIRST_FRAME_MS,
   rtcAllowedHere,
+  RTC_CONNECTING_NOTICE,
+  RTC_ONLY_FAILURE_MESSAGE,
   rawScaleFor,
   rtcCameraMode,
   rtcEngine,
@@ -18,7 +20,7 @@ import {
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT, LIVE_CAM_RTC_SAFARI_DEFAULT, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcBrowserPolicy, liveCamRtcUncropped, liveCamRtcUncroppedSwitch, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
+import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT, LIVE_CAM_RTC_SAFARI_DEFAULT, LIVE_CAM_RTC_UNCROPPED_DEFAULT, LIVE_CAM_WEBSOCKET_FALLBACK, liveCamEffectiveTransport, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcBrowserPolicy, liveCamRtcUncropped, liveCamRtcUncroppedSwitch, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -544,5 +546,21 @@ describe('Android framing (13 Nov 2026): the camera as it is, scaled down whole,
     ], null, 0);
     expect(stats.sizes).toBe('540x960 up / 576x1024 down');
     expect(formatRtcLine(stats)).toContain('540x960 up / 576x1024 down');
+  });
+});
+
+describe('WebRTC only (owner, 13 Nov 2026): the JPEG fallback paused by one constant', () => {
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+  it('paused: every session uses WebRTC, even on a device that remembers ?livecam_transport=ws', () => {
+    expect(LIVE_CAM_WEBSOCKET_FALLBACK).toBe(false);
+    const s = mem();
+    expect(liveCamTransport('?livecam_transport=ws', s, {})).toBe('ws'); // still remembered for when JPEG comes back
+    expect(liveCamEffectiveTransport('', s, {})).toBe('webrtc');
+    expect(liveCamEffectiveTransport('', mem(), { VITE_LIVE_CAM_TRANSPORT: 'ws' })).toBe('webrtc');
+  });
+
+  it('the shopper is told when live video cannot connect, and sees it connecting', () => {
+    expect(RTC_ONLY_FAILURE_MESSAGE).toBe('Live video couldn’t connect, please try again.');
+    expect(RTC_CONNECTING_NOTICE).toBe('Connecting live video…');
   });
 });

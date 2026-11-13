@@ -31,7 +31,10 @@ export const RTC_MAX_BITRATE_UNCROPPED = 1_500_000;
 // The camera as it is goes out scaled down as a whole (never cropped) to about this short side; the worker
 // crops the 9:16 centre and scales it to 288x512, exactly like the JPEG path. 540 = 3/4 of a 720p camera.
 export const RTC_RAW_SHORT_SIDE = 540;
-export const RTC_CONNECT_TIMEOUT_MS = 10_000; // JPEG keeps running meanwhile, so waiting longer costs the shopper nothing
+export const RTC_CONNECT_TIMEOUT_MS = 10_000; // with the JPEG fallback on, JPEG keeps running meanwhile
+/** WebRTC only (LIVE_CAM_WEBSOCKET_FALLBACK = false): what the shopper sees when it cannot connect. */
+export const RTC_ONLY_FAILURE_MESSAGE = 'Live video couldn’t connect, please try again.';
+export const RTC_CONNECTING_NOTICE = 'Connecting live video…';
 export const RTC_GATHER_TIMEOUT_MS = 2000;
 export const RTC_DISCONNECT_GRACE_MS = 4000;
 // Once connected, the worker sends video only (no JPEG), so a stream the page cannot show must hand back
