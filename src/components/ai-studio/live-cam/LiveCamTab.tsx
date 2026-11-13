@@ -41,6 +41,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
   const [expanded, setExpanded] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteCanvasRef = useRef<HTMLCanvasElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const supported = supportsLiveCam();
   const routeV3 = useDesignV3();
   const v3 = hosted || routeV3;
@@ -48,10 +49,12 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
 
   const {
     status, facing, flipCamera, lite, setLite, errorMessage, notice, noticeKey, waitAnchor, waitTimes, latencyMs, session, start, stop, redrawLastFrame, readStats,
+    rtcVideoOn, syncRemoteCanvas,
   } = useLiveCamSession({
     garment,
     localVideoRef,
     remoteCanvasRef,
+    remoteVideoRef,
   });
 
   // Guests (no account) get the sign-up popup instead of a session the server would refuse.
@@ -183,6 +186,8 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           variant="stage"
           localVideoRef={localVideoRef}
           remoteCanvasRef={remoteCanvasRef}
+          remoteVideoRef={remoteVideoRef}
+          rtcVideoOn={rtcVideoOn}
           isRunning={isRunning}
           status={status}
           expanded={expanded}
@@ -238,7 +243,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
                     End
                   </button>
                   <div className="justify-self-center">
-                    <LiveCamSnapshotButton variant="round" sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} />
+                    <LiveCamSnapshotButton variant="round" sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} onBeforeCapture={syncRemoteCanvas} />
                   </div>
                   <span className="justify-self-end text-right text-[11px] leading-tight text-white/70">Snapshots<br />stay private</span>
                 </div>
@@ -311,6 +316,8 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
       <LiveCamCameraView
         localVideoRef={localVideoRef}
         remoteCanvasRef={remoteCanvasRef}
+        remoteVideoRef={remoteVideoRef}
+        rtcVideoOn={rtcVideoOn}
         isRunning={isRunning}
         status={status}
         expanded={expanded}
@@ -329,7 +336,7 @@ export const LiveCamTab: React.FC<LiveCamTabProps> = ({ hosted = false, onStatus
           <FlipCameraButton facing={facing} onFlip={flipCamera} variant="classic" />
           <LiteButton lite={lite} onToggle={setLite} variant="classic" />
           {isRunning && (
-            <LiveCamSnapshotButton sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} />
+            <LiveCamSnapshotButton sessionId={session?.sessionId ?? null} remoteCanvasRef={remoteCanvasRef} onBeforeCapture={syncRemoteCanvas} />
           )}
           {isStarting ? (
             <>

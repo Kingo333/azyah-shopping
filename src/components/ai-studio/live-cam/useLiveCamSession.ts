@@ -4,9 +4,9 @@ import { startCamera, stopCamera, type CameraFacing, type CameraRequest, type Ca
 import { buildTryOnInstruction, buildTryOnPrompt, inferSleeveLength } from './buildTryOnPrompt';
 import { LiveCamFrameStats, formatStageLine } from './liveCamStats';
 import { CameraFrameClock, FrameEncoder, PageLoadMonitor, noNewCameraFrame } from './liveCamCapture';
-import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine } from './liveCamWebRtc';
+import { LiveCamRtcLink, canUseWebRtc, cleanIceServers, drawRemoteFrames, formatRtcLine, rtcAllowedHere, showRemoteVideo } from './liveCamWebRtc';
 import { prepareGarmentImage } from './liveCamGarmentImage';
-import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute } from './liveCamFlags';
+import { LIVE_CAM_CAMERA_MAX_LONG_SIDE, LIVE_CAM_LITE_FPS, isLiveCamLegacy, liveCamCameraSize, liveCamCleanDetails, liveCamEncoderMode, liveCamLite, setLiveCamLite, liveCamFluxrtPrompt, liveCamNewFramesOnly, liveCamPlaybackOverride, liveCamPlayoutMode, liveCamSendQueueOverride, liveCamTransport, liveCamEndpoint, withEndpointRoute, liveCamRtcView, liveCamRtcUncropped, liveCamRtcAllBrowsers } from './liveCamFlags';
 import { CaptureTimePlayout } from './liveCamPlayout';
 import { SendQueue, sendQueueFrames } from './liveCamSendQueue';
 import { PlaybackScheduler, resolvePlaybackMode } from './liveCamPlayback';
@@ -57,6 +57,8 @@ interface UseLiveCamSessionArgs {
   garment: LiveCamGarmentSelection | null;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
+  /** Shows the WebRTC result stream (like Decart's SDK); without it the frames are drawn into the canvas. */
+  remoteVideoRef?: React.RefObject<HTMLVideoElement>;
 }
 
 interface UseLiveCamSessionReturn {
@@ -86,6 +88,10 @@ interface UseLiveCamSessionReturn {
   /** Ends a running session, or cancels one that is still starting. */
   stop: () => Promise<void>;
   redrawLastFrame: () => void;
+  /** WebRTC carries the result and the remote <video> shows it (the canvas is underneath). */
+  rtcVideoOn: boolean;
+  /** Copies the current WebRTC video frame into the result canvas (snapshots read the canvas). */
+  syncRemoteCanvas: () => void;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
@@ -115,6 +121,7 @@ export function useLiveCamSession({
   garment,
   localVideoRef,
   remoteCanvasRef,
+  remoteVideoRef,
 }: UseLiveCamSessionArgs): UseLiveCamSessionReturn {
   const [status, setStatus] = useState<LiveCamStatus>('idle');
   const statusRef = useRef<LiveCamStatus>('idle');
@@ -172,6 +179,7 @@ export function useLiveCamSession({
   const rtcActiveRef = useRef(false);
   const rtcStopDrawRef = useRef<(() => void) | null>(null);
   const workerWebrtcRef = useRef(false);
+  const [rtcVideoOn, setRtcVideoOn] = useState(false);
   const pingTimerRef = useRef<number | null>(null);
   const pingSentAtRef = useRef<number | null>(null);
   const frameTimerRef = useRef<number | null>(null);
@@ -244,6 +252,7 @@ export function useLiveCamSession({
     rtcRef.current = null;
     rtcActiveRef.current = false;
     workerWebrtcRef.current = false;
+    setRtcVideoOn(false);
     if (startTimeoutRef.current !== null) {
       window.clearTimeout(startTimeoutRef.current);
       startTimeoutRef.current = null;
@@ -412,6 +421,29 @@ export function useLiveCamSession({
       // bad frame, skip
     }
   }, [remoteCanvasRef, presentBitmap]);
+
+  // The current WebRTC <video> frame into the result canvas (contain-fit, like presentBitmap), for
+  // snapshots and so the last picture stays when WebRTC hands back to JPEG.
+  const drawVideoIntoCanvas = useCallback((v: HTMLVideoElement) => {
+    const canvas = remoteCanvasRef.current;
+    if (!canvas || !v.videoWidth || !v.videoHeight) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const out = outputCanvasSize(cfgRef.current);
+    if (canvas.width !== out.width) canvas.width = out.width;
+    if (canvas.height !== out.height) canvas.height = out.height;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.min(canvas.width / v.videoWidth, canvas.height / v.videoHeight);
+    const dw = v.videoWidth * scale;
+    const dh = v.videoHeight * scale;
+    try { ctx.drawImage(v, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh); } catch { /* no frame yet */ }
+  }, [remoteCanvasRef]);
+
+  const syncRemoteCanvas = useCallback(() => {
+    const v = remoteVideoRef?.current;
+    if (rtcActiveRef.current && v && v.srcObject) drawVideoIntoCanvas(v);
+  }, [remoteVideoRef, drawVideoIntoCanvas]);
 
   // Sync redraw of the cached frame into the visible canvas. Safe to call on
   // every resize / expand-toggle without async decode jank or black flashes.
@@ -671,7 +703,14 @@ export function useLiveCamSession({
       // WebRTC (liveCamWebRtc.ts): tried once the try-on runs on JPEG, only when asked for
       // (?livecam_transport=webrtc), offered by the worker and given TURN servers; any failure leaves JPEG on.
       const maybeStartRtc = async () => {
-        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current || !canUseWebRtc()) return;
+        // The result shows in the remote <video> (like Decart's SDK) unless ?livecam_rtc_view=canvas.
+        const videoEl = remoteVideoRef?.current ?? null;
+        const useVideo = liveCamRtcView() === 'video' && !!videoEl;
+        if (liveCamTransport() !== 'webrtc' || !workerWebrtcRef.current || rtcRef.current) return;
+        if (!rtcAllowedHere(globalThis as never, useVideo ? 'video' : 'canvas', liveCamRtcAllBrowsers())) {
+          if (canUseWebRtc(globalThis as never, 'video')) console.log('[live-cam] webrtc: not on this browser yet (Safari/Firefox until an iPhone check; ?livecam_rtc_all=1 tries it), staying on JPEG');
+          return;
+        }
         const sid = sessionIdRef.current;
         const camTrack = streamRef.current?.getVideoTracks()[0];
         if (!sid || !camTrack) return;
@@ -690,6 +729,8 @@ export function useLiveCamSession({
           width: c.captureWidth,
           height: c.captureHeight,
           fps: liteRef.current ? Math.min(LIVE_CAM_LITE_FPS, c.fpsCap) : c.fpsCap,
+          // iPhone Safari cannot crop the camera track: send it as it is (the worker crops) when allowed.
+          uncropped: liveCamRtcUncropped(),
           iceServers: ice,
           send: (m) => {
             const w = wsRef.current;
@@ -697,20 +738,29 @@ export function useLiveCamSession({
           },
           onRemoteTrack: (track) => {
             rtcStopDrawRef.current?.();
-            rtcStopDrawRef.current = drawRemoteFrames(track, (bitmap) => {
-              statsRef.current.onFrame(undefined, undefined);
-              presentBitmap(bitmap, '');
-              statsRef.current.onPresented();
-            }, () => link.markConnected());
+            rtcStopDrawRef.current = useVideo && videoEl
+              ? showRemoteVideo(videoEl, track, () => {
+                statsRef.current.onFrame(undefined, undefined);
+                statsRef.current.onPresented();
+              }, () => link.markConnected())
+              : drawRemoteFrames(track, (bitmap) => {
+                statsRef.current.onFrame(undefined, undefined);
+                presentBitmap(bitmap, '');
+                statsRef.current.onPresented();
+              }, () => link.markConnected());
           },
           onConnected: () => {
             rtcActiveRef.current = true;
+            setRtcVideoOn(useVideo);
             stopPlayback(); // WebRTC has its own jitter buffer
+            console.log(`[live-cam] webrtc view=${useVideo ? 'video' : 'canvas'} camera=${link.sentCropped ? 'cropped by the browser' : 'as it is (worker crops)'}`);
             statsRef.current.setTransport(`webrtc (worker relay ${link.workerTurn ?? '?'})`);
             console.log(`[live-cam] webrtc on: frames travel as video (worker relay ${link.workerTurn ?? '?'})`);
           },
           onFailed: (reason) => {
             rtcActiveRef.current = false;
+            if (useVideo && videoEl) drawVideoIntoCanvas(videoEl); // keep the last picture while JPEG resumes
+            setRtcVideoOn(false);
             rtcStopDrawRef.current?.();
             rtcStopDrawRef.current = null;
             if (rtcRef.current === link) rtcRef.current = null;
@@ -1177,7 +1227,7 @@ export function useLiveCamSession({
       await callEnd();
       sessionIdRef.current = null;
     }
-  }, [garment, localVideoRef, cleanupLocal, callEnd, renderRemoteFrame, presentBitmap, startPlayback, stopPlayback]);
+  }, [garment, localVideoRef, remoteVideoRef, cleanupLocal, callEnd, renderRemoteFrame, presentBitmap, drawVideoIntoCanvas, startPlayback, stopPlayback]);
 
   // Picking a different garment while running swaps it in place.
   useEffect(() => {
@@ -1349,5 +1399,7 @@ export function useLiveCamSession({
     readStats,
     stop,
     redrawLastFrame,
+    rtcVideoOn,
+    syncRemoteCanvas,
   };
 }

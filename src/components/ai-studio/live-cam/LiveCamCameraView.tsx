@@ -5,6 +5,9 @@ import type { LiveCamStatus } from './liveCamTypes';
 interface Props {
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteCanvasRef: React.RefObject<HTMLCanvasElement>;
+  /** WebRTC result stream (like Decart's SDK), shown over the canvas while it carries the frames. */
+  remoteVideoRef?: React.RefObject<HTMLVideoElement>;
+  rtcVideoOn?: boolean;
   isRunning: boolean;
   status?: LiveCamStatus;
   expanded?: boolean;
@@ -30,6 +33,8 @@ interface Props {
 export const LiveCamCameraView: React.FC<Props> = ({
   localVideoRef,
   remoteCanvasRef,
+  remoteVideoRef,
+  rtcVideoOn = false,
   isRunning,
   status,
   expanded = false,
@@ -102,6 +107,18 @@ export const LiveCamCameraView: React.FC<Props> = ({
       {/* Remote (AI) canvas — always mounted */}
       <div className={remoteWrapClass}>
         <canvas ref={remoteCanvasRef} width={288} height={512} className={canvasClass} />
+        {/* WebRTC result (always mounted): the browser decodes and draws the stream itself, the same box
+            and contain-fit as the canvas; visible only while WebRTC carries the frames. */}
+        {remoteVideoRef && (
+          <video
+            ref={remoteVideoRef}
+            playsInline
+            muted
+            autoPlay
+            aria-hidden={!rtcVideoOn}
+            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${rtcVideoOn && !(stage && !isRunning) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          />
+        )}
         {!isRunning && !isWarming && (stage ? (
           idleContent && status !== 'starting' && <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center p-6" style={{ bottom: bottomH }}>{idleContent}</div>
         ) : (

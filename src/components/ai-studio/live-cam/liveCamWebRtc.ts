@@ -4,8 +4,15 @@
 // WebRTC (ready.webrtc, fluxrt-serverless LIVECAM_WEBRTC) and our TURN function (live-cam-turn) answers:
 // - the camera goes out as a WebRTC video track, cropped and scaled by the browser itself to the
 //   model's portrait size (288x512 today), at the Normal or Lite frame rate;
-// - the generated frames come back as a video track and are drawn into the same result canvas as the
-//   JPEG frames, so the screen, the stage and the snapshots do not change.
+// - the generated frames come back as a video track. By default (13 Nov 2026, like Decart's SDK) the app
+//   shows that stream straight in a <video> element (srcObject) over the result canvas: the browser's
+//   video pipeline decodes and draws it, so the page does no work per frame (and it would work on Safari).
+//   ?livecam_rtc_view=canvas keeps the older way (each frame drawn into the canvas; Chrome/Edge only).
+// - which browsers try it (rtcAllowedHere): Chrome's engine (Chrome, Edge, Samsung Internet, Android, the
+//   kiosk). Safari (iPhone, iPad, Mac) and Firefox keep today's JPEG path until a real iPhone is checked
+//   (?livecam_rtc_all=1 tries it on one device; LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT turns it on for all).
+// - a browser that cannot crop the camera track (iPhone Safari) may send the camera as it is; the GPU
+//   worker then crops and scales it to the model's size itself (?livecam_rtc_uncropped, liveCamFlags.ts).
 // While it is connected the page sends no JPEG frames (and the worker sends none). Anything that goes
 // wrong (no TURN servers, no crop support, ICE failure, no video within 10 s, the worker says no) closes
 // it and the JPEG path carries on, usually without the shopper noticing.
@@ -43,9 +50,26 @@ export function cleanIceServers(list: unknown): RTCIceServer[] {
 
 type Globals = { RTCPeerConnection?: unknown; MediaStreamTrackProcessor?: unknown; createImageBitmap?: unknown };
 
-/** WebRTC with frame access (Chrome, Edge, Android Chrome). Elsewhere the JPEG path stays. */
-export function canUseWebRtc(g: Globals = globalThis as unknown as Globals): boolean {
-  return typeof g.RTCPeerConnection === 'function' && typeof g.MediaStreamTrackProcessor === 'function' && typeof g.createImageBitmap === 'function';
+/** How the generated video is shown: 'video' = a <video> element (every browser), 'canvas' = frames drawn
+ * into the result canvas (needs MediaStreamTrackProcessor: Chrome, Edge, Android Chrome). */
+export type RtcView = 'video' | 'canvas';
+
+/** WebRTC this browser can use for the chosen view. Elsewhere the JPEG path stays. */
+export function canUseWebRtc(g: Globals = globalThis as unknown as Globals, view: RtcView = 'canvas'): boolean {
+  if (typeof g.RTCPeerConnection !== 'function') return false;
+  if (view === 'video') return true;
+  return typeof g.MediaStreamTrackProcessor === 'function' && typeof g.createImageBitmap === 'function';
+}
+
+/**
+ * Whether this browser tries WebRTC at all. Chrome's engine (it has the frame reader the canvas view needs:
+ * Chrome, Edge, Samsung Internet, Android, the kiosk) is the one checked end to end. Safari (iPhone, iPad,
+ * Mac) and Firefox only when `allBrowsers` (liveCamRtcAllBrowsers, ?livecam_rtc_all=1) until a real iPhone
+ * is checked; until then they keep the JPEG path they use today.
+ */
+export function rtcAllowedHere(g: Globals = globalThis as unknown as Globals, view: RtcView = 'video', allBrowsers = false): boolean {
+  if (!canUseWebRtc(g, view)) return false;
+  return allBrowsers || canUseWebRtc(g, 'canvas');
 }
 
 /** H.264 first (hardware on phones and the kiosk), the rest as the browser lists them. */
@@ -69,8 +93,13 @@ export interface RtcStats {
 }
 
 export interface RtcLinkOptions {
-  /** The live camera track; the link sends a clone, cropped and scaled by the browser. */
+  /** The live camera track; the link sends a clone, cropped and scaled by the browser where it can. */
   cameraTrack: MediaStreamTrack;
+  /**
+   * Where the browser cannot crop (iPhone Safari): 'off' = stay on JPEG (default); 'fallback' = send the
+   * camera as it is and let the worker crop; 'always' = send it as it is even where the browser could crop.
+   */
+  uncropped?: 'off' | 'fallback' | 'always';
   width: number;
   height: number;
   fps: number;
@@ -211,23 +240,38 @@ export class LiveCamRtcLink {
     this.fps = opts.fps;
   }
 
+  /** Whether the camera goes out cropped by the browser (true) or as it is, for the worker to crop (false). */
+  sentCropped: boolean | null = null;
+
   private async croppedClone(track: MediaStreamTrack): Promise<MediaStreamTrack | null> {
+    const mode = this.opts.uncropped ?? 'off';
     const t = track.clone();
-    try {
-      // Chrome crops the centre and scales, the same picture the JPEG path cuts with coverCropRect.
-      await t.applyConstraints({
-        width: { exact: this.opts.width },
-        height: { exact: this.opts.height },
-        frameRate: { max: this.fps },
-        resizeMode: 'crop-and-scale',
-      } as MediaTrackConstraints);
-    } catch { /* checked below */ }
-    const s = t.getSettings?.() ?? {};
-    if (s.width !== this.opts.width || s.height !== this.opts.height) {
-      t.stop();
-      return null;
+    if (mode !== 'always') {
+      try {
+        // Chrome crops the centre and scales, the same picture the JPEG path cuts with coverCropRect.
+        await t.applyConstraints({
+          width: { exact: this.opts.width },
+          height: { exact: this.opts.height },
+          frameRate: { max: this.fps },
+          resizeMode: 'crop-and-scale',
+        } as MediaTrackConstraints);
+      } catch { /* checked below */ }
+      const s = t.getSettings?.() ?? {};
+      if (s.width === this.opts.width && s.height === this.opts.height) {
+        try { t.contentHint = 'detail'; } catch { /* older browsers */ }
+        this.sentCropped = true;
+        return t;
+      }
+      if (mode === 'off') {
+        t.stop();
+        return null;
+      }
     }
+    // As it is (like Decart's SDK): only the frame rate is capped; the GPU worker crops the centre and
+    // scales to the model's size itself, the same crop the JPEG path makes.
+    try { await t.applyConstraints({ frameRate: { max: this.fps } }); } catch { /* keep the camera's rate */ }
     try { t.contentHint = 'detail'; } catch { /* older browsers */ }
+    this.sentCropped = false;
     return t;
   }
 
@@ -447,5 +491,56 @@ export function drawRemoteFrames(
   return () => {
     stopped = true;
     reader.cancel().catch(() => undefined);
+  };
+}
+
+type VideoWithCallback = HTMLVideoElement & {
+  requestVideoFrameCallback?: (cb: (now: number, meta: unknown) => void) => number;
+  cancelVideoFrameCallback?: (id: number) => void;
+};
+
+/**
+ * Shows the generated stream in a <video> element (like Decart's SDK) and reports each frame the browser
+ * presents (onFrame) and the first one (onFirst). Uses requestVideoFrameCallback (Chrome, Edge, Safari 15.4+);
+ * without it, the first 'loadeddata' with a picture counts. Returns a stop function that detaches the stream.
+ */
+export function showRemoteVideo(
+  video: HTMLVideoElement,
+  track: MediaStreamTrack,
+  onFrame: () => void,
+  onFirst: () => void,
+  makeStream: (tracks: MediaStreamTrack[]) => MediaStream = (tracks) => new MediaStream(tracks),
+): () => void {
+  const v = video as VideoWithCallback;
+  let stopped = false;
+  let first = true;
+  let cbId: number | null = null;
+  const seen = () => {
+    if (stopped) return;
+    onFrame();
+    if (first) {
+      first = false;
+      onFirst();
+    }
+  };
+  v.muted = true;
+  v.playsInline = true;
+  v.autoplay = true;
+  v.srcObject = makeStream([track]);
+  const onLoaded = () => { if (v.videoWidth > 0 && typeof v.requestVideoFrameCallback !== 'function') seen(); };
+  v.addEventListener('loadeddata', onLoaded);
+  if (typeof v.requestVideoFrameCallback === 'function') {
+    const loop = () => {
+      seen();
+      if (!stopped) cbId = v.requestVideoFrameCallback!(loop);
+    };
+    cbId = v.requestVideoFrameCallback(loop);
+  }
+  void v.play?.()?.catch?.(() => undefined);
+  return () => {
+    stopped = true;
+    v.removeEventListener('loadeddata', onLoaded);
+    if (cbId !== null) v.cancelVideoFrameCallback?.(cbId);
+    v.srcObject = null;
   };
 }
