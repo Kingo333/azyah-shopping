@@ -6,13 +6,17 @@ import {
   drawRemoteFrames,
   formatRtcLine,
   orderCodecs,
+  primeVideoForPlayback,
+  RTC_FIRST_FRAME_MS,
   rtcAllowedHere,
+  rtcCameraMode,
+  rtcEngine,
   showRemoteVideo,
   summarizeRtcStats,
   type RtcLinkDeps,
   type RtcLinkOptions,
 } from '../liveCamWebRtc';
-import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcUncropped, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
+import { LIVE_CAM_DEFAULT_WEBRTC_TEST, LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT, LIVE_CAM_RTC_SAFARI_DEFAULT, LIVE_CAM_RTC_UNCROPPED_DEFAULT, liveCamEndpoint, liveCamRtcAllBrowsers, liveCamRtcBrowserPolicy, liveCamRtcUncropped, liveCamRtcUncroppedSwitch, liveCamRtcView, liveCamTransport, withEndpointRoute } from '../liveCamFlags';
 
 const CF = [
   { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
@@ -33,6 +37,23 @@ describe('ICE servers, codecs, support', () => {
   it('puts H.264 first', () => {
     const order = orderCodecs([{ mimeType: 'video/VP8' }, { mimeType: 'video/H264' }, { mimeType: 'video/rtx' }]).map((c) => c.mimeType);
     expect(order).toEqual(['video/H264', 'video/VP8', 'video/rtx']);
+  });
+
+  it("Safari's list: the H.264 the worker takes (Constrained Baseline, packetization-mode 1) goes on top", () => {
+    const safari = [
+      { mimeType: 'video/H264', sdpFmtpLine: 'level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c1f' },
+      { mimeType: 'video/H264', sdpFmtpLine: 'level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f' },
+      { mimeType: 'video/H265' },
+      { mimeType: 'video/VP8' },
+      { mimeType: 'video/H264', sdpFmtpLine: 'level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42e01f' },
+    ];
+    expect(orderCodecs(safari).map((c) => `${c.mimeType} ${c.sdpFmtpLine ?? ''}`)).toEqual([
+      'video/H264 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f',
+      'video/H264 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c1f',
+      'video/H264 level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42e01f',
+      'video/H265 ',
+      'video/VP8 ',
+    ]);
   });
 
   it('needs RTCPeerConnection, MediaStreamTrackProcessor and createImageBitmap', () => {
@@ -285,27 +306,46 @@ describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)',
     expect(canUseWebRtc({}, 'video')).toBe(false);
   });
 
-  it('which browsers try it: Chrome engine yes; Safari and Firefox keep JPEG until the iPhone check (or ?livecam_rtc_all=1)', () => {
+  it('which browsers try it: Chrome engine and Safari by default; Firefox only with ?livecam_rtc_all=1', () => {
     const f = () => undefined;
-    const chrome = { RTCPeerConnection: f, MediaStreamTrackProcessor: f, createImageBitmap: f };
-    const safari = { RTCPeerConnection: f, createImageBitmap: f }; // iPhone, iPad, Mac Safari (and Firefox)
-    expect(rtcAllowedHere(chrome, 'video')).toBe(true);
-    expect(rtcAllowedHere(chrome, 'canvas')).toBe(true);
-    expect(rtcAllowedHere(safari, 'video')).toBe(false); // today's JPEG path, as before 13 Nov
-    expect(rtcAllowedHere(safari, 'video', true)).toBe(true); // ?livecam_rtc_all=1 on one device
-    expect(rtcAllowedHere(safari, 'canvas', true)).toBe(false); // the canvas view still needs Chrome's frame reader
-    expect(rtcAllowedHere({}, 'video', true)).toBe(false); // no WebRTC at all
+    const chrome = { RTCPeerConnection: f, MediaStreamTrackProcessor: f, createImageBitmap: f, navigator: { vendor: 'Google Inc.' } };
+    const safari = { RTCPeerConnection: f, createImageBitmap: f, navigator: { vendor: 'Apple Computer, Inc.' } }; // iPhone, iPad, Mac
+    const firefox = { RTCPeerConnection: f, createImageBitmap: f, navigator: { vendor: '' } };
+    expect(rtcEngine(chrome)).toBe('chromium');
+    expect(rtcEngine(safari)).toBe('webkit');
+    expect(rtcEngine({ ...safari, MediaStreamTrackProcessor: f })).toBe('webkit'); // a future Safari with the frame reader
+    expect(rtcEngine(firefox)).toBe('other');
     const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+    expect(LIVE_CAM_RTC_SAFARI_DEFAULT).toBe(true); // owner, 13 Nov: WebRTC on iPhone like Decart
     expect(LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT).toBe(false);
-    expect(liveCamRtcAllBrowsers('', mem())).toBe(false);
+    const policy = liveCamRtcBrowserPolicy('', mem());
+    expect(policy).toEqual({ allBrowsers: null, safari: true, others: false });
+    expect(rtcAllowedHere(chrome, 'video', policy)).toBe(true);
+    expect(rtcAllowedHere(safari, 'video', policy)).toBe(true);
+    expect(rtcAllowedHere(firefox, 'video', policy)).toBe(false);
+    expect(rtcAllowedHere(safari, 'canvas', policy)).toBe(false); // the canvas view still needs Chrome's frame reader
+    expect(rtcAllowedHere({}, 'video', policy)).toBe(false); // no WebRTC at all
+    // One device: =1 every browser, =0 Chrome's engine only (remembered).
     const s = mem();
-    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=1', s)).toBe(true);
-    expect(liveCamRtcAllBrowsers('', s)).toBe(true); // remembered on the device
-    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=0', s)).toBe(false);
-    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=junk', mem())).toBe(LIVE_CAM_RTC_ALL_BROWSERS_DEFAULT);
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=1', s)).toBe('on');
+    expect(rtcAllowedHere(firefox, 'video', liveCamRtcBrowserPolicy('', s))).toBe(true);
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=0', s)).toBe('off');
+    expect(rtcAllowedHere(safari, 'video', liveCamRtcBrowserPolicy('', s))).toBe(false);
+    expect(rtcAllowedHere(chrome, 'video', liveCamRtcBrowserPolicy('', s))).toBe(true);
+    expect(liveCamRtcAllBrowsers('?livecam_rtc_all=junk', mem())).toBeNull();
   });
 
-  it('switches: video view by default; camera as it is off until checked on an iPhone', () => {
+  it('camera per browser: Chrome crops it, Safari sends it as it is (like Decart); a device switch wins', () => {
+    expect(rtcCameraMode('chromium', null)).toBe('off');
+    expect(rtcCameraMode('webkit', null)).toBe('always');
+    expect(rtcCameraMode('other', null)).toBe('fallback');
+    expect(rtcCameraMode('webkit', 'off')).toBe('off');
+    const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
+    expect(liveCamRtcUncroppedSwitch('', mem())).toBeNull();
+    expect(liveCamRtcUncroppedSwitch('?livecam_rtc_uncropped=always', mem())).toBe('always');
+  });
+
+  it('switches: video view by default; the old uncropped constant stays off (per-browser choice above)', () => {
     const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) }; };
     expect(liveCamRtcView('', mem())).toBe('video');
     expect(liveCamRtcView('?livecam_rtc_view=canvas', mem())).toBe('canvas');
@@ -342,12 +382,12 @@ describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)',
   });
 
   it('showRemoteVideo: the stream goes into the <video>, each presented frame is counted, the first marks it live', () => {
-    const cbs: Array<() => void> = [];
+    const cbs: Array<(now: number, meta: unknown) => void> = [];
     let cancelled = 0;
     const video = {
       muted: false, playsInline: false, autoplay: false, srcObject: null as unknown, videoWidth: 0,
       addEventListener: vi.fn(), removeEventListener: vi.fn(),
-      requestVideoFrameCallback: (cb: () => void) => { cbs.push(cb); return cbs.length; },
+      requestVideoFrameCallback: (cb: (now: number, meta: unknown) => void) => { cbs.push(cb); return cbs.length; },
       cancelVideoFrameCallback: () => { cancelled += 1; },
       play: vi.fn(() => Promise.resolve()),
     };
@@ -358,8 +398,10 @@ describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)',
     expect(video.srcObject).toBe(stream);
     expect(video.muted && video.playsInline && video.autoplay).toBe(true);
     expect(video.play).toHaveBeenCalled();
-    cbs.shift()!();
-    cbs.shift()!();
+    cbs.shift()!(0, { width: 2, height: 2 }); // a black placeholder: not the video yet
+    expect(onFirst).not.toHaveBeenCalled();
+    cbs.shift()!(0, { width: 576, height: 1024 });
+    cbs.shift()!(0, { width: 576, height: 1024 });
     expect(frames).toHaveLength(2);
     expect(onFirst).toHaveBeenCalledTimes(1);
     stop();
@@ -377,8 +419,90 @@ describe('WebRTC like Decart: video view and the camera as it is (13 Nov 2026)',
     };
     const onFirst = vi.fn();
     showRemoteVideo(video as unknown as HTMLVideoElement, {} as MediaStreamTrack, () => undefined, onFirst, () => ({}) as MediaStream);
-    video.videoWidth = 576;
+    Object.assign(video, { videoWidth: 2, videoHeight: 2 });
+    loaded!();
+    expect(onFirst).not.toHaveBeenCalled(); // placeholder
+    Object.assign(video, { videoWidth: 576, videoHeight: 1024 });
     loaded!();
     expect(onFirst).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('iPhone like Decart: raw camera, unlock in the tap, fast hand-back (13 Nov 2026)', () => {
+  it('the camera as it is gets 1.5 Mbit/s of room (the worker scales it down); the cropped one 1 Mbit/s', async () => {
+    const raw = setup({ uncropped: 'always' }, { width: 1280, height: 720 });
+    await raw.link.start();
+    expect(raw.link.sentCropped).toBe(false);
+    expect(raw.pc.addTransceiver).toHaveBeenCalledWith(raw.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_500_000, maxFramerate: 10 }] });
+    const cropped = setup();
+    await cropped.link.start();
+    expect(cropped.pc.addTransceiver).toHaveBeenCalledWith(cropped.clones[0], { direction: 'sendrecv', sendEncodings: [{ maxBitrate: 1_000_000, maxFramerate: 10 }] });
+  });
+
+  it('an older Safari that refuses sendEncodings still connects: the limits go on through setParameters', async () => {
+    const t = setup({ uncropped: 'always' }, { width: 1280, height: 720 });
+    let first = true;
+    t.pc.addTransceiver.mockImplementation(((_track: unknown, init: { sendEncodings?: unknown }) => {
+      if (first && init?.sendEncodings) { first = false; throw new TypeError('sendEncodings not supported'); }
+      return t.transceiver;
+    }) as never);
+    await t.link.start();
+    expect(t.calls.failed).toEqual([]);
+    expect(t.pc.addTransceiver).toHaveBeenLastCalledWith(t.clones[0], { direction: 'sendrecv' });
+    expect((t.params.encodings as Array<{ maxBitrate?: number; maxFramerate?: number }>)[0]).toMatchObject({ maxBitrate: 1_500_000, maxFramerate: 10 });
+    expect(t.sent[0]).toMatchObject({ type: 'webrtc_offer' });
+  });
+
+  it('connected but nothing shown: back to JPEG after RTC_FIRST_FRAME_MS, not a frozen picture for 10 s', async () => {
+    const a = setup();
+    await a.link.start();
+    a.pc.connectionState = 'connected';
+    a.pc.emit('connectionstatechange');
+    const watchdog = a.timers.find((x) => x.ms === RTC_FIRST_FRAME_MS && !x.cleared);
+    expect(RTC_FIRST_FRAME_MS).toBe(3000);
+    expect(watchdog).toBeDefined();
+    watchdog!.fn();
+    expect(a.calls.failed).toEqual(['connected but no video shown within 3 s']);
+    expect(a.sent.at(-1)).toEqual({ type: 'webrtc_close' }); // the worker goes back to JPEG
+
+    const b = setup();
+    await b.link.start();
+    b.pc.connectionState = 'connected';
+    b.pc.emit('connectionstatechange');
+    b.link.markConnected(); // the first frame showed
+    expect(b.timers.find((x) => x.ms === RTC_FIRST_FRAME_MS)!.cleared).toBe(true);
+    expect(b.calls.failed).toEqual([]);
+  });
+
+  it('showRemoteVideo: a refused play() (NotAllowedError) hands back at once; a source change (AbortError) does not', async () => {
+    const make = (err: string) => ({
+      muted: false, playsInline: false, autoplay: false, srcObject: null as unknown, videoWidth: 0,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      play: vi.fn(() => Promise.reject(Object.assign(new Error(err), { name: err }))),
+    });
+    const blocked = vi.fn();
+    showRemoteVideo(make('NotAllowedError') as unknown as HTMLVideoElement, {} as MediaStreamTrack, () => undefined, () => undefined, () => ({}) as MediaStream, blocked);
+    const aborted = vi.fn();
+    showRemoteVideo(make('AbortError') as unknown as HTMLVideoElement, {} as MediaStreamTrack, () => undefined, () => undefined, () => ({}) as MediaStream, aborted);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(blocked).toHaveBeenCalledWith('video playback blocked');
+    expect(aborted).not.toHaveBeenCalled();
+  });
+
+  it('primeVideoForPlayback: inside the Start tap the empty result <video> is played once, muted and inline', () => {
+    const attrs: Record<string, string> = {};
+    const v = {
+      muted: false, defaultMuted: false, playsInline: false, autoplay: false, srcObject: null as unknown,
+      setAttribute: (k: string, val: string) => { attrs[k] = val; },
+      play: vi.fn(() => Promise.reject(Object.assign(new Error('no source'), { name: 'NotSupportedError' }))),
+    };
+    primeVideoForPlayback(v as unknown as HTMLVideoElement);
+    expect(v.play).toHaveBeenCalledTimes(1);
+    expect(v.muted && v.defaultMuted && v.playsInline && v.autoplay).toBe(true);
+    expect(Object.keys(attrs).sort()).toEqual(['muted', 'playsinline', 'webkit-playsinline']);
+    v.srcObject = {}; // already showing a stream: leave it alone
+    primeVideoForPlayback(v as unknown as HTMLVideoElement);
+    expect(v.play).toHaveBeenCalledTimes(1);
+    primeVideoForPlayback(null); // no element: nothing
   });
 });
